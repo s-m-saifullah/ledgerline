@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node infra/scripts/dev.mjs",
     "dev:apps": "turbo run dev",
+    "dev:lan": "node infra/scripts/dev-lan.mjs",
     "build": "turbo run build",
     "test": "node --env-file-if-exists=.env node_modules/turbo/bin/turbo run test",
     "lint": "biome check .",

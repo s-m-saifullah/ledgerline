@@ -33,6 +33,12 @@ pnpm setup      # creates a private .env with generated credentials
 pnpm dev        # web on http://localhost:5173, API on :3001, PostgreSQL in Docker
 ```
 
+### Opening the dev server from a phone
+
+`pnpm dev:lan` starts the same dev servers but reachable from other devices on your Wi-Fi. It prints the address to open (its form is `http://<your-computer-address>:5173`) and sets `APP_URL` for that run only, so `.env` is never edited. Use that address on your computer too, not `localhost`, because the API only accepts requests whose origin matches `APP_URL`. Pass `--ip=<address>` to choose the address yourself.
+
+This is plain HTTP on your local network. Use it with test data only, on a network you trust (not guest, café or campus Wi-Fi), and never with production data.
+
 Checks: `pnpm lint`, `pnpm typecheck`, `pnpm test`, then `pnpm e2e` on its own (browser tests run serially). `pnpm db:migrate` applies migrations and `pnpm openapi` regenerates the API contract.
 
 ## Stack
