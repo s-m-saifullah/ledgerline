@@ -1,0 +1,53 @@
+name: ledgerline
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: ${POSTGRES_DB:-ledgerline}
+    volumes:
+      - db:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    mem_limit: 1g
+  api:
+    image: ${API_IMAGE:?required}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3001
+      DATABASE_URL: ${DATABASE_URL:?required}
+      APP_URL: ${APP_URL:?required}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?required}
+      OWNER_EMAIL: ${OWNER_EMAIL:?required}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:?required}
+      OWNER_NAME: ${OWNER_NAME:-Owner}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    mem_limit: 512m
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
+  web:
+    image: ${WEB_IMAGE:?required}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 128m
+    security_opt: [no-new-privileges:true]
+volumes:
+  db:

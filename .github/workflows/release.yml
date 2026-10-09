@@ -1,0 +1,119 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build and deploy (v0.0.1)'
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+jobs:
+  checks:
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    uses: ./.github/workflows/ci.yml
+    with:
+      checkout_ref: ${{ inputs.version || github.ref }}
+  images:
+    needs: checks
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      image: ${{ steps.version.outputs.image }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref }}
+      - id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          version="${INPUT_VERSION:-$REF_NAME}"
+          [[ "$version" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+          # GHCR needs lowercase names: ghcr.io/<owner>/<repo>-api and -web.
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.version.outputs.image }}-api:${{ steps.version.outputs.value }}
+          build-args: IMAGE_SOURCE=${{ github.server_url }}/${{ github.repository }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.version.outputs.image }}-web:${{ steps.version.outputs.value }}
+          build-args: IMAGE_SOURCE=${{ github.server_url }}/${{ github.repository }}
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    # A protected environment (required reviewer) can gate the deploy; an unprotected one changes nothing.
+    environment: production
+    # Deployment settings are repository variables (Settings > Secrets and variables > Actions > Variables).
+    env:
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR || '/opt/ledgerline' }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER || 'ledgerline' }}
+      PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref }}
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Upload deployment files
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          scp infra/compose/docker-compose.yml "$DEPLOY_USER@$VPS_HOST:$DEPLOY_DIR/docker-compose.yml"
+          scp infra/scripts/deploy.sh infra/scripts/backup.sh infra/scripts/restore-drill.sh infra/scripts/verify-queries.sh infra/scripts/prune-backups.sh infra/scripts/scheduled-backup.sh "$DEPLOY_USER@$VPS_HOST:$DEPLOY_DIR/"
+      - name: Pull private images and deploy
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ github.actor }}
+          VERSION: ${{ needs.images.outputs.version }}
+          IMAGE_REPOSITORY: ${{ needs.images.outputs.image }}
+        run: |
+          printf '%s\n' "$REGISTRY_TOKEN" | ssh "$DEPLOY_USER@$VPS_HOST" "docker login ghcr.io -u '$REGISTRY_USER' --password-stdin"
+          ssh "$DEPLOY_USER@$VPS_HOST" "trap 'docker logout ghcr.io >/dev/null' EXIT; IMAGE_REPOSITORY='$IMAGE_REPOSITORY' bash '$DEPLOY_DIR/deploy.sh' '$VERSION'"
+          ssh "$DEPLOY_USER@$VPS_HOST" "bash '$DEPLOY_DIR/backup.sh'; bash '$DEPLOY_DIR/restore-drill.sh' \"\$(ls -t '$DEPLOY_DIR'/backups/*.dump | head -n 1)\""
+      - name: Verify HTTPS
+        run: |
+          if [ -z "$PUBLIC_URL" ]; then
+            echo "::warning::PUBLIC_URL variable is not set; the public HTTPS health check was skipped."
+          else
+            curl --fail --silent --retry 5 --retry-delay 5 "$PUBLIC_URL/api/health"
+          fi

@@ -1,0 +1,21 @@
+{
+  "name": "@ledgerline/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.1.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@ledgerline/config": "workspace:*"
+  }
+}

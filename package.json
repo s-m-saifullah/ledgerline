@@ -1,0 +1,33 @@
+{
+  "name": "ledgerline",
+  "private": true,
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10 <11"
+  },
+  "scripts": {
+    "dev": "node infra/scripts/dev.mjs",
+    "dev:apps": "turbo run dev",
+    "build": "turbo run build",
+    "test": "node --env-file-if-exists=.env node_modules/turbo/bin/turbo run test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "typecheck": "tsc --noEmit && turbo run typecheck",
+    "e2e": "playwright test",
+    "db:migrate": "pnpm --filter @ledgerline/api db:migrate",
+    "db:generate": "pnpm --filter @ledgerline/api db:generate",
+    "db:up": "docker compose --env-file .env -f infra/compose/docker-compose.dev.yml up -d --wait",
+    "db:down": "docker compose --env-file .env -f infra/compose/docker-compose.dev.yml down",
+    "openapi": "pnpm --filter @ledgerline/api openapi",
+    "setup": "node infra/scripts/setup.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.0",
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^24.0.0",
+    "turbo": "^2.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.0"
+  }
+}

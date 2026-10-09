@@ -1,0 +1,2 @@
+ALTER TABLE "receivables" ADD COLUMN "service_time" text;--> statement-breakpoint
+ALTER TABLE "receivables" ADD CONSTRAINT "receivables_time_check" CHECK ("receivables"."service_time" IS NULL OR "receivables"."service_time" ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$');

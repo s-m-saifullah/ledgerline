@@ -1,0 +1,6 @@
+# Sample site block for the host Caddy that already owns ports 80/443.
+# Replace the domain; the upstream is Ledgerline's web container (127.0.0.1 only).
+ledgerline.example.com {
+  header Strict-Transport-Security "max-age=31536000"
+  reverse_proxy 127.0.0.1:8080
+}
