@@ -50,7 +50,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: infra/docker/api.Dockerfile
@@ -58,7 +58,7 @@ jobs:
           push: true
           tags: ${{ steps.version.outputs.image }}-api:${{ steps.version.outputs.value }}
           build-args: IMAGE_SOURCE=${{ github.server_url }}/${{ github.repository }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: infra/docker/web.Dockerfile
