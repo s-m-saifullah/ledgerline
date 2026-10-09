@@ -1,4 +1,4 @@
-FROM node:24.21.0-bookworm-slim AS build
+FROM node:26.9.0-bookworm-slim AS build
 WORKDIR /app
 RUN npm install --global pnpm@10.33.2
 COPY . .
