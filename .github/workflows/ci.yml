@@ -25,7 +25,7 @@ jobs:
       pull-requests: read
       statuses: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.checkout_ref || github.ref }}
           fetch-depth: 0

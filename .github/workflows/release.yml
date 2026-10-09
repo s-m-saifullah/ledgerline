@@ -31,7 +31,7 @@ jobs:
       version: ${{ steps.version.outputs.value }}
       image: ${{ steps.version.outputs.image }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.version || github.ref }}
       - id: version
@@ -80,7 +80,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.version || github.ref }}
       - name: Configure SSH
