@@ -19,6 +19,7 @@ import { useIsPhone } from "../../components/action-bar";
 import { ActionMenu } from "../../components/action-menu";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
+import { randomUuid } from "../../lib/random-uuid";
 import { type CategoryAction, CategoryActionDialog } from "./action-dialog";
 import { getCategories } from "./api";
 import { CategoryMark } from "./appearance";
@@ -91,7 +92,7 @@ function LedgerCategories({
     setNotice("");
     setDialog({
       ...intent,
-      intentId: crypto.randomUUID(),
+      intentId: randomUuid(),
       open: true,
       unconfirmed: false,
     });
