@@ -62,7 +62,7 @@ jobs:
         env:
           DIFF_BASE: ${{ steps.scope.outputs.base }}
         run: git diff --check "$DIFF_BASE" HEAD --
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         if: steps.plan.outputs.full == 'true'
       - uses: actions/setup-node@v4
         if: steps.plan.outputs.full == 'true'
