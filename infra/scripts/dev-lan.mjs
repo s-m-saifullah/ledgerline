@@ -33,7 +33,7 @@ export function parseAddressArgument(args) {
   if (!argument) return null;
   const value = argument.slice("--ip=".length);
   if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(value))
-    throw new Error("Use --ip=<IPv4 address>, for example --ip=192.168.1.20");
+    throw new Error("Use --ip=<IPv4 address>");
   return value;
 }
 
