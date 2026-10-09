@@ -19,6 +19,7 @@ import {
 import { useContext, useState } from "react";
 import type { z } from "zod";
 import { getLedgers } from "../../lib/api";
+import { randomUuid } from "../../lib/random-uuid";
 import { PrivacyContext } from "../shell/preferences";
 import { getAccounts } from "./api";
 import { ArchiveAccountDialog } from "./archive";
@@ -92,7 +93,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
     setNotice("");
     setDialog({
       ...intent,
-      intentId: crypto.randomUUID(),
+      intentId: randomUuid(),
       open: true,
       unconfirmed: false,
     });

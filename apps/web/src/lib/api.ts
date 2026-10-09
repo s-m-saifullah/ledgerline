@@ -4,6 +4,7 @@ import {
   problemSchema,
 } from "@ledgerline/shared";
 import { z } from "zod";
+import { randomUuid } from "./random-uuid";
 
 export class ApiError extends Error {
   constructor(
@@ -27,7 +28,7 @@ export async function api<T>(
     options.method !== "GET" &&
     !headers.has("Idempotency-Key")
   )
-    headers.set("Idempotency-Key", crypto.randomUUID());
+    headers.set("Idempotency-Key", randomUuid());
   const response = await fetch(`/api/v1${path}`, {
     credentials: "same-origin",
     ...options,
@@ -63,7 +64,7 @@ export function prepareFinancialWrite<T>(
 ): () => Promise<T> {
   const options: RequestInit = {
     method,
-    headers: { "Idempotency-Key": crypto.randomUUID() },
+    headers: { "Idempotency-Key": randomUuid() },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   };
   return () => api<T>(path, options);
