@@ -1,0 +1,112 @@
+name: Checks
+on:
+  workflow_call:
+    inputs:
+      checkout_ref:
+        description: 'Exact ref to check for a release'
+        required: false
+        type: string
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # statuses: records which source tree a passing pull request tested; pull-requests: lets the
+    # post-merge run look that up. Neither can change code or settings.
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref || github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Test CI scope policy
+        run: node --test infra/scripts/*.test.mjs
+      # Only the public repository runs this: the private tooling that builds the public tree is absent there.
+      - name: Audit the repository for keys, private addresses, personal emails and private files
+        if: hashFiles('infra/scripts/export-public.mjs') == ''
+        run: node infra/scripts/public-audit.mjs .
+      - name: Classify changes
+        id: scope
+        env:
+          FORCE_FULL_CHECKS: ${{ inputs.checkout_ref != '' }}
+        run: node infra/scripts/ci-scope.mjs
+      - id: tested
+        name: Skip a post-merge run that repeats a passed pull request check
+        if: github.event_name == 'push' && steps.scope.outputs.application == 'true' && inputs.checkout_ref == ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node infra/scripts/tested-tree.mjs check
+      - id: plan
+        name: Decide whether the full suite runs
+        run: |
+          if [ "${{ steps.scope.outputs.application }}" = "true" ] && [ "${{ steps.tested.outputs.skip }}" != "true" ]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check documentation whitespace
+        if: steps.scope.outputs.application == 'false'
+        env:
+          DIFF_BASE: ${{ steps.scope.outputs.base }}
+        run: git diff --check "$DIFF_BASE" HEAD --
+      - uses: pnpm/action-setup@v4
+        if: steps.plan.outputs.full == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.plan.outputs.full == 'true'
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: steps.plan.outputs.full == 'true'
+      - id: database
+        if: steps.plan.outputs.full == 'true'
+        run: |
+          cp .env.example .env
+          pnpm db:up
+      - run: pnpm lint
+        if: steps.plan.outputs.full == 'true'
+      - run: pnpm typecheck
+        if: steps.plan.outputs.full == 'true'
+      - run: pnpm test
+        if: steps.plan.outputs.full == 'true'
+      - run: pnpm build
+        if: steps.plan.outputs.full == 'true'
+      - run: pnpm openapi
+        if: steps.plan.outputs.full == 'true'
+      - run: git diff --exit-code docs/openapi.json
+        if: steps.plan.outputs.full == 'true'
+      - name: Require contract version notes
+        if: steps.plan.outputs.full == 'true' && github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --depth=1 origin "$BASE_SHA"
+          if ! git diff --quiet "$BASE_SHA" HEAD -- docs/openapi.json; then
+            ! git diff --quiet "$BASE_SHA" HEAD -- docs/api-changes.md
+          fi
+      - run: pnpm exec playwright install --with-deps chromium
+        if: steps.plan.outputs.full == 'true'
+      - run: pnpm e2e
+        if: steps.plan.outputs.full == 'true'
+      - name: Record the tested source tree
+        if: github.event_name == 'pull_request' && steps.plan.outputs.full == 'true'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node infra/scripts/tested-tree.mjs record
+      - if: always() && steps.database.outcome != 'skipped' && steps.database.outcome != ''
+        run: pnpm db:down

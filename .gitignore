@@ -1,0 +1,18 @@
+node_modules/
+dist/
+.turbo/
+.env
+.env.*
+!.env.example
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+*.log
+backups/
+.pnpm-store/
+.vscode/
+tests/e2e/.auth/
+
+# Private local notes and deploy settings; never committed
+.private/

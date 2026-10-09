@@ -1,0 +1,34 @@
+{
+  "name": "@ledgerline/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=../../.env --import tsx --watch src/server.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "node --env-file=../../.env --import tsx src/db/migrate.ts",
+    "db:generate": "drizzle-kit generate",
+    "openapi": "tsx src/openapi.ts"
+  },
+  "dependencies": {
+    "@fastify/swagger": "^9.5.0",
+    "@fastify/helmet": "^13.0.0",
+    "@ledgerline/shared": "workspace:*",
+    "@node-rs/argon2": "^2.0.2",
+    "better-auth": "1.7.7",
+    "drizzle-orm": "0.45.3",
+    "fastify": "^5.6.0",
+    "fastify-type-provider-zod": "7.0.0",
+    "pg": "^8.16.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@ledgerline/config": "workspace:*",
+    "@types/pg": "^8.15.0",
+    "drizzle-kit": "^0.31.0",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.0"
+  }
+}

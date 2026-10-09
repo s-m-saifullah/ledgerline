@@ -1,0 +1,7 @@
+# Sample systemd drop-in for another service that shares the server (see ADR 0002).
+# Install as /etc/systemd/system/<other-service>.service.d/ledgerline.conf, then run
+# `systemctl daemon-reload` and restart <other-service> once. It prevents that service from using sudo.
+# Replace the paths with your install directory and deploy user's home.
+[Service]
+NoNewPrivileges=true
+InaccessiblePaths=/opt/ledgerline /home/ledgerline -/var/run/docker.sock -/run/containerd/containerd.sock
