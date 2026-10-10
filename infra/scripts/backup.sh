@@ -25,7 +25,7 @@ printf "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;\nSET TIME ZONE 'UTC';\n
 IFS= read -r -u "$snapshot_read" snapshot
 [[ "$snapshot" =~ ^[0-9A-Fa-f-]+$ ]] || { echo 'Could not export backup snapshot'; exit 1; }
 : > "$destination.manifest.partial"
-for table in users ledgers ledger_members accounts categories transactions transaction_splits contacts receivables receivable_payments receivable_events budgets write_receipts; do
+for table in users ledgers ledger_members accounts categories transactions transaction_splits contacts receivables receivable_payments receivable_events budgets currencies exchange_rates write_receipts; do
   printf "SELECT to_regclass('public.%s') IS NOT NULL;\n" "$table" >&"$snapshot_write"
   IFS= read -r -u "$snapshot_read" exists
   # Older pre-migration backups intentionally contain only the tables they have.

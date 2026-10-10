@@ -27,6 +27,11 @@ import { accountRoutes } from "./modules/accounts/routes";
 import { createAuth } from "./modules/auth/service";
 import { budgetRoutes } from "./modules/budgets/routes";
 import { categoryRoutes } from "./modules/categories/routes";
+import {
+  createRateProvider,
+  type RateFetcher,
+} from "./modules/currencies/provider";
+import { currencyRoutes } from "./modules/currencies/routes";
 import { homeRoutes } from "./modules/home/routes";
 import { ledgerService } from "./modules/ledgers/service";
 import { receiptRoutes } from "./modules/receivables/receipt-routes";
@@ -34,7 +39,11 @@ import { peopleRoutes } from "./modules/receivables/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
 
-export async function buildApp(db: Database, config: Config) {
+export async function buildApp(
+  db: Database,
+  config: Config,
+  { fetchRate = createRateProvider() }: { fetchRate?: RateFetcher } = {},
+) {
   // Deliberately log only request IDs, methods and status; URLs may contain private filters.
   const app = Fastify({
     logger: config.NODE_ENV === "test" ? false : { level: "info" },
@@ -47,7 +56,7 @@ export async function buildApp(db: Database, config: Config) {
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.19" },
+      info: { title: "Ledgerline API", version: "0.1.20" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -286,6 +295,7 @@ export async function buildApp(db: Database, config: Config) {
   await app.register(receiptRoutes, { db, config, auth });
   await app.register(categoryRoutes, { db, config, auth });
   await app.register(budgetRoutes, { db, config, auth });
+  await app.register(currencyRoutes, { db, config, auth, fetchRate });
   await app.register(transactionRoutes, { db, config, auth });
   await app.register(transferRoutes, { db, config, auth });
   await app.register(homeRoutes, { db, config, auth });
