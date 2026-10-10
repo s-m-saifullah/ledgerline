@@ -502,9 +502,12 @@ export function EmptyPage({
   );
 }
 /** The deployed release tag, small and quiet. */
-export function AppVersion() {
+export function AppVersion({ phoneOnly = false }: { phoneOnly?: boolean }) {
   return (
-    <p className="app-version" data-testid="app-version">
+    <p
+      className={phoneOnly ? "app-version phone-only" : "app-version"}
+      data-testid="app-version"
+    >
       Ledgerline {__APP_VERSION__}
     </p>
   );
@@ -593,7 +596,7 @@ export function MorePage() {
         <p>USD accounts are available now. More currencies are coming later.</p>
         <p className="muted">Use Add to record income and expenses in USD.</p>
       </section>
-      <AppVersion />
+      <AppVersion phoneOnly />
     </>
   );
 }
