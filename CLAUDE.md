@@ -3,6 +3,7 @@
 Self-hosted personal finance web app, deployed with Docker. A native Android app comes later and uses the same API.
 
 - Scope, data model and design: `docs/PLAN.md`; first-phase rules: `docs/PHASE_1_PLAN.md`
+- Progress and next steps: `docs/PROGRESS.md`: read it at the start of every session and update it when a piece of work lands
 - Decisions: `docs/adr/NNNN-title.md` (one short file per decision that changes the plan)
 - Contribution rules: `CONTRIBUTING.md`; CI rules: `docs/CI.md`; self-hosting: `docs/SELF_HOSTING.md`
 
@@ -14,6 +15,7 @@ Self-hosted personal finance web app, deployed with Docker. A native Android app
 - If something in `docs/PLAN.md` turns out to be wrong, propose the change, record it in an ADR and update the plan.
 - Follow `docs/CI.md`: one `check` job per pull request, no duplicate feature-push and PR checks. Documentation-only changes need content, link and whitespace review; code, configuration, OpenAPI and release changes keep the full suite.
 - Never commit secrets, real financial data, personal details or real hostnames. Use placeholders such as `ledgerline.example.com` and `you@example.com`.
+- Local-only notes (real hostnames, personal workflow, trial logs) may live in an untracked `.private/` folder. Never commit it or copy its contents into the repository, a pull request, an issue or a commit message.
 
 ## Stack (locked; do not swap without an ADR)
 
