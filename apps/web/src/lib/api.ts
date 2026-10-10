@@ -59,7 +59,7 @@ export async function api<T>(
 /** Prepare once per user action, then reuse the returned function for retries. */
 export function prepareFinancialWrite<T>(
   path: string,
-  method: "POST" | "PATCH" | "DELETE",
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
   body?: JsonValue,
 ): () => Promise<T> {
   const options: RequestInit = {
