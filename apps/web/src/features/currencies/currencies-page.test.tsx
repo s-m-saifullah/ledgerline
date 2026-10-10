@@ -92,7 +92,7 @@ describe("CurrenciesPage", () => {
     );
     expect(await screen.findByText(/Your base currency is/)).toBeTruthy();
     const euro = screen.getByRole("button", { name: /Euro/ });
-    expect(euro.textContent).toContain("1 EUR = 1.1217 USD");
+    expect(euro.textContent).toContain("1 USD = 0.891504 EUR");
     expect(euro.textContent).toContain("fetched");
     expect(screen.getByRole("button", { name: /BDT/ }).textContent).toContain(
       "set by you",
@@ -119,7 +119,7 @@ describe("CurrenciesPage", () => {
     await screen.findByText(/Your base currency is/);
     expect(screen.queryByRole("button", { name: "Add a currency" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Euro/ })).toBeNull();
-    expect(screen.getByText(/1 EUR = 1.1 USD/)).toBeTruthy();
+    expect(screen.getByText(/1 USD = 0.909091 EUR/)).toBeTruthy();
   });
 
   it("refreshes and reports updated, kept and failed currencies", async () => {
@@ -193,7 +193,7 @@ describe("CurrenciesPage", () => {
         }),
     );
     await user.click(await screen.findByRole("button", { name: /Euro/ }));
-    const value = await screen.findByLabelText(/1 EUR is worth/);
+    const value = await screen.findByLabelText(/1 USD is worth/);
     await user.clear(value);
     await user.type(value, "1.13");
     await user.click(screen.getByRole("button", { name: "Save rate" }));
@@ -202,16 +202,28 @@ describe("CurrenciesPage", () => {
     expect(JSON.parse(String(call?.[1]?.body))).toEqual({
       code: "EUR",
       date: today(),
-      rate: "1.13",
+      // Typed as 1 USD = 1.13 EUR; stored as the base-currency value of one EUR.
+      rate: "0.8849557522",
     });
     expect(new Headers(call?.[1]?.headers).get("Idempotency-Key")).toBeTruthy();
+  });
+
+  it("shows the rate with the base currency first when editing", async () => {
+    const user = userEvent.setup();
+    mount(list(pinned("BDT", rate("BDT", "0.00812"))));
+    await user.click(await screen.findByRole("button", { name: /BDT/ }));
+    const value = (await screen.findByLabelText(
+      /1 USD is worth \(BDT\)/,
+    )) as HTMLInputElement;
+    expect(value.value).toBe("123.1527");
+    expect(screen.getByText(/Latest: 1 USD = 123.1527 BDT/)).toBeTruthy();
   });
 
   it("rejects a bad rate before sending anything", async () => {
     const user = userEvent.setup();
     const fetcher = mount(list(pinned("EUR", rate("EUR", "1.1"))));
     await user.click(await screen.findByRole("button", { name: /Euro/ }));
-    const value = await screen.findByLabelText(/1 EUR is worth/);
+    const value = await screen.findByLabelText(/1 USD is worth/);
     await user.clear(value);
     await user.type(value, "1e3");
     await user.click(screen.getByRole("button", { name: "Save rate" }));
@@ -239,7 +251,8 @@ describe("CurrenciesPage", () => {
 
 describe("currency formatting", () => {
   it("reads a rate the way people say it", () => {
-    expect(rateSentence("EUR", "1.1217", "USD")).toBe("1 EUR = 1.1217 USD");
+    expect(rateSentence("EUR", "1.1217", "USD")).toBe("1 USD = 0.891504 EUR");
+    expect(rateSentence("BDT", "0.00812", "USD")).toBe("1 USD = 123.1527 BDT");
   });
   it("lists every currency except those already taken, by name", () => {
     const names = addableCurrencies(["USD", "EUR"]);
