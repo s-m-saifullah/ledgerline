@@ -24,9 +24,9 @@ INSERT INTO transactions (id,ledger_id,account_id,kind,date,amount,base_amount,t
 -- split parent with two lines
 INSERT INTO transactions (id,ledger_id,account_id,kind,is_split,date,amount,base_amount) VALUES
  ('00000000-0000-7000-8000-0000000000a9','00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b2','expense',true,'2026-10-04',-9000,-9000);
-INSERT INTO transaction_splits (id,ledger_id,transaction_id,category_id,kind,amount,position) VALUES
- (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000a9','00000000-0000-7000-8000-0000000000c1','expense',-6000,0),
- (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000a9','00000000-0000-7000-8000-0000000000c2','expense',-3000,1);
+INSERT INTO transaction_splits (id,ledger_id,transaction_id,category_id,kind,amount,base_amount,position) VALUES
+ (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000a9','00000000-0000-7000-8000-0000000000c1','expense',-6000,-6000,0),
+ (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000a9','00000000-0000-7000-8000-0000000000c2','expense',-3000,-3000,1);
 -- people, services, a two-service receipt and a tombstoned payment
 INSERT INTO contacts (id,ledger_id,name) VALUES ('00000000-0000-7000-8000-000000000c0a','00000000-0000-7000-8000-0000000000a1','Sam');
 INSERT INTO receivables (id,ledger_id,contact_id,description,service_date,amount) VALUES

@@ -207,3 +207,55 @@ export type PinnedCurrency = z.infer<typeof pinnedCurrencySchema>;
 export type CurrencyList = z.infer<typeof currencyListSchema>;
 export type SetExchangeRate = z.infer<typeof setExchangeRateSchema>;
 export type RefreshRatesResult = z.infer<typeof refreshRatesResultSchema>;
+
+/**
+ * Share a split entry's base amount across its lines so they add up to it exactly (ADR 0022).
+ * Each line gets its proportional share rounded down, and the units left over go one each to
+ * the lines with the largest fractional remainder (the earliest line wins a tie). All lines
+ * and the parent must point the same way; amounts are signed smallest units.
+ */
+export function allocateBaseAmounts(
+  parentAmount: number,
+  parentBase: number,
+  lineAmounts: number[],
+): number[] {
+  if (!Number.isSafeInteger(parentAmount) || parentAmount === 0)
+    throw new RangeError("Invalid parent amount");
+  if (!Number.isSafeInteger(parentBase))
+    throw new RangeError("Invalid parent base amount");
+  const parent = BigInt(Math.abs(parentAmount));
+  const base = BigInt(Math.abs(parentBase));
+  const sign = parentAmount < 0;
+  const lines = lineAmounts.map((amount) => {
+    if (!Number.isSafeInteger(amount) || amount === 0 || amount < 0 !== sign)
+      throw new RangeError("Split lines must share the parent's direction");
+    return BigInt(Math.abs(amount));
+  });
+  if (lines.reduce((sum, line) => sum + line, 0n) !== parent)
+    throw new RangeError("Split lines must add up to the parent amount");
+  const parts = lines.map((line) => ({
+    floor: (line * base) / parent,
+    remainder: (line * base) % parent,
+  }));
+  let leftover = base - parts.reduce((sum, part) => sum + part.floor, 0n);
+  const order = parts
+    .map((part, index) => ({ index, remainder: part.remainder }))
+    .sort((a, b) =>
+      a.remainder === b.remainder
+        ? a.index - b.index
+        : a.remainder > b.remainder
+          ? -1
+          : 1,
+    );
+  const extra = new Set<number>();
+  for (const { index } of order) {
+    if (leftover <= 0n) break;
+    extra.add(index);
+    leftover -= 1n;
+  }
+  const negative = parentBase < 0;
+  return parts.map((part, index) => {
+    const value = part.floor + (extra.has(index) ? 1n : 0n);
+    return Number(negative ? -value : value);
+  });
+}

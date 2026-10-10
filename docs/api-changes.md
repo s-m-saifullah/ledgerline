@@ -1,5 +1,9 @@
 # API version notes
 
+## 0.1.21 — Totals use each entry's frozen base-currency amount
+
+No request or response shape changes. Home money in and money out, category totals and budget spending now add up each entry's saved `baseAmount` (and, for split entries, each line's share of it) instead of its raw `amount`, so totals stay correct once entries in several currencies exist. While every entry is USD at rate 1 the results are identical to before. Split lines now store their own base amount, shared across the lines so they add up exactly to the parent's `baseAmount` (largest remainder); the database rejects a split whose base amounts do not add up. Migration 0013 converts `fx_rate` to an exact decimal (existing rows stay 1) and backfills each split line's base amount from its amount. Account balances still use the entry `amount` in the account's own currency.
+
 ## 0.1.20 — Currencies and exchange rates
 
 New `Currencies` endpoints, all additive; nothing existing changes and entry is still USD-only. `GET /ledgers/{ledgerId}/currencies` lists the currencies a ledger has added besides its base currency, each with its newest stored rate. `POST /ledgers/{ledgerId}/currencies` adds one and `DELETE /ledgers/{ledgerId}/currencies/{currencyId}` removes it (requires `expectedVersion`; stored rates are kept). `GET /ledgers/{ledgerId}/exchange-rates?code=` lists stored rates newest first. `PUT /ledgers/{ledgerId}/exchange-rates` sets a rate by hand (201 to create, 200 with `expectedVersion` to edit) and marks it manual. `DELETE /ledgers/{ledgerId}/exchange-rates/{rateId}` removes a stored rate. `POST /ledgers/{ledgerId}/exchange-rates/refresh` fetches the newest rate for each added currency (or one) from the public rate source with a fallback source; currencies that could not be fetched come back in `failed`, and manual rates are kept (`keptManual`).

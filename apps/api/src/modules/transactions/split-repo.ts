@@ -1,4 +1,8 @@
-import { newId, type TransactionSplit } from "@ledgerline/shared";
+import {
+  allocateBaseAmounts,
+  newId,
+  type TransactionSplit,
+} from "@ledgerline/shared";
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { transactionSplits } from "../../db/schema";
@@ -73,6 +77,14 @@ export function splitRepository(db: DatabaseConnection, ledgerId: string) {
       current: SplitRow[],
     ) => {
       const now = parent.updatedAt;
+      // Each line carries its share of the parent's base amount, exact to the unit.
+      const bases = lines.length
+        ? allocateBaseAmounts(
+            parent.amount,
+            parent.baseAmount,
+            lines.map((line) => line.amount.amount),
+          )
+        : [];
       if (current.length)
         await db
           .update(transactionSplits)
@@ -90,6 +102,7 @@ export function splitRepository(db: DatabaseConnection, ledgerId: string) {
         const values = {
           categoryId: line.categoryId,
           amount: line.amount.amount,
+          baseAmount: bases[position] as number,
           note: line.note,
           kind: parent.kind as "expense" | "income",
           position,

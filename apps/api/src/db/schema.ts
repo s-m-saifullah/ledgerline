@@ -280,7 +280,11 @@ export const transactions = pgTable(
       .$type<"cleared" | "pending">()
       .notNull()
       .default("cleared"),
-    fxRate: integer("fx_rate").notNull().default(1),
+    // Exact decimal in the database (ADR 0020). Read as a JS number only while every rate is 1;
+    // step 2b-3 switches this to text before any other rate can exist.
+    fxRate: numeric("fx_rate", { precision: 20, scale: 10, mode: "number" })
+      .notNull()
+      .default(1),
     baseAmount: bigint("base_amount", { mode: "number" }).notNull(),
     version: integer("version").notNull().default(1),
     ...audit(),
@@ -382,6 +386,8 @@ export const transactionSplits = pgTable(
     categoryId: uuid("category_id").notNull(),
     kind: text("kind").$type<"expense" | "income">().notNull(),
     amount: bigint("amount", { mode: "number" }).notNull(),
+    // This line's share of the parent's base_amount; the lines sum exactly to it.
+    baseAmount: bigint("base_amount", { mode: "number" }).notNull(),
     note: text("note"),
     position: integer("position").notNull(),
     version: integer("version").notNull().default(1),
@@ -414,6 +420,10 @@ export const transactionSplits = pgTable(
     check(
       "splits_note_check",
       sql`${table.note} IS NULL OR char_length(${table.note}) <= 2000`,
+    ),
+    check(
+      "splits_base_amount_check",
+      sql`${table.baseAmount} BETWEEN -9007199254740991 AND 9007199254740991`,
     ),
     check("splits_position_check", sql`${table.position} BETWEEN 0 AND 49`),
     check("splits_version_check", sql`${table.version} >= 1`),
