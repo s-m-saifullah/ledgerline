@@ -286,6 +286,21 @@ select {
   margin-top: auto;
   padding-top: 24px;
 }
+.app-version {
+  margin: 12px 0 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: left;
+}
+.app-version.phone-only {
+  display: none;
+}
+@media (max-width: 700px) {
+  .app-version.phone-only {
+    display: block;
+  }
+}
 .search-button {
   display: flex;
   align-items: center;

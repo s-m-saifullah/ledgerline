@@ -65,7 +65,9 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ${{ steps.version.outputs.image }}-web:${{ steps.version.outputs.value }}
-          build-args: IMAGE_SOURCE=${{ github.server_url }}/${{ github.repository }}
+          build-args: |
+            IMAGE_SOURCE=${{ github.server_url }}/${{ github.repository }}
+            APP_VERSION=${{ steps.version.outputs.value }}
   deploy:
     needs: images
     runs-on: ubuntu-latest
