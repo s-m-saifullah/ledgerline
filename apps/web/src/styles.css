@@ -558,9 +558,13 @@ kbd {
 .command-dialog {
   position: fixed;
   left: 50%;
-  top: 20%;
+  top: max(16px, 10dvh);
   transform: translateX(-50%);
   width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - max(16px, 10dvh) - 16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   z-index: 31;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2334,6 +2338,14 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
   color: var(--text);
   font: inherit;
   font-size: 16px;
+}
+.command-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: -4px -8px 0;
+  padding: 8px;
 }
 .command-results {
   margin: 0;
