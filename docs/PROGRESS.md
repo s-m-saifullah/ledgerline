@@ -6,7 +6,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 - **Phase:** 1 (Core ledger) is complete. The owner ended the seven-day trial (ADR 0013) early, on day 2, and accepted the gate as passed on 2026-10-10. Phase 2 is designed and awaiting its first slice ([PHASE_2_PLAN.md](PHASE_2_PLAN.md)).
 - **Latest release:** `v0.0.10` (API 0.1.18, migrations 0000 to 0010).
-- **Next:** currencies (slice 2b, step 3, enabling currencies for accounts and entries, next), then recurring entries (2c). Slice 2a, budgets with rollover, is built and awaiting release together with the version label.
+- **Next:** currencies (slice 2b, step 3b, the screens for currency entry, next), then recurring entries (2c). Slice 2a, budgets with rollover, is built and awaiting release together with the version label.
 - **Known follow-ups:** review Dependabot's grouped Actions updates when they appear; automated off-site backups are Phase 4.
 
 ## Phase checklist
@@ -23,6 +23,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 Newest first. One short entry per piece of work.
 
+- **2026-10-11:** Slice 2b step 3a, currencies in the API: accounts, entries and transfers can use any currency the ledger has added. Entries are priced at save time (a rate set by hand, the entry's saved rate on an edit, or the newest stored rate on or before the date; no rate blocks the save), cross-currency transfers take the received amount and net to zero in USD, split lines share the base amount exactly, and Home values balances at the newest stored rate and names currencies with no rate. `fxRate` is exact decimal text in the API. Migration 0014 and API 0.1.22; the restore drill's transfer check follows the new rule. Screens for it (step 3b) come next; money owed stays USD-only. Not released yet.
 - **2026-10-10:** Slice 2b step 2, read side: Home money in and out, category totals and budget spending now add up the frozen base amounts, and split lines carry their own base amount (shared so the lines add up exactly; the database enforces it). `fx_rate` is now an exact decimal (migration 0013, existing rows stay 1). API 0.1.21. Results are identical while all data is USD; tests with foreign-currency rows prove the sums read base amounts. Not released yet.
 - **2026-10-10:** Slice 2b step 1, currency foundation: exact conversion helper, `currencies` and `exchange_rates` tables (migration 0012, covered by the backup manifest and restore drill), API 0.1.20 (add and remove currencies, store, set and refresh rates with a fallback source) and a Currencies screen under More. Entry is still USD-only. Local browser tests now run with two workers, like CI. Not released yet.
 - **2026-10-10:** Slice 2b (currencies) designed and approved: [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md), ADR 0022 (valuation and rate rules) and ADR 0023 (transfer bonus on incoming transfers). Five steps: foundation, read side, enable currencies, transfer bonus, money owed in other currencies.

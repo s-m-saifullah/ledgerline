@@ -2,8 +2,10 @@ import { z } from "zod";
 import { accountTypeSchema } from "./accounts";
 import {
   calendarDateSchema,
+  currencySchema,
   idSchema,
   ledgerParamsSchema,
+  moneySchema,
   usdMoneySchema,
 } from "./contracts";
 import { transactionSchema } from "./transactions";
@@ -40,7 +42,10 @@ export const homeAccountSchema = z.object({
   id: idSchema,
   name: z.string(),
   type: accountTypeSchema,
-  balance: usdMoneySchema,
+  // In the account's own currency.
+  balance: moneySchema,
+  // The same balance in the base currency at the newest stored rate; null when no rate exists.
+  baseBalance: usdMoneySchema.nullable().default(null),
 });
 export const homeLatestSchema = z.object({
   transaction: transactionSchema,
@@ -75,6 +80,8 @@ export const homeSummarySchema = z.object({
     hasActiveAccount: z.boolean(),
     hasCategory: z.boolean(),
   }),
+  // Currencies with no stored rate yet; their accounts are left out of the base totals above.
+  unconvertedCurrencies: z.array(currencySchema).default([]),
 });
 export type HomeSummary = z.infer<typeof homeSummarySchema>;
 export type HomeLatest = z.infer<typeof homeLatestSchema>;

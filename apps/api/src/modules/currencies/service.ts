@@ -357,3 +357,36 @@ export async function refreshRates(
     },
   );
 }
+
+/**
+ * The newest stored rate for each currency (the base currency is not included), used to value
+ * balances today (ADR 0022). A currency with no stored rate is absent from the result.
+ */
+export async function latestRates(
+  db: DatabaseConnection,
+  ledgerId: string,
+  codes: string[],
+) {
+  const rates = rateRepository(db, ledgerId);
+  const found = new Map<string, string>();
+  for (const code of [...new Set(codes)]) {
+    const row = await rates.latest(code);
+    if (row) found.set(code, rateDto(row).rate);
+  }
+  return found;
+}
+
+/** An account may use the base currency or any currency the ledger has added. */
+export async function requireUsableCurrency(
+  db: DatabaseConnection,
+  ledgerId: string,
+  baseCurrency: string,
+  code: string,
+) {
+  if (code === baseCurrency) return;
+  if (!(await currencyRepository(db, ledgerId).findByCode(code)))
+    conflict(
+      "openingBalance.currency",
+      `Add ${code} in Currencies before using it for an account.`,
+    );
+}

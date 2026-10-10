@@ -26,3 +26,12 @@ export async function requireLedgerWrite(
     throw new ApiProblem(403, "Forbidden", "This ledger is read-only.");
   return ledger;
 }
+
+/** The ledger's base currency, for services that price entries. */
+export async function ledgerBaseCurrency(
+  db: DatabaseConnection,
+  actorId: string,
+  ledgerId: string,
+) {
+  return (await requireLedgerRead(db, actorId, ledgerId)).baseCurrency;
+}

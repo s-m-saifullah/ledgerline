@@ -269,7 +269,7 @@ describe("Transactions API", () => {
         accountId,
         amount: { amount, currency: "USD" },
         baseAmount: { amount, currency: "USD" },
-        fxRate: 1,
+        fxRate: "1",
         date: "2024-02-29",
         time: null,
         status: "cleared",
@@ -368,7 +368,7 @@ describe("Transactions API", () => {
       input(1.5),
       input(Number.MAX_SAFE_INTEGER + 1),
       { ...input(), kind: "income" },
-      { ...input(), amount: { amount: -1, currency: "BDT" } },
+      { ...input(), amount: { amount: -1, currency: "ZZZ" } },
       { ...input(), date: "2025-02-29" },
       { ...input(), date: "0000-01-01" },
       ...["", "24:00", "12:60", "9:05", "12:34:56", "12:34Z"].map((time) => ({
@@ -1004,7 +1004,8 @@ describe("Transactions API", () => {
       { categoryId: incomeCategoryId },
       { amount: 0, baseAmount: 0 },
       { amount: -2 },
-      { fxRate: 2 },
+      // A base-currency entry is worth exactly itself; an entry must be in its account's currency.
+      { fxRate: "2" },
       { currency: "BDT" },
       { status: "invalid" as "cleared" },
     ])
@@ -1239,7 +1240,7 @@ describe("Transactions API", () => {
   });
   it("documents all six secured endpoints with keys, versions and problem responses", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.21");
+    expect(doc.info.version).toBe("0.1.22");
     const prefix = "/api/v1/ledgers/{ledgerId}/transactions";
     for (const [path, method] of [
       [prefix, "get"],
@@ -1504,7 +1505,7 @@ describe("Transactions API", () => {
         categoryId: null,
         time: null,
         amount: { amount: -123 },
-        fxRate: 1,
+        fxRate: "1",
         baseAmount: { amount: -123 },
       });
       expect(row.splits.map((line) => line.amount.amount)).toEqual([-23, -100]);

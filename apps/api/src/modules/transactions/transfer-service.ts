@@ -16,9 +16,21 @@ import {
 } from "../writes/service";
 import { nextVersion } from "../writes/version";
 import { postedBalance, postedTransactionTotals } from "./balance-service";
+import { priceTransfer } from "./pricing";
 import type { TransactionRow } from "./repo";
 import { transferRepository } from "./transfer-repo";
 
+function accountOf(
+  rows: Awaited<ReturnType<typeof references>>,
+  accountId: string,
+) {
+  const account = rows.find((row) => row.id === accountId.toLowerCase());
+  if (!account) throw new ApiProblem(404, "Not found", "Account not found.");
+  return account;
+}
+/** The request as canonical JSON: optional fields that were left out stay out. */
+const requestOf = (body: object) =>
+  JSON.parse(JSON.stringify(body)) as JsonValue;
 function pair(rows: TransactionRow[]) {
   const from = rows.find((row) => row.amount < 0),
     to = rows.find((row) => row.amount > 0);
@@ -35,7 +47,10 @@ function dto(rows: TransactionRow[]) {
     toAccountId: to.accountId,
     fromTransactionId: from.id,
     toTransactionId: to.id,
-    amount: { amount: to.amount, currency: to.currency },
+    amount: { amount: -from.amount, currency: from.currency },
+    receivedAmount: { amount: to.amount, currency: to.currency },
+    // The base currency is USD for every ledger today (ADR 0020).
+    baseAmount: { amount: to.baseAmount, currency: "USD" },
     date: from.date,
     time: from.time,
     note: from.note,
@@ -100,14 +115,29 @@ export function createTransfer(
   identity: WriteIdentity,
   body: CreateTransfer,
 ) {
-  return write(db, identity, "POST transfers", body, async (context) => {
-    const rows = await references(context, body);
-    const saved = await transferRepository(context.tx, context.ledgerId).create(
-      body,
-    );
-    await check(context, rows);
-    return { status: 201, body: dto(saved) };
-  });
+  return write(
+    db,
+    identity,
+    "POST transfers",
+    requestOf(body),
+    async (context) => {
+      const rows = await references(context, body);
+      const pricing = await priceTransfer(context, {
+        from: accountOf(rows, body.fromAccountId),
+        to: accountOf(rows, body.toAccountId),
+        amount: body.amount,
+        receivedAmount: body.receivedAmount,
+        date: body.date,
+        manualRate: body.fxRate,
+      });
+      const saved = await transferRepository(
+        context.tx,
+        context.ledgerId,
+      ).create(body, pricing);
+      await check(context, rows);
+      return { status: 201, body: dto(saved) };
+    },
+  );
 }
 export function updateTransfer(
   db: Database,
@@ -119,13 +149,27 @@ export function updateTransfer(
     db,
     identity,
     `PATCH transfers/${id.toLowerCase()}`,
-    body,
+    requestOf(body),
     async (context) => {
       const repo = transferRepository(context.tx, context.ledgerId);
       const current = pair(await repo.find(id, true));
       const version = nextVersion(current.from.version, body.expectedVersion);
       const rows = await references(context, body, current);
-      const saved = await repo.update(id, body, version);
+      const from = accountOf(rows, body.fromAccountId);
+      const pricing = await priceTransfer(context, {
+        from,
+        to: accountOf(rows, body.toAccountId),
+        amount: body.amount,
+        receivedAmount: body.receivedAmount,
+        date: body.date,
+        manualRate: body.fxRate,
+        // An edit keeps the transfer's saved rate unless it is changed by hand.
+        keepRate:
+          current.from.currency === from.currency
+            ? current.from.fxRate
+            : undefined,
+      });
+      const saved = await repo.update(id, body, version, pricing);
       await check(context, rows);
       return { status: 200, body: dto(saved) };
     },

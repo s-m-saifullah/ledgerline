@@ -301,6 +301,26 @@ describe("Money owed scoped and atomic lifecycle", () => {
       ]),
     ).rejects.toThrow(/receivables_time_check/);
   });
+  it("receives payments only into USD accounts while money owed is USD-only", async () => {
+    const service1 = await service();
+    const euroAccount = newId();
+    await db.insert(accounts).values({
+      id: euroAccount,
+      ledgerId,
+      name: "Euro receiving",
+      type: "bank",
+      currency: "EUR",
+      openingBalance: 0,
+    });
+    const refused = await write(`/receivables/${service1.id}/payments`, {
+      ...paymentBody(service1, 4000),
+      accountId: euroAccount,
+    });
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().errors[0].field).toBe("accountId");
+    // Nothing was recorded, and a USD account still works.
+    expect((await pay(service1, 4000)).amount.amount).toBe(4000);
+  });
   it("edits stable linked identities, exact local time, amount and receiving account", async () => {
     const p = await pay(await service());
     const otherAccount = newId();
@@ -1055,7 +1075,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const doc = (
       await app.inject({ url: "/api/v1/openapi.json", headers: { cookie } })
     ).json();
-    expect(doc.info.version).toBe("0.1.21");
+    expect(doc.info.version).toBe("0.1.22");
     const prefix = "/api/v1/ledgers/{ledgerId}";
     for (const resource of [
       "/contacts",

@@ -31,20 +31,32 @@ describe("transaction contracts", () => {
         }).amount.amount,
       ).toBe(amount);
   });
-  it("rejects zero, wrong signs, floats, foreign currency and invalid calendar dates", () => {
+  it("rejects zero, wrong signs, floats, unknown currency and invalid calendar dates", () => {
     for (const changes of [
       { amount: { amount: 0, currency: "USD" } },
       { kind: "income" },
       { amount: { amount: -1.1, currency: "USD" } },
-      { amount: { amount: -29, currency: "BDT" } },
+      { amount: { amount: -29, currency: "ZZZ" } },
       { date: "2025-02-29" },
       { date: "0000-01-01" },
       { fxRate: 1 },
+      { fxRate: "0" },
+      { fxRate: "1e3" },
       { transferId: newId() },
     ])
       expect(
         createTransactionSchema.safeParse({ ...input, ...changes }).success,
       ).toBe(false);
+  });
+  it("accepts a foreign-currency entry and an exact manual rate", () => {
+    const parsed = createTransactionSchema.parse({
+      ...input,
+      amount: { amount: -29, currency: "BDT" },
+      fxRate: "0.00812",
+    });
+    expect(parsed.amount.currency).toBe("BDT");
+    expect(parsed.fxRate).toBe("0.00812");
+    expect(createTransactionSchema.parse(input).fxRate).toBeUndefined();
   });
   it("accepts optional local minute precision and explicit clears, rejecting timestamps and invalid times", () => {
     for (const time of ["00:00", "12:34", "23:59", null]) {

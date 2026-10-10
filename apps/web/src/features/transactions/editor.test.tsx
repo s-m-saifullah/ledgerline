@@ -24,7 +24,7 @@ const row: Transaction = {
   time: "14:30",
   amount: { amount: -123, currency: "USD" },
   baseAmount: { amount: -123, currency: "USD" },
-  fxRate: 1,
+  fxRate: "1",
   transferId: null,
   receivablePaymentId: null,
   receivableId: null,

@@ -24,25 +24,29 @@ import {
 } from "../writes/service";
 import { nextVersion, requireVersionUpdate } from "../writes/version";
 import { postedBalance, postedTransactionTotals } from "./balance-service";
+import { transactionDto } from "./dto";
+import { priceEntry } from "./pricing";
 import { type TransactionRow, transactionRepository } from "./repo";
 
-import { type SplitRow, splitDto, splitRepository } from "./split-repo";
+import { type SplitRow, splitRepository } from "./split-repo";
 
 async function dto(
   db: DatabaseConnection,
   ledgerId: string,
   row: TransactionRow,
 ) {
-  return transactionSchema.parse({
-    ...row,
-    splits: row.isSplit
-      ? (await splitRepository(db, ledgerId).forParent(row)).map(splitDto)
-      : [],
-    amount: { amount: row.amount, currency: row.currency },
-    baseAmount: { amount: row.baseAmount, currency: row.currency },
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  });
+  return transactionDto(
+    row,
+    row.isSplit ? await splitRepository(db, ledgerId).forParent(row) : [],
+  );
+}
+function accountOf(
+  rows: Awaited<ReturnType<typeof references>>,
+  accountId: string,
+) {
+  const account = rows.find((row) => row.id === accountId.toLowerCase());
+  if (!account) throw new ApiProblem(404, "Not found", "Account not found.");
+  return account;
 }
 function required(row: TransactionRow | undefined) {
   if (!row) throw new ApiProblem(404, "Not found", "Transaction not found.");
@@ -109,6 +113,14 @@ export async function paymentIncome(
       : null);
   if (!body) throw new Error("Missing payment fields");
   const rows = await references(context, body, current);
+  // Money owed is USD-only for now, so payments are received into USD accounts (ADR 0022).
+  if (action !== "delete" && accountOf(rows, body.accountId).currency !== "USD")
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      "Payments can be received into USD accounts for now.",
+      [{ field: "accountId", message: "Choose a USD account." }],
+    );
   const row = required(
     await repo.saveLinked(input.id, current?.version, body, {
       paymentId: input.paymentId,
@@ -178,16 +190,10 @@ export async function listTransactions(
         : [];
       return {
         items: page.map((row) =>
-          transactionSchema.parse({
-            ...row,
-            amount: { amount: row.amount, currency: row.currency },
-            baseAmount: { amount: row.baseAmount, currency: row.currency },
-            splits: splits
-              .filter((line) => line.transactionId === row.id)
-              .map(splitDto),
-            createdAt: row.createdAt.toISOString(),
-            updatedAt: row.updatedAt.toISOString(),
-          }),
+          transactionDto(
+            row,
+            splits.filter((line) => line.transactionId === row.id),
+          ),
         ),
         nextCursor:
           rows.length > query.limit && last ? `${last.date}_${last.id}` : null,
@@ -282,8 +288,17 @@ export function createTransaction(
         "New split lines must not supply IDs.",
       );
     const rows = await references(context, body);
+    const pricing = await priceEntry(context, {
+      accountCurrency: accountOf(rows, body.accountId).currency,
+      amount: body.amount,
+      date: body.date,
+      manualRate: body.fxRate,
+    });
     const row = required(
-      await transactionRepository(context.tx, context.ledgerId).create(body),
+      await transactionRepository(context.tx, context.ledgerId).create(
+        body,
+        pricing,
+      ),
     );
     await splitRepository(context.tx, context.ledgerId).replace(
       row,
@@ -333,7 +348,7 @@ export function updateTransaction(
               splits: previous.map((line) => ({
                 id: line.id,
                 categoryId: line.categoryId,
-                amount: { amount: line.amount, currency: "USD" },
+                amount: { amount: line.amount, currency: current.currency },
                 note: line.note,
               })),
             }
@@ -352,8 +367,19 @@ export function updateTransaction(
           })),
         );
       const rows = await references(context, parsed.data, current, previous);
+      // An edit keeps the entry's saved rate unless it is changed by hand or the currency changes.
+      const pricing = await priceEntry(context, {
+        accountCurrency: accountOf(rows, parsed.data.accountId).currency,
+        amount: parsed.data.amount,
+        date: parsed.data.date,
+        manualRate: parsed.data.fxRate,
+        keepRate:
+          current.currency === parsed.data.amount.currency
+            ? current.fxRate
+            : undefined,
+      });
       const row = requireVersionUpdate(
-        await repo.update(id, expectedVersion, parsed.data, version),
+        await repo.update(id, expectedVersion, parsed.data, version, pricing),
       );
       await splitRepository(context.tx, context.ledgerId).replace(
         row,
@@ -446,7 +472,7 @@ export function restoreTransaction(
               splits: previous.map((line) => ({
                 id: line.id,
                 categoryId: line.categoryId,
-                amount: { amount: line.amount, currency: "USD" },
+                amount: { amount: line.amount, currency: current.currency },
                 note: line.note,
               })),
             }

@@ -3,9 +3,11 @@ import {
   calendarDateSchema,
   idSchema,
   ledgerParamsSchema,
+  moneySchema,
   usdMoneySchema,
   versionSchema,
 } from "./contracts";
+import { rateSchema } from "./currency";
 
 export const transactionKindSchema = z.enum(["expense", "income"]);
 export const transactionStatusSchema = z.enum(["cleared", "pending"]);
@@ -23,7 +25,7 @@ export const transactionTimeSchema = z
 export const transactionSplitInputSchema = z.strictObject({
   id: idSchema.optional(),
   categoryId: idSchema,
-  amount: usdMoneySchema,
+  amount: moneySchema,
   note: z.string().trim().max(2000).nullable().default(null),
 });
 export const transactionSplitSchema = transactionSplitInputSchema.extend({
@@ -39,7 +41,7 @@ const fields = {
   kind: transactionKindSchema,
   date: transactionDateSchema,
   time: transactionTimeSchema.nullable(),
-  amount: usdMoneySchema,
+  amount: moneySchema,
   status: transactionStatusSchema,
   payee: z.string().trim().max(200).nullable(),
   note: z.string().trim().max(2000).nullable(),
@@ -54,6 +56,9 @@ export const createTransactionSchema = z
     ...fields,
     // Omission preserves ordinary pre-upgrade receipt fingerprints.
     splits: splitsInputSchema.optional(),
+    // Set the rate by hand: base-currency value of one unit of the entry's currency. Omit it
+    // and the newest stored rate on or before the date is used.
+    fxRate: rateSchema.optional(),
     // Keep omitted time absent from the write fingerprint so pre-upgrade retries match.
     time: fields.time.optional(),
     status: fields.status.default("cleared"),
@@ -83,6 +88,16 @@ export const createTransactionSchema = z
           path: ["splits"],
           message:
             "Every line must have the entry's direction and a nonzero amount.",
+        });
+      if (
+        body.splits.some(
+          (line) => line.amount.currency !== body.amount.currency,
+        )
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["splits"],
+          message: "Every line must use the entry's currency.",
         });
       if (
         body.splits.reduce(
@@ -115,6 +130,7 @@ export const createTransactionSchema = z
 export const updateTransactionSchema = z
   .strictObject({
     splits: splitsInputSchema.nullable().optional(),
+    fxRate: rateSchema.optional(),
     accountId: fields.accountId.optional(),
     categoryId: fields.categoryId.optional(),
     kind: fields.kind.optional(),
@@ -178,7 +194,8 @@ export const transactionSchema = z.object({
   time: fields.time.default(null),
   id: idSchema,
   ledgerId: idSchema,
-  fxRate: z.literal(1),
+  // Exact decimal text: base-currency value of one unit of this entry's currency.
+  fxRate: rateSchema,
   baseAmount: usdMoneySchema,
   transferId: idSchema.nullable(),
   receivablePaymentId: idSchema.nullable().default(null),

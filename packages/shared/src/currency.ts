@@ -259,3 +259,25 @@ export function allocateBaseAmounts(
     return Number(negative ? -value : value);
   });
 }
+
+/**
+ * The rate implied by a converted amount: base units one unit of `code` is worth, from a
+ * base amount and the amount it came from (both smallest units, any sign). Rounds half up at
+ * the stored precision and never returns zero, so it is always a valid stored rate.
+ */
+export function deriveRate(
+  baseAmount: number,
+  amount: number,
+  code: string,
+  baseCode: string,
+): string {
+  if (!Number.isSafeInteger(baseAmount) || !Number.isSafeInteger(amount))
+    throw new RangeError("Invalid amount");
+  if (amount === 0) throw new RangeError("Cannot derive a rate from zero");
+  const base = BigInt(Math.abs(baseAmount));
+  const smallest = BigInt(Math.abs(amount));
+  const numerator = base * 10n ** BigInt(currencyDigits(code)) * RATE_SCALE;
+  const denominator = smallest * 10n ** BigInt(currencyDigits(baseCode));
+  const rounded = (numerator * 2n + denominator) / (denominator * 2n);
+  return formatRate(rounded > 0n ? rounded : 1n);
+}

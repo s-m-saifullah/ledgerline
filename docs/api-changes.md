@@ -1,5 +1,17 @@
 # API version notes
 
+## 0.1.22 — Accounts and entries in other currencies
+
+Accounts, entries and transfers can now use any currency the ledger has added; USD stays the base currency. Request and response changes:
+
+- `POST /accounts`: the opening balance's currency is the account's currency. It must be USD or a currency added under Currencies (otherwise 409). An account's currency cannot change.
+- Entries (`POST` and `PATCH /transactions`): `amount` must be in the account's currency (409 otherwise). The new optional `fxRate` sets the rate by hand: exact decimal text, the base-currency value of one unit of the entry's currency. Without it the newest stored rate on or before the entry's date is used, and with none the request returns 409 asking for a rate. USD entries always have rate 1. The response `fxRate` is now exact decimal text (it was the number 1), `baseAmount` is the frozen USD value, and split lines are in the entry's currency. An edit keeps the saved rate unless `fxRate` is set or the currency changes.
+- Transfers: `amount` is what leaves the sending account. `receivedAmount` (the receiving account's currency) is required when the currencies differ. `fxRate` is only accepted when neither account uses USD. Responses gain `receivedAmount` and `baseAmount`. Whichever account uses USD fixes the transfer's value; otherwise the sent currency's rate does, and the two legs always net to zero in USD.
+- Home: `accounts[].balance` is in the account's own currency and `baseBalance` is its USD value at the newest stored rate (null when there is none). `inHand`, `netWorth` and `liabilitiesOwed` are USD totals that leave out currencies with no rate, listed in the new `unconvertedCurrencies`.
+- Payments from money owed can only be received into USD accounts for now (409 otherwise).
+
+Migration 0014 drops the USD-only checks, ties each entry's currency to its account's currency, and updates the transfer-pair rule to opposite base amounts (and opposite amounts within one currency). The restore drill's transfer check uses the same rule.
+
 ## 0.1.21 — Totals use each entry's frozen base-currency amount
 
 No request or response shape changes. Home money in and money out, category totals and budget spending now add up each entry's saved `baseAmount` (and, for split entries, each line's share of it) instead of its raw `amount`, so totals stay correct once entries in several currencies exist. While every entry is USD at rate 1 the results are identical to before. Split lines now store their own base amount, shared across the lines so they add up exactly to the parent's `baseAmount` (largest remainder); the database rejects a split whose base amounts do not add up. Migration 0013 converts `fx_rate` to an exact decimal (existing rows stay 1) and backfills each split line's base amount from its amount. Account balances still use the entry `amount` in the account's own currency.

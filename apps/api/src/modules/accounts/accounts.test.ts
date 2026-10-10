@@ -229,14 +229,14 @@ describe("Accounts API", () => {
       ).toBe(amount);
     }
   });
-  it("validates account fields, USD-only money, IDs and bounded pagination", async () => {
+  it("validates account fields, money, IDs and bounded pagination", async () => {
     for (const payload of [
       input(1.25),
       input(Number.MAX_SAFE_INTEGER + 1),
       input(0, "crypto"),
       input(0, "bank", " "),
       input(0, "bank", "a".repeat(101)),
-      { ...input(), openingBalance: { amount: 123, currency: "BDT" } },
+      { ...input(), openingBalance: { amount: 123, currency: "ZZZ" } },
       { ...input(), ledgerId: secondLedger },
       { ...input(), archivedAt: new Date().toISOString() },
     ]) {
@@ -445,9 +445,15 @@ describe("Accounts API", () => {
       { name: "Missing version" },
       { name: "Invalid", expectedVersion: 0 },
       { name: "Currency change", expectedVersion: 1, currency: "BDT" },
-      { expectedVersion: 1, openingBalance: { amount: 1, currency: "BDT" } },
     ])
       expect((await edit(account.id, body)).statusCode).toBe(400);
+    // The currency is fixed for the account's life: the opening balance must stay in it.
+    const change = await edit(account.id, {
+      expectedVersion: 1,
+      openingBalance: { amount: 1, currency: "BDT" },
+    });
+    expect(change.statusCode).toBe(409);
+    expect(change.json().errors[0].field).toBe("openingBalance.currency");
     expect((await read(`${base()}/${account.id}`)).json()).toEqual(account);
   });
   it("allows only one simultaneous edit from the same version", async () => {
@@ -645,7 +651,7 @@ describe("Accounts API", () => {
   });
   it("generates OpenAPI for all endpoints with money, version, key and error contracts", async () => {
     const doc = (await app.inject({ url: "/api/v1/openapi.json" })).json();
-    expect(doc.info.version).toBe("0.1.21");
+    expect(doc.info.version).toBe("0.1.22");
     const prefix = "/api/v1/ledgers/{ledgerId}/accounts";
     for (const [path, method] of [
       [prefix, "get"],

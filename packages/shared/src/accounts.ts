@@ -1,8 +1,9 @@
 import { z } from "zod";
 import {
+  currencySchema,
   idSchema,
   ledgerParamsSchema,
-  usdMoneySchema,
+  moneySchema,
   versionSchema,
 } from "./contracts";
 
@@ -22,14 +23,15 @@ const accountNameSchema = z.string().trim().min(1).max(100);
 export const createAccountSchema = z.strictObject({
   name: accountNameSchema,
   type: accountTypeSchema,
-  openingBalance: usdMoneySchema,
+  // The opening balance's currency is the account's currency (USD, or a currency the ledger has added).
+  openingBalance: moneySchema,
 });
 export const updateAccountSchema = z
   .strictObject({
     expectedVersion: versionSchema,
     name: accountNameSchema.optional(),
     type: accountTypeSchema.optional(),
-    openingBalance: usdMoneySchema.optional(),
+    openingBalance: moneySchema.optional(),
   })
   .refine(
     (body) =>
@@ -54,9 +56,9 @@ export const accountSchema = z.object({
   ledgerId: idSchema,
   name: accountNameSchema,
   type: accountTypeSchema,
-  currency: z.literal("USD"),
-  openingBalance: usdMoneySchema,
-  balance: usdMoneySchema,
+  currency: currencySchema,
+  openingBalance: moneySchema,
+  balance: moneySchema,
   archivedAt: z.iso.datetime().nullable(),
   version: versionSchema,
   createdAt: z.iso.datetime(),

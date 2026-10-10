@@ -12,7 +12,8 @@ import type {
   DatabaseTransaction,
 } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
-import { requireLedgerRead } from "../ledgers/service";
+import { requireUsableCurrency } from "../currencies/service";
+import { ledgerBaseCurrency, requireLedgerRead } from "../ledgers/service";
 import {
   postedBalance,
   postedTransactionTotals,
@@ -96,12 +97,21 @@ export function createAccount(
   return runFinancialWrite(
     db,
     { ...identity, operation: "POST accounts", request: body },
-    async ({ tx, ledgerId }) => ({
-      status: 201,
-      body: accountDto(
-        requireAccount(await accountRepository(tx, ledgerId).create(body)),
-      ),
-    }),
+    async ({ tx, ledgerId, actorId }) => {
+      // The opening balance's currency is the account's currency (USD or an added currency).
+      await requireUsableCurrency(
+        tx,
+        ledgerId,
+        await ledgerBaseCurrency(tx, actorId, ledgerId),
+        body.openingBalance.currency,
+      );
+      return {
+        status: 201,
+        body: accountDto(
+          requireAccount(await accountRepository(tx, ledgerId).create(body)),
+        ),
+      };
+    },
   );
 }
 export function updateAccount(
@@ -128,6 +138,21 @@ export function updateAccount(
       const repo = accountRepository(tx, ledgerId);
       const current = requireAccount(await repo.find(id));
       const version = nextVersion(current.version, body.expectedVersion);
+      if (
+        body.openingBalance &&
+        body.openingBalance.currency !== current.currency
+      )
+        throw new ApiProblem(
+          409,
+          "Conflict",
+          `This account uses ${current.currency}; its currency cannot change.`,
+          [
+            {
+              field: "openingBalance.currency",
+              message: `Use ${current.currency}, the account's currency.`,
+            },
+          ],
+        );
       const updated = requireVersionUpdate(
         await repo.update(id, body, version),
       );

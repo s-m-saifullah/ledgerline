@@ -296,7 +296,8 @@ describe("Transfers API", () => {
         categoryId: null,
         transferId: row.id,
         status: "cleared",
-        fxRate: 1,
+        // Read straight from the database, where the exact decimal keeps its scale.
+        fxRate: "1.0000000000",
         baseAmount: leg.amount,
         time: "09:05",
       });
@@ -329,7 +330,7 @@ describe("Transfers API", () => {
       { amount: { amount: -1, currency: "USD" } },
       { amount: { amount: 1.5, currency: "USD" } },
       { amount: { amount: Number.MAX_SAFE_INTEGER + 1, currency: "USD" } },
-      { amount: { amount: 1, currency: "BDT" } },
+      { amount: { amount: 1, currency: "ZZZ" } },
       { time: "24:00" },
       { date: "2026-02-30" },
       { status: "pending" },
@@ -825,7 +826,7 @@ describe("Transfers API", () => {
   });
   it("documents all five secured transfer endpoints and paired versions", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.21");
+    expect(doc.info.version).toBe("0.1.22");
     const prefix = "/api/v1/ledgers/{ledgerId}/transfers";
     for (const [path, method] of [
       [prefix, "post"],
