@@ -11,6 +11,7 @@ import {
   ArrowUpRight,
   BarChart3,
   ChevronRight,
+  Coins,
   Command,
   Eye,
   EyeOff,
@@ -546,6 +547,18 @@ export function MorePage() {
             <p>
               Create, organize and style your income and expense categories.
             </p>
+          </div>
+          <ChevronRight size={20} aria-hidden="true" />
+        </Link>
+      </section>
+      <section className="settings-card">
+        <Link to="/more/currencies" className="settings-link">
+          <span className="account-icon">
+            <Coins size={22} />
+          </span>
+          <div>
+            <h2>Currencies</h2>
+            <p>Add currencies and keep their exchange rates.</p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />
         </Link>

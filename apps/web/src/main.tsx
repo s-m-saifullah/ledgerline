@@ -21,6 +21,7 @@ import { AccountsPage } from "./features/accounts/accounts-page";
 import { SignIn } from "./features/auth/sign-in";
 import { BudgetsPage } from "./features/budgets/budgets-page";
 import { CategoriesPage } from "./features/categories/categories-page";
+import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
 import { PeoplePage } from "./features/people/people-page";
 import {
@@ -145,6 +146,11 @@ const categories = createRoute({
   path: "/more/categories",
   component: CategoriesPage,
 });
+const currenciesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/more/currencies",
+  component: CurrenciesPage,
+});
 const people = createRoute({
   getParentRoute: () => rootRoute,
   path: "/more/people",
@@ -159,6 +165,7 @@ const router = createRouter({
     more,
     accounts,
     categories,
+    currenciesRoute,
     people,
   ]),
 });
