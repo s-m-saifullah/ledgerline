@@ -1,5 +1,11 @@
 # API version notes
 
+## 0.1.20 — Currencies and exchange rates
+
+New `Currencies` endpoints, all additive; nothing existing changes and entry is still USD-only. `GET /ledgers/{ledgerId}/currencies` lists the currencies a ledger has added besides its base currency, each with its newest stored rate. `POST /ledgers/{ledgerId}/currencies` adds one and `DELETE /ledgers/{ledgerId}/currencies/{currencyId}` removes it (requires `expectedVersion`; stored rates are kept). `GET /ledgers/{ledgerId}/exchange-rates?code=` lists stored rates newest first. `PUT /ledgers/{ledgerId}/exchange-rates` sets a rate by hand (201 to create, 200 with `expectedVersion` to edit) and marks it manual. `DELETE /ledgers/{ledgerId}/exchange-rates/{rateId}` removes a stored rate. `POST /ledgers/{ledgerId}/exchange-rates/refresh` fetches the newest rate for each added currency (or one) from the public rate source with a fallback source; currencies that could not be fetched come back in `failed`, and manual rates are kept (`keptManual`).
+
+A rate is exact decimal text (up to 10 digits after the point): the base-currency value of one unit of the currency. Only currency codes and a date leave the server when fetching. Writes require a trusted Origin, owner/editor permission and `Idempotency-Key`. Migration 0012 adds the `currencies` and `exchange_rates` tables.
+
 ## 0.1.19 — Monthly budgets
 
 New `Budgets` endpoints, all additive; nothing existing changes. `GET /ledgers/{ledgerId}/budgets?month=YYYY-MM` returns one line per top-level expense category with its budget, the leftover carried in from earlier months, cleared spending this month (subcategories and split lines included) and the amount left, plus totals and spending in unbudgeted categories. `PUT /ledgers/{ledgerId}/budgets` creates a category's budget for a month (201) or, with `expectedVersion`, edits it (200). `POST /ledgers/{ledgerId}/budgets/copy` copies one month's budgets into another, skipping categories that already have one. `DELETE /ledgers/{ledgerId}/budgets/{budgetId}` removes a budget and requires `expectedVersion`.

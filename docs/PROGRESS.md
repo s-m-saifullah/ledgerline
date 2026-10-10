@@ -6,7 +6,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 - **Phase:** 1 (Core ledger) is complete. The owner ended the seven-day trial (ADR 0013) early, on day 2, and accepted the gate as passed on 2026-10-10. Phase 2 is designed and awaiting its first slice ([PHASE_2_PLAN.md](PHASE_2_PLAN.md)).
 - **Latest release:** `v0.0.10` (API 0.1.18, migrations 0000 to 0010).
-- **Next:** currencies (slice 2b, step 1 foundation first), then recurring entries (2c). Slice 2a, budgets with rollover, is built and awaiting release together with the version label.
+- **Next:** currencies (slice 2b, step 2 read side next), then recurring entries (2c). Slice 2a, budgets with rollover, is built and awaiting release together with the version label.
 - **Known follow-ups:** review Dependabot's grouped Actions updates when they appear; automated off-site backups are Phase 4.
 
 ## Phase checklist
@@ -23,6 +23,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 Newest first. One short entry per piece of work.
 
+- **2026-10-10:** Slice 2b step 1, currency foundation: exact conversion helper, `currencies` and `exchange_rates` tables (migration 0012, covered by the backup manifest and restore drill), API 0.1.20 (add and remove currencies, store, set and refresh rates with a fallback source) and a Currencies screen under More. Entry is still USD-only. Local browser tests now run with two workers, like CI. Not released yet.
 - **2026-10-10:** Slice 2b (currencies) designed and approved: [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md), ADR 0022 (valuation and rate rules) and ADR 0023 (transfer bonus on incoming transfers). Five steps: foundation, read side, enable currencies, transfer bonus, money owed in other currencies.
 - **2026-10-10:** Slice 2a, budgets: a Budgets screen (month switcher, left-this-month summary, per-category progress, set, remove and copy-from-last-month) and the `/budgets` API (0.1.19). Rollover is computed from earlier months (ADR 0019). Migration 0011 adds the `budgets` table, and the backup manifest and restore drill cover it. Not released yet; it ships with the version label in the next release. Known gap: merging a category leaves its budget on the archived source category.
 - **2026-10-10:** Phase 2 design approved: [PHASE_2_PLAN.md](PHASE_2_PLAN.md) and ADRs 0019 (computed budget rollover), 0020 (exact exchange rates) and 0021 (recurring entries on pg-boss).

@@ -10,6 +10,7 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -459,6 +460,56 @@ export const budgets = pgTable(
       sql`${table.amount} between 0 and 9007199254740991`,
     ),
     check("budgets_version_check", sql`${table.version} >= 1`),
+  ],
+);
+
+/** Currencies a ledger has pinned besides its base currency (ADR 0022). */
+export const currencies = pgTable(
+  "currencies",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    code: text("code").notNull(),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    uniqueIndex("currencies_ledger_code_idx")
+      .on(table.ledgerId, table.code)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check("currencies_code_check", sql`${table.code} ~ '^[A-Z]{3}$'`),
+    check("currencies_version_check", sql`${table.version} >= 1`),
+  ],
+);
+
+/** Base-currency value of one unit of `code` on a date. Manual rates are never overwritten. */
+export const exchangeRates = pgTable(
+  "exchange_rates",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    code: text("code").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    rate: numeric("rate", { precision: 20, scale: 10 }).notNull(),
+    source: text("source").$type<"api" | "manual">().notNull(),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    uniqueIndex("exchange_rates_ledger_code_date_idx")
+      .on(table.ledgerId, table.code, table.date)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check("exchange_rates_code_check", sql`${table.code} ~ '^[A-Z]{3}$'`),
+    check("exchange_rates_rate_check", sql`${table.rate} > 0`),
+    check(
+      "exchange_rates_source_check",
+      sql`${table.source} IN ('api', 'manual')`,
+    ),
+    check("exchange_rates_version_check", sql`${table.version} >= 1`),
   ],
 );
 
