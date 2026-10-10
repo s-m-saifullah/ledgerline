@@ -238,6 +238,14 @@ export function transactionRepository(
         union all
         select s.category_id,s.amount from transaction_splits s join transactions t on t.ledger_id=s.ledger_id and t.id=s.transaction_id where s.ledger_id=${ledgerId} and s.deleted_at is null and t.deleted_at is null and t.is_split and t.status='cleared' and t.date between ${from}::date and ${to}::date
       ) allocations group by category_id`),
+    /** Cleared expense totals (negative) per category and YYYY-MM month, splits included. */
+    expenseByCategoryMonth: (from: string, to: string) =>
+      db.execute<{ categoryId: string; month: string; total: string }>(sql`
+      select category_id as "categoryId",month,sum(amount)::text as total from (
+        select category_id,to_char(date,'YYYY-MM') as month,amount from transactions where ledger_id=${ledgerId} and deleted_at is null and status='cleared' and not is_split and kind='expense' and date between ${from}::date and ${to}::date
+        union all
+        select s.category_id,to_char(t.date,'YYYY-MM') as month,s.amount from transaction_splits s join transactions t on t.ledger_id=s.ledger_id and t.id=s.transaction_id where s.ledger_id=${ledgerId} and s.deleted_at is null and t.deleted_at is null and t.is_split and t.kind='expense' and t.status='cleared' and t.date between ${from}::date and ${to}::date
+      ) allocations group by category_id,month`),
     monthFlow: (from: string, to: string) =>
       db
         .select({

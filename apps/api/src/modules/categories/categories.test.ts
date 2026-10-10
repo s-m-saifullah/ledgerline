@@ -1146,7 +1146,7 @@ describe("Categories API", () => {
   });
   it("documents every endpoint with session, key, version and safe problem contracts", async () => {
     const doc = (await app.inject({ url: "/api/v1/openapi.json" })).json();
-    expect(doc.info.version).toBe("0.1.18");
+    expect(doc.info.version).toBe("0.1.19");
     const prefix = "/api/v1/ledgers/{ledgerId}/categories";
     for (const [path, method] of [
       [prefix, "get"],

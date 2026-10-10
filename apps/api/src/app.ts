@@ -25,6 +25,7 @@ import { safeErrorFields } from "./lib/error-log";
 import { ApiProblem, problem } from "./lib/problem";
 import { accountRoutes } from "./modules/accounts/routes";
 import { createAuth } from "./modules/auth/service";
+import { budgetRoutes } from "./modules/budgets/routes";
 import { categoryRoutes } from "./modules/categories/routes";
 import { homeRoutes } from "./modules/home/routes";
 import { ledgerService } from "./modules/ledgers/service";
@@ -46,7 +47,7 @@ export async function buildApp(db: Database, config: Config) {
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.18" },
+      info: { title: "Ledgerline API", version: "0.1.19" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -284,6 +285,7 @@ export async function buildApp(db: Database, config: Config) {
   await app.register(peopleRoutes, { db, config, auth });
   await app.register(receiptRoutes, { db, config, auth });
   await app.register(categoryRoutes, { db, config, auth });
+  await app.register(budgetRoutes, { db, config, auth });
   await app.register(transactionRoutes, { db, config, auth });
   await app.register(transferRoutes, { db, config, auth });
   await app.register(homeRoutes, { db, config, auth });

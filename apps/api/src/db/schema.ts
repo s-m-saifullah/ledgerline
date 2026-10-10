@@ -425,6 +425,43 @@ function paymentKey(): [AnyPgColumn, AnyPgColumn] {
 function receivableKey(): [AnyPgColumn, AnyPgColumn] {
   return [receivables.ledgerId, receivables.id];
 }
+/** One budget per expense category per month, in the ledger's base currency (ADR 0019). */
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    categoryId: uuid("category_id").notNull(),
+    // Fixed to expense so the scoped category key below only matches expense categories.
+    kind: text("kind").$type<"expense">().notNull().default("expense"),
+    month: date("month", { mode: "string" }).notNull(),
+    amount: bigint("amount", { mode: "number" }).notNull(),
+    rollover: boolean("rollover").notNull().default(false),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    foreignKey({
+      name: "budgets_scoped_category_fk",
+      columns: [table.ledgerId, table.kind, table.categoryId],
+      foreignColumns: [categories.ledgerId, categories.kind, categories.id],
+    }),
+    uniqueIndex("budgets_category_month_idx")
+      .on(table.ledgerId, table.categoryId, table.month)
+      .where(sql`${table.deletedAt} IS NULL`),
+    index("budgets_ledger_month_idx").on(table.ledgerId, table.month),
+    check("budgets_kind_check", sql`${table.kind} = 'expense'`),
+    check("budgets_month_check", sql`extract(day from ${table.month}) = 1`),
+    check(
+      "budgets_amount_check",
+      sql`${table.amount} between 0 and 9007199254740991`,
+    ),
+    check("budgets_version_check", sql`${table.version} >= 1`),
+  ],
+);
+
 export const contacts = pgTable(
   "contacts",
   {
