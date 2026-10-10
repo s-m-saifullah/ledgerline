@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  allocateBaseAmounts,
   convertMinor,
   currencyDigits,
   formatRate,
@@ -143,5 +144,49 @@ describe("reading a rate the other way round", () => {
       "4.5",
     ])
       expect(invertRate(rateFromInverse(typed) as string)).toBe(typed);
+  });
+});
+
+describe("allocateBaseAmounts", () => {
+  const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
+  it("returns the amounts themselves when the base equals the amount", () => {
+    expect(allocateBaseAmounts(-3000, -3000, [-1000, -2000])).toEqual([
+      -1000, -2000,
+    ]);
+    expect(allocateBaseAmounts(5000, 5000, [1, 4999])).toEqual([1, 4999]);
+  });
+  it("shares a converted amount so the lines add up exactly", () => {
+    // 100 EUR in three lines at 1.1217 USD each: 112.17 USD does not split evenly.
+    const lines = [-3333, -3333, -3334];
+    const result = allocateBaseAmounts(-10000, -11217, lines);
+    expect(sum(result)).toBe(-11217);
+    // Floors are 3738, 3738, 3739; the two spare units go to the largest remainders.
+    expect(result).toEqual([-3739, -3738, -3740]);
+  });
+  it("gives leftover units to the largest remainders, earliest first on ties", () => {
+    expect(allocateBaseAmounts(3, 5, [1, 1, 1])).toEqual([2, 2, 1]);
+    expect(allocateBaseAmounts(-3, -5, [-1, -1, -1])).toEqual([-2, -2, -1]);
+    expect(allocateBaseAmounts(10, 1, [3, 3, 4])).toEqual([0, 0, 1]);
+  });
+  it("always adds up, for many shapes", () => {
+    for (const parent of [2, 7, 100, 9999, 123_457])
+      for (const base of [1, 3, 98, 10_000, 99_999]) {
+        const lines = Array.from({ length: Math.min(parent, 5) }, (_, i) =>
+          i === 0 ? parent - (Math.min(parent, 5) - 1) : 1,
+        );
+        const result = allocateBaseAmounts(parent, base, lines);
+        expect(sum(result)).toBe(base);
+        for (const part of result) expect(part).toBeGreaterThanOrEqual(0);
+      }
+  });
+  it("rejects lines that do not match the parent", () => {
+    expect(() => allocateBaseAmounts(-100, -100, [-60, -50])).toThrow(
+      RangeError,
+    );
+    expect(() => allocateBaseAmounts(-100, -100, [-150, 50])).toThrow(
+      RangeError,
+    );
+    expect(() => allocateBaseAmounts(0, 0, [])).toThrow(RangeError);
+    expect(() => allocateBaseAmounts(100, 100, [100, 0])).toThrow(RangeError);
   });
 });

@@ -277,6 +277,7 @@ describe("budget month view", () => {
           categoryId: groceries,
           kind: "expense",
           amount: -1000,
+          baseAmount: -1000,
           position: 0,
         },
         {
@@ -285,6 +286,7 @@ describe("budget month view", () => {
           categoryId: rent,
           kind: "expense",
           amount: -500,
+          baseAmount: -500,
           position: 1,
         },
       ]);

@@ -179,7 +179,8 @@ test("records exact expenses quickly, reuses the last account and undoes with fo
   expect(rows[0]).toMatchObject({
     amount: "-4215",
     base_amount: "-4215",
-    fx_rate: 1,
+    // The column is an exact decimal, read back as text by the raw query.
+    fx_rate: "1.0000000000",
     account_id: cashId,
     status: "cleared",
   });
