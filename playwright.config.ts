@@ -5,6 +5,8 @@ const storageState = "tests/e2e/.auth/owner.json";
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
+  // Matches CI. More local workers overlap tests that need a blank ledger with ones that create accounts.
+  workers: 2,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? "github" : "list",
   use: {
