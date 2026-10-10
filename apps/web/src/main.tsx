@@ -19,6 +19,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AccountsPage } from "./features/accounts/accounts-page";
 import { SignIn } from "./features/auth/sign-in";
+import { BudgetsPage } from "./features/budgets/budgets-page";
 import { CategoriesPage } from "./features/categories/categories-page";
 import { HomePage } from "./features/home/home-page";
 import { PeoplePage } from "./features/people/people-page";
@@ -116,13 +117,7 @@ const transactions = createRoute({
 const budgets = createRoute({
   getParentRoute: () => rootRoute,
   path: "/budgets",
-  component: () => (
-    <EmptyPage
-      title="Budgets"
-      description="Monthly budgets arrive in an upcoming update."
-      icon={Layers}
-    />
-  ),
+  component: BudgetsPage,
 });
 const insights = createRoute({
   getParentRoute: () => rootRoute,

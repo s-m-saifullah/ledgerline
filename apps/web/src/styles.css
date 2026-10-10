@@ -2568,3 +2568,89 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
     text-overflow: clip;
   }
 }
+
+/* Budgets */
+.month-switcher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.month-switcher p {
+  min-width: 9ch;
+  text-align: center;
+}
+.budget-summary {
+  margin-bottom: 16px;
+}
+.budget-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.budget-line {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 16px;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+button.budget-line {
+  cursor: pointer;
+}
+button.budget-line:hover {
+  border-color: var(--accent);
+}
+.budget-line-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.budget-line-detail {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.budget-bar {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.budget-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+}
+.budget-bar.over .budget-bar-fill {
+  background: var(--danger);
+}
+.budget-over {
+  color: var(--danger);
+}
+.account-fields > .budget-rollover {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  font-weight: 400;
+}
+.budget-rollover input {
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}

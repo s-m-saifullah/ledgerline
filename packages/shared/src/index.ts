@@ -2,6 +2,7 @@ import { v7 } from "uuid";
 import { calendarDateSchema, type Money, moneySchema } from "./contracts";
 
 export * from "./accounts";
+export * from "./budgets";
 export * from "./categories";
 export * from "./contracts";
 export * from "./transactions";

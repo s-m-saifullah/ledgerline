@@ -33,7 +33,7 @@ while IFS='|' read -r table count fingerprint; do
     seen_checks[$count]=$fingerprint
     continue
   fi
-  case "$table" in users|ledgers|ledger_members|accounts|categories|transactions|transaction_splits|contacts|receivables|receivable_payments|receivable_events|write_receipts) ;; *) echo 'Invalid manifest table'; exit 1 ;; esac
+  case "$table" in users|ledgers|ledger_members|accounts|categories|transactions|transaction_splits|contacts|receivables|receivable_payments|receivable_events|budgets|write_receipts) ;; *) echo 'Invalid manifest table'; exit 1 ;; esac
   [[ "$count" =~ ^[0-9]+$ && "$fingerprint" =~ ^[0-9a-f]{32}$ ]] || { echo 'Invalid snapshot manifest'; exit 1; }
   [[ -z "${seen_tables[$table]:-}" ]] || { echo "Duplicate manifest table"; exit 1; }
   seen_tables[$table]=1
@@ -43,7 +43,7 @@ while IFS='|' read -r table count fingerprint; do
   checked=$((checked + 1))
 done < "$dump.manifest"
 # Require every supported table present in this restored schema, including new additions.
-for table in users ledgers ledger_members accounts categories transactions transaction_splits contacts receivables receivable_payments receivable_events write_receipts; do
+for table in users ledgers ledger_members accounts categories transactions transaction_splits contacts receivables receivable_payments receivable_events budgets write_receipts; do
   exists=$(docker exec "$name" psql -XqAtv ON_ERROR_STOP=1 -U postgres -d restore -c "SELECT to_regclass('public.$table') IS NOT NULL")
   if [[ "$exists" == t && -z "${seen_tables[$table]:-}" ]]; then echo 'Incomplete snapshot manifest'; exit 1; fi
 done
