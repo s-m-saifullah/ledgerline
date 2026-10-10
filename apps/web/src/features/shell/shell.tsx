@@ -156,6 +156,7 @@ export function Shell({
               <LogOut size={18} />
             </button>
           </div>
+          <AppVersion />
         </div>
       </aside>
       <div className="workspace">
@@ -500,6 +501,15 @@ export function EmptyPage({
     </>
   );
 }
+/** The deployed release tag, small and quiet. */
+export function AppVersion() {
+  return (
+    <p className="app-version" data-testid="app-version">
+      Ledgerline {__APP_VERSION__}
+    </p>
+  );
+}
+
 export function MorePage() {
   const { theme, setTheme } = useContext(ThemeContext);
   return (
@@ -583,6 +593,7 @@ export function MorePage() {
         <p>USD accounts are available now. More currencies are coming later.</p>
         <p className="muted">Use Add to record income and expenses in USD.</p>
       </section>
+      <AppVersion />
     </>
   );
 }

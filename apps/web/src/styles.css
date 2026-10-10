@@ -286,6 +286,12 @@ select {
   margin-top: auto;
   padding-top: 24px;
 }
+.app-version {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
 .search-button {
   display: flex;
   align-items: center;

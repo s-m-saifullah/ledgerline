@@ -3,6 +3,8 @@ WORKDIR /app
 RUN npm install --global pnpm@10.33.2
 COPY . .
 RUN pnpm install --frozen-lockfile
+ARG APP_VERSION=""
+ENV APP_VERSION=${APP_VERSION}
 RUN pnpm --filter @ledgerline/web build
 
 FROM caddy:2-alpine AS runtime
