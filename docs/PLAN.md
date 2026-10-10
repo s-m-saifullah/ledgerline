@@ -155,7 +155,7 @@ Releases: a version tag runs the full checks, builds `linux/arm64` images, pushe
 | --- | --- | --- |
 | 0 Foundations | Monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy | App shell live over HTTPS |
 | 1 Core ledger | Accounts, categories, transactions, transfers, splits, money owed, quick add, list, People, Home | Daily use for seven consecutive days |
-| 2 Budgets | Budgets with rollover, recurring rules, currencies | One full month budgeted and reviewed |
+| 2 Budgets | Budgets with rollover, currencies, recurring rules (see [PHASE_2_PLAN.md](PHASE_2_PLAN.md)) | One full month budgeted and reviewed |
 | 3 Insights and import | Reports, tags and receipts, CSV import and export | Imported statements match the bank |
 | 4 Hardening | Two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility | Restore drill passes; v1.0 tagged |
 | 5 Android | Compose app, Room offline cache, background sync, biometric lock, signed APK | |
