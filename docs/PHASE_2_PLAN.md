@@ -21,6 +21,8 @@ Three slices, each its own pull request and release, with a verified backup befo
 
 ## 2b. Currencies
 
+The detailed step plan is in [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md); this section is the summary.
+
 - Replace `transactions.fx_rate` (integer) with an exact decimal and drop the USD-only checks on accounts, transactions, receivables and received payments (ADR 0020).
 - Tables: `currencies` (pinned list per ledger; USD base, BDT pinned) and `exchange_rates` (date, base, quote, rate, source `api` or `manual`). Manual rates are never overwritten.
 - `base_amount` is computed once at save time by one shared, tested helper that accounts for each currency's minor-unit digits and rounds half away from zero. Existing rows migrate to rate 1.
