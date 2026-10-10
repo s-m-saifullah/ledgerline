@@ -402,6 +402,7 @@ type PaletteItem = {
 function PaletteList({ items }: { items: PaletteItem[] }) {
   const [query, setQuery] = useState("");
   const list = useRef<HTMLFieldSetElement>(null);
+  const search = useRef<HTMLInputElement>(null);
   const shown = items.filter((item) =>
     item.label.toLowerCase().includes(query.trim().toLowerCase()),
   );
@@ -414,6 +415,7 @@ function PaletteList({ items }: { items: PaletteItem[] }) {
   return (
     <>
       <input
+        ref={search}
         type="search"
         className="command-search"
         aria-label="Search pages and actions"
@@ -431,44 +433,43 @@ function PaletteList({ items }: { items: PaletteItem[] }) {
           }
         }}
       />
-      <fieldset
-        ref={list}
-        className="command-results"
-        onKeyDown={(event) => {
-          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-          event.preventDefault();
-          const all = options();
-          const index = all.indexOf(
-            document.activeElement as HTMLButtonElement,
-          );
-          const next = index + (event.key === "ArrowDown" ? 1 : -1);
-          if (next < 0)
-            (
-              list.current?.previousElementSibling as HTMLElement | null
-            )?.focus();
-          else all[Math.min(next, all.length - 1)]?.focus();
-        }}
-      >
-        <legend className="sr-only">Results</legend>
-        {shown.map(({ key, label, icon: Icon, disabled, run }) => (
-          <button
-            key={key}
-            type="button"
-            className="command-option"
-            disabled={disabled ?? false}
-            onClick={run}
-          >
-            <Icon size={18} />
-            {label}
-            <ArrowUpRight size={16} />
-          </button>
-        ))}
-        {shown.length === 0 && (
-          <p className="muted" role="status">
-            Nothing matches “{query.trim()}”.
-          </p>
-        )}
-      </fieldset>
+      <div className="command-scroll">
+        <fieldset
+          ref={list}
+          className="command-results"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+            event.preventDefault();
+            const all = options();
+            const index = all.indexOf(
+              document.activeElement as HTMLButtonElement,
+            );
+            const next = index + (event.key === "ArrowDown" ? 1 : -1);
+            if (next < 0) search.current?.focus();
+            else all[Math.min(next, all.length - 1)]?.focus();
+          }}
+        >
+          <legend className="sr-only">Results</legend>
+          {shown.map(({ key, label, icon: Icon, disabled, run }) => (
+            <button
+              key={key}
+              type="button"
+              className="command-option"
+              disabled={disabled ?? false}
+              onClick={run}
+            >
+              <Icon size={18} />
+              {label}
+              <ArrowUpRight size={16} />
+            </button>
+          ))}
+          {shown.length === 0 && (
+            <p className="muted" role="status">
+              Nothing matches “{query.trim()}”.
+            </p>
+          )}
+        </fieldset>
+      </div>
     </>
   );
 }
