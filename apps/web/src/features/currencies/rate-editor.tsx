@@ -1,4 +1,8 @@
-import { type PinnedCurrency, rateSchema } from "@ledgerline/shared";
+import {
+  invertRate,
+  type PinnedCurrency,
+  rateFromInverse,
+} from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
 import { EditorDialog } from "../../components/editor-dialog";
@@ -21,7 +25,8 @@ export function RateEditor({
 }) {
   const latest = currency.latestRate;
   const [date, setDate] = useState(today());
-  const [rate, setRate] = useState(latest?.rate ?? "");
+  // People read and type the rate as base currency first: 1 USD = X of this currency.
+  const [rate, setRate] = useState(latest ? invertRate(latest.rate) : "");
   const [error, setError] = useState("");
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -47,21 +52,21 @@ export function RateEditor({
     }
   };
   const save = () => {
-    const parsed = rateSchema.safeParse(rate.trim());
-    if (!parsed.success) {
+    const stored = rateFromInverse(rate);
+    if (!stored) {
       setError(
-        "Enter a rate such as 1.1217 (up to 10 digits after the point).",
+        `Enter how much ${currency.code} one ${baseCurrency} is worth, such as 122.5.`,
       );
       return;
     }
-    const sig = `${date}|${parsed.data}`;
+    const sig = `${date}|${stored}`;
     if (attempt.current?.sig !== sig)
       attempt.current = {
         sig,
         // Editing the rate stored for this exact date, otherwise adding a new one.
         run: prepareRateSet(
           ledgerId,
-          { code: currency.code, date, rate: parsed.data },
+          { code: currency.code, date, rate: stored },
           latest && latest.date === date ? latest : undefined,
         ),
       };
@@ -102,7 +107,7 @@ export function RateEditor({
             onChange={(event) => setDate(event.target.value)}
           />
           <label htmlFor="rate-value">
-            {`1 ${currency.code} is worth (${baseCurrency})`}
+            {`1 ${baseCurrency} is worth (${currency.code})`}
           </label>
           <input
             id="rate-value"

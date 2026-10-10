@@ -55,6 +55,55 @@ export function formatRate(scaled: bigint): string {
   return fraction ? `${whole}.${fraction}` : String(whole);
 }
 
+/**
+ * The same rate read the other way round, as exact decimal text: a stored rate of
+ * 0.00812 (USD per BDT) reads as 123.1527 (BDT per USD). People see this direction, with the
+ * base currency first. Rounded half up and trailing zeros trimmed. Without `decimals` it keeps
+ * about seven significant digits (two to six decimals), which is as much as a stored rate
+ * can honestly back, so a typed 16300 reads back as 16300 rather than 16299.998207.
+ */
+export function invertRate(rate: string, decimals?: number): string {
+  const scaled = parseRate(rate);
+  if (scaled <= 0n) throw new RangeError("A rate must be greater than zero");
+  const at = (digits: number) => {
+    const unit = 10n ** BigInt(digits);
+    return (unit * RATE_SCALE * 2n + scaled) / (scaled * 2n);
+  };
+  let places = decimals;
+  if (places === undefined) {
+    const wholeDigits = String(at(0)).length;
+    places = Math.min(6, Math.max(2, 7 - (at(0) === 0n ? 0 : wholeDigits)));
+  }
+  const unit = 10n ** BigInt(places);
+  const inverted = at(places);
+  const fraction = String(inverted % unit)
+    .padStart(places, "0")
+    .replace(/0+$/, "");
+  const whole = inverted / unit;
+  return fraction ? `${whole}.${fraction}` : String(whole);
+}
+
+/**
+ * Turn what a person types ("1 USD = 122.5 BDT" as 122.5) into the stored rate, rounded to
+ * the stored precision. Returns null when the text is not a usable positive amount or the
+ * result would round to zero.
+ */
+export function rateFromInverse(text: string): string | null {
+  const match = /^\d+(?:\.\d+)?$/.exec(text.trim());
+  if (!match) return null;
+  let scaled: bigint;
+  try {
+    scaled = parseRate(text.trim());
+  } catch {
+    return null;
+  }
+  if (scaled <= 0n) return null;
+  const stored = (RATE_SCALE * RATE_SCALE * 2n + scaled) / (scaled * 2n);
+  if (stored <= 0n) return null;
+  const formatted = formatRate(stored);
+  return rateSchema.safeParse(formatted).success ? formatted : null;
+}
+
 /** Turn a provider's JSON number into exact rate text without exponent notation. */
 export function rateFromNumber(value: number): string | null {
   if (!Number.isFinite(value) || value <= 0) return null;

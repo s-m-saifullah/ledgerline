@@ -3,7 +3,9 @@ import {
   convertMinor,
   currencyDigits,
   formatRate,
+  invertRate,
   parseRate,
+  rateFromInverse,
   rateFromNumber,
   rateSchema,
 } from "./currency";
@@ -91,5 +93,55 @@ describe("convertMinor", () => {
     ).toThrow(RangeError);
     expect(() => convertMinor(1.5, "1", "USD", "USD")).toThrow(RangeError);
     expect(() => convertMinor(1, "abc", "USD", "USD")).toThrow();
+  });
+});
+
+describe("reading a rate the other way round", () => {
+  it("inverts exactly and trims trailing zeros", () => {
+    expect(invertRate("0.00812")).toBe("123.1527");
+    expect(invertRate("0.00812", 6)).toBe("123.152709");
+    expect(invertRate("0.5")).toBe("2");
+    expect(invertRate("2")).toBe("0.5");
+    expect(invertRate("1")).toBe("1");
+    expect(invertRate("1.1217")).toBe("0.891504");
+    expect(invertRate("0.0000613497")).toBe("16300");
+    expect(invertRate("0.0067", 4)).toBe("149.2537");
+  });
+  it("rejects a rate of zero", () => {
+    expect(() => invertRate("0")).toThrow(RangeError);
+  });
+  it("turns a typed amount into the stored rate", () => {
+    expect(rateFromInverse("122.5")).toBe("0.0081632653");
+    expect(rateFromInverse("0.5")).toBe("2");
+    expect(rateFromInverse("1")).toBe("1");
+    expect(rateFromInverse(" 149.25 ")).toBe("0.0067001675");
+  });
+  it("refuses unusable input and amounts too large to store", () => {
+    for (const bad of [
+      "",
+      "0",
+      "0.0",
+      "-5",
+      "abc",
+      "1e3",
+      "1,5",
+      "99999999999",
+    ])
+      expect(rateFromInverse(bad)).toBeNull();
+    // The smallest storable rate is 0.0000000001; anything beyond it would round to zero.
+    expect(rateFromInverse("10000000000")).toBe("0.0000000001");
+    expect(rateFromInverse("100000000000")).toBeNull();
+  });
+  it("round-trips what people type without drifting", () => {
+    for (const typed of [
+      "122.5",
+      "16300",
+      "149.25",
+      "3.6725",
+      "0.9",
+      "1",
+      "4.5",
+    ])
+      expect(invertRate(rateFromInverse(typed) as string)).toBe(typed);
   });
 });

@@ -1,8 +1,10 @@
+import { invertRate } from "@ledgerline/shared";
+
 const names = new Intl.DisplayNames("en-US", { type: "currency" });
 export const currencyName = (code: string) => names.of(code) ?? code;
-/** "1 EUR = 1.1217 USD": the stored rate, read the way people say it. */
+/** "1 USD = 0.8915 EUR": the base currency always first, as people say it. */
 export const rateSentence = (code: string, rate: string, base: string) =>
-  `1 ${code} = ${rate} ${base}`;
+  `1 ${base} = ${invertRate(rate)} ${code}`;
 /** Every ISO currency the platform knows, minus those already taken. */
 export function addableCurrencies(taken: string[]) {
   return Intl.supportedValuesOf("currency")
