@@ -288,9 +288,10 @@ select {
 }
 .app-version {
   margin: 12px 0 0;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.75rem;
   color: var(--muted);
-  text-align: center;
+  text-align: left;
 }
 .search-button {
   display: flex;
