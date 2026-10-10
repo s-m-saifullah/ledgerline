@@ -5,6 +5,7 @@ export * from "./accounts";
 export * from "./budgets";
 export * from "./categories";
 export * from "./contracts";
+export * from "./currency";
 export * from "./transactions";
 
 export const newId = v7;
