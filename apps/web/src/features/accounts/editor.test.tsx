@@ -16,6 +16,8 @@ const fixture: Account = {
   openingBalance: { amount: 120029, currency: "USD" },
   inboundBonusBps: null,
   bonusCategoryId: null,
+  feeCategoryId: null,
+  defaultFee: null,
   balance: { amount: 120029, currency: "USD" },
   archivedAt: null,
   version: 1,
@@ -70,6 +72,8 @@ it("validates a name and saves debt in exact signed USD cents", async () => {
     openingBalance: { amount: -4215, currency: "USD" },
     inboundBonusBps: null,
     bonusCategoryId: null,
+    feeCategoryId: null,
+    defaultFee: null,
   });
 });
 it("retains the same prepared save when an interrupted form is closed and resumed", async () => {
@@ -235,6 +239,8 @@ it("offers added currencies for a new account and reads the balance in that curr
     openingBalance: { amount: 1500, currency: "JPY" },
     inboundBonusBps: null,
     bonusCategoryId: null,
+    feeCategoryId: null,
+    defaultFee: null,
   });
 });
 
@@ -270,4 +276,51 @@ it("shows only the base currency to choose from when none are added, and fixes i
   expect(screen.queryByLabelText("Currency")).toBeNull();
   expect(screen.getByText(/Currency: EUR\./)).toBeInTheDocument();
   expect(screen.getByLabelText("Opening balance (EUR)")).toHaveValue("10.00");
+});
+it("explains and sends a usual fee, fixed or as a percentage, with its category under More", async () => {
+  const fees = {
+    id: newId(),
+    ledgerId,
+    name: "Fees",
+    kind: "expense" as const,
+    parentId: null,
+    icon: "utensils",
+    color: "#0D9488",
+    sortOrder: 0,
+    archivedAt: null,
+    version: 1,
+    createdAt: "2026-10-07T00:00:00.000Z",
+    updatedAt: "2026-10-07T00:00:00.000Z",
+  };
+  const fetchMock = vi.fn<typeof fetch>(async () => json(fixture, 201));
+  vi.stubGlobal("fetch", fetchMock);
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      categories={[fees]}
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(
+    screen.getByText(/Type 2 for a fixed fee, or 2% for a percentage/),
+  ).toBeInTheDocument();
+  const more = screen.getByText(/^More/).closest("details");
+  expect(more).not.toHaveAttribute("open");
+  expect(more).toContainElement(screen.getByLabelText("Fee category"));
+  await userEvent.type(screen.getByLabelText("Account name"), "Wallet");
+  await userEvent.type(screen.getByLabelText("Usual fee"), "abc");
+  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  expect(await screen.findByText(/percentage like 2%/)).toBeInTheDocument();
+  expect(fetchMock).not.toHaveBeenCalled();
+  await userEvent.clear(screen.getByLabelText("Usual fee"));
+  await userEvent.type(screen.getByLabelText("Usual fee"), "1.5%");
+  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+  expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+    defaultFee: { basisPoints: 150 },
+    feeCategoryId: null,
+  });
 });

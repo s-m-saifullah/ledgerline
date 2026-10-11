@@ -6,11 +6,19 @@ import type {
 } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
 import { CategoryPicker } from "../categories/picker";
+import {
+  defaultFeeText,
+  feeHint,
+  feeMinor,
+  parseFee,
+} from "../transactions/fee";
+import { FeePreview } from "../transactions/fee-preview";
+import { amountMinor } from "../transactions/form";
 import {
   getRuns,
   prepareRuleCreate,
@@ -74,6 +82,7 @@ export function RuleEditor({
   const [conflict, setConflict] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const attempt = useRef<{ sig: string; run: () => Promise<unknown> } | null>(
     null,
   );
@@ -94,6 +103,30 @@ export function RuleEditor({
   const transfer = values.kind === "transfer";
   const cross = transfer && !!from && !!to && from.currency !== to.currency;
   const interval = Number(values.interval);
+  // A new transfer rule starts from the sending account's usual fee, which the person then confirms.
+  const prefillFee = (accountId: string) => {
+    if (rule) return;
+    const account = accounts.find((row) => row.id === accountId);
+    setValues((current) => ({
+      ...current,
+      feeText: defaultFeeText(account),
+      feeCategoryId: account?.feeCategoryId ?? "",
+    }));
+  };
+  const feeInput = parseFee(values.feeText, from?.currency ?? "USD");
+  const sentMinor = amountMinor(values.amount, from?.currency ?? "USD");
+  // The categories live under More; open it when one is needed and missing, or has an error.
+  const needsCategory =
+    (transfer &&
+      feeInput.kind !== "none" &&
+      feeInput.kind !== "invalid" &&
+      !values.feeCategoryId) ||
+    (transfer && values.bonusOn && !values.bonusCategoryId) ||
+    !!errors.feeCategoryId ||
+    !!errors.bonusCategoryId;
+  useEffect(() => {
+    if (needsCategory) setMoreOpen(true);
+  }, [needsCategory]);
   const preview = useMemo(() => {
     if (
       !values.startDate ||
@@ -236,6 +269,8 @@ export function RuleEditor({
                   onChange={() => {
                     set("kind", value);
                     setValues((current) => ({ ...current, categoryId: "" }));
+                    if (value === "transfer" && !values.feeText)
+                      prefillFee(values.accountId);
                   }}
                 />
                 <span>{label}</span>
@@ -248,7 +283,10 @@ export function RuleEditor({
           <NativeSelect
             id="rule-account"
             value={values.accountId}
-            onChange={(event) => set("accountId", event.target.value)}
+            onChange={(event) => {
+              set("accountId", event.target.value);
+              prefillFee(event.target.value);
+            }}
             {...field("accountId")}
           >
             {accounts.filter(usable).map((account) => (
@@ -320,6 +358,34 @@ export function RuleEditor({
               </p>
             </>
           )}
+          {transfer && from && (
+            <div className="transfer-fee">
+              <label htmlFor="rule-fee">Fee (optional)</label>
+              <input
+                id="rule-fee"
+                autoComplete="off"
+                placeholder="2 or 2%"
+                aria-describedby="rule-fee-help rule-fee-preview"
+                value={values.feeText}
+                onChange={(event) => set("feeText", event.target.value)}
+                {...field("feeText")}
+              />
+              <p id="rule-fee-help" className="form-help">
+                {feeHint} Charged to {from.name} in {from.currency} with every
+                transfer; a percentage is worked out again each time.
+              </p>
+              {message("feeText")}
+              <p id="rule-fee-preview" className="form-help" aria-live="polite">
+                <FeePreview
+                  fee={feeInput.kind}
+                  cost={feeMinor(feeInput, sentMinor)}
+                  sent={sentMinor}
+                  currency={from.currency}
+                  accountName={from.name}
+                />
+              </p>
+            </div>
+          )}
           {transfer && to && (
             <>
               <label className="budget-rollover">
@@ -342,14 +408,6 @@ export function RuleEditor({
                     {...field("bonusAmount")}
                   />
                   {message("bonusAmount")}
-                  <CategoryPicker
-                    categories={categories}
-                    kind="income"
-                    label="Bonus category"
-                    value={values.bonusCategoryId || null}
-                    onChange={(id) => set("bonusCategoryId", id ?? "")}
-                  />
-                  {message("bonusCategoryId")}
                   <p className="form-help">
                     Saved income in the receiving account each time. Nothing is
                     added unless you switch this on.
@@ -357,6 +415,39 @@ export function RuleEditor({
                 </>
               )}
             </>
+          )}
+          {transfer && (
+            <details
+              className="transaction-details"
+              open={moreOpen}
+              onToggle={(event) => setMoreOpen(event.currentTarget.open)}
+            >
+              <summary>
+                More <span className="muted">fee and bonus categories</span>
+              </summary>
+              <div className="account-fields">
+                <CategoryPicker
+                  categories={categories}
+                  kind="expense"
+                  label="Fee category"
+                  value={values.feeCategoryId || null}
+                  onChange={(id) => set("feeCategoryId", id ?? "")}
+                />
+                {message("feeCategoryId")}
+                {values.bonusOn && (
+                  <>
+                    <CategoryPicker
+                      categories={categories}
+                      kind="income"
+                      label="Bonus category"
+                      value={values.bonusCategoryId || null}
+                      onChange={(id) => set("bonusCategoryId", id ?? "")}
+                    />
+                    {message("bonusCategoryId")}
+                  </>
+                )}
+              </div>
+            </details>
           )}
           {!transfer && (
             <>

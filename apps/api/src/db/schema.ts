@@ -143,6 +143,11 @@ export const accounts = pgTable(
     // Optional bonus added to transfers into this account, in whole basis points (ADR 0023).
     inboundBonusBps: integer("inbound_bonus_bps"),
     bonusCategoryId: uuid("bonus_category_id"),
+    // Optional fee on transfers out of this account (ADR 0025): the expense category, and a default
+    // fee that is either a fixed amount in this account's currency or whole basis points.
+    feeCategoryId: uuid("fee_category_id"),
+    defaultFeeAmount: bigint("default_fee_amount", { mode: "number" }),
+    defaultFeeBps: integer("default_fee_bps"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     version: integer("version").notNull().default(1),
     ...audit(),
@@ -171,6 +176,16 @@ export const accounts = pgTable(
     check(
       "accounts_bonus_rate_check",
       sql`${table.inboundBonusBps} IS NULL OR ${table.inboundBonusBps} BETWEEN 1 AND 10000`,
+    ),
+    foreignKey({
+      name: "accounts_scoped_fee_category_fk",
+      columns: [table.ledgerId, table.feeCategoryId],
+      foreignColumns: [categories.ledgerId, categories.id],
+    }),
+    // A default fee is a positive fixed amount or whole basis points, never both.
+    check(
+      "accounts_default_fee_check",
+      sql`(${table.defaultFeeAmount} IS NULL OR ${table.defaultFeeAmount} > 0) AND (${table.defaultFeeBps} IS NULL OR ${table.defaultFeeBps} BETWEEN 1 AND 10000) AND (${table.defaultFeeAmount} IS NULL OR ${table.defaultFeeBps} IS NULL)`,
     ),
     check("accounts_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check(
@@ -301,6 +316,8 @@ export const transactions = pgTable(
     transferId: uuid("transfer_id"),
     // The income entry a transfer's bonus created points back at that transfer (ADR 0023).
     relatedTransferId: uuid("related_transfer_id"),
+    // The expense entry a transfer's fee created points back at that transfer (ADR 0025).
+    feeTransferId: uuid("fee_transfer_id"),
     receivablePaymentId: uuid("receivable_payment_id"),
     receivableId: uuid("receivable_id"),
     status: text("status")
@@ -358,6 +375,14 @@ export const transactions = pgTable(
     check(
       "transactions_related_transfer_check",
       sql`${table.relatedTransferId} IS NULL OR (${table.kind} = 'income' AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL)`,
+    ),
+    // A transfer has at most one fee entry, and only an expense entry can be one.
+    uniqueIndex("transactions_fee_transfer_idx")
+      .on(table.ledgerId, table.feeTransferId)
+      .where(sql`${table.feeTransferId} IS NOT NULL`),
+    check(
+      "transactions_fee_transfer_check",
+      sql`${table.feeTransferId} IS NULL OR (${table.kind} = 'expense' AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL AND ${table.relatedTransferId} IS NULL)`,
     ),
     index("transactions_ledger_date_id_idx").on(
       table.ledgerId,
@@ -539,6 +564,10 @@ export const recurringRules = pgTable(
     bonusAmount: bigint("bonus_amount", { mode: "number" }),
     bonusCurrency: text("bonus_currency"),
     bonusCategoryId: uuid("bonus_category_id"),
+    // Transfers only: an explicit fee on the sending account (ADR 0025), fixed or basis points.
+    feeAmount: bigint("fee_amount", { mode: "number" }),
+    feeBps: integer("fee_bps"),
+    feeCategoryId: uuid("fee_category_id"),
     payee: text("payee"),
     note: text("note"),
     frequency: text("frequency", {
@@ -577,6 +606,17 @@ export const recurringRules = pgTable(
       columns: [table.ledgerId, table.bonusCategoryId],
       foreignColumns: [categories.ledgerId, categories.id],
     }),
+    foreignKey({
+      name: "recurring_rules_scoped_fee_category_fk",
+      columns: [table.ledgerId, table.feeCategoryId],
+      foreignColumns: [categories.ledgerId, categories.id],
+    }),
+    // A fee is a positive fixed amount or whole basis points (never both), has a category, and only
+    // transfers carry one.
+    check(
+      "recurring_rules_fee_check",
+      sql`(${table.feeAmount} IS NULL OR ${table.feeAmount} > 0) AND (${table.feeBps} IS NULL OR ${table.feeBps} BETWEEN 1 AND 10000) AND (${table.feeAmount} IS NULL OR ${table.feeBps} IS NULL) AND ((${table.feeAmount} IS NULL AND ${table.feeBps} IS NULL) = (${table.feeCategoryId} IS NULL)) AND (${table.kind} = 'transfer' OR ${table.feeCategoryId} IS NULL)`,
+    ),
     check(
       "recurring_rules_title_check",
       sql`char_length(${table.title}) BETWEEN 1 AND 80`,

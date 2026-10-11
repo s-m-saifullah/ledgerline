@@ -69,6 +69,23 @@ async function executeOccurrence(
                 },
               }
             : {}),
+          ...(rule.feeCategoryId
+            ? {
+                fee:
+                  rule.feeAmount !== null
+                    ? {
+                        amount: {
+                          amount: rule.feeAmount,
+                          currency: rule.currency,
+                        },
+                        categoryId: rule.feeCategoryId,
+                      }
+                    : {
+                        basisPoints: rule.feeBps ?? 0,
+                        categoryId: rule.feeCategoryId,
+                      },
+              }
+            : {}),
           ...(rule.bonusAmount !== null &&
           rule.bonusCurrency &&
           rule.bonusCategoryId

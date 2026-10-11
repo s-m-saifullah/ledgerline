@@ -9,6 +9,14 @@ import { accounts } from "../../db/schema";
 
 export type AccountRow = typeof accounts.$inferSelect;
 
+/** The two stored columns behind one default fee: a fixed amount or basis points (ADR 0025). */
+function defaultFeeColumns(fee: CreateAccount["defaultFee"]) {
+  return {
+    defaultFeeAmount: fee && "amount" in fee ? fee.amount.amount : null,
+    defaultFeeBps: fee && "basisPoints" in fee ? fee.basisPoints : null,
+  };
+}
+
 export function accountRepository(db: DatabaseConnection, ledgerId: string) {
   const scope = and(
     eq(accounts.ledgerId, ledgerId),
@@ -61,6 +69,8 @@ export function accountRepository(db: DatabaseConnection, ledgerId: string) {
             openingBalance: body.openingBalance.amount,
             inboundBonusBps: body.inboundBonusBps ?? null,
             bonusCategoryId: body.bonusCategoryId ?? null,
+            feeCategoryId: body.feeCategoryId ?? null,
+            ...defaultFeeColumns(body.defaultFee ?? null),
           })
           .returning()
       )[0],
@@ -78,6 +88,12 @@ export function accountRepository(db: DatabaseConnection, ledgerId: string) {
             : {}),
           ...(body.bonusCategoryId !== undefined
             ? { bonusCategoryId: body.bonusCategoryId }
+            : {}),
+          ...(body.feeCategoryId !== undefined
+            ? { feeCategoryId: body.feeCategoryId }
+            : {}),
+          ...(body.defaultFee !== undefined
+            ? defaultFeeColumns(body.defaultFee)
             : {}),
           version,
         })

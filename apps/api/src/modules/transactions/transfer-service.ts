@@ -1,6 +1,8 @@
 import {
   type CreateTransfer,
+  feeFromBps,
   type JsonValue,
+  type Money,
   transferSchema,
   type UpdateTransfer,
 } from "@ledgerline/shared";
@@ -42,7 +44,21 @@ function pair(rows: TransactionRow[]) {
     throw new ApiProblem(404, "Not found", "Transfer not found.");
   return { from, to };
 }
-function dto(rows: TransactionRow[], bonus?: TransactionRow) {
+const linkedDto = (entry?: TransactionRow) =>
+  entry?.categoryId
+    ? {
+        transactionId: entry.id,
+        // A fee is stored as a negative expense; the API shows what it cost.
+        amount: { amount: Math.abs(entry.amount), currency: entry.currency },
+        categoryId: entry.categoryId,
+        deletedAt: entry.deletedAt?.toISOString() ?? null,
+      }
+    : null;
+function dto(
+  rows: TransactionRow[],
+  bonus?: TransactionRow,
+  fee?: TransactionRow,
+) {
   const { from, to } = pair(rows);
   return transferSchema.parse({
     id: from.transferId,
@@ -55,14 +71,8 @@ function dto(rows: TransactionRow[], bonus?: TransactionRow) {
     receivedAmount: { amount: to.amount, currency: to.currency },
     // The base currency is USD for every ledger today (ADR 0020).
     baseAmount: { amount: to.baseAmount, currency: "USD" },
-    bonus: bonus?.categoryId
-      ? {
-          transactionId: bonus.id,
-          amount: { amount: bonus.amount, currency: bonus.currency },
-          categoryId: bonus.categoryId,
-          deletedAt: bonus.deletedAt?.toISOString() ?? null,
-        }
-      : null,
+    bonus: linkedDto(bonus),
+    fee: linkedDto(fee),
     date: from.date,
     time: from.time,
     note: from.note,
@@ -70,6 +80,37 @@ function dto(rows: TransactionRow[], bonus?: TransactionRow) {
     createdAt: from.createdAt.toISOString(),
     updatedAt: from.updatedAt.toISOString(),
   });
+}
+/** What a requested fee costs, in the sending account's smallest unit (ADR 0025). */
+function feeCost(
+  fee: NonNullable<CreateTransfer["fee"]>,
+  sent: Money,
+  currency: string,
+) {
+  let cost: number;
+  if ("amount" in fee) {
+    if (fee.amount.currency !== currency)
+      throw new ApiProblem(
+        409,
+        "Conflict",
+        `The sending account uses ${currency}. Enter the fee in ${currency}.`,
+        [
+          {
+            field: "fee.amount.currency",
+            message: `Use ${currency}, the sending account's currency.`,
+          },
+        ],
+      );
+    cost = fee.amount.amount;
+  } else cost = feeFromBps(sent.amount, fee.basisPoints);
+  if (cost < 1)
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      "The fee comes to less than the smallest unit.",
+      [{ field: "fee", message: "Enter a larger fee or leave it out." }],
+    );
+  return cost;
 }
 async function references(
   context: WriteContext,
@@ -121,7 +162,7 @@ export async function getTransfer(
 ) {
   await requireLedgerRead(db, actorId, ledgerId);
   const repo = transferRepository(db, ledgerId);
-  return dto(await repo.find(id), await repo.bonus(id));
+  return dto(await repo.find(id), await repo.bonus(id), await repo.fee(id));
 }
 export function createTransfer(
   db: Database,
@@ -188,8 +229,52 @@ export function createTransfer(
           bonusPricing,
         );
       }
+      let fee: TransactionRow | undefined;
+      if (body.fee) {
+        const from = accountOf(rows, body.fromAccountId);
+        const categoryId = body.fee.categoryId ?? from.feeCategoryId;
+        if (!categoryId)
+          throw new ApiProblem(
+            409,
+            "Conflict",
+            "Choose a category for the fee.",
+            [
+              {
+                field: "fee.categoryId",
+                message: "Choose an expense category for the fee.",
+              },
+            ],
+          );
+        await lockTransactionCategories(context.tx, context.ledgerId);
+        await validateTransactionCategory(
+          context.tx,
+          context.ledgerId,
+          categoryId,
+          "expense",
+          true,
+        );
+        const cost = feeCost(body.fee, body.amount, from.currency);
+        // The fee is an expense in the sending account's currency, priced like any entry.
+        const feePricing = await priceEntry(context, {
+          accountCurrency: from.currency,
+          amount: { amount: -cost, currency: from.currency },
+          date: body.date,
+        });
+        fee = await repo.createFee(
+          pair(saved).from.transferId as string,
+          {
+            accountId: from.id,
+            categoryId,
+            amount: -cost,
+            currency: from.currency,
+            date: body.date,
+            time: body.time,
+          },
+          feePricing,
+        );
+      }
       await check(context, rows);
-      return { status: 201, body: dto(saved, bonus) };
+      return { status: 201, body: dto(saved, bonus, fee) };
     },
   );
 }
@@ -225,8 +310,11 @@ export function updateTransfer(
       });
       const saved = await repo.update(id, body, version, pricing);
       await check(context, rows);
-      // An edit leaves the bonus alone; it is an ordinary income entry from then on.
-      return { status: 200, body: dto(saved, await repo.bonus(id)) };
+      // An edit leaves the bonus and the fee alone; they are ordinary entries from then on.
+      return {
+        status: 200,
+        body: dto(saved, await repo.bonus(id), await repo.fee(id)),
+      };
     },
   );
 }
@@ -234,7 +322,11 @@ export function transferLifecycle(
   db: Database,
   identity: WriteIdentity,
   id: string,
-  body: { expectedVersion: number; deleteBonus?: boolean | undefined },
+  body: {
+    expectedVersion: number;
+    deleteBonus?: boolean | undefined;
+    deleteFee?: boolean | undefined;
+  },
   restore: boolean,
 ) {
   return write(
@@ -257,13 +349,19 @@ export function transferLifecycle(
       const deletedAt = restore ? null : new Date();
       const updated = await repo.lifecycle(id, deletedAt, version);
       // A bonus goes and comes back with its transfer (the same moment), only when asked to.
-      if (restore && current.from.deletedAt)
+      if (restore && current.from.deletedAt) {
         await repo.bonusLifecycle(id, { restoreFrom: current.from.deletedAt });
-      else if (deletedAt && body.deleteBonus)
-        await repo.bonusLifecycle(id, { deletedAt });
+        await repo.feeLifecycle(id, { restoreFrom: current.from.deletedAt });
+      } else if (deletedAt) {
+        if (body.deleteBonus) await repo.bonusLifecycle(id, { deletedAt });
+        if (body.deleteFee) await repo.feeLifecycle(id, { deletedAt });
+      }
       await check(context, rows);
       return restore
-        ? { status: 200, body: dto(updated, await repo.bonus(id)) }
+        ? {
+            status: 200,
+            body: dto(updated, await repo.bonus(id), await repo.fee(id)),
+          }
         : { status: 204, body: null };
     },
   );

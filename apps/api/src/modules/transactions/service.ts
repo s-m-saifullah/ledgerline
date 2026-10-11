@@ -346,6 +346,17 @@ export function updateTransaction(
       const repo = transactionRepository(context.tx, context.ledgerId);
       const current = required(await repo.find(id, true));
       ordinary(current);
+      // A fee or bonus stays one plain, unsplit entry of its kind (ADRs 0023, 0025).
+      if (
+        (current.feeTransferId || current.relatedTransferId) &&
+        ((changes.kind !== undefined && changes.kind !== current.kind) ||
+          (changes.splits !== undefined && changes.splits !== null))
+      )
+        throw new ApiProblem(
+          409,
+          "Conflict",
+          "A transfer's fee or bonus keeps its kind and cannot be split.",
+        );
       const version = nextVersion(current.version, expectedVersion);
       const previous = await splitRepository(
         context.tx,

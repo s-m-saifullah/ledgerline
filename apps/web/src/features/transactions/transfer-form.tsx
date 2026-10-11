@@ -6,6 +6,7 @@ import {
   createTransferSchema,
   currencyDigits,
   deriveRate,
+  feeFromBps,
   parseMinorUnits,
   rateSchema,
   type Transaction,
@@ -27,6 +28,8 @@ import { EntryRate } from "../currencies/entry-rate";
 import { rateSentence } from "../currencies/format";
 import { PrivacyContext } from "../shell/preferences";
 import { prepareTransactionUndo } from "./api";
+import { defaultFeeText, feeHint, feeMinor, parseFee } from "./fee";
+import { FeePreview } from "./fee-preview";
 import {
   amountMessage,
   amountMinor,
@@ -59,6 +62,9 @@ function makeSchema(accounts: readonly Account[]) {
       bonusOn: z.boolean(),
       bonusAmount: z.string().trim().transform(cleanAmountText),
       bonusCategoryId: z.string(),
+      // An optional fee on the sending account (ADR 0025): "2" is fixed, "2%" is a percentage.
+      feeText: z.string(),
+      feeCategoryId: z.string(),
     })
     .superRefine((row, ctx) => {
       const from = currencyOf(row.fromAccountId);
@@ -93,6 +99,32 @@ function makeSchema(accounts: readonly Account[]) {
             code: "custom",
             path: ["bonusCategoryId"],
             message: "Choose a category for the bonus.",
+          });
+      }
+      const fee = parseFee(row.feeText, from);
+      if (fee.kind === "invalid")
+        ctx.addIssue({
+          code: "custom",
+          path: ["feeText"],
+          message: fee.message,
+        });
+      else if (fee.kind !== "none") {
+        const sent = amountMinor(row.amount, from);
+        if (
+          fee.kind === "percent" &&
+          sent !== null &&
+          feeFromBps(sent, fee.bps) < 1
+        )
+          ctx.addIssue({
+            code: "custom",
+            path: ["feeText"],
+            message: "That fee comes to less than the smallest unit.",
+          });
+        if (!row.feeCategoryId)
+          ctx.addIssue({
+            code: "custom",
+            path: ["feeCategoryId"],
+            message: "Choose a category for the fee.",
           });
       }
       if (row.fxRate !== "" && !rateSchema.safeParse(row.fxRate).success)
@@ -134,6 +166,8 @@ function defaults(
         bonusOn: false,
         bonusAmount: "",
         bonusCategoryId: "",
+        feeText: "",
+        feeCategoryId: "",
       }
     : {
         amount: "",
@@ -149,6 +183,8 @@ function defaults(
         bonusOn: false,
         bonusAmount: "",
         bonusCategoryId: "",
+        feeText: "",
+        feeCategoryId: "",
       };
 }
 export function TransferForm({
@@ -171,13 +207,13 @@ export function TransferForm({
   ledgerId: string;
   transfer?: Transfer | undefined;
   accounts: readonly Account[];
-  /** Used to pick the bonus category on a new transfer. */
+  /** Used to pick the fee and bonus categories on a new transfer. */
   categories?: readonly Category[];
   open: boolean;
   writable: boolean;
   blocked?: boolean;
   onDismiss: () => void;
-  onSaved: (row: Transaction, info?: { bonus: boolean }) => void;
+  onSaved: (row: Transaction, info?: { bonus: boolean; fee: boolean }) => void;
   onDeleted?: (row: Transaction) => void;
   onLock: (locked: boolean) => void;
   returnFocusId?: string;
@@ -246,6 +282,39 @@ export function TransferForm({
           : "",
       );
   }, [baseline, toId, toCategory, bps, receivedMinor, toCurrency, setValue]);
+  // The fee on a new transfer (ADR 0025): the sending account's remembered fee and category
+  // prefill the box until the person types their own.
+  const fromAccount = accounts.find((row) => row.id === watch("fromAccountId"));
+  const fromId = fromAccount?.id;
+  const feeEdited = useRef(false);
+  const lastFrom = useRef<string | undefined>(undefined);
+  const hasFee = !!baseline?.fee && !baseline.fee.deletedAt;
+  const [alsoDeleteFee, setAlsoDeleteFee] = useState(true);
+  const [moreOpen, setMoreOpen] = useState(false);
+  useEffect(() => {
+    if (baseline || lastFrom.current === fromId) return;
+    lastFrom.current = fromId;
+    feeEdited.current = false;
+    setValue("feeText", defaultFeeText(fromAccount));
+    setValue("feeCategoryId", fromAccount?.feeCategoryId ?? "");
+  }, [baseline, fromId, fromAccount, setValue]);
+  const feeText = watch("feeText");
+  const feeInput = parseFee(feeText, fromCurrency);
+  const sentMinor = amountMinor(watch("amount"), fromCurrency);
+  const feeCost = feeMinor(feeInput, sentMinor);
+  const feeCategoryId = watch("feeCategoryId");
+  const bonusCategoryId = watch("bonusCategoryId");
+  // The categories live under More; open it whenever one of them is needed and missing.
+  const needsCategory =
+    (feeInput.kind !== "none" &&
+      feeInput.kind !== "invalid" &&
+      !feeCategoryId) ||
+    (bonusOn && !bonusCategoryId) ||
+    !!errors.feeCategoryId ||
+    !!errors.bonusCategoryId;
+  useEffect(() => {
+    if (needsCategory) setMoreOpen(true);
+  }, [needsCategory]);
   useEffect(() => {
     onLock(busy || uncertain);
   }, [busy, uncertain, onLock]);
@@ -256,6 +325,8 @@ export function TransferForm({
     if (!open && !baseline && !attempt.current && !inFlight.current) {
       reset(defaults(undefined, accounts, actorId, ledgerId));
       lastTo.current = undefined;
+      lastFrom.current = undefined;
+      setMoreOpen(false);
       setError("");
     }
   }, [open, baseline, accounts, actorId, ledgerId, reset]);
@@ -265,6 +336,7 @@ export function TransferForm({
       if (mode === "delete" && baseline) {
         const run = prepareTransactionUndo(ledgerId, transferLeg(baseline), {
           deleteBonus: hasBonus && alsoDeleteBonus,
+          deleteFee: hasFee && alsoDeleteFee,
         });
         attempt.current = async () => {
           await run();
@@ -280,8 +352,11 @@ export function TransferForm({
           bonusOn: withBonus,
           bonusAmount,
           bonusCategoryId,
+          feeText: typedFee,
+          feeCategoryId: feeCategory,
           ...fields
         } = values;
+        const fee = parseFee(typedFee, from);
         const body = createTransferSchema.parse({
           ...fields,
           amount: {
@@ -309,6 +384,17 @@ export function TransferForm({
                 },
               }
             : {}),
+          ...(!baseline && fee.kind === "fixed"
+            ? {
+                fee: {
+                  amount: { amount: fee.minor, currency: from },
+                  categoryId: feeCategory,
+                },
+              }
+            : {}),
+          ...(!baseline && fee.kind === "percent"
+            ? { fee: { basisPoints: fee.bps, categoryId: feeCategory } }
+            : {}),
           time: values.time || null,
           note: values.note || null,
         });
@@ -330,6 +416,7 @@ export function TransferForm({
         rememberAccount(actorId, ledgerId, row.fromAccountId);
         onSaved(transferLeg(row), {
           bonus: !!row.bonus && !row.bonus.deletedAt,
+          fee: !!row.fee && !row.fee.deletedAt,
         });
       }
     } catch (failure) {
@@ -514,6 +601,45 @@ export function TransferForm({
               </div>
             ))}
           </div>
+          {!baseline && fromAccount && (
+            <div className="transfer-fee">
+              <label htmlFor="transfer-fee">Fee (optional)</label>
+              <input
+                id="transfer-fee"
+                type={privateMode ? "password" : "text"}
+                inputMode="text"
+                autoComplete="off"
+                placeholder="2 or 2%"
+                aria-invalid={!!errors.feeText}
+                aria-describedby="transfer-fee-help transfer-fee-preview"
+                {...register("feeText", {
+                  onChange: () => {
+                    feeEdited.current = true;
+                  },
+                })}
+              />
+              <p id="transfer-fee-help" className="form-help">
+                {feeHint} Charged to {fromAccount.name} in {fromCurrency}; the
+                amount received stays the same.
+              </p>
+              {errors.feeText && (
+                <p className="field-error">{errors.feeText.message}</p>
+              )}
+              <p
+                id="transfer-fee-preview"
+                className="form-help"
+                aria-live="polite"
+              >
+                <FeePreview
+                  fee={feeInput.kind}
+                  cost={feeCost}
+                  sent={sentMinor}
+                  currency={fromCurrency}
+                  accountName={fromAccount.name}
+                />
+              </p>
+            </div>
+          )}
           {!baseline && toAccount && (bps || bonusOn) && (
             <div className="transfer-bonus">
               <label className="split-toggle">
@@ -545,18 +671,6 @@ export function TransferForm({
                   {errors.bonusAmount && (
                     <p className="field-error">{errors.bonusAmount.message}</p>
                   )}
-                  <CategoryPicker
-                    categories={categories}
-                    kind="income"
-                    label="Bonus category"
-                    value={watch("bonusCategoryId") || null}
-                    onChange={(id) => setValue("bonusCategoryId", id ?? "")}
-                  />
-                  {errors.bonusCategoryId && (
-                    <p className="field-error">
-                      {errors.bonusCategoryId.message}
-                    </p>
-                  )}
                   <p className="form-help">
                     Saved as income in {toAccount.name} together with the
                     transfer. Switch it off to save the transfer alone.
@@ -574,6 +688,60 @@ export function TransferForm({
               <Plus size={16} />
               Add a bonus
             </button>
+          )}
+          {!baseline && (
+            <details
+              className="transaction-details transfer-more"
+              open={moreOpen}
+              onToggle={(event) => setMoreOpen(event.currentTarget.open)}
+            >
+              <summary>
+                More
+                <span className="muted transfer-more-hint">
+                  {" "}
+                  fee {bonusOn || bps ? "and bonus " : ""}categories
+                </span>
+              </summary>
+              <div className="account-fields">
+                <CategoryPicker
+                  categories={categories}
+                  kind="expense"
+                  label="Fee category"
+                  value={feeCategoryId || null}
+                  onChange={(id) => setValue("feeCategoryId", id ?? "")}
+                />
+                {errors.feeCategoryId && (
+                  <p className="field-error">{errors.feeCategoryId.message}</p>
+                )}
+                {bonusOn && (
+                  <>
+                    <CategoryPicker
+                      categories={categories}
+                      kind="income"
+                      label="Bonus category"
+                      value={bonusCategoryId || null}
+                      onChange={(id) => setValue("bonusCategoryId", id ?? "")}
+                    />
+                    {errors.bonusCategoryId && (
+                      <p className="field-error">
+                        {errors.bonusCategoryId.message}
+                      </p>
+                    )}
+                  </>
+                )}
+                <p className="form-help">
+                  Used only when the transfer has a fee
+                  {bonusOn ? " or a bonus" : ""}. An account can remember its
+                  default categories when you edit it.
+                </p>
+              </div>
+            </details>
+          )}
+          {hasFee && (
+            <p className="form-help">
+              This transfer has a fee entry. It is a separate expense, so edit
+              it from the transaction list.
+            </p>
           )}
           {hasBonus && (
             <p className="form-help">
@@ -638,6 +806,16 @@ export function TransferForm({
                   onChange={(event) => setAlsoDeleteBonus(event.target.checked)}
                 />{" "}
                 Also delete its bonus entry
+              </label>
+            )}
+            {hasFee && (
+              <label className="split-toggle">
+                <input
+                  type="checkbox"
+                  checked={alsoDeleteFee}
+                  onChange={(event) => setAlsoDeleteFee(event.target.checked)}
+                />{" "}
+                Also delete its fee entry
               </label>
             )}
           </>

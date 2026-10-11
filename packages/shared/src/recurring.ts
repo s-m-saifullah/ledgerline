@@ -151,6 +151,18 @@ const bonus = z.strictObject({
   amount: moneyAmount("Enter a positive bonus amount."),
   categoryId: idSchema,
 });
+// Transfers only: an explicit fee charged to the sending account (ADR 0025), either a fixed amount
+// in its currency or whole basis points of the amount sent, worked out again for each occurrence.
+const fee = z.union([
+  z.strictObject({
+    amount: moneyAmount("Enter a positive fee."),
+    categoryId: idSchema,
+  }),
+  z.strictObject({
+    basisPoints: z.number().int().min(1).max(10_000),
+    categoryId: idSchema,
+  }),
+]);
 const ruleFields = {
   title: z.string().trim().min(1).max(80),
   kind: recurringKindSchema,
@@ -164,6 +176,8 @@ const ruleFields = {
   receivedAmount: moneyAmount("Enter a positive received amount.").nullable(),
   // Transfers only: an explicit bonus, confirmed when the rule is saved (ADR 0024).
   bonus: bonus.nullable(),
+  // Older clients and saved responses have no fee; that reads as none.
+  fee: fee.nullable().default(null),
   payee: z.string().trim().max(200).nullable(),
   note: z.string().trim().max(2000).nullable(),
   frequency: recurringFrequencySchema,
@@ -179,6 +193,7 @@ type RuleShape = {
   amount: { amount: number; currency: string };
   receivedAmount: unknown;
   bonus: unknown;
+  fee: unknown;
   payee: string | null;
   startDate: string;
   endDate: string | null;
@@ -205,6 +220,7 @@ function checkRule(body: RuleShape, ctx: z.RefinementCtx) {
     if (body.receivedAmount !== null)
       issue("receivedAmount", "Only transfers have a received amount.");
     if (body.bonus !== null) issue("bonus", "Only transfers have a bonus.");
+    if (body.fee !== null) issue("fee", "Only transfers have a fee.");
   }
   if (body.endDate !== null && body.endDate < body.startDate)
     issue("endDate", "The end date cannot be before the start date.");

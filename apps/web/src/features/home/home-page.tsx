@@ -35,6 +35,7 @@ function latestDetail(row: HomeLatest) {
   if (!entry.transferId) parts.push(row.accountName);
   if (entry.isSplit) parts.push(`Split · ${entry.splits.length} categories`);
   if (entry.receivablePaymentId) parts.push("Service payment");
+  if (entry.feeTransferId) parts.push("Transfer fee");
   return parts.join(" · ");
 }
 

@@ -17,6 +17,7 @@ export function CategoryPicker({
   childrenOnly = false,
   excludeId,
   allowNone = false,
+  noneLabel = "No parent (top level)",
   disabled = false,
 }: {
   categories: readonly Category[];
@@ -28,6 +29,8 @@ export function CategoryPicker({
   childrenOnly?: boolean;
   excludeId?: string | undefined;
   allowNone?: boolean;
+  /** The text of the "none" choice when `allowNone` is set. */
+  noneLabel?: string;
   disabled?: boolean;
 }) {
   const id = useId();
@@ -49,7 +52,7 @@ export function CategoryPicker({
   const matches = all.filter((option) =>
     option.label.toLocaleLowerCase().includes(term),
   );
-  const none = "No parent (top level)";
+  const none = noneLabel;
   const rows: { id: string | null; text: string }[] = [
     ...(allowNone && (!term || none.toLocaleLowerCase().includes(term))
       ? [{ id: null, text: none }]

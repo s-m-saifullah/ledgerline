@@ -41,6 +41,13 @@ function accountDto(row: AccountRow, total = 0n) {
     openingBalance: { amount: row.openingBalance, currency: row.currency },
     inboundBonusBps: row.inboundBonusBps,
     bonusCategoryId: row.bonusCategoryId,
+    feeCategoryId: row.feeCategoryId,
+    defaultFee:
+      row.defaultFeeAmount !== null
+        ? { amount: { amount: row.defaultFeeAmount, currency: row.currency } }
+        : row.defaultFeeBps !== null
+          ? { basisPoints: row.defaultFeeBps }
+          : null,
     balance: {
       amount: postedBalance(row.openingBalance, total),
       currency: row.currency,
@@ -65,6 +72,36 @@ async function requireBonusCategory(
   if (!id) return;
   await lockTransactionCategories(tx, ledgerId);
   await validateTransactionCategory(tx, ledgerId, id, "income", true);
+}
+
+/** A fee category must be an active expense category of this ledger (ADR 0025). */
+async function requireFeeCategory(
+  tx: DatabaseTransaction,
+  ledgerId: string,
+  id: string | null | undefined,
+) {
+  if (!id) return;
+  await lockTransactionCategories(tx, ledgerId);
+  await validateTransactionCategory(tx, ledgerId, id, "expense", true);
+}
+
+/** A fixed default fee is in the account's own currency (ADR 0025). */
+function requireFeeCurrency(
+  currency: string,
+  fee: CreateAccount["defaultFee"],
+) {
+  if (fee && "amount" in fee && fee.amount.currency !== currency)
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      `This account uses ${currency}. Enter the fee in ${currency}.`,
+      [
+        {
+          field: "defaultFee.amount.currency",
+          message: `Use ${currency}, the account's currency.`,
+        },
+      ],
+    );
 }
 
 export async function listAccounts(
@@ -132,6 +169,8 @@ export function createAccount(
         body.openingBalance.currency,
       );
       await requireBonusCategory(tx, ledgerId, body.bonusCategoryId);
+      await requireFeeCategory(tx, ledgerId, body.feeCategoryId);
+      requireFeeCurrency(body.openingBalance.currency, body.defaultFee);
       return {
         status: 201,
         body: accountDto(
@@ -165,6 +204,12 @@ export function updateAccount(
         ...(body.bonusCategoryId !== undefined
           ? { bonusCategoryId: body.bonusCategoryId }
           : {}),
+        ...(body.feeCategoryId !== undefined
+          ? { feeCategoryId: body.feeCategoryId }
+          : {}),
+        ...(body.defaultFee !== undefined
+          ? { defaultFee: body.defaultFee }
+          : {}),
       },
     },
     async ({ tx, ledgerId }) => {
@@ -187,6 +232,8 @@ export function updateAccount(
           ],
         );
       await requireBonusCategory(tx, ledgerId, body.bonusCategoryId);
+      await requireFeeCategory(tx, ledgerId, body.feeCategoryId);
+      requireFeeCurrency(current.currency, body.defaultFee);
       const updated = requireVersionUpdate(
         await repo.update(id, body, version),
       );

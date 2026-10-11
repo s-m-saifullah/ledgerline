@@ -145,4 +145,75 @@ describe("recurring form", () => {
       body: original,
     });
   });
+
+  it("turns the one Fee box into a fixed fee or a percentage, only on transfers", () => {
+    const fees = newId();
+    const transfer = {
+      kind: "transfer" as const,
+      toAccountId: savings.id,
+      categoryId: "",
+      amount: "50",
+    };
+    expect(body(transfer).fee).toBeNull();
+    expect(
+      body({ ...transfer, feeText: "2", feeCategoryId: fees }).fee,
+    ).toEqual({ amount: { amount: 200, currency: "USD" }, categoryId: fees });
+    expect(
+      body({ ...transfer, feeText: "1.5%", feeCategoryId: fees }).fee,
+    ).toEqual({ basisPoints: 150, categoryId: fees });
+    // The box is ignored once the rule is not a transfer.
+    expect(body({ feeText: "2", feeCategoryId: fees }).fee).toBeNull();
+  });
+
+  it("explains a fee that is mistyped, has no category or comes to nothing", () => {
+    const transfer = {
+      kind: "transfer" as const,
+      toAccountId: savings.id,
+      categoryId: "",
+      amount: "50",
+    };
+    expect(errors({ ...transfer, feeText: "abc" }).feeText).toMatch(/2%/);
+    expect(errors({ ...transfer, feeText: "2" }).feeCategoryId).toMatch(
+      /expense category/,
+    );
+    expect(
+      errors({
+        ...transfer,
+        amount: "0.40",
+        feeText: "0.01%",
+        feeCategoryId: "x",
+      }).feeText,
+    ).toMatch(/smallest unit/);
+    expect(errors({ ...transfer }).feeText).toBeUndefined();
+  });
+
+  it("shows a saved fee the way it was typed", () => {
+    const fees = newId();
+    const rule = (fee: unknown) =>
+      valuesFromRule({
+        title: "Remit",
+        kind: "transfer",
+        accountId: usd.id,
+        toAccountId: savings.id,
+        categoryId: null,
+        amount: { amount: 5000, currency: "USD" },
+        receivedAmount: null,
+        bonus: null,
+        fee,
+        payee: null,
+        note: null,
+        frequency: "month",
+        interval: 1,
+        startDate: "2026-11-01",
+        endDate: null,
+      } as never);
+    expect(rule({ basisPoints: 250, categoryId: fees })).toMatchObject({
+      feeText: "2.5%",
+      feeCategoryId: fees,
+    });
+    expect(
+      rule({ amount: { amount: 200, currency: "USD" }, categoryId: fees }),
+    ).toMatchObject({ feeText: "2.00", feeCategoryId: fees });
+    expect(rule(null)).toMatchObject({ feeText: "", feeCategoryId: "" });
+  });
 });

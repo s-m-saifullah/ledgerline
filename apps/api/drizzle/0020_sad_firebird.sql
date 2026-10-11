@@ -1,0 +1,6 @@
+-- Recurring transfer fee (ADR 0025): an optional fixed or percentage fee on a transfer rule.
+ALTER TABLE "recurring_rules" ADD COLUMN "fee_amount" bigint;--> statement-breakpoint
+ALTER TABLE "recurring_rules" ADD COLUMN "fee_bps" integer;--> statement-breakpoint
+ALTER TABLE "recurring_rules" ADD COLUMN "fee_category_id" uuid;--> statement-breakpoint
+ALTER TABLE "recurring_rules" ADD CONSTRAINT "recurring_rules_scoped_fee_category_fk" FOREIGN KEY ("ledger_id","fee_category_id") REFERENCES "public"."categories"("ledger_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "recurring_rules" ADD CONSTRAINT "recurring_rules_fee_check" CHECK (("recurring_rules"."fee_amount" IS NULL OR "recurring_rules"."fee_amount" > 0) AND ("recurring_rules"."fee_bps" IS NULL OR "recurring_rules"."fee_bps" BETWEEN 1 AND 10000) AND ("recurring_rules"."fee_amount" IS NULL OR "recurring_rules"."fee_bps" IS NULL) AND (("recurring_rules"."fee_amount" IS NULL AND "recurring_rules"."fee_bps" IS NULL) = ("recurring_rules"."fee_category_id" IS NULL)) AND ("recurring_rules"."kind" = 'transfer' OR "recurring_rules"."fee_category_id" IS NULL));
