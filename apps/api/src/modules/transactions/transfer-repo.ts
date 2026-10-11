@@ -15,6 +15,30 @@ export function transferRepository(db: DatabaseConnection, ledgerId: string) {
     payee: null,
     status: "cleared" as const,
   });
+  type LinkedChange = { deletedAt: Date } | { restoreFrom: Date };
+  const linkedLifecycle = (
+    link:
+      | typeof transactions.relatedTransferId
+      | typeof transactions.feeTransferId,
+    id: string,
+    change: LinkedChange,
+  ) =>
+    db
+      .update(transactions)
+      .set({
+        deletedAt: "deletedAt" in change ? change.deletedAt : null,
+        version: sql`${transactions.version} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(transactions.ledgerId, ledgerId),
+          eq(link, id),
+          "deletedAt" in change
+            ? isNull(transactions.deletedAt)
+            : eq(transactions.deletedAt, change.restoreFrom),
+        ),
+      );
   return {
     find: async (id: string, lock = false, deleted = false) => {
       const query = db
@@ -131,30 +155,60 @@ export function transferRepository(db: DatabaseConnection, ledgerId: string) {
           })
           .returning()
       )[0],
-    /**
-     * Delete the bonus with its transfer, or bring it back with it. A restore only brings back
-     * a bonus that was deleted at the same moment, never one deleted on its own.
-     */
-    bonusLifecycle: (
-      id: string,
-      change: { deletedAt: Date } | { restoreFrom: Date },
+    /** The fee expense entry a transfer created, deleted or not (ADR 0025). */
+    fee: async (id: string) =>
+      (
+        await db
+          .select()
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.ledgerId, ledgerId),
+              eq(transactions.feeTransferId, id),
+            ),
+          )
+          .for("update")
+      )[0],
+    createFee: async (
+      transferId: string,
+      input: {
+        accountId: string;
+        categoryId: string;
+        /** Negative: the fee is an expense. */
+        amount: number;
+        currency: string;
+        date: string;
+        time: string | null;
+      },
+      pricing: EntryPricing,
     ) =>
-      db
-        .update(transactions)
-        .set({
-          deletedAt: "deletedAt" in change ? change.deletedAt : null,
-          version: sql`${transactions.version} + 1`,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(transactions.ledgerId, ledgerId),
-            eq(transactions.relatedTransferId, id),
-            "deletedAt" in change
-              ? isNull(transactions.deletedAt)
-              : eq(transactions.deletedAt, change.restoreFrom),
-          ),
-        ),
+      (
+        await db
+          .insert(transactions)
+          .values({
+            ledgerId,
+            kind: "expense",
+            feeTransferId: transferId,
+            accountId: input.accountId,
+            categoryId: input.categoryId,
+            amount: input.amount,
+            currency: input.currency,
+            fxRate: pricing.fxRate,
+            baseAmount: pricing.baseAmount,
+            date: input.date,
+            time: input.time,
+            status: "cleared",
+          })
+          .returning()
+      )[0],
+    /**
+     * Delete the bonus or fee with its transfer, or bring it back with it. A restore only brings
+     * back an entry that was deleted at the same moment, never one deleted on its own.
+     */
+    bonusLifecycle: (id: string, change: LinkedChange) =>
+      linkedLifecycle(transactions.relatedTransferId, id, change),
+    feeLifecycle: (id: string, change: LinkedChange) =>
+      linkedLifecycle(transactions.feeTransferId, id, change),
     lifecycle: (id: string, deletedAt: Date | null, version: number) =>
       db
         .update(transactions)

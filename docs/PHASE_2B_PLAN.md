@@ -29,3 +29,7 @@ Production data stays USD-only until step 3, so nothing visible changes before i
 ## Checks every step
 
 Cross-ledger test per endpoint, idempotency keys, an upgrade test over rows shaped like production, the backup and restore drill (including any new tables), parity tests, `docs/openapi.json` and `docs/api-changes.md`, and a check of the UI at 320 px, 390 px and desktop in light and dark.
+
+## Addition: transfer fee (ADR 0025, approved 2026-10-11)
+
+An optional fee on the sending account, saved with the transfer as one expense entry. Three pull requests: (1) migration 0019 and the API (fee on create, delete and restore, account defaults); (2) the screens (one Fee box taking `2` or `2%`, hints and a live preview, a collapsible More section for the fee and bonus categories on the transfer form and the account editor, delete choices, a list marker); (3) recurring transfer rules.

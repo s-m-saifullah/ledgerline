@@ -306,3 +306,13 @@ export function bonusFromBps(received: number, bps: number): number {
   const scaled = BigInt(received) * BigInt(bps);
   return Number((scaled + 5000n) / 10_000n);
 }
+
+/**
+ * A percentage fee (ADR 0025) on the amount sent: whole basis points of it (1.5% is 150),
+ * rounded half away from zero to the smallest unit. Pure integer maths, never a float.
+ */
+export function feeFromBps(sent: number, bps: number): number {
+  const scaled = BigInt(Math.abs(sent)) * BigInt(bps);
+  const fee = (scaled + 5000n) / 10_000n;
+  return Number(sent < 0 ? -fee : fee);
+}

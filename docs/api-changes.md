@@ -2,6 +2,14 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.29 — Transfer fee
+
+Not released yet. Migration 0019 (ADR 0025). `POST /ledgers/{ledgerId}/transfers` accepts an optional `fee` charged to the sending account only: either `{ amount, categoryId? }` (a fixed positive amount in the sending account's currency) or `{ basisPoints, categoryId? }` (1 to 10000, whole basis points of the amount sent, so 1.5% is 150). The server works out a percentage and rounds half away from zero to the sender currency's smallest unit; a fee that comes to less than one unit is refused (409). Without a `categoryId` the sending account's `feeCategoryId` is used; with neither, 409 with the field `fee.categoryId`. The fee is saved in the same atomic write and under the same `Idempotency-Key` as the transfer, as one expense entry in the sending account (priced like any entry at the transfer's date; a missing rate blocks the save). The received amount is unaffected. A transfer has at most one fee, and may also have a bonus.
+
+A transfer response has `fee` (`null`, or `{ transactionId, amount, categoryId, deletedAt }` with the amount shown positive). An entry created by a fee has `feeTransferId` set. Editing a transfer leaves its fee alone; the fee is an ordinary expense that can be edited or deleted on its own (it keeps its kind and cannot be split: 409). `DELETE .../transfers/{transferId}` takes an optional `deleteFee` that deletes the fee with the transfer; a restore brings back a fee that was deleted at the same moment, never one deleted on its own.
+
+Accounts gain `feeCategoryId` (an active expense category) and `defaultFee` (`null`, `{ amount }` in the account's currency, or `{ basisPoints }`), settable on create and update; `null` clears them. The default fee only prefills clients; the API never adds a fee that the request did not ask for.
+
 ## 0.1.28 — Recurring rules
 
 New under `/ledgers/{ledgerId}`: `GET` and `POST /recurring-rules`, `GET`, `PATCH` and `DELETE /recurring-rules/{ruleId}`, `POST /recurring-rules/{ruleId}/pause` and `/resume`, `GET /recurring-rules/{ruleId}/runs` and `POST /recurring-runs/{runId}/skip`. A rule (`kind` expense, income or transfer) carries a template (accounts, signed `amount`, category, payee, note; a transfer may have a fixed `receivedAmount` and an explicit `bonus` of `{ amount, categoryId }`) and a schedule (`frequency` day, week, month or year, `interval`, `startDate`, optional `endDate`). Creating a rule needs the ledger time zone (409 on `timeZone` otherwise).

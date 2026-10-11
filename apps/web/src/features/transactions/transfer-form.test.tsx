@@ -24,6 +24,7 @@ const row: Transfer = {
   amount: { amount: 123, currency: "USD" },
   receivedAmount: { amount: 123, currency: "USD" },
   bonus: null,
+  fee: null,
   baseAmount: { amount: 123, currency: "USD" },
   date: "2026-10-07",
   time: "09:05",

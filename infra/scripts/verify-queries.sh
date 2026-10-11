@@ -5,9 +5,9 @@
 # copy, so expectations always come from the same snapshot as the dump.
 
 # Checks that become manifest lines (check|name|value).
-VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring)
+VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links)
 
 verify_requires() {
   case "$1" in
@@ -16,6 +16,7 @@ verify_requires() {
     transfers|transfer_pairs) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='transfer_id')" ;;
     splits|split_allocations) echo "SELECT to_regclass('public.transaction_splits') IS NOT NULL" ;;
     receipts|receipt_contacts) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='receivable_payments' AND column_name='receipt_id')" ;;
+    fees|fee_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='fee_transfer_id')" ;;
     recurring|recurring_links) echo "SELECT to_regclass('public.recurring_rules') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL" ;;
     *) echo "SELECT false" ;;
   esac
@@ -49,6 +50,10 @@ verify_sql() {
     recurring) echo "SELECT (SELECT count(*) FROM recurring_rules WHERE deleted_at IS NULL) || '|' || (SELECT count(*) FROM recurring_runs WHERE status='created') || '|' || (SELECT count(*) FROM recurring_runs WHERE status='attention') || '|' || (SELECT count(*) FROM recurring_runs WHERE status='skipped')" ;;
     # Every created occurrence points at an entry that exists, and a transfer's link matches that entry.
     recurring_links) echo "SELECT count(*) FROM recurring_runs r WHERE r.status='created' AND NOT EXISTS (SELECT 1 FROM transactions t WHERE t.ledger_id=r.ledger_id AND t.id=r.transaction_id AND t.transfer_id IS NOT DISTINCT FROM r.transfer_id)" ;;
+    # Transfer fee entries, live and tombstoned.
+    fees) echo "SELECT count(*) FILTER (WHERE deleted_at IS NULL) || '|' || count(*) FILTER (WHERE deleted_at IS NOT NULL) FROM transactions WHERE fee_transfer_id IS NOT NULL" ;;
+    # Every fee entry is an expense whose transfer still has its two legs in the same ledger.
+    fee_links) echo "SELECT count(*) FROM transactions f WHERE f.fee_transfer_id IS NOT NULL AND (f.kind <> 'expense' OR (SELECT count(*) FROM transactions l WHERE l.ledger_id=f.ledger_id AND l.transfer_id=f.fee_transfer_id) <> 2)" ;;
     *) return 1 ;;
   esac
 }

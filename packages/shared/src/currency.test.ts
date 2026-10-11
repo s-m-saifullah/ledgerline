@@ -5,6 +5,7 @@ import {
   convertMinor,
   currencyDigits,
   deriveRate,
+  feeFromBps,
   formatRate,
   invertRate,
   parseRate,
@@ -233,6 +234,20 @@ describe("bonusFromBps", () => {
     expect(bonusFromBps(100, 50)).toBe(1);
     expect(bonusFromBps(99, 50)).toBe(0);
     expect(bonusFromBps(Number.MAX_SAFE_INTEGER, 10_000)).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
+  });
+});
+
+describe("feeFromBps", () => {
+  it("takes whole basis points of the amount sent, rounded half away from zero", () => {
+    expect(feeFromBps(10_000, 150)).toBe(150);
+    expect(feeFromBps(333, 150)).toBe(5); // 4.995 rounds up
+    expect(feeFromBps(10, 1)).toBe(0);
+    expect(feeFromBps(50, 100)).toBe(1); // 0.5 rounds away from zero
+    expect(feeFromBps(49, 100)).toBe(0);
+    expect(feeFromBps(-333, 150)).toBe(-5);
+    expect(feeFromBps(Number.MAX_SAFE_INTEGER, 10_000)).toBe(
       Number.MAX_SAFE_INTEGER,
     );
   });

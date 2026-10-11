@@ -55,6 +55,7 @@ export function transferLeg(row: Transfer) {
     status: "cleared" as const,
     transferId: row.id,
     relatedTransferId: null,
+    feeTransferId: null,
     receivablePaymentId: null,
     receivableId: null,
     isSplit: false,

@@ -30,6 +30,8 @@ const bank: Account = {
   openingBalance: { amount: 0, currency: "USD" },
   inboundBonusBps: null,
   bonusCategoryId: null,
+  feeCategoryId: null,
+  defaultFee: null,
   balance: { amount: 0, currency: "USD" },
   archivedAt: null,
   version: 1,

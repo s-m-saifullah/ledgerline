@@ -200,6 +200,8 @@ export const transactionSchema = z.object({
   transferId: idSchema.nullable(),
   // Set on the income entry a transfer's bonus created (ADR 0023).
   relatedTransferId: idSchema.nullable().default(null),
+  // Set on the expense entry a transfer's fee created (ADR 0025).
+  feeTransferId: idSchema.nullable().default(null),
   receivablePaymentId: idSchema.nullable().default(null),
   receivableId: idSchema.nullable().default(null),
   isSplit: z.boolean().default(false),

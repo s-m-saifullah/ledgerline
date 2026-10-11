@@ -27,6 +27,7 @@ const row: Transaction = {
   fxRate: "1",
   transferId: null,
   relatedTransferId: null,
+  feeTransferId: null,
   receivablePaymentId: null,
   receivableId: null,
   isSplit: false,

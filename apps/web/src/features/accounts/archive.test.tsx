@@ -14,6 +14,8 @@ const account: Account = {
   openingBalance: { amount: -98765, currency: "USD" },
   inboundBonusBps: null,
   bonusCategoryId: null,
+  feeCategoryId: null,
+  defaultFee: null,
   balance: { amount: -98765, currency: "USD" },
   archivedAt: null,
   version: 1,

@@ -42,6 +42,25 @@ const bonus = z
     categoryId: idSchema.optional(),
   })
   .optional();
+// An optional fee on the sending account (ADR 0025): one expense entry in the sender's currency,
+// added on top of the amount sent. Either a fixed amount or whole basis points of the amount
+// sent (1.5% is 150); the server works out the money. Without a category it uses the sending
+// account's default.
+const feeCategory = { categoryId: idSchema.optional() };
+export const transferFeeSchema = z.union([
+  z.strictObject({
+    amount: moneySchema.refine((money) => money.amount > 0, {
+      path: ["amount"],
+      message: "Enter a positive fee.",
+    }),
+    ...feeCategory,
+  }),
+  z.strictObject({
+    basisPoints: z.number().int().min(1).max(10_000),
+    ...feeCategory,
+  }),
+]);
+const fee = transferFeeSchema.optional();
 const distinct = (body: { fromAccountId: string; toAccountId: string }) =>
   body.fromAccountId.toLowerCase() !== body.toAccountId.toLowerCase();
 export const createTransferSchema = z
@@ -50,6 +69,7 @@ export const createTransferSchema = z
     receivedAmount,
     fxRate: manualRate,
     bonus,
+    fee,
     time: fields.time.default(null),
     note: fields.note.default(null),
   })
@@ -72,6 +92,8 @@ export const transferVersionSchema = z.strictObject({
   expectedVersion: versionSchema,
   // Delete the transfer's bonus entry together with it (ADR 0023).
   deleteBonus: z.boolean().optional(),
+  // Delete the transfer's fee entry together with it (ADR 0025).
+  deleteFee: z.boolean().optional(),
 });
 export const transferParamsSchema = ledgerParamsSchema.extend({
   transferId: idSchema,
@@ -84,6 +106,16 @@ export const transferSchema = z.object({
   baseAmount: usdMoneySchema,
   // The income entry the transfer's bonus created, if any (ADR 0023).
   bonus: z
+    .object({
+      transactionId: idSchema,
+      amount: moneySchema,
+      categoryId: idSchema,
+      deletedAt: z.iso.datetime().nullable(),
+    })
+    .nullable()
+    .default(null),
+  // The expense entry the transfer's fee created, if any (ADR 0025).
+  fee: z
     .object({
       transactionId: idSchema,
       amount: moneySchema,
