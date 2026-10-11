@@ -4,7 +4,7 @@ Approved by the owner on 2026-10-10. This expands slice 2b of [PHASE_2_PLAN.md](
 
 ## Status (2026-10-11)
 
-Steps 1 to 3 are built and merged to `main`, not yet released: foundation (rates tables, Currencies screen, API 0.1.20), read side (API 0.1.21), and enabling currencies (API 0.1.22 and 0.1.23, migrations 0012 to 0014, the entry screens). Steps 4 (transfer bonus) and 5 (money owed in other currencies) remain.
+Steps 1 to 3 are built and merged to `main`, not yet released: foundation (rates tables, Currencies screen, API 0.1.20), read side (API 0.1.21), and enabling currencies (API 0.1.22 and 0.1.23, migrations 0012 to 0014, the entry screens). Step 4 (transfer bonus, API 0.1.24, migration 0015) is built and in review. Step 5 (money owed in other currencies) remains. The owner decided on 2026-10-11 to release once, when all of Phase 2 is ready, so none of these steps ships on its own.
 
 ## Steps, each its own pull request and release candidate
 
@@ -13,7 +13,7 @@ Production data stays USD-only until step 3, so nothing visible changes before i
 1. **Foundation.** `currencies` (pinned per ledger) and `exchange_rates` (date, quote, rate, source `api` or `manual`; manual is never overwritten). A shared conversion helper: exact decimal rate, rounding half away from zero, minor-unit digits from `Intl`. A rate client for Frankfurter with the documented fallback. A Settings, Currencies screen: pinned currencies, stored rates, edit a rate, "Refresh now". Entry flows unchanged.
 2. **Read side.** Home money in and out, spending and budgets read the frozen `base_amount`. Add `base_amount` to split lines, allocated so the lines sum exactly to the parent's base amount. Convert `fx_rate` to an exact decimal. Results are identical while all data is USD, and parity tests prove it.
 3. **Enable currencies.** Drop the USD-only checks on accounts and transactions. Amount entry with a currency, the base equivalent beneath it, a pencil to set a manual rate, cross-currency transfers (the received amount is entered, the rate is derived), currency-aware formatting. Closes ADR 0003.
-4. **Transfer bonus** (ADR 0023).
+4. **Transfer bonus** (ADR 0023). Accounts get an optional bonus rate and default income category (account editor). A new transfer into an account with a rate shows a bonus row (on by default, prefilled from the received amount, editable, with an off switch); an account without a rate offers "Add a bonus" for a one-off. Saving creates the transfer and one linked income entry atomically. Deleting a transfer offers to delete its bonus too, and Undo brings both back. Editing a transfer leaves the bonus alone.
 5. **People and money owed in other currencies.** Each item has a currency, USD by default and fixed once a payment exists. Balances show in the item's currency. A payment into an account of another currency asks for the received amount. Home "Owed to you" sums at the latest rates and says so.
 
 ## Rules

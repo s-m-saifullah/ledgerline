@@ -73,6 +73,8 @@ export function QuickAdd({
     refetchOnMount: "always",
   });
   const [saved, setSaved] = useState<Transaction | null>(null);
+  // A saved transfer that came with a bonus entry: Undo removes both.
+  const [savedBonus, setSavedBonus] = useState(false);
   const [undoError, setUndoError] = useState("");
   const [undoBusy, setUndoBusy] = useState(false);
   const [formLocked, setFormLocked] = useState(false);
@@ -99,7 +101,9 @@ export function QuickAdd({
     undoInFlight.current = true;
     setUndoBusy(true);
     setUndoError("");
-    undoAttempt.current ??= prepareTransactionUndo(ledgerId, saved);
+    undoAttempt.current ??= prepareTransactionUndo(ledgerId, saved, {
+      deleteBonus: savedBonus,
+    });
     try {
       await undoAttempt.current();
       setSaved(null);
@@ -165,6 +169,7 @@ export function QuickAdd({
           actorId={actorId}
           ledgerId={ledgerId}
           accounts={accounts.data}
+          categories={categories.data}
           open={open}
           writable={writable}
           blocked={undoBusy || undoUncertain || externalBlocked}
@@ -172,8 +177,9 @@ export function QuickAdd({
           onLock={setFormLocked}
           returnFocusId={returnFocusId}
           modeControl={modeControl}
-          onSaved={(transaction) => {
+          onSaved={(transaction, info) => {
             setSaved(transaction);
+            setSavedBonus(!!info?.bonus);
             setUndoError("");
             setUndoUncertain(false);
             undoAttempt.current = null;
@@ -210,6 +216,7 @@ export function QuickAdd({
           }}
           onSaved={(transaction) => {
             setSaved(transaction);
+            setSavedBonus(false);
             setUndoError("");
             setUndoUncertain(false);
             undoAttempt.current = null;

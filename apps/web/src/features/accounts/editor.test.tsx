@@ -68,6 +68,8 @@ it("validates a name and saves debt in exact signed USD cents", async () => {
     name: "My loan",
     type: "loan",
     openingBalance: { amount: -4215, currency: "USD" },
+    inboundBonusBps: null,
+    bonusCategoryId: null,
   });
 });
 it("retains the same prepared save when an interrupted form is closed and resumed", async () => {
@@ -231,6 +233,8 @@ it("offers added currencies for a new account and reads the balance in that curr
     name: "Yen wallet",
     type: "bank",
     openingBalance: { amount: 1500, currency: "JPY" },
+    inboundBonusBps: null,
+    bonusCategoryId: null,
   });
 });
 
