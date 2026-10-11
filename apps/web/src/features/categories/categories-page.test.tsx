@@ -43,7 +43,16 @@ function mount(fetchMock: ReturnType<typeof vi.fn<typeof fetch>>) {
   );
 }
 const ledger = (role = "owner") => ({
-  items: [{ id: ledgerId, name: "Personal", baseCurrency: "USD", role }],
+  items: [
+    {
+      id: ledgerId,
+      name: "Personal",
+      baseCurrency: "USD",
+      timeZone: null,
+      version: 1,
+      role,
+    },
+  ],
 });
 it("offers manual or optional starter creation without silently writing", async () => {
   const fetchMock = vi.fn<typeof fetch>(async (url) =>

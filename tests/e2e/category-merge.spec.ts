@@ -53,6 +53,8 @@ test.beforeEach(async ({ page }, info) => {
           {
             id: ledgerId,
             name: "Synthetic merge ledger",
+            timeZone: null,
+            version: 1,
             role,
             baseCurrency: "USD",
           },

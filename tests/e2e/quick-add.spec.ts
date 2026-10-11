@@ -73,6 +73,8 @@ test.beforeEach(async ({ page }, testInfo) => {
           {
             id: ledgerId,
             name: "Synthetic quick-add ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },
@@ -510,6 +512,8 @@ test("handles missing setup, archived preferences and read-only roles", async ({
           {
             id: ledgerId,
             name: "Synthetic viewer ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "viewer",
           },

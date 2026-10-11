@@ -52,6 +52,8 @@ test.beforeEach(async ({ page }, testInfo) => {
           {
             id: fixtureLedger,
             name: "Synthetic category ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },

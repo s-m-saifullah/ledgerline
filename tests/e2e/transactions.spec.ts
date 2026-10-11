@@ -100,6 +100,8 @@ test.beforeEach(async ({ page }, testInfo) => {
           {
             id: ledgerId,
             name: "Synthetic transaction-list ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },
@@ -442,6 +444,8 @@ test("retains archived history for corrections and exposes read-only viewer deta
           {
             id: ledgerId,
             name: "Synthetic read-only ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "viewer",
           },

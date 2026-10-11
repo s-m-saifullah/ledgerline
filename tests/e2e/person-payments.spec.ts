@@ -56,6 +56,8 @@ test.beforeEach(async ({ page }, info) => {
           {
             id: ledgerId,
             name: "Synthetic receipts ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },

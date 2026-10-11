@@ -72,6 +72,8 @@ test.beforeEach(async ({ page }, testInfo) => {
           {
             id: ledgerId,
             name: "Synthetic deletion ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },
@@ -443,6 +445,8 @@ test("requires child deletion and stale reload, replays category deletion and hi
           {
             id: ledgerId,
             name: "Synthetic deletion ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "viewer",
           },

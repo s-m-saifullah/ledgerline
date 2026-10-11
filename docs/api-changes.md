@@ -1,5 +1,9 @@
 # API version notes
 
+## 0.1.27 — Ledger time zone
+
+Ledgers gain `timeZone` (an IANA name such as `America/Chicago`, `null` until the owner sets it) and `version`. New `PATCH /ledgers/{ledgerId}` takes `{ timeZone, expectedVersion }` and an `Idempotency-Key`, is owner only (403 for editors and viewers), refuses a stale version (409) and a name that is not an IANA time zone (400), and returns the updated ledger. The time zone decides what "today" means for scheduled work such as recurring entries, which arrive in later versions. Migration 0017 adds both columns; existing ledgers get no time zone and version 1.
+
 ## 0.1.26 — Person-level receipts in other currencies
 
 `GET /contacts/{id}/receipt-preview` takes `currency` (default USD) and previews the person's open services in that currency only; its amounts are in that currency. `POST /contacts/{id}/receipts` settles the services of `amount.currency`. When the receiving account uses another currency, `receivedAmount` (the total that arrived, in the account's currency) is required and is shared across the receipt's payments in proportion to what each settles, so the shares add up exactly (409 when it is too small to give every payment something); `fxRate` is accepted only when neither the services nor the account use USD. `PATCH /receipts/{id}` accepts the same `receivedAmount` and `fxRate` when the account's currency changes. Receipt `amount` is in the receipt's currency. No migration.
