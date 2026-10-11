@@ -347,7 +347,12 @@ describe("Home", () => {
         summary({
           moneyIn: usd(0),
           moneyOut: usd(0),
-          owed: { total: usd(0), personCount: 0 },
+          owed: {
+            total: usd(0),
+            personCount: 0,
+            otherCurrencies: [],
+            unconvertedCurrencies: [],
+          },
           pendingCount: 0,
         }),
       ),

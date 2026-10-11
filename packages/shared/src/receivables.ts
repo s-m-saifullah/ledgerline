@@ -1,10 +1,13 @@
 import { z } from "zod";
 import {
+  currencySchema,
   idSchema,
   ledgerParamsSchema,
+  moneySchema,
   usdMoneySchema,
   versionSchema,
 } from "./contracts";
+import { rateSchema } from "./currency";
 import {
   transactionDateSchema,
   transactionSchema,
@@ -13,6 +16,11 @@ import {
 
 const nullableText = (max: number) => z.string().trim().max(max).nullable();
 export const positiveUsdSchema = usdMoneySchema.refine((v) => v.amount > 0, {
+  path: ["amount"],
+  message: "Use a positive amount.",
+});
+/** An amount owed or paid, in the item's currency (any currency the ledger uses). */
+export const positiveMoneySchema = moneySchema.refine((v) => v.amount > 0, {
   path: ["amount"],
   message: "Use a positive amount.",
 });
@@ -52,7 +60,12 @@ export const contactSchema = z.object({
   ledgerId: idSchema,
   version: versionSchema,
   archivedAt: z.iso.datetime().nullable(),
+  // What the person owes in the base currency at the newest stored rates (ADR 0022); currencies
+  // with no rate are left out of it and named in `unconvertedCurrencies`.
   openBalance: usdMoneySchema,
+  // The open balance in each currency the person owes in (none when nothing is open).
+  openBalances: z.array(moneySchema).default([]),
+  unconvertedCurrencies: z.array(currencySchema).default([]),
   oldestOpenServiceDate: transactionDateSchema.nullable(),
 });
 export const contactListSchema = z.object({
@@ -65,7 +78,9 @@ const serviceFields = {
   serviceDate: transactionDateSchema,
   serviceTime: transactionTimeSchema.nullable(),
   dueDate: transactionDateSchema.nullable(),
-  amount: positiveUsdSchema,
+  // The item's currency: USD by default, any currency the ledger has added; fixed once a
+  // payment exists.
+  amount: positiveMoneySchema,
 };
 export const createReceivableSchema = z.strictObject({
   ...serviceFields,
@@ -113,12 +128,12 @@ export const receivableSchema = z.object({
   id: idSchema,
   ledgerId: idSchema,
   version: versionSchema,
-  received: usdMoneySchema,
-  remaining: usdMoneySchema,
-  outstanding: usdMoneySchema,
+  received: moneySchema,
+  remaining: moneySchema,
+  outstanding: moneySchema,
   status: receivableStatusSchema,
   writtenOffAt: z.iso.datetime().nullable(),
-  writtenOffAmount: usdMoneySchema.nullable(),
+  writtenOffAmount: moneySchema.nullable(),
   writeOffReason: nullableText(2000),
 });
 export const receivableListSchema = z.object({
@@ -126,7 +141,14 @@ export const receivableListSchema = z.object({
   nextCursor: idSchema.nullable(),
 });
 const paymentFields = {
-  amount: positiveUsdSchema,
+  // What the payment settles, in the item's currency.
+  amount: positiveMoneySchema,
+  // What arrives in the account, in the account's currency; needed only when it differs from
+  // the item's currency (the amount then lands in the account as this figure).
+  receivedAmount: positiveMoneySchema.optional(),
+  // Base-currency value of one unit of the account's currency, set by hand; only accepted when
+  // neither the item nor the account uses the base currency.
+  fxRate: rateSchema.optional(),
   accountId: idSchema,
   categoryId: idSchema,
   date: transactionDateSchema,
@@ -160,7 +182,7 @@ export const paymentSchema = z.object({
   ledgerId: idSchema,
   receivableId: idSchema,
   transactionId: idSchema,
-  amount: positiveUsdSchema,
+  amount: positiveMoneySchema,
   // Payments created together from one person-level receipt share this ID.
   receiptId: idSchema.nullable().default(null),
   version: versionSchema,

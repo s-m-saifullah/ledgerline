@@ -31,7 +31,10 @@ async function dto(
   );
   return contactSchema.parse({
     ...row,
+    // The base currency is USD for every ledger today (ADR 0020).
     openBalance: { amount: balance?.amount ?? 0, currency: "USD" },
+    openBalances: balance?.amounts ?? [],
+    unconvertedCurrencies: balance?.unconverted ?? [],
     oldestOpenServiceDate: balance?.oldest ?? null,
     archivedAt: row.archivedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),

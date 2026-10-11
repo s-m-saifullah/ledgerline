@@ -255,3 +255,110 @@ export async function priceTransfer(
     toRate,
   };
 }
+
+/**
+ * Price the income entry of a payment on money owed (ADR 0022). The payment settles `item` in
+ * the item's currency; the entry lands in the account's currency. In the same currency the
+ * amounts are equal. Otherwise the amount received is entered. Whichever of the item and the
+ * account uses the base currency fixes the entry's base value exactly; with neither, the
+ * account currency's rate does (set by hand, the saved one on an edit, or the newest stored).
+ */
+export async function pricePayment(
+  context: WriteContext,
+  input: {
+    accountCurrency: string;
+    item: Money;
+    received?: Money | undefined;
+    date: string;
+    manualRate?: string | undefined;
+    keepRate?: string | undefined;
+  },
+): Promise<{ entry: Money; pricing: EntryPricing }> {
+  const account = input.accountCurrency;
+  const item = input.item.currency;
+  let entry = input.item;
+  if (item === account) {
+    if (
+      input.received &&
+      (input.received.currency !== account ||
+        input.received.amount !== input.item.amount)
+    )
+      throw new ApiProblem(
+        409,
+        "Conflict",
+        "The item and the account use the same currency, so the same amount arrives.",
+        [
+          {
+            field: "receivedAmount",
+            message: "Leave this out, or use the same amount.",
+          },
+        ],
+      );
+  } else {
+    if (!input.received)
+      throw new ApiProblem(
+        409,
+        "Conflict",
+        `Enter how much arrives in ${account}.`,
+        [
+          {
+            field: "receivedAmount",
+            message: `Enter the amount received in ${account}.`,
+          },
+        ],
+      );
+    if (input.received.currency !== account)
+      throw new ApiProblem(
+        409,
+        "Conflict",
+        `The receiving account uses ${account}.`,
+        [
+          {
+            field: "receivedAmount.currency",
+            message: `Use ${account}, the receiving account's currency.`,
+          },
+        ],
+      );
+    entry = input.received;
+  }
+  const base = await ledgerBaseCurrency(
+    context.tx,
+    context.actorId,
+    context.ledgerId,
+  );
+  if (input.manualRate !== undefined && (item === base || account === base))
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      `A rate is only needed when neither the item nor the account uses ${base}.`,
+      [
+        {
+          field: "fxRate",
+          message: `Leave the rate out; ${base} sets the value.`,
+        },
+      ],
+    );
+  if (account === base)
+    return {
+      entry,
+      pricing: { fxRate: "1", baseAmount: entry.amount },
+    };
+  if (item === base)
+    return {
+      entry,
+      pricing: {
+        fxRate: deriveRate(input.item.amount, entry.amount, account, base),
+        baseAmount: input.item.amount,
+      },
+    };
+  return {
+    entry,
+    pricing: await priceEntry(context, {
+      accountCurrency: account,
+      amount: entry,
+      date: input.date,
+      manualRate: input.manualRate,
+      keepRate: input.keepRate,
+    }),
+  };
+}

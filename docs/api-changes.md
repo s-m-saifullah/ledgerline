@@ -1,5 +1,13 @@
 # API version notes
 
+## 0.1.25 — Money owed in other currencies
+
+A service (money owed) has a currency: `amount` is now `{ amount, currency }` for any currency the ledger has added (USD by default), and `received`, `remaining`, `outstanding`, `writtenOffAmount` and payment `amount` are in that currency. The currency can change on `PATCH` until a payment exists, then it is fixed (409 on `amount.currency`). A currency the ledger has not added is refused (409 on `amount.currency`).
+
+Payments settle the service in its own currency. When the receiving account uses another currency, `receivedAmount` (in the account's currency) is required (409 on `receivedAmount` otherwise), and the income entry lands in the account's currency. Whichever of the service and the account uses USD fixes the entry's base value exactly; with neither, the account currency's stored rate does, or `fxRate` set by hand (409 when USD is one of the two). In one currency `receivedAmount` must be left out or equal.
+
+People gain `openBalances` (the open balance in each currency, none when nothing is open) and `unconvertedCurrencies`; `openBalance` is the USD value of the open balances at the newest stored rates, leaving out currencies with no rate. Home `owed` gains `otherCurrencies` and `unconvertedCurrencies`, and `owed.total` is valued the same way. Person-level receipts still settle USD services only (they take a currency in the next version). Migration 0016 drops the USD-only checks, ties a payment's currency to its service, and relaxes the linked-income check for cross-currency payments.
+
 ## 0.1.24 — Transfer bonus
 
 Accounts gain two optional settings for a bonus on incoming transfers: `inboundBonusBps` (whole basis points, 1 to 10000, so 2.5% is 250) and `bonusCategoryId` (an active income category of the same ledger). `POST` and `PATCH /accounts` accept both (`null` clears), and account responses return both (`null` when unset).

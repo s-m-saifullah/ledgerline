@@ -17,6 +17,7 @@ import { safeOwed } from "./balance-service";
 import { receiptPaymentRepository, receivableRepository } from "./repo";
 import { paymentDto, paymentStep, write } from "./service";
 
+// Person-level receipts settle USD items until receipts take a currency (ADR 0022).
 const money = (amount: number) => ({ amount, currency: "USD" as const });
 const notFound = () => new ApiProblem(404, "Not found", "Receipt not found.");
 
@@ -29,7 +30,7 @@ async function plan(
 ) {
   const repo = receivableRepository(db, ledgerId);
   const services = [];
-  for (const row of await repo.openForContact(contactId))
+  for (const row of await repo.openForContact(contactId, "USD"))
     services.push({
       row,
       outstanding: row.amount - safeOwed(await repo.received(row.id)),

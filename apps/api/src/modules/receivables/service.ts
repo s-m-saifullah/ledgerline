@@ -18,7 +18,8 @@ import type { Database, DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionCategories } from "../categories/service";
 import { contactForAssignment, lockContacts } from "../contacts/service";
-import { requireLedgerRead } from "../ledgers/service";
+import { requireUsableCurrency } from "../currencies/service";
+import { ledgerBaseCurrency, requireLedgerRead } from "../ledgers/service";
 import { mergePaymentCategory } from "../transactions/category-merge-service";
 import { paymentIncome, readPaymentIncome } from "../transactions/service";
 import {
@@ -42,7 +43,7 @@ function required<T>(row: T | undefined): T {
     throw new ApiProblem(404, "Not found", "Service or payment not found.");
   return row;
 }
-const money = (amount: number) => ({ amount, currency: "USD" as const });
+const money = (amount: number, currency: string) => ({ amount, currency });
 export async function dto(
   db: DatabaseConnection,
   ledgerId: string,
@@ -54,10 +55,13 @@ export async function dto(
     remaining = row.amount - received;
   return receivableSchema.parse({
     ...row,
-    amount: money(row.amount),
-    received: money(received),
-    remaining: money(remaining),
-    outstanding: money(row.deletedAt || row.writtenOffAt ? 0 : remaining),
+    amount: money(row.amount, row.currency),
+    received: money(received, row.currency),
+    remaining: money(remaining, row.currency),
+    outstanding: money(
+      row.deletedAt || row.writtenOffAt ? 0 : remaining,
+      row.currency,
+    ),
     status: row.writtenOffAt
       ? "writtenOff"
       : received === 0
@@ -66,7 +70,9 @@ export async function dto(
           ? "paid"
           : "partlyPaid",
     writtenOffAmount:
-      row.writtenOffAmount === null ? null : money(row.writtenOffAmount),
+      row.writtenOffAmount === null
+        ? null
+        : money(row.writtenOffAmount, row.currency),
     writtenOffAt: row.writtenOffAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -191,6 +197,16 @@ export async function getReceivable(
     { isolationLevel: "repeatable read" },
   );
 }
+/** An item may use the base currency or any currency the ledger has added. */
+async function requireItemCurrency(c: WriteContext, code: string) {
+  await requireUsableCurrency(
+    c.tx,
+    c.ledgerId,
+    await ledgerBaseCurrency(c.tx, c.actorId, c.ledgerId),
+    code,
+    { field: "amount.currency", use: "for money owed" },
+  );
+}
 export function saveReceivable(
   db: Database,
   i: WriteIdentity,
@@ -210,6 +226,7 @@ export function saveReceivable(
         );
         if (person.archivedAt)
           throw new ApiProblem(409, "Conflict", "Choose an active person.");
+        await requireItemCurrency(c, body.amount.currency);
         const row = required(await repo.create(body));
         await event(c, row, "created", null);
         return { status: 201, body: await dto(c.tx, c.ledgerId, row) };
@@ -231,6 +248,21 @@ export function saveReceivable(
         )
           throw new ApiProblem(409, "Conflict", "Choose an active person.");
       }
+      if (body.amount.currency !== current.currency) {
+        if (await paymentRepository(c.tx, c.ledgerId, id).hasAny())
+          throw new ApiProblem(
+            409,
+            "Conflict",
+            "A service with payment history must keep its currency.",
+            [
+              {
+                field: "amount.currency",
+                message: `Keep ${current.currency}, the currency payments were recorded in.`,
+              },
+            ],
+          );
+        await requireItemCurrency(c, body.amount.currency);
+      }
       if (BigInt(body.amount.amount) < BigInt(await repo.received(id)))
         throw new ApiProblem(
           409,
@@ -248,6 +280,7 @@ export function saveReceivable(
             : {}),
           dueDate: body.dueDate,
           amount: body.amount.amount,
+          currency: body.amount.currency,
           version,
         }),
       );
@@ -341,7 +374,7 @@ export async function paymentDto(
 ) {
   return paymentSchema.parse({
     ...row,
-    amount: money(row.amount),
+    amount: money(row.amount, row.currency),
     transaction: await readPaymentIncome(db, ledgerId, row.transactionId),
     receivable: await dto(db, ledgerId, service),
     createdAt: row.createdAt.toISOString(),
@@ -426,7 +459,21 @@ export async function paymentStep(
     : null;
   const before = await snapshot(c, service, original),
     input = body as CreatePayment,
-    amount =
+    entering = action === "create" || action === "edit";
+  // A payment settles the item in the item's own currency.
+  if (entering && input.amount.currency !== service.currency)
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      `This service is in ${service.currency}. Enter the amount in ${service.currency}.`,
+      [
+        {
+          field: "amount.currency",
+          message: `Use ${service.currency}, the service's currency.`,
+        },
+      ],
+    );
+  const amount =
       action === "create" || action === "edit"
         ? input.amount.amount
         : required(current ?? undefined).amount,
@@ -471,11 +518,13 @@ export async function paymentStep(
             kind: "income",
             date: input.date,
             time: input.time,
-            amount: money(amount),
+            amount: money(amount, service.currency),
             status: "cleared",
             payee: original?.payee ?? person.name,
             note: input.note,
           },
+          receivedAmount: input.receivedAmount,
+          fxRate: input.fxRate,
         }
       : {}),
   });
@@ -492,6 +541,7 @@ export async function paymentStep(
           receivableId: id,
           transactionId: tid,
           amount,
+          currency: service.currency,
           ...(options.receiptId ? { receiptId: options.receiptId } : {}),
         }),
   );

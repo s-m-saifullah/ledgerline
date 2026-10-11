@@ -309,7 +309,12 @@ describe("Home summary", () => {
     expect(summary.liabilitiesOwed).toEqual(money(39000));
     expect(summary.moneyIn.amount).toBe(265000);
     expect(summary.moneyOut.amount).toBe(14775);
-    expect(summary.owed).toEqual({ total: money(28000), personCount: 2 });
+    expect(summary.owed).toEqual({
+      total: money(28000),
+      personCount: 2,
+      otherCurrencies: [],
+      unconvertedCurrencies: [],
+    });
     expect(summary.pendingCount).toBe(1);
     expect(summary.monthStart).toBe("2026-10-01");
     expect(summary.monthEnd).toBe("2026-10-31");
@@ -613,7 +618,12 @@ describe("Home summary", () => {
       liabilitiesOwed: money(0),
       moneyIn: money(0),
       moneyOut: money(0),
-      owed: { total: money(0), personCount: 0 },
+      owed: {
+        total: money(0),
+        personCount: 0,
+        otherCurrencies: [],
+        unconvertedCurrencies: [],
+      },
       latest: [],
       accounts: [],
       pendingCount: 0,

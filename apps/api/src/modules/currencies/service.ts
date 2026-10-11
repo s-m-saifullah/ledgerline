@@ -382,12 +382,16 @@ export async function requireUsableCurrency(
   ledgerId: string,
   baseCurrency: string,
   code: string,
+  where: { field: string; use: string } = {
+    field: "openingBalance.currency",
+    use: "for an account",
+  },
 ) {
   if (code === baseCurrency) return;
   if (!(await currencyRepository(db, ledgerId).findByCode(code)))
     conflict(
-      "openingBalance.currency",
-      `Add ${code} in Currencies before using it for an account.`,
+      where.field,
+      `Add ${code} in Currencies before using it ${where.use}.`,
     );
 }
 

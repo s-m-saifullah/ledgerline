@@ -583,12 +583,17 @@ export function PeopleWorkspace({
         l,
         `/receivables/${operation.service.id}/payments${operation.payment ? `/${operation.payment.id}` : ""}`,
         operation.payment ? "PATCH" : "POST",
-        operation.payment
-          ? updatePaymentSchema.parse({
-              ...body,
-              expectedVersion: operation.payment.version,
-            })
-          : body,
+        // Optional fields that were left out stay out of the saved request.
+        JSON.parse(
+          JSON.stringify(
+            operation.payment
+              ? updatePaymentSchema.parse({
+                  ...body,
+                  expectedVersion: operation.payment.version,
+                })
+              : body,
+          ),
+        ) as JsonValue,
       );
       return async () => {
         const p = paymentSchema.parse(await run());

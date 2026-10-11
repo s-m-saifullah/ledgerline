@@ -604,6 +604,12 @@ export const receivables = pgTable(
   },
   (t) => [
     uniqueIndex("receivables_scope_idx").on(t.ledgerId, t.id),
+    // Lets each payment's currency be tied to its item's currency.
+    uniqueIndex("receivables_scope_currency_idx").on(
+      t.ledgerId,
+      t.id,
+      t.currency,
+    ),
     index("receivables_contact_idx").on(t.ledgerId, t.contactId, t.id),
     foreignKey({
       name: "receivables_contact_fk",
@@ -612,7 +618,7 @@ export const receivables = pgTable(
     }),
     check(
       "receivables_money_check",
-      sql`${t.amount} between 1 and 9007199254740991 AND ${t.currency}='USD'`,
+      sql`${t.amount} between 1 and 9007199254740991 AND ${t.currency} ~ '^[A-Z]{3}$'`,
     ),
     check(
       "receivables_fields_check",
@@ -654,6 +660,16 @@ export const receivablePayments = pgTable(
       columns: [t.ledgerId, t.receivableId],
       foreignColumns: [receivables.ledgerId, receivables.id],
     }),
+    // A payment is always in its item's currency.
+    foreignKey({
+      name: "payments_receivable_currency_fk",
+      columns: [t.ledgerId, t.receivableId, t.currency],
+      foreignColumns: [
+        receivables.ledgerId,
+        receivables.id,
+        receivables.currency,
+      ],
+    }),
     foreignKey({
       name: "payments_transaction_fk",
       columns: [t.ledgerId, t.transactionId],
@@ -661,7 +677,7 @@ export const receivablePayments = pgTable(
     }),
     check(
       "payments_money_check",
-      sql`${t.amount} between 1 and 9007199254740991 AND ${t.currency}='USD'`,
+      sql`${t.amount} between 1 and 9007199254740991 AND ${t.currency} ~ '^[A-Z]{3}$'`,
     ),
     check("payments_version_check", sql`${t.version} >= 1`),
   ],
