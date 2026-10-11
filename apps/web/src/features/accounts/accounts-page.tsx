@@ -20,6 +20,7 @@ import { useContext, useState } from "react";
 import type { z } from "zod";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
+import { getCategories } from "../categories/api";
 import { useBaseValues } from "../currencies/base-value";
 import { Amount } from "../home/amount";
 import { PrivacyContext } from "../shell/preferences";
@@ -69,6 +70,10 @@ export function AccountsPage() {
 }
 function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
   const client = useQueryClient();
+  const categories = useQuery({
+    queryKey: ["categories", ledger.id],
+    queryFn: ({ signal }) => getCategories(ledger.id, signal),
+  });
   const privateMode = useContext(PrivacyContext);
   const [status, setStatus] = useState<"all" | "active" | "archived">("all");
   const [dialog, setDialog] = useState<DialogState | null>(null);
@@ -382,6 +387,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
           onUnconfirmed={unconfirmed}
           onSaved={saved}
           currencies={values.currencies}
+          categories={categories.data ?? []}
         />
       )}
       {(dialog?.kind === "archive" ||

@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type Account,
+  bonusFromBps,
+  type Category,
   createTransferSchema,
   currencyDigits,
   deriveRate,
@@ -11,6 +13,7 @@ import {
 } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -19,6 +22,7 @@ import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
 import { cleanAmountText, decimalFromCents } from "../accounts/money";
+import { CategoryPicker } from "../categories/picker";
 import { EntryRate } from "../currencies/entry-rate";
 import { rateSentence } from "../currencies/format";
 import { PrivacyContext } from "../shell/preferences";
@@ -51,6 +55,10 @@ function makeSchema(accounts: readonly Account[]) {
       date: createTransferSchema.shape.date,
       time: transactionFormSchema.shape.time,
       note: transactionFormSchema.shape.note,
+      // An optional bonus on the received amount (ADR 0023); only sent when switched on.
+      bonusOn: z.boolean(),
+      bonusAmount: z.string().trim().transform(cleanAmountText),
+      bonusCategoryId: z.string(),
     })
     .superRefine((row, ctx) => {
       const from = currencyOf(row.fromAccountId);
@@ -73,6 +81,20 @@ function makeSchema(accounts: readonly Account[]) {
           path: ["receivedAmount"],
           message: `Enter how much arrives in ${to}.`,
         });
+      if (row.bonusOn) {
+        if (!isPositiveAmount(row.bonusAmount, to))
+          ctx.addIssue({
+            code: "custom",
+            path: ["bonusAmount"],
+            message: `Enter the bonus in ${to}, or switch it off.`,
+          });
+        if (!row.bonusCategoryId)
+          ctx.addIssue({
+            code: "custom",
+            path: ["bonusCategoryId"],
+            message: "Choose a category for the bonus.",
+          });
+      }
       if (row.fxRate !== "" && !rateSchema.safeParse(row.fxRate).success)
         ctx.addIssue({
           code: "custom",
@@ -109,6 +131,9 @@ function defaults(
         date: row.date,
         time: row.time ?? "",
         note: row.note ?? "",
+        bonusOn: false,
+        bonusAmount: "",
+        bonusCategoryId: "",
       }
     : {
         amount: "",
@@ -121,6 +146,9 @@ function defaults(
         date: localToday(),
         time: "",
         note: "",
+        bonusOn: false,
+        bonusAmount: "",
+        bonusCategoryId: "",
       };
 }
 export function TransferForm({
@@ -128,6 +156,7 @@ export function TransferForm({
   ledgerId,
   transfer,
   accounts,
+  categories = [],
   open,
   writable,
   blocked = false,
@@ -142,11 +171,13 @@ export function TransferForm({
   ledgerId: string;
   transfer?: Transfer | undefined;
   accounts: readonly Account[];
+  /** Used to pick the bonus category on a new transfer. */
+  categories?: readonly Category[];
   open: boolean;
   writable: boolean;
   blocked?: boolean;
   onDismiss: () => void;
-  onSaved: (row: Transaction) => void;
+  onSaved: (row: Transaction, info?: { bonus: boolean }) => void;
   onDeleted?: (row: Transaction) => void;
   onLock: (locked: boolean) => void;
   returnFocusId?: string;
@@ -180,6 +211,41 @@ export function TransferForm({
   const fromCurrency = currencyOf(watch("fromAccountId"));
   const toCurrency = currencyOf(watch("toAccountId"));
   const crossCurrency = fromCurrency !== toCurrency;
+  // The bonus on a new transfer (ADR 0023): the destination's rate prefills it from the
+  // received amount until the person types their own figure.
+  const toAccount = accounts.find((row) => row.id === watch("toAccountId"));
+  const toId = toAccount?.id;
+  const toCategory = toAccount?.bonusCategoryId ?? "";
+  const bps = !baseline ? (toAccount?.inboundBonusBps ?? null) : null;
+  const bonusOn = watch("bonusOn");
+  const receivedMinor = amountMinor(
+    watch(crossCurrency ? "receivedAmount" : "amount"),
+    toCurrency,
+  );
+  const bonusEdited = useRef(false);
+  const lastTo = useRef<string | undefined>(undefined);
+  const hasBonus = !!baseline?.bonus && !baseline.bonus.deletedAt;
+  const [alsoDeleteBonus, setAlsoDeleteBonus] = useState(true);
+  useEffect(() => {
+    if (baseline) return;
+    if (lastTo.current !== toId) {
+      lastTo.current = toId;
+      bonusEdited.current = false;
+      setValue("bonusOn", !!bps);
+      setValue("bonusAmount", "");
+      setValue("bonusCategoryId", toCategory);
+    }
+    if (bps && !bonusEdited.current)
+      setValue(
+        "bonusAmount",
+        receivedMinor && receivedMinor > 0
+          ? decimalFromCents(
+              bonusFromBps(receivedMinor, bps),
+              currencyDigits(toCurrency),
+            )
+          : "",
+      );
+  }, [baseline, toId, toCategory, bps, receivedMinor, toCurrency, setValue]);
   useEffect(() => {
     onLock(busy || uncertain);
   }, [busy, uncertain, onLock]);
@@ -189,6 +255,7 @@ export function TransferForm({
   useEffect(() => {
     if (!open && !baseline && !attempt.current && !inFlight.current) {
       reset(defaults(undefined, accounts, actorId, ledgerId));
+      lastTo.current = undefined;
       setError("");
     }
   }, [open, baseline, accounts, actorId, ledgerId, reset]);
@@ -196,7 +263,9 @@ export function TransferForm({
     if (inFlight.current || !writable || blocked || conflict) return;
     if (!attempt.current) {
       if (mode === "delete" && baseline) {
-        const run = prepareTransactionUndo(ledgerId, transferLeg(baseline));
+        const run = prepareTransactionUndo(ledgerId, transferLeg(baseline), {
+          deleteBonus: hasBonus && alsoDeleteBonus,
+        });
         attempt.current = async () => {
           await run();
           return undefined;
@@ -205,7 +274,14 @@ export function TransferForm({
         if (!values) return;
         const from = currencyOf(values.fromAccountId);
         const to = currencyOf(values.toAccountId);
-        const { receivedAmount, fxRate, ...fields } = values;
+        const {
+          receivedAmount,
+          fxRate,
+          bonusOn: withBonus,
+          bonusAmount,
+          bonusCategoryId,
+          ...fields
+        } = values;
         const body = createTransferSchema.parse({
           ...fields,
           amount: {
@@ -222,6 +298,17 @@ export function TransferForm({
             : {}),
           // A hand-set rate only matters when neither account is in the base currency.
           ...(fxRate && from !== "USD" && to !== "USD" ? { fxRate } : {}),
+          ...(withBonus && !baseline
+            ? {
+                bonus: {
+                  amount: {
+                    amount: parseMinorUnits(bonusAmount, currencyDigits(to)),
+                    currency: to,
+                  },
+                  categoryId: bonusCategoryId,
+                },
+              }
+            : {}),
           time: values.time || null,
           note: values.note || null,
         });
@@ -241,7 +328,9 @@ export function TransferForm({
         onDeleted?.(transferLeg(baseline));
       else if (row) {
         rememberAccount(actorId, ledgerId, row.fromAccountId);
-        onSaved(transferLeg(row));
+        onSaved(transferLeg(row), {
+          bonus: !!row.bonus && !row.bonus.deletedAt,
+        });
       }
     } catch (failure) {
       const unknown = !(failure instanceof ApiError) || failure.status >= 500;
@@ -425,6 +514,73 @@ export function TransferForm({
               </div>
             ))}
           </div>
+          {!baseline && toAccount && (bps || bonusOn) && (
+            <div className="transfer-bonus">
+              <label className="split-toggle">
+                <input
+                  type="checkbox"
+                  checked={bonusOn}
+                  onChange={(event) =>
+                    setValue("bonusOn", event.target.checked)
+                  }
+                />{" "}
+                Add a bonus{bps ? ` (${bps / 100}% of what arrives)` : ""}
+              </label>
+              {bonusOn && (
+                <>
+                  <label htmlFor="transfer-bonus-amount">
+                    Bonus ({toCurrency})
+                  </label>
+                  <input
+                    id="transfer-bonus-amount"
+                    type={privateMode ? "password" : "text"}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    {...register("bonusAmount", {
+                      onChange: () => {
+                        bonusEdited.current = true;
+                      },
+                    })}
+                  />
+                  {errors.bonusAmount && (
+                    <p className="field-error">{errors.bonusAmount.message}</p>
+                  )}
+                  <CategoryPicker
+                    categories={categories}
+                    kind="income"
+                    label="Bonus category"
+                    value={watch("bonusCategoryId") || null}
+                    onChange={(id) => setValue("bonusCategoryId", id ?? "")}
+                  />
+                  {errors.bonusCategoryId && (
+                    <p className="field-error">
+                      {errors.bonusCategoryId.message}
+                    </p>
+                  )}
+                  <p className="form-help">
+                    Saved as income in {toAccount.name} together with the
+                    transfer. Switch it off to save the transfer alone.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
+          {!baseline && toAccount && !bps && !bonusOn && (
+            <button
+              type="button"
+              className="quiet-button inline-category-toggle"
+              onClick={() => setValue("bonusOn", true)}
+            >
+              <Plus size={16} />
+              Add a bonus
+            </button>
+          )}
+          {hasBonus && (
+            <p className="form-help">
+              This transfer has a bonus entry. It is separate income, so edit it
+              from the transaction list.
+            </p>
+          )}
           <div className="transaction-context">
             <div>
               <label htmlFor="transfer-date">Date</label>
@@ -469,10 +625,22 @@ export function TransferForm({
           </p>
         )}
         {confirmDelete && !uncertain && !conflict && (
-          <p role="alert">
-            Delete this transfer? Both legs will be deleted. You can undo the
-            deletion.
-          </p>
+          <>
+            <p role="alert">
+              Delete this transfer? Both legs will be deleted. You can undo the
+              deletion.
+            </p>
+            {hasBonus && (
+              <label className="split-toggle">
+                <input
+                  type="checkbox"
+                  checked={alsoDeleteBonus}
+                  onChange={(event) => setAlsoDeleteBonus(event.target.checked)}
+                />{" "}
+                Also delete its bonus entry
+              </label>
+            )}
+          </>
         )}
         <div className="account-dialog-actions transaction-editor-actions">
           <button

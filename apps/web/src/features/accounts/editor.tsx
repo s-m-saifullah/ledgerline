@@ -1,10 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type Account, currencyDigits } from "@ledgerline/shared";
+import {
+  type Account,
+  type Category,
+  currencyDigits,
+} from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { ChevronDown } from "lucide-react";
 import { useContext, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError } from "../../lib/api";
+import { CategoryPicker } from "../categories/picker";
 import { PrivacyContext } from "../shell/preferences";
 import { getAccount, prepareAccountSave } from "./api";
 import { AccountDialog } from "./dialog";
@@ -26,11 +31,14 @@ export function AccountEditor({
   onUnconfirmed,
   onSaved,
   currencies = ["USD"],
+  categories = [],
 }: {
   ledgerId: string;
   account?: Account | undefined;
   /** Currencies a new account can use: the base currency, then the ones added. */
   currencies?: string[];
+  /** Used to pick the category a transfer bonus is recorded in. */
+  categories?: readonly Category[];
   open: boolean;
   onDismiss: () => void;
   onUnconfirmed: (value: boolean) => void;
@@ -59,6 +67,7 @@ export function AccountEditor({
   });
   const liability = isLiability(watch("type"));
   const currency = watch("currency");
+  const bonusRate = watch("bonusRate");
   const busy = isSubmitting || reloading;
   const submit = handleSubmit(async (values) => {
     if (inFlight.current || conflict) return;
@@ -94,6 +103,10 @@ export function AccountEditor({
             const field = issue.field.replace(/^body\./, "");
             if (field === "name" || field === "type")
               setFieldError(field, { message: issue.message });
+            if (field === "inboundBonusBps")
+              setFieldError("bonusRate", { message: issue.message });
+            if (field === "bonusCategoryId")
+              setFieldError("bonusCategoryId", { message: issue.message });
             if (field === "openingBalance.amount")
               setFieldError("amount", { message: issue.message });
           }
@@ -251,6 +264,36 @@ export function AccountEditor({
               Money owed records debt as a negative balance. Credit records a
               positive balance.
             </p>
+          )}
+          <h3 className="account-section-title">Bonus on incoming transfers</h3>
+          <p className="form-help">
+            Some transfers arrive with a bonus added on top. If this account
+            gets one, enter its percentage. Transfers into this account will
+            then suggest the bonus for you to confirm each time. Leave it empty
+            for none.
+          </p>
+          <label htmlFor="account-bonus-rate">Bonus rate (%)</label>
+          <input
+            id="account-bonus-rate"
+            inputMode="decimal"
+            autoComplete="off"
+            aria-invalid={!!errors.bonusRate}
+            aria-describedby={errors.bonusRate ? "bonus-rate-error" : undefined}
+            {...register("bonusRate")}
+          />
+          {errors.bonusRate && (
+            <p id="bonus-rate-error" className="field-error">
+              {errors.bonusRate.message}
+            </p>
+          )}
+          {bonusRate.trim() !== "" && (
+            <CategoryPicker
+              categories={categories}
+              kind="income"
+              label="Bonus category"
+              value={watch("bonusCategoryId") || null}
+              onChange={(id) => setValue("bonusCategoryId", id ?? "")}
+            />
           )}
           {privateMode && (
             <p className="form-help">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountBody, formDefaults } from "./form";
+import { accountBody, bpsToPercent, formDefaults, percentToBps } from "./form";
 import {
   cleanAmountText,
   decimalFromCents,
@@ -21,11 +21,15 @@ it("converts the chosen debt direction without floating-point rounding", () => {
       currency: "USD",
       direction: "negative",
       amount: "12.29",
+      bonusRate: "",
+      bonusCategoryId: "",
     }),
   ).toEqual({
     name: "My card",
     type: "card",
     openingBalance: { amount: -1229, currency: "USD" },
+    inboundBonusBps: null,
+    bonusCategoryId: null,
   });
   expect(
     accountBody({
@@ -34,6 +38,8 @@ it("converts the chosen debt direction without floating-point rounding", () => {
       currency: "USD",
       direction: "positive",
       amount: "90071992547409.91",
+      bonusRate: "",
+      bonusCategoryId: "",
     }).openingBalance.amount,
   ).toBe(Number.MAX_SAFE_INTEGER);
   expect(formDefaults().amount).toBe("0.00");
@@ -46,6 +52,8 @@ it("converts the chosen debt direction without floating-point rounding", () => {
         currency: "USD",
         direction: "positive",
         amount,
+        bonusRate: "",
+        bonusCategoryId: "",
       }),
     ).toThrow();
 });
@@ -58,6 +66,8 @@ it("reads the opening balance in the chosen currency's own minor units", () => {
       currency,
       direction: "positive",
       amount,
+      bonusRate: "",
+      bonusCategoryId: "",
     });
   expect(body("EUR", "12.34").openingBalance).toEqual({
     amount: 1234,
@@ -76,6 +86,8 @@ it("reads the opening balance in the chosen currency's own minor units", () => {
   expect(formDefaults(undefined, "JPY")).toMatchObject({
     currency: "JPY",
     amount: "0",
+    bonusRate: "",
+    bonusCategoryId: "",
   });
 });
 
@@ -115,4 +127,35 @@ describe("formatMoney", () => {
     expect(decimalFromCents(1000, 0)).toBe("1000");
     expect(decimalFromCents(2500, 3)).toBe("2.500");
   });
+});
+
+it("turns a bonus percentage into whole basis points and back", () => {
+  expect(percentToBps("2.5")).toBe(250);
+  expect(percentToBps("0.01")).toBe(1);
+  expect(percentToBps("100")).toBe(10_000);
+  expect(percentToBps("12.34")).toBe(1234);
+  for (const bad of ["", "0", "0.00", "100.01", "2.555", "-1", "1e2", "abc"])
+    expect(percentToBps(bad)).toBeNull();
+  expect(bpsToPercent(250)).toBe("2.5");
+  expect(bpsToPercent(null)).toBe("");
+});
+it("sends the bonus settings, and turns them off with nulls", () => {
+  const values = {
+    name: "Wallet",
+    type: "wallet" as const,
+    currency: "USD",
+    direction: "positive" as const,
+    amount: "0.00",
+    bonusRate: "2.5",
+    bonusCategoryId: "01a12893-cfa9-779c-8f78-2e662dc63531",
+  };
+  expect(accountBody(values)).toMatchObject({
+    inboundBonusBps: 250,
+    bonusCategoryId: values.bonusCategoryId,
+  });
+  expect(accountBody({ ...values, bonusRate: "" })).toMatchObject({
+    inboundBonusBps: null,
+    bonusCategoryId: null,
+  });
+  expect(() => accountBody({ ...values, bonusRate: "150" })).toThrow();
 });
