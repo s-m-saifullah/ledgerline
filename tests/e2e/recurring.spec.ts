@@ -144,7 +144,9 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   await page.goto("/more/recurring");
   await page.getByRole("button", { name: /Rent/ }).click();
   await expect(page.getByText("What it has done")).toBeVisible();
-  await expect(page.getByText("Created")).toHaveCount(2);
+  const history = page.getByRole("dialog").locator(".recurring-runs li");
+  await expect(history).toHaveCount(2);
+  await expect(history.filter({ hasText: "Created" })).toHaveCount(2);
   await page.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("button", { name: /Rent/ })).toContainText(
