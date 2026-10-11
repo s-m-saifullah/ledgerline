@@ -8,7 +8,6 @@ Read this at the start of every session and update it when a piece of work lands
 - **Latest release:** `v0.1.0` (2026-10-11; API 0.1.28, migrations 0000 to 0018). It was upgraded in place from `v0.0.10` after a verified backup and a restore drill, with every row count and derived check unchanged.
 - **Next:** the owner fixes small bugs found in daily use, then Phase 3 (reports, tags and receipts, CSV import and export) starts with a design for approval.
 - **Known follow-ups:**
-  - The production smoke script's Home check adds account balances in their own units, so it reports a false mismatch of net worth and in hand as soon as an account uses another currency (Home itself is right, confirmed by valuing each balance at the stored rate). Make `infra/scripts/home-consistency.mjs` currency-aware, with tests.
   - Review Dependabot's grouped Actions updates when they appear.
   - Known gaps: merging a category leaves its budget on the archived source category; Home has no budget summary yet; an account's default bonus category is not repointed when its category is merged or archived; the People history line for a cross-currency payment shows the amount received, not the amount it settled.
   - Automated off-site backups are Phase 4.
@@ -27,6 +26,8 @@ Read this at the start of every session and update it when a piece of work lands
 ## Session log
 
 Newest first. One short entry per piece of work.
+
+- **2026-10-11:** Fixed the Home smoke comparison for other currencies: account balances use the newest stored rates with exact rounding, income and spending use frozen base amounts, and money owed is combined by currency before conversion. Missing-rate notices and people with an unvalued balance are checked too. Added synthetic regression tests; no production records or API contracts change.
 
 - **2026-10-11:** Released `v0.1.0`, the whole of Phase 2. Before the release: an upgrade check on a scratch database (a schema at the old release's migration level, loaded with data shaped like the restore drill's seed, then migrations 0011 to 0018), a read-only check of the server, and a verified backup and restore drill. After the deploy: the server runs `v0.1.0` with 19 migrations and the five new tables, the background jobs ran their first ticks (including the daily rate fetch), and the backups taken just before and just after the upgrade have equal row counts in every existing table and identical derived checks (balances, net worth, owed, transfers, splits, linked payments, receipts). Two Dependabot alerts about esbuild's development server were closed first by keeping a single patched esbuild in the dependency tree.
 - **2026-10-11:** Phase 2 upgrade check, ahead of the single release: on a scratch database, a schema at production's migration level (0010) was loaded with data shaped like the restore drill's seed (entries, a split, transfers, services, payments, a receipt), then migrations 0011 to 0018 were applied. Every migration applied; balances, entry amounts, split base amounts and receivables were unchanged (entries gain an exact rate of 1, splits gain base amounts that add up to their parent); the receivable check function held for every receivable; the full backup and restore drill passed afterwards, with pg-boss's schema present. Nothing was released.
