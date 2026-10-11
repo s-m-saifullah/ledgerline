@@ -514,6 +514,145 @@ export const budgets = pgTable(
   ],
 );
 
+/** A rule that creates entries or transfers on a schedule (ADR 0021 and 0024). */
+export const recurringRules = pgTable(
+  "recurring_rules",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    // The member the runner acts as; access is checked again on every run.
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => user.id),
+    title: text("title").notNull(),
+    kind: text("kind", { enum: ["expense", "income", "transfer"] }).notNull(),
+    accountId: uuid("account_id").notNull(),
+    toAccountId: uuid("to_account_id"),
+    categoryId: uuid("category_id"),
+    // Signed like an entry; a transfer's amount is positive and leaves `accountId`.
+    amount: bigint("amount", { mode: "number" }).notNull(),
+    currency: text("currency").notNull(),
+    receivedAmount: bigint("received_amount", { mode: "number" }),
+    receivedCurrency: text("received_currency"),
+    bonusAmount: bigint("bonus_amount", { mode: "number" }),
+    bonusCurrency: text("bonus_currency"),
+    bonusCategoryId: uuid("bonus_category_id"),
+    payee: text("payee"),
+    note: text("note"),
+    frequency: text("frequency", {
+      enum: ["day", "week", "month", "year"],
+    }).notNull(),
+    interval: integer("interval").notNull(),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }),
+    // The next occurrence still to be created; null once the rule has ended.
+    nextDate: date("next_date", { mode: "string" }),
+    pausedAt: timestamp("paused_at", { withTimezone: true }),
+    pausedReason: text("paused_reason", { enum: ["manual", "access"] }),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    uniqueIndex("recurring_rules_scope_id_idx").on(table.ledgerId, table.id),
+    index("recurring_rules_ledger_idx").on(table.ledgerId),
+    foreignKey({
+      name: "recurring_rules_scoped_account_fk",
+      columns: [table.ledgerId, table.accountId],
+      foreignColumns: [accounts.ledgerId, accounts.id],
+    }),
+    foreignKey({
+      name: "recurring_rules_scoped_to_account_fk",
+      columns: [table.ledgerId, table.toAccountId],
+      foreignColumns: [accounts.ledgerId, accounts.id],
+    }),
+    foreignKey({
+      name: "recurring_rules_scoped_category_fk",
+      columns: [table.ledgerId, table.categoryId],
+      foreignColumns: [categories.ledgerId, categories.id],
+    }),
+    foreignKey({
+      name: "recurring_rules_scoped_bonus_category_fk",
+      columns: [table.ledgerId, table.bonusCategoryId],
+      foreignColumns: [categories.ledgerId, categories.id],
+    }),
+    check(
+      "recurring_rules_title_check",
+      sql`char_length(${table.title}) BETWEEN 1 AND 80`,
+    ),
+    check(
+      "recurring_rules_amount_check",
+      sql`abs(${table.amount}) BETWEEN 1 AND 9007199254740991 AND ((${table.kind} = 'expense' AND ${table.amount} < 0) OR (${table.kind} <> 'expense' AND ${table.amount} > 0))`,
+    ),
+    check(
+      "recurring_rules_currency_check",
+      sql`${table.currency} ~ '^[A-Z]{3}$' AND (${table.receivedCurrency} IS NULL OR ${table.receivedCurrency} ~ '^[A-Z]{3}$') AND (${table.bonusCurrency} IS NULL OR ${table.bonusCurrency} ~ '^[A-Z]{3}$')`,
+    ),
+    check(
+      "recurring_rules_transfer_check",
+      sql`(${table.kind} = 'transfer') = (${table.toAccountId} IS NOT NULL) AND (${table.kind} <> 'transfer' OR (${table.categoryId} IS NULL AND ${table.payee} IS NULL AND ${table.toAccountId} <> ${table.accountId})) AND (${table.kind} = 'transfer' OR (${table.receivedAmount} IS NULL AND ${table.bonusAmount} IS NULL))`,
+    ),
+    check(
+      "recurring_rules_extras_check",
+      sql`((${table.receivedAmount} IS NULL) = (${table.receivedCurrency} IS NULL)) AND (${table.receivedAmount} IS NULL OR ${table.receivedAmount} > 0) AND ((${table.bonusAmount} IS NULL) = (${table.bonusCurrency} IS NULL) AND (${table.bonusAmount} IS NULL) = (${table.bonusCategoryId} IS NULL)) AND (${table.bonusAmount} IS NULL OR ${table.bonusAmount} > 0)`,
+    ),
+    check(
+      "recurring_rules_schedule_check",
+      sql`${table.interval} BETWEEN 1 AND 365 AND (${table.endDate} IS NULL OR ${table.endDate} >= ${table.startDate}) AND (${table.nextDate} IS NULL OR ${table.nextDate} >= ${table.startDate})`,
+    ),
+    check(
+      "recurring_rules_pause_check",
+      sql`(${table.pausedAt} IS NULL) = (${table.pausedReason} IS NULL)`,
+    ),
+    check("recurring_rules_version_check", sql`${table.version} >= 1`),
+  ],
+);
+
+/** What happened to each occurrence of a rule: created, skipped, or waiting for attention. */
+export const recurringRuns = pgTable(
+  "recurring_runs",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    ruleId: uuid("rule_id").notNull(),
+    occurrenceDate: date("occurrence_date", { mode: "string" }).notNull(),
+    status: text("status", {
+      enum: ["created", "skipped", "attention"],
+    }).notNull(),
+    // A fixed, non-sensitive sentence for an occurrence that needs attention.
+    reason: text("reason"),
+    transactionId: uuid("transaction_id"),
+    transferId: uuid("transfer_id"),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    foreignKey({
+      name: "recurring_runs_scoped_rule_fk",
+      columns: [table.ledgerId, table.ruleId],
+      foreignColumns: [recurringRules.ledgerId, recurringRules.id],
+    }),
+    uniqueIndex("recurring_runs_occurrence_idx").on(
+      table.ledgerId,
+      table.ruleId,
+      table.occurrenceDate,
+    ),
+    index("recurring_runs_status_idx").on(table.ledgerId, table.status),
+    check(
+      "recurring_runs_state_check",
+      sql`(${table.status} = 'created' AND (${table.transactionId} IS NOT NULL)) OR (${table.status} <> 'created' AND ${table.transactionId} IS NULL AND ${table.transferId} IS NULL)`,
+    ),
+    check(
+      "recurring_runs_reason_check",
+      sql`(${table.status} = 'attention') = (${table.reason} IS NOT NULL)`,
+    ),
+    check("recurring_runs_version_check", sql`${table.version} >= 1`),
+  ],
+);
+
 /** Currencies a ledger has pinned besides its base currency (ADR 0022). */
 export const currencies = pgTable(
   "currencies",

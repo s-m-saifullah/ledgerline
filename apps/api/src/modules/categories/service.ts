@@ -18,7 +18,10 @@ import type { z } from "zod";
 import type { Database, DatabaseTransaction } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { requireLedgerRead } from "../ledgers/service";
-import { requireNoActiveTransactions } from "../transactions/reference-service";
+import {
+  requireNoActiveRules,
+  requireNoActiveTransactions,
+} from "../transactions/reference-service";
 import {
   runFinancialWrite,
   type WriteContext,
@@ -440,6 +443,7 @@ export function deleteCategory(
           "Delete or move the child categories first, including archived children.",
         );
       await requireNoActiveTransactions(tx, ledgerId, "categoryId", id);
+      await requireNoActiveRules(tx, ledgerId, "categoryId", id);
       requireVersionUpdate(
         await repo.update(
           id,
