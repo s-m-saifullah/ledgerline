@@ -1,7 +1,7 @@
 import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { NativeSelect } from "../../components/native-select";
 import { ApiError, getLedgers } from "../../lib/api";
 import { prepareLedgerTimeZone } from "./api";
 
@@ -88,23 +88,20 @@ export function TimeZoneCard() {
         >
           <fieldset disabled={busy} className="account-fields">
             <label htmlFor="ledger-time-zone">Time zone</label>
-            <div className="account-select category-select select-with-arrow">
-              <select
-                id="ledger-time-zone"
-                value={selected}
-                onChange={(event) => {
-                  setChoice(event.target.value);
-                  setMessage("");
-                }}
-              >
-                {options.map((name) => (
-                  <option key={name} value={name}>
-                    {name.replaceAll("_", " ")}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={18} aria-hidden="true" />
-            </div>
+            <NativeSelect
+              id="ledger-time-zone"
+              value={selected}
+              onChange={(event) => {
+                setChoice(event.target.value);
+                setMessage("");
+              }}
+            >
+              {options.map((name) => (
+                <option key={name} value={name}>
+                  {name.replaceAll("_", " ")}
+                </option>
+              ))}
+            </NativeSelect>
           </fieldset>
           {message && (
             <p

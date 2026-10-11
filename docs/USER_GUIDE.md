@@ -41,6 +41,17 @@ Home shows **In hand**: the positive balances of your active bank, cash, wallet 
 - **Money held for someone else:** record a transfer into and out of a dedicated pass-through account so neither step counts as income or spending.
 - **Money sent abroad:** an expense in a family-support category, and the service fee as its own expense.
 
+## Recurring entries
+
+For rent, salary, subscriptions and regular transfers, open **More, Recurring** and choose **Add a recurring entry**. First set your **time zone** under More (the Ledger card), so Ledgerline knows what today is for you.
+
+1. Pick a name, the type (expense, income or transfer), the account, the amount and the category, then how often it repeats (every N days, weeks, months or years) and the date it starts. An end date is optional. The form shows the next dates before you save.
+2. On each date Ledgerline creates the entry for you, already counted, dated on that day. If the server was off or the start date is in the past, the missed ones are created too, one per date, and the form tells you how many are due before you save. Nothing is ever created twice, and an entry you delete is not created again.
+3. A month that is too short uses its last day: a rule on the 31st runs on Feb 28 and goes back to the 31st afterwards.
+4. A **transfer** rule can send between currencies: it uses a fixed amount that arrives each time. It can also carry a **bonus**, saved as income in the receiving account each time. A bonus is only added when you switch it on for that rule.
+5. An entry that cannot be created, for example because the account is archived or a currency has no rate yet, waits under **Needs attention** with the reason and is tried again automatically. Fix the cause, or choose **Skip this one**.
+6. **Pause** stops a rule; when you resume it, what came due in between is skipped, not caught up. Editing a rule changes only entries not created yet, and **Delete rule** keeps the entries it already made. An account or category used by a rule cannot be deleted while the rule exists; archive it instead.
+
 ## Money owed to you (People)
 
 Open **More, People** to add a person, log a service you provided (what, date, amount, optional due date) and record full or partial payments as they arrive. Logging a service does not count as income; a payment creates the income in the account that received it. Write off an amount that will never be paid: it leaves the open total but stays in history. Archiving a person keeps their balances and history.

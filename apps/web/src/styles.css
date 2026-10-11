@@ -1003,21 +1003,6 @@ kbd {
   font-weight: 500;
   margin-top: 4px;
 }
-.select-with-arrow {
-  position: relative;
-}
-.select-with-arrow select {
-  appearance: none;
-  padding-inline-end: 48px;
-}
-.select-with-arrow svg {
-  position: absolute;
-  inset-inline-end: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--muted);
-}
 .account-select select {
   width: 100%;
   font-size: 14px;
@@ -2598,6 +2583,18 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
 .budget-summary {
   margin-bottom: 16px;
 }
+/* Stat cards turn into a label-and-amount grid on phones; this one is just text and a button. */
+.budget-summary-empty {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  align-items: start;
+  gap: 8px;
+}
+.budget-summary-empty .account-dialog-actions {
+  margin-top: 8px;
+  justify-content: flex-start;
+}
 .budget-list {
   list-style: none;
   margin: 0;
@@ -2665,9 +2662,13 @@ button.budget-line:hover {
   width: 20px;
   height: 20px;
   min-height: 0;
-  margin-top: 2px;
+  margin-top: 0;
   accent-color: var(--accent);
   flex-shrink: 0;
+}
+/* A 20px line is as tall as the 20px box, so the first line is level with it, wrapped or not. */
+.check-text {
+  line-height: 20px;
 }
 .currency-actions {
   justify-content: flex-start;
@@ -2720,4 +2721,60 @@ button.budget-line:hover {
 .person-balances .balance-note .amount {
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.recurring-dialog .recurring-kinds {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 8px 0 4px;
+}
+.recurring-dialog .recurring-repeat {
+  border: 0;
+  padding: 0;
+  margin: 8px 0 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  min-width: 0;
+}
+.recurring-dialog .recurring-repeat legend {
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.recurring-dialog .recurring-repeat label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+.recurring-dialog .recurring-runs {
+  margin-top: 24px;
+}
+.recurring-dialog .recurring-runs h3 {
+  font-size: 14px;
+}
+.recurring-dialog .recurring-runs ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.recurring-dialog .recurring-runs li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.amount-figure {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 420px) {
+  .recurring-dialog .recurring-kinds label {
+    padding: 10px 8px;
+    gap: 6px;
+  }
 }

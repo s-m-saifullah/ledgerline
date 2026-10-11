@@ -21,6 +21,7 @@ import {
   Moon,
   MoreHorizontal,
   Plus,
+  Repeat,
   Search,
   Shapes,
   Sun,
@@ -64,7 +65,10 @@ export function Shell({
           ? "People"
           : pathname === "/more/currencies"
             ? "Currencies"
-            : (destinations.find(({ to }) => to === pathname)?.label ?? "Home");
+            : pathname === "/more/recurring"
+              ? "Recurring"
+              : (destinations.find(({ to }) => to === pathname)?.label ??
+                "Home");
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -333,6 +337,11 @@ export function Shell({
                     icon: Coins,
                   } as const,
                   {
+                    to: "/more/recurring",
+                    label: "Recurring",
+                    icon: Repeat,
+                  } as const,
+                  {
                     to: "/more/people",
                     label: "People",
                     icon: Wallet,
@@ -567,6 +576,18 @@ export function MorePage() {
           <div>
             <h2>Currencies</h2>
             <p>Add currencies and keep their exchange rates.</p>
+          </div>
+          <ChevronRight size={20} aria-hidden="true" />
+        </Link>
+      </section>
+      <section className="settings-card">
+        <Link to="/more/recurring" className="settings-link">
+          <span className="account-icon">
+            <Repeat size={22} />
+          </span>
+          <div>
+            <h2>Recurring</h2>
+            <p>Rent, salary and regular transfers, created on their dates.</p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />
         </Link>

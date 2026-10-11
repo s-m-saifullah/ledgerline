@@ -220,7 +220,7 @@ export function BudgetsPage() {
               </span>
             </section>
           ) : (
-            <section className="stat-card budget-summary">
+            <section className="stat-card budget-summary budget-summary-empty">
               <p>No budgets for {monthLabel(month)} yet.</p>
               <span className="muted">
                 {writable

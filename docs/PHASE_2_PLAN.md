@@ -2,7 +2,7 @@
 
 Approved by the owner on 2026-10-10 with the recommended choices. Scope comes from [PLAN.md](PLAN.md); decisions are in ADRs 0019 to 0021. The phase gate is **one full month budgeted and reviewed**.
 
-Status (2026-10-11): slices 2a (budgets) and 2b (currencies, see [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)) are built and merged, not released. Slice 2c (recurring entries) is next, then one release for the whole phase.
+Status (2026-10-11): slices 2a (budgets), 2b (currencies, see [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)) and 2c (recurring entries, see [PHASE_2C_PLAN.md](PHASE_2C_PLAN.md)) are built and merged, not released. One release for the whole phase comes next.
 
 ## Delivery order
 
