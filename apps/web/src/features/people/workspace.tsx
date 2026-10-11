@@ -624,10 +624,15 @@ export function PeopleWorkspace({
           l,
           `/receipts/${operation.receipt.id}`,
           "PATCH",
-          updateReceiptSchema.parse({
-            ...fields,
-            expectedPayments: expectedPayments(operation.receipt),
-          }),
+          // Optional fields that were left out stay out of the saved request.
+          JSON.parse(
+            JSON.stringify(
+              updateReceiptSchema.parse({
+                ...fields,
+                expectedPayments: expectedPayments(operation.receipt),
+              }),
+            ),
+          ) as JsonValue,
         );
         return async () => {
           receiptSchema.parse(await run());
@@ -647,15 +652,19 @@ export function PeopleWorkspace({
         l,
         `/contacts/${operation.person.id}/receipts`,
         "POST",
-        createReceiptSchema.parse({
-          ...fields,
-          amount,
-          expectedAllocations: shown.allocations.map((a) => ({
-            receivableId: a.receivableId,
-            expectedVersion: a.version,
-            applied: a.applied.amount,
-          })),
-        }),
+        JSON.parse(
+          JSON.stringify(
+            createReceiptSchema.parse({
+              ...fields,
+              amount,
+              expectedAllocations: shown.allocations.map((a) => ({
+                receivableId: a.receivableId,
+                expectedVersion: a.version,
+                applied: a.applied.amount,
+              })),
+            }),
+          ),
+        ) as JsonValue,
       );
       return async () => {
         const r = receiptSchema.parse(await run());

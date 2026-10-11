@@ -1,14 +1,16 @@
 import { z } from "zod";
 import {
+  currencySchema,
   idSchema,
   ledgerParamsSchema,
-  usdMoneySchema,
+  moneySchema,
   versionSchema,
 } from "./contracts";
+import { rateSchema } from "./currency";
 import {
   contactParamsSchema,
   paymentSchema,
-  positiveUsdSchema,
+  positiveMoneySchema,
 } from "./receivables";
 import { transactionDateSchema, transactionTimeSchema } from "./transactions";
 
@@ -42,17 +44,19 @@ const allocationSchema = z.object({
   description: z.string(),
   serviceDate: transactionDateSchema,
   version: versionSchema,
-  outstanding: usdMoneySchema,
-  applied: usdMoneySchema,
-  remainingAfter: usdMoneySchema,
+  outstanding: moneySchema,
+  applied: moneySchema,
+  remainingAfter: moneySchema,
 });
 export const receiptPreviewQuerySchema = z.object({
   amount: z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+  // A receipt settles the person's open services in one currency (ADR 0022).
+  currency: currencySchema.default("USD"),
 });
 export const receiptPreviewSchema = z.object({
   contactId: idSchema,
-  amount: usdMoneySchema,
-  openTotal: usdMoneySchema,
+  amount: moneySchema,
+  openTotal: moneySchema,
   exceedsBalance: z.boolean(),
   tooManyServices: z.boolean(),
   allocations: z.array(allocationSchema),
@@ -69,8 +73,16 @@ const receiptFields = {
   time: transactionTimeSchema.nullable().default(null),
   note: z.string().trim().max(2000).nullable().default(null),
 };
+// What arrives in the account when its currency differs from the services' currency, and a
+// rate set by hand when neither uses the base currency; both are shared across the payments.
+const receivedFields = {
+  receivedAmount: positiveMoneySchema.optional(),
+  fxRate: rateSchema.optional(),
+};
 export const createReceiptSchema = z.strictObject({
-  amount: positiveUsdSchema,
+  // What the receipt settles, in the services' currency.
+  amount: positiveMoneySchema,
+  ...receivedFields,
   ...receiptFields,
   expectedAllocations: z
     .array(expectedAllocationSchema)
@@ -87,6 +99,7 @@ const expectedPaymentsSchema = z
   .min(1)
   .max(MAX_RECEIPT_ALLOCATIONS);
 export const updateReceiptSchema = z.strictObject({
+  ...receivedFields,
   ...receiptFields,
   expectedPayments: expectedPaymentsSchema,
 });
@@ -100,7 +113,7 @@ export const receiptContactParamsSchema = contactParamsSchema;
 export const receiptSchema = z.object({
   id: idSchema,
   contactId: idSchema,
-  amount: positiveUsdSchema,
+  amount: positiveMoneySchema,
   payments: z.array(paymentSchema).min(1),
 });
 export type ReceiptPreview = z.infer<typeof receiptPreviewSchema>;

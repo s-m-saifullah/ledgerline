@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.25"
+    "version": "0.1.26"
   },
   "components": {
     "schemas": {
@@ -20301,6 +20301,16 @@
           },
           {
             "schema": {
+              "default": "USD",
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "in": "query",
+            "name": "currency",
+            "required": false
+          },
+          {
+            "schema": {
               "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
@@ -20348,9 +20358,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -20369,9 +20377,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -20419,9 +20425,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -20440,9 +20444,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -20461,9 +20463,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -20850,15 +20850,35 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
                       "amount",
                       "currency"
                     ]
+                  },
+                  "receivedAmount": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   },
                   "accountId": {
                     "type": "string",
@@ -21009,9 +21029,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -22037,9 +22055,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -23016,6 +23032,28 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "receivedAmount": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
+                  },
                   "accountId": {
                     "type": "string",
                     "format": "uuid",
@@ -23164,9 +23202,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -24668,9 +24704,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [

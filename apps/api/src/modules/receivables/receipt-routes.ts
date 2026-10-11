@@ -72,6 +72,7 @@ export async function receiptRoutes(
         r.params.ledgerId,
         r.params.contactId,
         r.query.amount,
+        r.query.currency,
       ),
   );
   app.post(
