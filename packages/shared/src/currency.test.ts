@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   allocateBaseAmounts,
+  bonusFromBps,
   convertMinor,
   currencyDigits,
   deriveRate,
@@ -221,5 +222,18 @@ describe("deriveRate", () => {
   });
   it("rejects a zero source amount", () => {
     expect(() => deriveRate(100, 0, "EUR", "USD")).toThrow(RangeError);
+  });
+});
+
+describe("bonusFromBps", () => {
+  it("takes whole basis points of the amount, rounded half up", () => {
+    expect(bonusFromBps(100_000, 250)).toBe(2500);
+    expect(bonusFromBps(1_370_000, 250)).toBe(34_250);
+    expect(bonusFromBps(199, 250)).toBe(5);
+    expect(bonusFromBps(100, 50)).toBe(1);
+    expect(bonusFromBps(99, 50)).toBe(0);
+    expect(bonusFromBps(Number.MAX_SAFE_INTEGER, 10_000)).toBe(
+      Number.MAX_SAFE_INTEGER,
+    );
   });
 });

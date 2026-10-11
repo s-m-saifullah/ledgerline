@@ -297,3 +297,12 @@ export const rateLookupSchema = z.object({
   source: z.enum(["api", "manual", "base"]).nullable(),
 });
 export type RateLookup = z.infer<typeof rateLookupSchema>;
+
+/**
+ * A bonus (ADR 0023) on a received amount: whole basis points of it, rounded half up to the
+ * smallest unit of the currency. Pure integer maths, never a float.
+ */
+export function bonusFromBps(received: number, bps: number): number {
+  const scaled = BigInt(received) * BigInt(bps);
+  return Number((scaled + 5000n) / 10_000n);
+}

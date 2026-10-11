@@ -31,6 +31,17 @@ const receivedAmount = moneySchema
 // Base-currency value of one unit of the sent currency, for transfers where neither account
 // uses the base currency; omitted means the newest stored rate on or before the date.
 const manualRate = rateSchema.optional();
+// An optional bonus on the received amount (ADR 0023): one income entry in the receiving
+// account, always shown and confirmed by the person. Without a category it uses the account's.
+const bonus = z
+  .strictObject({
+    amount: moneySchema.refine((money) => money.amount > 0, {
+      path: ["amount"],
+      message: "Enter a positive bonus amount.",
+    }),
+    categoryId: idSchema.optional(),
+  })
+  .optional();
 const distinct = (body: { fromAccountId: string; toAccountId: string }) =>
   body.fromAccountId.toLowerCase() !== body.toAccountId.toLowerCase();
 export const createTransferSchema = z
@@ -38,6 +49,7 @@ export const createTransferSchema = z
     ...fields,
     receivedAmount,
     fxRate: manualRate,
+    bonus,
     time: fields.time.default(null),
     note: fields.note.default(null),
   })
@@ -58,6 +70,8 @@ export const updateTransferSchema = z
   });
 export const transferVersionSchema = z.strictObject({
   expectedVersion: versionSchema,
+  // Delete the transfer's bonus entry together with it (ADR 0023).
+  deleteBonus: z.boolean().optional(),
 });
 export const transferParamsSchema = ledgerParamsSchema.extend({
   transferId: idSchema,
@@ -68,6 +82,16 @@ export const transferSchema = z.object({
   receivedAmount: moneySchema,
   // The transfer's value in the base currency; both legs carry opposite, equal base amounts.
   baseAmount: usdMoneySchema,
+  // The income entry the transfer's bonus created, if any (ADR 0023).
+  bonus: z
+    .object({
+      transactionId: idSchema,
+      amount: moneySchema,
+      categoryId: idSchema,
+      deletedAt: z.iso.datetime().nullable(),
+    })
+    .nullable()
+    .default(null),
   id: idSchema,
   ledgerId: idSchema,
   fromTransactionId: idSchema,

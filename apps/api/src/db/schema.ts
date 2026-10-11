@@ -134,6 +134,9 @@ export const accounts = pgTable(
     }).notNull(),
     currency: text("currency").notNull().default("USD"),
     openingBalance: bigint("opening_balance", { mode: "number" }).notNull(),
+    // Optional bonus added to transfers into this account, in whole basis points (ADR 0023).
+    inboundBonusBps: integer("inbound_bonus_bps"),
+    bonusCategoryId: uuid("bonus_category_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     version: integer("version").notNull().default(1),
     ...audit(),
@@ -153,6 +156,15 @@ export const accounts = pgTable(
     check(
       "accounts_type_check",
       sql`${table.type} IN ('bank', 'cash', 'card', 'wallet', 'loan', 'savings')`,
+    ),
+    foreignKey({
+      name: "accounts_scoped_bonus_category_fk",
+      columns: [table.ledgerId, table.bonusCategoryId],
+      foreignColumns: [categories.ledgerId, categories.id],
+    }),
+    check(
+      "accounts_bonus_rate_check",
+      sql`${table.inboundBonusBps} IS NULL OR ${table.inboundBonusBps} BETWEEN 1 AND 10000`,
     ),
     check("accounts_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check(
@@ -218,6 +230,7 @@ export const categories = pgTable(
     ...audit(),
   },
   (table) => [
+    uniqueIndex("categories_ledger_id_id_idx").on(table.ledgerId, table.id),
     uniqueIndex("categories_scope_kind_id_idx").on(
       table.ledgerId,
       table.kind,
@@ -280,6 +293,8 @@ export const transactions = pgTable(
     payee: text("payee"),
     note: text("note"),
     transferId: uuid("transfer_id"),
+    // The income entry a transfer's bonus created points back at that transfer (ADR 0023).
+    relatedTransferId: uuid("related_transfer_id"),
     receivablePaymentId: uuid("receivable_payment_id"),
     receivableId: uuid("receivable_id"),
     status: text("status")
@@ -330,6 +345,14 @@ export const transactions = pgTable(
       foreignColumns: [categories.ledgerId, categories.kind, categories.id],
     }),
     uniqueIndex("transactions_scope_id_idx").on(table.ledgerId, table.id),
+    // A transfer has at most one bonus entry, and only an income entry can be one.
+    uniqueIndex("transactions_related_transfer_idx")
+      .on(table.ledgerId, table.relatedTransferId)
+      .where(sql`${table.relatedTransferId} IS NOT NULL`),
+    check(
+      "transactions_related_transfer_check",
+      sql`${table.relatedTransferId} IS NULL OR (${table.kind} = 'income' AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL)`,
+    ),
     index("transactions_ledger_date_id_idx").on(
       table.ledgerId,
       table.date,

@@ -14,6 +14,8 @@ const fixture: Account = {
   type: "bank",
   currency: "USD",
   openingBalance: { amount: 120029, currency: "USD" },
+  inboundBonusBps: null,
+  bonusCategoryId: null,
   balance: { amount: 120029, currency: "USD" },
   archivedAt: null,
   version: 1,

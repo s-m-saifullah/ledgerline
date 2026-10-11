@@ -1,8 +1,8 @@
 import { type CreateTransfer, newId } from "@ledgerline/shared";
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { transactions } from "../../db/schema";
-import type { TransferPricing } from "./pricing";
+import type { EntryPricing, TransferPricing } from "./pricing";
 export function transferRepository(db: DatabaseConnection, ledgerId: string) {
   const scope = (id: string) =>
     and(eq(transactions.ledgerId, ledgerId), eq(transactions.transferId, id));
@@ -86,6 +86,75 @@ export function transferRepository(db: DatabaseConnection, ledgerId: string) {
       }
       return db.select().from(transactions).where(scope(id));
     },
+    /** The bonus income entry a transfer created, deleted or not (ADR 0023). */
+    bonus: async (id: string) =>
+      (
+        await db
+          .select()
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.ledgerId, ledgerId),
+              eq(transactions.relatedTransferId, id),
+            ),
+          )
+          .for("update")
+      )[0],
+    createBonus: async (
+      transferId: string,
+      input: {
+        accountId: string;
+        categoryId: string;
+        amount: number;
+        currency: string;
+        date: string;
+        time: string | null;
+      },
+      pricing: EntryPricing,
+    ) =>
+      (
+        await db
+          .insert(transactions)
+          .values({
+            ledgerId,
+            kind: "income",
+            relatedTransferId: transferId,
+            accountId: input.accountId,
+            categoryId: input.categoryId,
+            amount: input.amount,
+            currency: input.currency,
+            fxRate: pricing.fxRate,
+            baseAmount: pricing.baseAmount,
+            date: input.date,
+            time: input.time,
+            status: "cleared",
+          })
+          .returning()
+      )[0],
+    /**
+     * Delete the bonus with its transfer, or bring it back with it. A restore only brings back
+     * a bonus that was deleted at the same moment, never one deleted on its own.
+     */
+    bonusLifecycle: (
+      id: string,
+      change: { deletedAt: Date } | { restoreFrom: Date },
+    ) =>
+      db
+        .update(transactions)
+        .set({
+          deletedAt: "deletedAt" in change ? change.deletedAt : null,
+          version: sql`${transactions.version} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(transactions.ledgerId, ledgerId),
+            eq(transactions.relatedTransferId, id),
+            "deletedAt" in change
+              ? isNull(transactions.deletedAt)
+              : eq(transactions.deletedAt, change.restoreFrom),
+          ),
+        ),
     lifecycle: (id: string, deletedAt: Date | null, version: number) =>
       db
         .update(transactions)

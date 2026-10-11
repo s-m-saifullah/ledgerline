@@ -1,5 +1,13 @@
 # API version notes
 
+## 0.1.24 — Transfer bonus
+
+Accounts gain two optional settings for a bonus on incoming transfers: `inboundBonusBps` (whole basis points, 1 to 10000, so 2.5% is 250) and `bonusCategoryId` (an active income category of the same ledger). `POST` and `PATCH /accounts` accept both (`null` clears), and account responses return both (`null` when unset).
+
+`POST /transfers` accepts an optional `bonus: { amount, categoryId? }`. The amount is positive and in the receiving account's currency; without `categoryId` the receiving account's default is used (409 on `bonus.categoryId` when there is none). The transfer and one income entry in the receiving account are saved in the same atomic write, dated like the transfer and priced like any entry, so a retry with the same `Idempotency-Key` cannot create a second bonus. Transfer responses gain `bonus` (`{ transactionId, amount, categoryId, deletedAt }` or `null`). Entries gain `relatedTransferId`, set only on that income entry.
+
+`DELETE /transfers/{id}` accepts `deleteBonus: true` to delete the bonus entry with the transfer; restoring the transfer brings back a bonus that was deleted with it, never one deleted on its own. Editing a transfer leaves its bonus untouched. Migration 0015.
+
 ## 0.1.23 — Rate preview for entries
 
 New `GET /ledgers/{ledgerId}/exchange-rates/lookup?code=&date=` returns the rate an entry in a currency on a date would be saved with: the newest stored rate on or before the date (`rateDate` says which day it came from), exactly 1 for the base currency (`source: "base"`), or `rate: null` when none exists yet. It uses the same lookup as saving and fails nowhere; it lets screens show the base-currency value before an entry is saved. Read-only and ledger-scoped; nothing else changes.

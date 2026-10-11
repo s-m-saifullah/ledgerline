@@ -26,6 +26,7 @@ const row: Transaction = {
   baseAmount: { amount: -123, currency: "USD" },
   fxRate: "1",
   transferId: null,
+  relatedTransferId: null,
   receivablePaymentId: null,
   receivableId: null,
   isSplit: false,
