@@ -177,3 +177,84 @@ it("retains archived historical assignments, masks money and prevents viewer wri
     screen.queryByRole("button", { name: "Delete transaction" }),
   ).not.toBeInTheDocument();
 });
+
+const euroBank = {
+  id: newId(),
+  ledgerId,
+  name: "Euro bank",
+  type: "bank",
+  currency: "EUR",
+  archivedAt: null,
+} as Account;
+const euroRow: Transaction = {
+  ...row,
+  accountId: euroBank.id,
+  amount: { amount: -10000, currency: "EUR" },
+  baseAmount: { amount: -11217, currency: "USD" },
+  fxRate: "1.1217",
+};
+function mountEuro() {
+  const fetchMock = vi.fn<typeof fetch>(async (url, init) => {
+    const target = String(url);
+    if (init?.method === "PATCH") return json({ ...euroRow, version: 2 });
+    if (target.endsWith("/currencies"))
+      return json({ baseCurrency: "USD", items: [] });
+    // Today's stored rate differs from the entry's own, to prove the saved one is kept.
+    return json({
+      code: "EUR",
+      date: "2026-10-07",
+      baseCurrency: "USD",
+      rate: "1.5",
+      rateDate: "2026-10-07",
+      source: "api",
+    });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  render(
+    <QueryClientProvider client={client()}>
+      <TransactionEditor
+        {...props}
+        transaction={euroRow}
+        accounts={[euroBank]}
+      />
+    </QueryClientProvider>,
+  );
+  return fetchMock;
+}
+const patched = (fetchMock: ReturnType<typeof mountEuro>) =>
+  JSON.parse(
+    String(
+      fetchMock.mock.calls.find(([, init]) => init?.method === "PATCH")?.[1]
+        ?.body,
+    ),
+  );
+
+it("shows a foreign entry in its own currency with its saved rate, and keeps that rate on an edit", async () => {
+  const fetchMock = mountEuro();
+  expect(screen.getByLabelText("Amount (EUR)")).toHaveValue("100.00");
+  expect(await screen.findByText(/About/)).toHaveTextContent(
+    "About $112.17 · 1 USD = 0.891504 EUR (this entry's saved rate)",
+  );
+  await userEvent.clear(screen.getByLabelText("Payee"));
+  await userEvent.type(screen.getByLabelText("Payee"), "Cafe");
+  await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
+  const body = patched(fetchMock);
+  expect(body.amount).toEqual({ amount: -10000, currency: "EUR" });
+  // The saved rate is kept by the server; the form sends none unless one is set here.
+  expect(body.fxRate).toBeUndefined();
+  expect(body.expectedVersion).toBe(1);
+});
+
+it("sends a new rate only when it is set by hand", async () => {
+  const fetchMock = mountEuro();
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Set the rate yourself" }),
+  );
+  const field = screen.getByLabelText("1 USD is worth (EUR)");
+  await userEvent.clear(field);
+  await userEvent.type(field, "1.25");
+  await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
+  expect(patched(fetchMock).fxRate).toBe("0.8");
+});

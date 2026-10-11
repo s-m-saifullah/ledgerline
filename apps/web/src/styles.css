@@ -2671,3 +2671,18 @@ button.budget-line:hover {
 .account-base-value {
   margin: 0;
 }
+.entry-rate {
+  display: grid;
+  gap: 4px;
+}
+.entry-rate p {
+  margin: 0;
+}
+.entry-rate-toggle {
+  justify-self: start;
+  min-height: 44px;
+}
+.entry-rate-edit {
+  display: grid;
+  gap: 8px;
+}

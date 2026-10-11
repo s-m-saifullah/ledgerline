@@ -1,5 +1,9 @@
 # API version notes
 
+## 0.1.23 — Rate preview for entries
+
+New `GET /ledgers/{ledgerId}/exchange-rates/lookup?code=&date=` returns the rate an entry in a currency on a date would be saved with: the newest stored rate on or before the date (`rateDate` says which day it came from), exactly 1 for the base currency (`source: "base"`), or `rate: null` when none exists yet. It uses the same lookup as saving and fails nowhere; it lets screens show the base-currency value before an entry is saved. Read-only and ledger-scoped; nothing else changes.
+
 ## 0.1.22 — Accounts and entries in other currencies
 
 Accounts, entries and transfers can now use any currency the ledger has added; USD stays the base currency. Request and response changes:
