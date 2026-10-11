@@ -61,7 +61,9 @@ export function Shell({
         ? "Categories"
         : pathname === "/more/people"
           ? "People"
-          : (destinations.find(({ to }) => to === pathname)?.label ?? "Home");
+          : pathname === "/more/currencies"
+            ? "Currencies"
+            : (destinations.find(({ to }) => to === pathname)?.label ?? "Home");
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);

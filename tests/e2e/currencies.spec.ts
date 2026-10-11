@@ -121,6 +121,7 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
   await page.getByLabel("1 USD is worth (EUR)").fill("1.25");
   await page.getByRole("button", { name: "Save rate" }).click();
   await expect(page.getByText(/1 USD = 1\.25 EUR/)).toBeVisible();
+  await expect(page.locator(".topbar-page")).toHaveText("Currencies");
 
   // 2. Add a euro account; its card shows euros and today's value in dollars.
   await page.goto("/more/accounts");
@@ -133,6 +134,7 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
   await dialog.getByLabel("Opening balance (EUR)").fill("1000");
   await dialog.getByRole("button", { name: "Add account" }).click();
   await expect(page.getByText("€1,000.00")).toBeVisible();
+  await expect(page.getByText(/· EUR$/)).toBeVisible();
   await expect(
     page.getByText("About $800.00 in USD at today's rate"),
   ).toBeVisible();
