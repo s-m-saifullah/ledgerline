@@ -4,7 +4,7 @@ Approved by the owner on 2026-10-10. This expands slice 2b of [PHASE_2_PLAN.md](
 
 ## Status (2026-10-11)
 
-Steps 1 to 3 are built and merged to `main`, not yet released: foundation (rates tables, Currencies screen, API 0.1.20), read side (API 0.1.21), and enabling currencies (API 0.1.22 and 0.1.23, migrations 0012 to 0014, the entry screens). Step 4 (transfer bonus, API 0.1.24, migration 0015) and step 5 (money owed in other currencies, API 0.1.25 and 0.1.26, migration 0016) are built and merged. Slice 2b is complete. The owner decided on 2026-10-11 to release once, when all of Phase 2 is ready, so none of these steps ships on its own.
+Steps 1 to 3: foundation (rates tables, Currencies screen, API 0.1.20), read side (API 0.1.21), and enabling currencies (API 0.1.22 and 0.1.23, migrations 0012 to 0014, the entry screens). Step 4 (transfer bonus, API 0.1.24, migration 0015) and step 5 (money owed in other currencies, API 0.1.25 and 0.1.26, migration 0016). Slice 2b is complete and shipped with the rest of Phase 2 in `v0.1.0` on 2026-10-11.
 
 ## Steps, each its own pull request and release candidate
 

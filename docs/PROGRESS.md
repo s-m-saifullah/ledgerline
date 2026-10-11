@@ -4,18 +4,22 @@ Read this at the start of every session and update it when a piece of work lands
 
 ## Current status
 
-- **Phase:** 1 (Core ledger) is complete (the owner ended the seven-day trial early and accepted the gate on 2026-10-10, ADR 0013). Phase 2 is in progress ([PHASE_2_PLAN.md](PHASE_2_PLAN.md), [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)): slice 2a (budgets) and slice 2b (currencies, including the transfer bonus and money owed in other currencies) and slice 2c (recurring entries) are built and merged but **not released**.
-- **Latest release:** `v0.0.10` (API 0.1.18, migrations 0000 to 0010).
-- **On `main`, not yet released:** the version label in the web app, budgets with computed rollover, the Currencies screen, base-currency totals and split base amounts, accounts, entries and transfers in other currencies, the transfer bonus, and money owed in other currencies (API 0.1.28, migrations 0011 to 0018). The release also needs its verified backup and restore drill first; migrations 0013, 0014 and 0016 rewrite existing split, transfer and money-owed rules.
-- **Next:** prepare the single Phase 2 release (upgrade checks on a scratch database, then the release steps). The owner chose to release once, when all of Phase 2 is ready, so nothing on `main` ships before then.
-- **Known follow-ups:** review Dependabot's grouped Actions updates when they appear; automated off-site backups are Phase 4.
+- **Phase:** 1 (Core ledger) is complete (the owner ended the seven-day trial early and accepted the gate on 2026-10-10, ADR 0013). Phase 2 is built and released ([PHASE_2_PLAN.md](PHASE_2_PLAN.md), [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md), [PHASE_2C_PLAN.md](PHASE_2C_PLAN.md)): budgets with rollover, currencies (rates, the transfer bonus, money owed in other currencies) and recurring entries. Its gate, one full month budgeted and reviewed, is still to be met by daily use.
+- **Latest release:** `v0.1.0` (2026-10-11; API 0.1.28, migrations 0000 to 0018). It was upgraded in place from `v0.0.10` after a verified backup and a restore drill, with every row count and derived check unchanged.
+- **Next:** the owner fixes small bugs found in daily use, then Phase 3 (reports, tags and receipts, CSV import and export) starts with a design for approval.
+- **Known follow-ups:**
+  - The production smoke script's Home check adds account balances in their own units, so it reports a false mismatch of net worth and in hand as soon as an account uses another currency (Home itself is right, confirmed by valuing each balance at the stored rate). Make `infra/scripts/home-consistency.mjs` currency-aware, with tests.
+  - Review Dependabot's grouped Actions updates when they appear.
+  - Known gaps: merging a category leaves its budget on the archived source category; Home has no budget summary yet; an account's default bonus category is not repointed when its category is merged or archived; the People history line for a cross-currency payment shows the amount received, not the amount it settled.
+  - Automated off-site backups are Phase 4.
 
 ## Phase checklist
 
 - [x] Phase 0, foundations: monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy
 - [x] Phase 1, core ledger: safe writes, accounts, categories, transactions, quick add, list and editor, transfers, account and category deletion, splits, money owed (People), category merge, Home
 - [x] Phase 1 gate: daily use (owner accepted it after two days of the seven-day trial)
-- [ ] Phase 2: budgets with rollover (built), currencies with transfer bonus and money owed in other currencies (built), recurring rules (built)
+- [x] Phase 2: budgets with rollover, currencies with transfer bonus and money owed in other currencies, recurring rules (released as `v0.1.0`)
+- [ ] Phase 2 gate: one full month budgeted and reviewed
 - [ ] Phase 3, insights and import: reports, tags and receipts, CSV import and export
 - [ ] Phase 4, hardening: two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility
 - [ ] Phase 5, Android
@@ -24,6 +28,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 Newest first. One short entry per piece of work.
 
+- **2026-10-11:** Released `v0.1.0`, the whole of Phase 2. Before the release: an upgrade check on a scratch database (a schema at the old release's migration level, loaded with data shaped like the restore drill's seed, then migrations 0011 to 0018), a read-only check of the server, and a verified backup and restore drill. After the deploy: the server runs `v0.1.0` with 19 migrations and the five new tables, the background jobs ran their first ticks (including the daily rate fetch), and the backups taken just before and just after the upgrade have equal row counts in every existing table and identical derived checks (balances, net worth, owed, transfers, splits, linked payments, receipts). Two Dependabot alerts about esbuild's development server were closed first by keeping a single patched esbuild in the dependency tree.
 - **2026-10-11:** Phase 2 upgrade check, ahead of the single release: on a scratch database, a schema at production's migration level (0010) was loaded with data shaped like the restore drill's seed (entries, a split, transfers, services, payments, a receipt), then migrations 0011 to 0018 were applied. Every migration applied; balances, entry amounts, split base amounts and receivables were unchanged (entries gain an exact rate of 1, splits gain base amounts that add up to their parent); the receivable check function held for every receivable; the full backup and restore drill passed afterwards, with pg-boss's schema present. Nothing was released.
 - **2026-10-11:** Slice 2c step 4, the Recurring screen: More, Recurring lists each rule with its schedule, next date and flags (paused, needs attention); an editor adds or changes a rule (expense, income or transfer, with the next dates previewed and how many entries are already due), shows what the rule has done, skips an occurrence that needs attention, pauses, resumes and deletes (red, with confirmation). It asks for the ledger time zone first. Checked at 320, 390 and desktop in light and dark, and by a browser test. Slice 2c is complete. Not released.
 - **2026-10-11:** Slice 2c step 3, recurring rules and the runner (ADR 0024, API 0.1.28, migration 0018): rules for expenses, income and transfers on daily, weekly, monthly or yearly schedules (a transfer rule can carry an explicit bonus and a fixed received amount). The hourly job creates every occurrence that has come due, dated on its own day, with stable keys so nothing is duplicated and a deleted entry is never recreated; occurrences that cannot be created wait with a fixed reason, are retried and can be skipped. Pause skips what came due, edits only touch future occurrences, and a rule whose creator lost write access is paused. The backup and restore drill cover the new tables and check their links. Screens are the next step. Not released.

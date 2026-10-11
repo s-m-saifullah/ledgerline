@@ -1,5 +1,7 @@
 # API version notes
 
+Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
+
 ## 0.1.28 — Recurring rules
 
 New under `/ledgers/{ledgerId}`: `GET` and `POST /recurring-rules`, `GET`, `PATCH` and `DELETE /recurring-rules/{ruleId}`, `POST /recurring-rules/{ruleId}/pause` and `/resume`, `GET /recurring-rules/{ruleId}/runs` and `POST /recurring-runs/{runId}/skip`. A rule (`kind` expense, income or transfer) carries a template (accounts, signed `amount`, category, payee, note; a transfer may have a fixed `receivedAmount` and an explicit `bonus` of `{ amount, categoryId }`) and a schedule (`frequency` day, week, month or year, `interval`, `startDate`, optional `endDate`). Creating a rule needs the ledger time zone (409 on `timeZone` otherwise).
