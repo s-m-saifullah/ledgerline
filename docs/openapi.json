@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.23"
+    "version": "0.1.24"
   },
   "components": {
     "schemas": {
@@ -613,6 +613,32 @@
                             ],
                             "additionalProperties": false
                           },
+                          "inboundBonusBps": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10000
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "bonusCategoryId": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "balance": {
                             "type": "object",
                             "properties": {
@@ -667,6 +693,8 @@
                           "type",
                           "currency",
                           "openingBalance",
+                          "inboundBonusBps",
+                          "bonusCategoryId",
                           "balance",
                           "archivedAt",
                           "version",
@@ -1070,6 +1098,30 @@
                       "amount",
                       "currency"
                     ]
+                  },
+                  "inboundBonusBps": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "bonusCategoryId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -1165,6 +1217,32 @@
                       ],
                       "additionalProperties": false
                     },
+                    "inboundBonusBps": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bonusCategoryId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "balance": {
                       "type": "object",
                       "properties": {
@@ -1219,6 +1297,8 @@
                     "type",
                     "currency",
                     "openingBalance",
+                    "inboundBonusBps",
+                    "bonusCategoryId",
                     "balance",
                     "archivedAt",
                     "version",
@@ -1647,6 +1727,32 @@
                       ],
                       "additionalProperties": false
                     },
+                    "inboundBonusBps": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bonusCategoryId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "balance": {
                       "type": "object",
                       "properties": {
@@ -1701,6 +1807,8 @@
                     "type",
                     "currency",
                     "openingBalance",
+                    "inboundBonusBps",
+                    "bonusCategoryId",
                     "balance",
                     "archivedAt",
                     "version",
@@ -2089,6 +2197,30 @@
                       "amount",
                       "currency"
                     ]
+                  },
+                  "inboundBonusBps": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "bonusCategoryId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -2192,6 +2324,32 @@
                       ],
                       "additionalProperties": false
                     },
+                    "inboundBonusBps": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bonusCategoryId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "balance": {
                       "type": "object",
                       "properties": {
@@ -2246,6 +2404,8 @@
                     "type",
                     "currency",
                     "openingBalance",
+                    "inboundBonusBps",
+                    "bonusCategoryId",
                     "balance",
                     "archivedAt",
                     "version",
@@ -3098,6 +3258,32 @@
                       ],
                       "additionalProperties": false
                     },
+                    "inboundBonusBps": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bonusCategoryId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "balance": {
                       "type": "object",
                       "properties": {
@@ -3152,6 +3338,8 @@
                     "type",
                     "currency",
                     "openingBalance",
+                    "inboundBonusBps",
+                    "bonusCategoryId",
                     "balance",
                     "archivedAt",
                     "version",
@@ -3611,6 +3799,32 @@
                       ],
                       "additionalProperties": false
                     },
+                    "inboundBonusBps": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "bonusCategoryId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "balance": {
                       "type": "object",
                       "properties": {
@@ -3665,6 +3879,8 @@
                     "type",
                     "currency",
                     "openingBalance",
+                    "inboundBonusBps",
+                    "bonusCategoryId",
                     "balance",
                     "archivedAt",
                     "version",
@@ -7112,6 +7328,19 @@
                                               }
                                             ]
                                           },
+                                          "relatedTransferId": {
+                                            "default": null,
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
                                           "receivablePaymentId": {
                                             "default": null,
                                             "anyOf": [
@@ -7260,6 +7489,7 @@
                                           "fxRate",
                                           "baseAmount",
                                           "transferId",
+                                          "relatedTransferId",
                                           "receivablePaymentId",
                                           "receivableId",
                                           "isSplit",
@@ -7684,6 +7914,19 @@
                                           }
                                         ]
                                       },
+                                      "relatedTransferId": {
+                                        "default": null,
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "format": "uuid",
+                                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
                                       "receivablePaymentId": {
                                         "default": null,
                                         "anyOf": [
@@ -7832,6 +8075,7 @@
                                       "fxRate",
                                       "baseAmount",
                                       "transferId",
+                                      "relatedTransferId",
                                       "receivablePaymentId",
                                       "receivableId",
                                       "isSplit",
@@ -11578,6 +11822,19 @@
                                   }
                                 ]
                               },
+                              "relatedTransferId": {
+                                "default": null,
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "receivablePaymentId": {
                                 "default": null,
                                 "anyOf": [
@@ -11714,6 +11971,7 @@
                               "fxRate",
                               "baseAmount",
                               "transferId",
+                              "relatedTransferId",
                               "receivablePaymentId",
                               "receivableId",
                               "isSplit",
@@ -12671,6 +12929,19 @@
                             }
                           ]
                         },
+                        "relatedTransferId": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "receivablePaymentId": {
                           "default": null,
                           "anyOf": [
@@ -12807,6 +13078,7 @@
                         "fxRate",
                         "baseAmount",
                         "transferId",
+                        "relatedTransferId",
                         "receivablePaymentId",
                         "receivableId",
                         "isSplit",
@@ -13660,6 +13932,19 @@
                             }
                           ]
                         },
+                        "relatedTransferId": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "receivablePaymentId": {
                           "default": null,
                           "anyOf": [
@@ -13796,6 +14081,7 @@
                         "fxRate",
                         "baseAmount",
                         "transferId",
+                        "relatedTransferId",
                         "receivablePaymentId",
                         "receivableId",
                         "isSplit",
@@ -14749,6 +15035,19 @@
                             }
                           ]
                         },
+                        "relatedTransferId": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "receivablePaymentId": {
                           "default": null,
                           "anyOf": [
@@ -14885,6 +15184,7 @@
                         "fxRate",
                         "baseAmount",
                         "transferId",
+                        "relatedTransferId",
                         "receivablePaymentId",
                         "receivableId",
                         "isSplit",
@@ -19156,6 +19456,19 @@
                             }
                           ]
                         },
+                        "relatedTransferId": {
+                          "default": null,
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
                         "receivablePaymentId": {
                           "default": null,
                           "anyOf": [
@@ -19292,6 +19605,7 @@
                         "fxRate",
                         "baseAmount",
                         "transferId",
+                        "relatedTransferId",
                         "receivablePaymentId",
                         "receivableId",
                         "isSplit",
@@ -20839,6 +21153,19 @@
                                   }
                                 ]
                               },
+                              "relatedTransferId": {
+                                "default": null,
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "receivablePaymentId": {
                                 "default": null,
                                 "anyOf": [
@@ -20975,6 +21302,7 @@
                               "fxRate",
                               "baseAmount",
                               "transferId",
+                              "relatedTransferId",
                               "receivablePaymentId",
                               "receivableId",
                               "isSplit",
@@ -21865,6 +22193,19 @@
                                   }
                                 ]
                               },
+                              "relatedTransferId": {
+                                "default": null,
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "receivablePaymentId": {
                                 "default": null,
                                 "anyOf": [
@@ -22001,6 +22342,7 @@
                               "fxRate",
                               "baseAmount",
                               "transferId",
+                              "relatedTransferId",
                               "receivablePaymentId",
                               "receivableId",
                               "isSplit",
@@ -22990,6 +23332,19 @@
                                   }
                                 ]
                               },
+                              "relatedTransferId": {
+                                "default": null,
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "receivablePaymentId": {
                                 "default": null,
                                 "anyOf": [
@@ -23126,6 +23481,7 @@
                               "fxRate",
                               "baseAmount",
                               "transferId",
+                              "relatedTransferId",
                               "receivablePaymentId",
                               "receivableId",
                               "isSplit",
@@ -24492,6 +24848,19 @@
                                   }
                                 ]
                               },
+                              "relatedTransferId": {
+                                "default": null,
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "receivablePaymentId": {
                                 "default": null,
                                 "anyOf": [
@@ -24628,6 +24997,7 @@
                               "fxRate",
                               "baseAmount",
                               "transferId",
+                              "relatedTransferId",
                               "receivablePaymentId",
                               "receivableId",
                               "isSplit",
@@ -37528,6 +37898,19 @@
                               }
                             ]
                           },
+                          "relatedTransferId": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "format": "uuid",
+                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
                           "receivablePaymentId": {
                             "default": null,
                             "anyOf": [
@@ -37664,6 +38047,7 @@
                           "fxRate",
                           "baseAmount",
                           "transferId",
+                          "relatedTransferId",
                           "receivablePaymentId",
                           "receivableId",
                           "isSplit",
@@ -38372,6 +38756,19 @@
                         }
                       ]
                     },
+                    "relatedTransferId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "receivablePaymentId": {
                       "default": null,
                       "anyOf": [
@@ -38508,6 +38905,7 @@
                     "fxRate",
                     "baseAmount",
                     "transferId",
+                    "relatedTransferId",
                     "receivablePaymentId",
                     "receivableId",
                     "isSplit",
@@ -39028,6 +39426,19 @@
                         }
                       ]
                     },
+                    "relatedTransferId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "receivablePaymentId": {
                       "default": null,
                       "anyOf": [
@@ -39164,6 +39575,7 @@
                     "fxRate",
                     "baseAmount",
                     "transferId",
+                    "relatedTransferId",
                     "receivablePaymentId",
                     "receivableId",
                     "isSplit",
@@ -39868,6 +40280,19 @@
                         }
                       ]
                     },
+                    "relatedTransferId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "receivablePaymentId": {
                       "default": null,
                       "anyOf": [
@@ -40004,6 +40429,7 @@
                     "fxRate",
                     "baseAmount",
                     "transferId",
+                    "relatedTransferId",
                     "receivablePaymentId",
                     "receivableId",
                     "isSplit",
@@ -40948,6 +41374,19 @@
                         }
                       ]
                     },
+                    "relatedTransferId": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "receivablePaymentId": {
                       "default": null,
                       "anyOf": [
@@ -41084,6 +41523,7 @@
                     "fxRate",
                     "baseAmount",
                     "transferId",
+                    "relatedTransferId",
                     "receivablePaymentId",
                     "receivableId",
                     "isSplit",
@@ -41563,6 +42003,67 @@
                       ],
                       "additionalProperties": false
                     },
+                    "bonus": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "transactionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "amount": {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "pattern": "^[A-Z]{3}$"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "categoryId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "deletedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "transactionId",
+                            "amount",
+                            "categoryId",
+                            "deletedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid",
@@ -41608,6 +42109,7 @@
                     "note",
                     "receivedAmount",
                     "baseAmount",
+                    "bonus",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -42201,6 +42703,67 @@
                       ],
                       "additionalProperties": false
                     },
+                    "bonus": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "transactionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "amount": {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "pattern": "^[A-Z]{3}$"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "categoryId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "deletedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "transactionId",
+                            "amount",
+                            "categoryId",
+                            "deletedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid",
@@ -42246,6 +42809,7 @@
                     "note",
                     "receivedAmount",
                     "baseAmount",
+                    "bonus",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -42602,6 +43166,9 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 2147483647
+                  },
+                  "deleteBonus": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -43073,6 +43640,38 @@
                   "fxRate": {
                     "type": "string",
                     "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
+                  },
+                  "bonus": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ]
+                      },
+                      "categoryId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      }
+                    },
+                    "required": [
+                      "amount"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -43218,6 +43817,67 @@
                       ],
                       "additionalProperties": false
                     },
+                    "bonus": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "transactionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "amount": {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "pattern": "^[A-Z]{3}$"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "categoryId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "deletedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "transactionId",
+                            "amount",
+                            "categoryId",
+                            "deletedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid",
@@ -43263,6 +43923,7 @@
                     "note",
                     "receivedAmount",
                     "baseAmount",
+                    "bonus",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -43621,6 +44282,9 @@
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 2147483647
+                  },
+                  "deleteBonus": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -43773,6 +44437,67 @@
                       ],
                       "additionalProperties": false
                     },
+                    "bonus": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "transactionId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "amount": {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "pattern": "^[A-Z]{3}$"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "categoryId": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            },
+                            "deletedAt": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "transactionId",
+                            "amount",
+                            "categoryId",
+                            "deletedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "id": {
                       "type": "string",
                       "format": "uuid",
@@ -43818,6 +44543,7 @@
                     "note",
                     "receivedAmount",
                     "baseAmount",
+                    "bonus",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -44662,6 +45388,19 @@
                                   }
                                 ]
                               },
+                              "relatedTransferId": {
+                                "default": null,
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "format": "uuid",
+                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
                               "receivablePaymentId": {
                                 "default": null,
                                 "anyOf": [
@@ -44798,6 +45537,7 @@
                               "fxRate",
                               "baseAmount",
                               "transferId",
+                              "relatedTransferId",
                               "receivablePaymentId",
                               "receivableId",
                               "isSplit",

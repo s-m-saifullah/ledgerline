@@ -20,11 +20,18 @@ export const assetAccountTypes = ["bank", "cash", "wallet", "savings"] as const;
 export const isAssetAccountType = (type: z.infer<typeof accountTypeSchema>) =>
   (assetAccountTypes as readonly string[]).includes(type);
 const accountNameSchema = z.string().trim().min(1).max(100);
+// Optional bonus on transfers into the account (ADR 0023): whole basis points (2.5% is 250)
+// and the income category the bonus entry uses by default. Null turns it off.
+const bonusFields = {
+  inboundBonusBps: z.number().int().min(1).max(10_000).nullable().optional(),
+  bonusCategoryId: idSchema.nullable().optional(),
+};
 export const createAccountSchema = z.strictObject({
   name: accountNameSchema,
   type: accountTypeSchema,
   // The opening balance's currency is the account's currency (USD, or a currency the ledger has added).
   openingBalance: moneySchema,
+  ...bonusFields,
 });
 export const updateAccountSchema = z
   .strictObject({
@@ -32,12 +39,15 @@ export const updateAccountSchema = z
     name: accountNameSchema.optional(),
     type: accountTypeSchema.optional(),
     openingBalance: moneySchema.optional(),
+    ...bonusFields,
   })
   .refine(
     (body) =>
       body.name !== undefined ||
       body.type !== undefined ||
-      body.openingBalance !== undefined,
+      body.openingBalance !== undefined ||
+      body.inboundBonusBps !== undefined ||
+      body.bonusCategoryId !== undefined,
     "Provide an account field to update.",
   );
 export const archiveAccountSchema = z.strictObject({
@@ -58,6 +68,9 @@ export const accountSchema = z.object({
   type: accountTypeSchema,
   currency: currencySchema,
   openingBalance: moneySchema,
+  // Older saved responses lack the bonus settings; they read as off.
+  inboundBonusBps: z.number().int().min(1).max(10_000).nullable().default(null),
+  bonusCategoryId: idSchema.nullable().default(null),
   balance: moneySchema,
   archivedAt: z.iso.datetime().nullable(),
   version: versionSchema,

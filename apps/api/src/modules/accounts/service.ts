@@ -4,6 +4,7 @@ import {
   accountSchema,
   type CreateAccount,
   type DeleteAccount,
+  type JsonValue,
   type UpdateAccount,
 } from "@ledgerline/shared";
 import type {
@@ -12,6 +13,10 @@ import type {
   DatabaseTransaction,
 } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
+import {
+  lockTransactionCategories,
+  validateTransactionCategory,
+} from "../categories/service";
 import { requireUsableCurrency } from "../currencies/service";
 import { ledgerBaseCurrency, requireLedgerRead } from "../ledgers/service";
 import {
@@ -31,6 +36,8 @@ function accountDto(row: AccountRow, total = 0n) {
     type: row.type,
     currency: row.currency,
     openingBalance: { amount: row.openingBalance, currency: row.currency },
+    inboundBonusBps: row.inboundBonusBps,
+    bonusCategoryId: row.bonusCategoryId,
     balance: {
       amount: postedBalance(row.openingBalance, total),
       currency: row.currency,
@@ -44,6 +51,17 @@ function accountDto(row: AccountRow, total = 0n) {
 function requireAccount(row: AccountRow | undefined) {
   if (!row) throw new ApiProblem(404, "Not found", "Account not found.");
   return row;
+}
+
+/** A bonus category must be an active income category of this ledger (ADR 0023). */
+async function requireBonusCategory(
+  tx: DatabaseTransaction,
+  ledgerId: string,
+  id: string | null | undefined,
+) {
+  if (!id) return;
+  await lockTransactionCategories(tx, ledgerId);
+  await validateTransactionCategory(tx, ledgerId, id, "income", true);
 }
 
 export async function listAccounts(
@@ -96,7 +114,12 @@ export function createAccount(
 ) {
   return runFinancialWrite(
     db,
-    { ...identity, operation: "POST accounts", request: body },
+    {
+      ...identity,
+      operation: "POST accounts",
+      // Optional fields that were left out stay out of the saved request.
+      request: JSON.parse(JSON.stringify(body)) as JsonValue,
+    },
     async ({ tx, ledgerId, actorId }) => {
       // The opening balance's currency is the account's currency (USD or an added currency).
       await requireUsableCurrency(
@@ -105,6 +128,7 @@ export function createAccount(
         await ledgerBaseCurrency(tx, actorId, ledgerId),
         body.openingBalance.currency,
       );
+      await requireBonusCategory(tx, ledgerId, body.bonusCategoryId);
       return {
         status: 201,
         body: accountDto(
@@ -132,6 +156,12 @@ export function updateAccount(
         ...(body.openingBalance !== undefined
           ? { openingBalance: body.openingBalance }
           : {}),
+        ...(body.inboundBonusBps !== undefined
+          ? { inboundBonusBps: body.inboundBonusBps }
+          : {}),
+        ...(body.bonusCategoryId !== undefined
+          ? { bonusCategoryId: body.bonusCategoryId }
+          : {}),
       },
     },
     async ({ tx, ledgerId }) => {
@@ -153,6 +183,7 @@ export function updateAccount(
             },
           ],
         );
+      await requireBonusCategory(tx, ledgerId, body.bonusCategoryId);
       const updated = requireVersionUpdate(
         await repo.update(id, body, version),
       );

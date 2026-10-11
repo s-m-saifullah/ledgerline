@@ -59,6 +59,8 @@ export function accountRepository(db: DatabaseConnection, ledgerId: string) {
             type: body.type,
             currency: body.openingBalance.currency,
             openingBalance: body.openingBalance.amount,
+            inboundBonusBps: body.inboundBonusBps ?? null,
+            bonusCategoryId: body.bonusCategoryId ?? null,
           })
           .returning()
       )[0],
@@ -70,6 +72,12 @@ export function accountRepository(db: DatabaseConnection, ledgerId: string) {
           ...(body.type !== undefined ? { type: body.type } : {}),
           ...(body.openingBalance !== undefined
             ? { openingBalance: body.openingBalance.amount }
+            : {}),
+          ...(body.inboundBonusBps !== undefined
+            ? { inboundBonusBps: body.inboundBonusBps }
+            : {}),
+          ...(body.bonusCategoryId !== undefined
+            ? { bonusCategoryId: body.bonusCategoryId }
             : {}),
           version,
         })

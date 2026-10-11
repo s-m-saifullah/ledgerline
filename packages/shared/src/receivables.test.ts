@@ -123,5 +123,6 @@ describe("receivable contracts", () => {
     };
     expect(transactionSchema.parse(row).receivableId).toBeNull();
     expect(transactionSchema.parse(row).receivablePaymentId).toBeNull();
+    expect(transactionSchema.parse(row).relatedTransferId).toBeNull();
   });
 });

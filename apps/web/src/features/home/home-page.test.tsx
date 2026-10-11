@@ -43,6 +43,7 @@ function entry(over: Record<string, unknown> = {}) {
     fxRate: "1",
     baseAmount: usd(-4500),
     transferId: null,
+    relatedTransferId: null,
     receivablePaymentId: null,
     receivableId: null,
     isSplit: false,
@@ -82,6 +83,7 @@ function summary(over: Partial<HomeSummary> = {}): HomeSummary {
         transaction: entry({
           kind: "transfer",
           transferId: newId(),
+          relatedTransferId: null,
           categoryId: null,
           amount: usd(-5000),
           baseAmount: usd(-5000),

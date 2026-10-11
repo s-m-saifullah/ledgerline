@@ -12,6 +12,8 @@ const account: Account = {
   type: "card",
   currency: "USD",
   openingBalance: { amount: -98765, currency: "USD" },
+  inboundBonusBps: null,
+  bonusCategoryId: null,
   balance: { amount: -98765, currency: "USD" },
   archivedAt: null,
   version: 1,

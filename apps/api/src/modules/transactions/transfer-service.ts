@@ -7,6 +7,10 @@ import {
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionAccounts } from "../accounts/service";
+import {
+  lockTransactionCategories,
+  validateTransactionCategory,
+} from "../categories/service";
 import { requireLedgerRead } from "../ledgers/service";
 import {
   runFinancialWrite,
@@ -16,7 +20,7 @@ import {
 } from "../writes/service";
 import { nextVersion } from "../writes/version";
 import { postedBalance, postedTransactionTotals } from "./balance-service";
-import { priceTransfer } from "./pricing";
+import { priceEntry, priceTransfer } from "./pricing";
 import type { TransactionRow } from "./repo";
 import { transferRepository } from "./transfer-repo";
 
@@ -38,7 +42,7 @@ function pair(rows: TransactionRow[]) {
     throw new ApiProblem(404, "Not found", "Transfer not found.");
   return { from, to };
 }
-function dto(rows: TransactionRow[]) {
+function dto(rows: TransactionRow[], bonus?: TransactionRow) {
   const { from, to } = pair(rows);
   return transferSchema.parse({
     id: from.transferId,
@@ -51,6 +55,14 @@ function dto(rows: TransactionRow[]) {
     receivedAmount: { amount: to.amount, currency: to.currency },
     // The base currency is USD for every ledger today (ADR 0020).
     baseAmount: { amount: to.baseAmount, currency: "USD" },
+    bonus: bonus?.categoryId
+      ? {
+          transactionId: bonus.id,
+          amount: { amount: bonus.amount, currency: bonus.currency },
+          categoryId: bonus.categoryId,
+          deletedAt: bonus.deletedAt?.toISOString() ?? null,
+        }
+      : null,
     date: from.date,
     time: from.time,
     note: from.note,
@@ -61,7 +73,7 @@ function dto(rows: TransactionRow[]) {
 }
 async function references(
   context: WriteContext,
-  body: CreateTransfer,
+  body: Pick<CreateTransfer, "fromAccountId" | "toAccountId">,
   current?: ReturnType<typeof pair>,
 ) {
   const rows = await lockTransactionAccounts(context.tx, context.ledgerId, [
@@ -108,7 +120,8 @@ export async function getTransfer(
   id: string,
 ) {
   await requireLedgerRead(db, actorId, ledgerId);
-  return dto(await transferRepository(db, ledgerId).find(id));
+  const repo = transferRepository(db, ledgerId);
+  return dto(await repo.find(id), await repo.bonus(id));
 }
 export function createTransfer(
   db: Database,
@@ -130,12 +143,53 @@ export function createTransfer(
         date: body.date,
         manualRate: body.fxRate,
       });
-      const saved = await transferRepository(
-        context.tx,
-        context.ledgerId,
-      ).create(body, pricing);
+      const repo = transferRepository(context.tx, context.ledgerId);
+      const saved = await repo.create(body, pricing);
+      let bonus: TransactionRow | undefined;
+      if (body.bonus) {
+        const to = accountOf(rows, body.toAccountId);
+        const categoryId = body.bonus.categoryId ?? to.bonusCategoryId;
+        if (!categoryId)
+          throw new ApiProblem(
+            409,
+            "Conflict",
+            "Choose a category for the bonus.",
+            [
+              {
+                field: "bonus.categoryId",
+                message: "Choose an income category for the bonus.",
+              },
+            ],
+          );
+        await lockTransactionCategories(context.tx, context.ledgerId);
+        await validateTransactionCategory(
+          context.tx,
+          context.ledgerId,
+          categoryId,
+          "income",
+          true,
+        );
+        // The bonus is income in the receiving account's currency, priced like any entry.
+        const bonusPricing = await priceEntry(context, {
+          accountCurrency: to.currency,
+          amount: body.bonus.amount,
+          date: body.date,
+        });
+        bonus = await repo.createBonus(
+          pair(saved).from.transferId as string,
+          {
+            accountId: to.id,
+            categoryId,
+            amount: body.bonus.amount.amount,
+            currency: body.bonus.amount.currency,
+            date: body.date,
+            time: body.time,
+          },
+          bonusPricing,
+        );
+      }
       await check(context, rows);
-      return { status: 201, body: dto(saved) };
+      return { status: 201, body: dto(saved, bonus) };
     },
   );
 }
@@ -171,7 +225,8 @@ export function updateTransfer(
       });
       const saved = await repo.update(id, body, version, pricing);
       await check(context, rows);
-      return { status: 200, body: dto(saved) };
+      // An edit leaves the bonus alone; it is an ordinary income entry from then on.
+      return { status: 200, body: dto(saved, await repo.bonus(id)) };
     },
   );
 }
@@ -179,14 +234,14 @@ export function transferLifecycle(
   db: Database,
   identity: WriteIdentity,
   id: string,
-  body: { expectedVersion: number },
+  body: { expectedVersion: number; deleteBonus?: boolean | undefined },
   restore: boolean,
 ) {
   return write(
     db,
     identity,
     `${restore ? "POST" : "DELETE"} transfers/${id.toLowerCase()}${restore ? "/restore" : ""}`,
-    body,
+    requestOf(body),
     async (context) => {
       const repo = transferRepository(context.tx, context.ledgerId);
       const saved = await repo.find(id, true, restore),
@@ -199,14 +254,16 @@ export function transferLifecycle(
           "This transfer is already active.",
         );
       const rows = await references(context, dto(saved), current);
-      const updated = await repo.lifecycle(
-        id,
-        restore ? null : new Date(),
-        version,
-      );
+      const deletedAt = restore ? null : new Date();
+      const updated = await repo.lifecycle(id, deletedAt, version);
+      // A bonus goes and comes back with its transfer (the same moment), only when asked to.
+      if (restore && current.from.deletedAt)
+        await repo.bonusLifecycle(id, { restoreFrom: current.from.deletedAt });
+      else if (deletedAt && body.deleteBonus)
+        await repo.bonusLifecycle(id, { deletedAt });
       await check(context, rows);
       return restore
-        ? { status: 200, body: dto(updated) }
+        ? { status: 200, body: dto(updated, await repo.bonus(id)) }
         : { status: 204, body: null };
     },
   );

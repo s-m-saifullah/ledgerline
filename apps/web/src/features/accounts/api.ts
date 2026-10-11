@@ -3,6 +3,7 @@ import {
   accountListSchema,
   accountSchema,
   type CreateAccount,
+  type JsonValue,
 } from "@ledgerline/shared";
 import { api, prepareFinancialWrite } from "../../lib/api";
 
@@ -30,7 +31,12 @@ export function prepareAccountSave(
   const run = prepareFinancialWrite<unknown>(
     account ? `${path(ledgerId)}/${account.id}` : path(ledgerId),
     account ? "PATCH" : "POST",
-    account ? { ...body, expectedVersion: account.version } : body,
+    // Optional fields that are left out stay out of the saved request.
+    JSON.parse(
+      JSON.stringify(
+        account ? { ...body, expectedVersion: account.version } : body,
+      ),
+    ) as JsonValue,
   );
   return async () => accountSchema.parse(await run());
 }
