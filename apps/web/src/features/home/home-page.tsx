@@ -5,7 +5,7 @@ import { ArrowLeftRight, ArrowUpRight, Wallet } from "lucide-react";
 import { getLedgers } from "../../lib/api";
 import { dayLabel } from "../transactions/filters";
 import { useTransactionWorkspace } from "../transactions/workspace";
-import { Amount } from "./amount";
+import { Amount, BaseNote } from "./amount";
 import { getHome } from "./api";
 import { monthLabel, useCurrentMonth } from "./month";
 
@@ -49,8 +49,12 @@ function LatestRow({ row }: { row: HomeLatest }) {
       </span>
       <span className="transaction-row-value">
         <strong>
-          <Amount cents={entry.amount.amount} />
+          <Amount
+            cents={entry.amount.amount}
+            currency={entry.amount.currency}
+          />
         </strong>
+        <BaseNote amount={entry.amount} baseAmount={entry.baseAmount} />
         {entry.status === "pending" && (
           <span className="transaction-pending">Pending</span>
         )}
@@ -197,6 +201,18 @@ export function HomePage() {
                   Cards, loans, pending entries and money owed to you are not
                   included.
                 </span>
+                {data.unconvertedCurrencies.length > 0 && (
+                  <span className="muted" role="note">
+                    {data.unconvertedCurrencies.join(", ")}{" "}
+                    {data.unconvertedCurrencies.length === 1 ? "has" : "have"}{" "}
+                    no exchange rate yet, so{" "}
+                    {data.unconvertedCurrencies.length === 1
+                      ? "that account is"
+                      : "those accounts are"}{" "}
+                    left out of these totals.{" "}
+                    <Link to="/more/currencies">Add a rate</Link>
+                  </span>
+                )}
                 {data.pendingCount > 0 && (
                   <span className="muted">
                     {data.pendingCount === 1
@@ -264,9 +280,18 @@ export function HomePage() {
                             {row.balance.amount < 0 ? " · Overdrawn" : ""}
                           </span>
                         </span>
-                        <strong>
-                          <Amount cents={row.balance.amount} />
-                        </strong>
+                        <span className="home-account-amount">
+                          <strong>
+                            <Amount
+                              cents={row.balance.amount}
+                              currency={row.balance.currency}
+                            />
+                          </strong>
+                          <BaseNote
+                            amount={row.balance}
+                            baseAmount={row.baseBalance}
+                          />
+                        </span>
                       </Link>
                     </li>
                   ))}

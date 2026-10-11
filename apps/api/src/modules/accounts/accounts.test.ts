@@ -651,7 +651,7 @@ describe("Accounts API", () => {
   });
   it("generates OpenAPI for all endpoints with money, version, key and error contracts", async () => {
     const doc = (await app.inject({ url: "/api/v1/openapi.json" })).json();
-    expect(doc.info.version).toBe("0.1.22");
+    expect(doc.info.version).toBe("0.1.23");
     const prefix = "/api/v1/ledgers/{ledgerId}/accounts";
     for (const [path, method] of [
       [prefix, "get"],

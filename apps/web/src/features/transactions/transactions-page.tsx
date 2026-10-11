@@ -5,8 +5,9 @@ import { DateTimeInput } from "../../components/date-time-input";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { formatTime12 } from "../../lib/time";
-import { formatUsd } from "../accounts/money";
+import { formatMoney } from "../accounts/money";
 import { getCategories } from "../categories/api";
+import { BaseNote } from "../home/amount";
 import { PrivacyContext } from "../shell/preferences";
 import { getAllAccounts, getTransactions } from "./api";
 import {
@@ -322,9 +323,13 @@ export function TransactionsPage() {
                               <span className="sr-only">Amount hidden</span>
                             </>
                           ) : (
-                            formatUsd(row.amount.amount)
+                            formatMoney(row.amount.amount, row.amount.currency)
                           )}
                         </strong>
+                        <BaseNote
+                          amount={row.amount}
+                          baseAmount={row.baseAmount}
+                        />
                         <span
                           className={
                             row.status === "pending"

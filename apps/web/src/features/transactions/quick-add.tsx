@@ -19,6 +19,7 @@ import { ApiError } from "../../lib/api";
 import { getCategories, prepareCategorySave } from "../categories/api";
 import { CategoryPicker } from "../categories/picker";
 import { categoryOptions } from "../categories/tree";
+import { EntryRate } from "../currencies/entry-rate";
 import { PrivacyContext } from "../shell/preferences";
 import {
   getActiveAccounts,
@@ -26,13 +27,13 @@ import {
   prepareTransactionUndo,
 } from "./api";
 import {
+  amountMinor,
   rememberAccount,
   type TransactionFormValues,
   transactionBody,
   transactionDefaults,
   transactionFormSchema,
 } from "./form";
-
 import { SplitFields } from "./split-fields";
 import { TransferForm } from "./transfer-form";
 import { useTransactionWorkspace } from "./workspace";
@@ -584,7 +585,9 @@ export function QuickAddForm({
                 Income
               </label>
             </fieldset>
-            <label htmlFor="transaction-amount">Amount (USD)</label>
+            <label htmlFor="transaction-amount">
+              Amount ({watch("currency")})
+            </label>
             <input
               id="transaction-amount"
               className="transaction-amount"
@@ -604,6 +607,15 @@ export function QuickAddForm({
                   ? "Privacy mode hides the amount."
                   : "Enter a positive amount; the entry type sets its direction.")}
             </p>
+            <EntryRate
+              ledgerId={ledgerId}
+              currency={watch("currency")}
+              date={watch("date")}
+              amountMinor={amountMinor(watch("amount"), watch("currency"))}
+              manualRate={watch("fxRate")}
+              onManualRate={(rate) => setValue("fxRate", rate)}
+              disabled={frozen}
+            />
             <SplitFields form={form} categories={categories} kind={kind} />
             {!watch("splitEnabled") && (
               <Controller
@@ -656,9 +668,16 @@ export function QuickAddForm({
                 <NativeSelect
                   id="transaction-account"
                   value={watch("accountId")}
-                  onChange={(event) =>
-                    setValue("accountId", event.target.value)
-                  }
+                  onChange={(event) => {
+                    setValue("accountId", event.target.value);
+                    // The entry is in the account's currency; a hand-set rate was for the old one.
+                    setValue(
+                      "currency",
+                      accounts.find((row) => row.id === event.target.value)
+                        ?.currency ?? "USD",
+                    );
+                    setValue("fxRate", "");
+                  }}
                 >
                   <option value="" disabled>
                     Choose an account

@@ -1,8 +1,11 @@
 import {
   type Account,
   createTransactionSchema,
+  currencyDigits,
+  currencySchema,
   idSchema,
   parseMinorUnits,
+  rateSchema,
   type Transaction,
   transactionKindSchema,
   transactionStatusSchema,
@@ -13,20 +16,42 @@ import { cleanAmountText, decimalFromCents } from "../accounts/money";
 export function localToday(now = new Date()) {
   return `${String(now.getFullYear()).padStart(4, "0")}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
+/** Is `text` (already cleaned) a positive amount that fits the currency's minor units? */
+export function isPositiveAmount(text: string, currency: string) {
+  const digits = currencyDigits(currency);
+  const pattern =
+    digits === 0 ? /^\d+$/ : new RegExp(`^\\d+(?:\\.\\d{1,${digits}})?$`);
+  if (!pattern.test(text)) return false;
+  try {
+    return parseMinorUnits(text, digits) > 0;
+  } catch {
+    return false;
+  }
+}
+export function amountMessage(currency: string) {
+  const digits = currencyDigits(currency);
+  return digits === 0
+    ? "Enter a positive whole amount, within the supported range."
+    : `Enter a positive amount with up to ${digits === 2 ? "two" : digits} decimal places, within the supported range.`;
+}
+/** What the user has typed so far as smallest units, or null while it is not a valid amount. */
+export function amountMinor(text: string, currency: string): number | null {
+  try {
+    const value = parseMinorUnits(
+      cleanAmountText(text),
+      currencyDigits(currency),
+    );
+    return value > 0 ? value : null;
+  } catch {
+    return null;
+  }
+}
 export const transactionFormSchema = z
   .object({
-    amount: z
-      .string()
-      .trim()
-      .transform(cleanAmountText)
-      .refine((value) => {
-        if (!/^\d+(?:\.\d{1,2})?$/.test(value)) return false;
-        try {
-          return parseMinorUnits(value) > 0;
-        } catch {
-          return false;
-        }
-      }, "Enter a positive amount with up to two decimal places, within the supported range."),
+    amount: z.string().trim().transform(cleanAmountText),
+    // The chosen account's currency, and a rate set by hand ("" means use the stored rate).
+    currency: currencySchema,
+    fxRate: z.string(),
     accountId: idSchema,
     categoryId: z.string(),
     splitEnabled: z.boolean().optional(),
@@ -48,6 +73,20 @@ export const transactionFormSchema = z
     note: z.string().trim().max(2000),
   })
   .superRefine((values, ctx) => {
+    const digits = currencyDigits(values.currency);
+    const valid = (text: string) => isPositiveAmount(text, values.currency);
+    if (!valid(values.amount))
+      ctx.addIssue({
+        code: "custom",
+        path: ["amount"],
+        message: amountMessage(values.currency),
+      });
+    if (values.fxRate !== "" && !rateSchema.safeParse(values.fxRate).success)
+      ctx.addIssue({
+        code: "custom",
+        path: ["fxRate"],
+        message: "Enter a valid exchange rate.",
+      });
     if (!values.splitEnabled) {
       if (!idSchema.safeParse(values.categoryId).success)
         ctx.addIssue({
@@ -72,21 +111,17 @@ export const transactionFormSchema = z
           path: ["splits", index, "categoryId"],
           message: "Choose a category.",
         });
-      try {
-        const text = cleanAmountText(line.amount);
-        if (!/^\d+(?:\.\d{1,2})?$/.test(text) || parseMinorUnits(text) <= 0)
-          throw new Error();
-        total += BigInt(parseMinorUnits(text));
-      } catch {
+      const text = cleanAmountText(line.amount);
+      if (valid(text)) total += BigInt(parseMinorUnits(text, digits));
+      else
         ctx.addIssue({
           code: "custom",
           path: ["splits", index, "amount"],
-          message: "Enter a positive exact USD amount.",
+          message: `Enter a positive exact ${values.currency} amount.`,
         });
-      }
     }
     try {
-      if (total !== BigInt(parseMinorUnits(values.amount)))
+      if (total !== BigInt(parseMinorUnits(values.amount, digits)))
         ctx.addIssue({
           code: "custom",
           path: ["splits"],
@@ -99,10 +134,12 @@ export const transactionFormSchema = z
 export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 export function transactionBody(values: TransactionFormValues) {
   const parsed = transactionFormSchema.parse(values);
-  const cents = parseMinorUnits(parsed.amount);
-  const { splitEnabled, splits, ...fields } = parsed;
+  const digits = currencyDigits(parsed.currency);
+  const cents = parseMinorUnits(parsed.amount, digits);
+  const { splitEnabled, splits, currency, fxRate, ...fields } = parsed;
   return createTransactionSchema.parse({
     ...fields,
+    ...(fxRate ? { fxRate } : {}),
     categoryId: splitEnabled ? null : parsed.categoryId,
     ...(splitEnabled
       ? {
@@ -112,8 +149,8 @@ export function transactionBody(values: TransactionFormValues) {
             amount: {
               amount:
                 (parsed.kind === "expense" ? -1 : 1) *
-                parseMinorUnits(cleanAmountText(line.amount)),
-              currency: "USD",
+                parseMinorUnits(cleanAmountText(line.amount), digits),
+              currency,
             },
             note: line.note || null,
           })),
@@ -121,7 +158,7 @@ export function transactionBody(values: TransactionFormValues) {
       : {}),
     amount: {
       amount: parsed.kind === "expense" ? -cents : cents,
-      currency: "USD",
+      currency,
     },
     time: parsed.time || null,
     payee: parsed.payee || null,
@@ -159,9 +196,12 @@ export function transactionDefaults(
   ledgerId: string,
   accounts: readonly Account[],
 ): TransactionFormValues {
+  const accountId = lastActiveAccount(actorId, ledgerId, accounts);
   return {
     amount: "",
-    accountId: lastActiveAccount(actorId, ledgerId, accounts),
+    currency: accounts.find((row) => row.id === accountId)?.currency ?? "USD",
+    fxRate: "",
+    accountId,
     categoryId: "",
     splitEnabled: false,
     splits: [],
@@ -177,15 +217,19 @@ export function transactionDefaults(
 export function transactionEditDefaults(
   row: Transaction,
 ): TransactionFormValues {
+  const digits = currencyDigits(row.amount.currency);
   return {
-    amount: decimalFromCents(row.amount.amount).replace(/^-/, ""),
+    amount: decimalFromCents(row.amount.amount, digits).replace(/^-/, ""),
+    currency: row.amount.currency,
+    // The entry keeps its saved rate unless one is set here.
+    fxRate: "",
     accountId: row.accountId,
     categoryId: row.categoryId ?? "",
     splitEnabled: row.isSplit,
     splits: row.splits.map((line) => ({
       id: line.id,
       categoryId: line.categoryId,
-      amount: decimalFromCents(line.amount.amount).replace(/^-/, ""),
+      amount: decimalFromCents(line.amount.amount, digits).replace(/^-/, ""),
       note: line.note ?? "",
     })),
     kind: row.kind === "transfer" ? "expense" : row.kind,

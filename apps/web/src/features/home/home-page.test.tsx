@@ -189,6 +189,66 @@ describe("Home", () => {
     );
   });
 
+  it("shows foreign accounts and entries in their own currency with the base value beside them", async () => {
+    const euro = newId();
+    const yen = newId();
+    mount([
+      ok(
+        summary({
+          accounts: [
+            {
+              id: euro,
+              name: "Euro bank",
+              type: "bank",
+              balance: { amount: 100000, currency: "EUR" },
+              baseBalance: usd(112170),
+            },
+            {
+              id: yen,
+              name: "Yen wallet",
+              type: "wallet",
+              balance: { amount: 5000, currency: "JPY" },
+              baseBalance: null,
+            },
+          ],
+          otherActive: { count: 0, balance: usd(0) },
+          archived: { count: 0, balance: usd(0) },
+          unconvertedCurrencies: ["JPY"],
+          latest: [
+            {
+              transaction: entry({
+                payee: "Cafe Paris",
+                amount: { amount: -1250, currency: "EUR" },
+                baseAmount: usd(-1402),
+                fxRate: "1.1217",
+              }),
+              accountName: "Euro bank",
+              categoryLabel: "Food",
+              counterpartAccountName: null,
+            },
+          ] as HomeSummary["latest"],
+        }),
+      ),
+    ]);
+    const note = (text: string) =>
+      screen.getByText(
+        (_, element) =>
+          !!element?.classList.contains("base-note") &&
+          element.textContent === text,
+      );
+    expect(await screen.findByText("€1,000.00")).toBeInTheDocument();
+    expect(note("About $1,121.70")).toBeInTheDocument();
+    expect(screen.getByText("¥5,000")).toBeInTheDocument();
+    expect(screen.getByText("-€12.50")).toBeInTheDocument();
+    expect(note("About -$14.02")).toBeInTheDocument();
+    // The yen account has no rate yet, so Home says so and links to where to add one.
+    const missing = screen.getByRole("note");
+    expect(missing).toHaveTextContent("JPY has no exchange rate yet");
+    expect(
+      within(missing).getByRole("link", { name: "Add a rate" }),
+    ).toHaveAttribute("href", "/more/currencies");
+  });
+
   it("removes every amount from the page in privacy mode", async () => {
     const { view } = mount([ok(summary())], { privacy: true });
     expect(await screen.findByText("In hand")).toBeInTheDocument();

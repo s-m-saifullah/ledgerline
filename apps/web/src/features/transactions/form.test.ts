@@ -121,3 +121,57 @@ it("accepts typed amounts like $1,200.50 and .50 and still rejects unclear ones"
       transactionFormSchema.safeParse({ ...base, amount: bad }).success,
     ).toBe(false);
 });
+
+it("reads the amount in the account's currency and sends a rate only when set by hand", () => {
+  const euro = { ...account("Euro bank"), currency: "EUR" } as Account;
+  const yen = { ...account("Yen wallet"), currency: "JPY" } as Account;
+  const eurValues = {
+    ...transactionDefaults(actorId, ledgerId, [euro]),
+    amount: "12.34",
+    categoryId: newId(),
+  };
+  expect(eurValues.currency).toBe("EUR");
+  const body = transactionBody(eurValues);
+  expect(body.amount).toEqual({ amount: -1234, currency: "EUR" });
+  expect(body.fxRate).toBeUndefined();
+  expect(transactionBody({ ...eurValues, fxRate: "1.2" }).fxRate).toBe("1.2");
+  expect(
+    transactionFormSchema.safeParse({ ...eurValues, fxRate: "abc" }).success,
+  ).toBe(false);
+  // Yen have no minor unit, so only whole amounts are valid.
+  const yenValues = {
+    ...transactionDefaults(actorId, ledgerId, [yen]),
+    amount: "1500",
+    categoryId: newId(),
+  };
+  expect(transactionBody(yenValues).amount).toEqual({
+    amount: -1500,
+    currency: "JPY",
+  });
+  expect(
+    transactionFormSchema.safeParse({ ...yenValues, amount: "15.5" }).success,
+  ).toBe(false);
+  // Split lines use the same currency and units, and must total the entry exactly.
+  const split = {
+    ...yenValues,
+    splitEnabled: true,
+    amount: "1500",
+    splits: [
+      { categoryId: newId(), amount: "1000", note: "" },
+      { categoryId: newId(), amount: "500", note: "" },
+    ],
+  };
+  expect(transactionBody(split).splits?.map((line) => line.amount)).toEqual([
+    { amount: -1000, currency: "JPY" },
+    { amount: -500, currency: "JPY" },
+  ]);
+  expect(
+    transactionFormSchema.safeParse({
+      ...split,
+      splits: [
+        { categoryId: newId(), amount: "1000", note: "" },
+        { categoryId: newId(), amount: "499", note: "" },
+      ],
+    }).success,
+  ).toBe(false);
+});

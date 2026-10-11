@@ -5,7 +5,9 @@ import {
   exchangeRateSchema,
   type PinnedCurrency,
   pinnedCurrencySchema,
+  type RateLookup,
   type RefreshRatesResult,
+  rateLookupSchema,
   refreshRatesResultSchema,
 } from "@ledgerline/shared";
 import { api, prepareFinancialWrite } from "../../lib/api";
@@ -61,4 +63,19 @@ export function prepareRatesRefresh(ledgerId: string, code?: string) {
   );
   return async (): Promise<RefreshRatesResult> =>
     refreshRatesResultSchema.parse(await run());
+}
+
+/** The rate an entry in `code` on `date` would be saved with (null when none exists yet). */
+export async function getRateLookup(
+  ledgerId: string,
+  code: string,
+  date: string,
+  signal?: AbortSignal,
+): Promise<RateLookup> {
+  const query = new URLSearchParams({ code, date });
+  return rateLookupSchema.parse(
+    await api(`${path(ledgerId)}/exchange-rates/lookup?${query}`, {
+      ...(signal ? { signal } : {}),
+    }),
+  );
 }
