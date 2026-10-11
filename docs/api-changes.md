@@ -1,5 +1,9 @@
 # API version notes
 
+## 0.1.26 — Person-level receipts in other currencies
+
+`GET /contacts/{id}/receipt-preview` takes `currency` (default USD) and previews the person's open services in that currency only; its amounts are in that currency. `POST /contacts/{id}/receipts` settles the services of `amount.currency`. When the receiving account uses another currency, `receivedAmount` (the total that arrived, in the account's currency) is required and is shared across the receipt's payments in proportion to what each settles, so the shares add up exactly (409 when it is too small to give every payment something); `fxRate` is accepted only when neither the services nor the account use USD. `PATCH /receipts/{id}` accepts the same `receivedAmount` and `fxRate` when the account's currency changes. Receipt `amount` is in the receipt's currency. No migration.
+
 ## 0.1.25 — Money owed in other currencies
 
 A service (money owed) has a currency: `amount` is now `{ amount, currency }` for any currency the ledger has added (USD by default), and `received`, `remaining`, `outstanding`, `writtenOffAmount` and payment `amount` are in that currency. The currency can change on `PATCH` until a payment exists, then it is fixed (409 on `amount.currency`). A currency the ledger has not added is refused (409 on `amount.currency`).

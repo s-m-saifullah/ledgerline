@@ -1,7 +1,9 @@
 import {
+  allocateBaseAmounts,
   allocateSerially,
   type CreateReceipt,
   MAX_RECEIPT_ALLOCATIONS,
+  type Money,
   newId,
   type ReceiptAction,
   receiptPreviewSchema,
@@ -17,8 +19,31 @@ import { safeOwed } from "./balance-service";
 import { receiptPaymentRepository, receivableRepository } from "./repo";
 import { paymentDto, paymentStep, write } from "./service";
 
-// Person-level receipts settle USD items until receipts take a currency (ADR 0022).
-const money = (amount: number) => ({ amount, currency: "USD" as const });
+const money = (amount: number, currency: string) => ({ amount, currency });
+/**
+ * Share what arrived in the account across a receipt's payments in proportion to what each
+ * settles, so the shares add up exactly. Every payment must receive something.
+ */
+function shareReceived(
+  settled: readonly number[],
+  received: Money | undefined,
+  field: string,
+) {
+  if (!received) return settled.map(() => undefined);
+  const total = settled.reduce((sum, amount) => sum + amount, 0);
+  const shares = allocateBaseAmounts(total, received.amount, [...settled]);
+  if (shares.some((share) => share <= 0))
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      "The amount received is too small to share across these services.",
+      [{ field, message: "Use a larger amount received." }],
+    );
+  return shares.map((share) => ({
+    amount: share,
+    currency: received.currency,
+  }));
+}
 const notFound = () => new ApiProblem(404, "Not found", "Receipt not found.");
 
 /** Open services oldest-first with exact outstanding cents, and the serial allocation. */
@@ -27,10 +52,11 @@ async function plan(
   ledgerId: string,
   contactId: string,
   amount: number,
+  currency: string,
 ) {
   const repo = receivableRepository(db, ledgerId);
   const services = [];
-  for (const row of await repo.openForContact(contactId, "USD"))
+  for (const row of await repo.openForContact(contactId, currency))
     services.push({
       row,
       outstanding: row.amount - safeOwed(await repo.received(row.id)),
@@ -59,9 +85,9 @@ async function plan(
         description: s.row.description,
         serviceDate: s.row.serviceDate,
         version: s.row.version,
-        outstanding: money(s.outstanding),
-        applied: money(a.applied),
-        remainingAfter: money(a.remainingAfter),
+        outstanding: money(s.outstanding, currency),
+        applied: money(a.applied, currency),
+        remainingAfter: money(a.remainingAfter, currency),
       };
     }),
   };
@@ -73,16 +99,17 @@ export async function previewReceipt(
   ledgerId: string,
   contactId: string,
   amount: number,
+  currency: string,
 ) {
   return db.transaction(
     async (tx) => {
       await requireLedgerRead(tx, actorId, ledgerId);
       await contactForAssignment(tx, ledgerId, contactId);
-      const p = await plan(tx, ledgerId, contactId, amount);
+      const p = await plan(tx, ledgerId, contactId, amount, currency);
       return receiptPreviewSchema.parse({
         contactId,
-        amount: money(amount),
-        openTotal: money(safeOwed(p.openTotal)),
+        amount: money(amount, currency),
+        openTotal: money(safeOwed(p.openTotal), currency),
         exceedsBalance: p.exceeds,
         tooManyServices: p.tooMany,
         allocations: p.allocations,
@@ -119,6 +146,7 @@ async function readReceipt(
     contactId,
     amount: money(
       safeOwed(rows.reduce((sum, r) => sum + BigInt(r.amount), 0n)),
+      rows[0]?.currency ?? "USD",
     ),
     payments,
   });
@@ -152,7 +180,13 @@ export function createReceipt(
     async (c) => {
       await lockContacts(c.tx, c.ledgerId, [contactId]);
       await contactForAssignment(c.tx, c.ledgerId, contactId);
-      const p = await plan(c.tx, c.ledgerId, contactId, body.amount.amount);
+      const p = await plan(
+        c.tx,
+        c.ledgerId,
+        contactId,
+        body.amount.amount,
+        body.amount.currency,
+      );
       if (p.exceeds)
         throw new ApiProblem(
           409,
@@ -189,13 +223,20 @@ export function createReceipt(
           "Balances changed. Review the updated allocation and try again.",
         );
       const receiptId = newId();
-      for (const a of p.allocations)
+      const received = shareReceived(
+        p.allocations.map((a) => a.applied.amount),
+        body.receivedAmount,
+        "receivedAmount",
+      );
+      for (const [index, a] of p.allocations.entries())
         await paymentStep(
           c,
           a.receivableId,
           null,
           {
             amount: a.applied,
+            receivedAmount: received[index],
+            fxRate: body.fxRate,
             accountId: body.accountId,
             categoryId: body.categoryId,
             date: body.date,
@@ -259,21 +300,28 @@ export function changeReceipt(
           "Conflict",
           "This receipt changed. Reload the latest details.",
         );
-      for (const row of rows) {
+      const fields = body as UpdateReceipt;
+      const received = shareReceived(
+        rows.map((row) => row.amount),
+        action === "edit" ? fields.receivedAmount : undefined,
+        "receivedAmount",
+      );
+      for (const [index, row] of rows.entries()) {
         const e = expected.get(row.id);
         if (!e) throw new Error("Missing expectation");
         const versions = {
           expectedVersion: e.expectedVersion,
           expectedReceivableVersion: e.expectedReceivableVersion,
         };
-        const fields = body as UpdateReceipt;
         await paymentStep(
           c,
           row.receivableId,
           row.id,
           action === "edit"
             ? {
-                amount: money(row.amount),
+                amount: money(row.amount, row.currency),
+                receivedAmount: received[index],
+                fxRate: fields.fxRate,
                 accountId: fields.accountId,
                 categoryId: fields.categoryId,
                 date: fields.date,

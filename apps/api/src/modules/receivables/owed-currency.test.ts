@@ -1,5 +1,6 @@
 import {
   type Contact,
+  type Money,
   newId,
   type Receivable,
   type ReceivablePayment,
@@ -479,17 +480,147 @@ describe("Money owed in other currencies", () => {
     });
   });
 
-  it("settles USD items only in person-level receipts for now, ignoring other currencies", async () => {
+  it("previews and saves a receipt in one currency, ignoring the person's items in other currencies", async () => {
     await addCurrency("EUR", "0.8");
-    await item(50000, "EUR");
-    const usd = await item(10000, "USD");
+    const eur = await account("EUR");
+    const first = await item(60000, "EUR");
+    await item(40000, "EUR");
+    await item(99999, "USD");
     const preview = await read(
-      `/contacts/${person.id}/receipt-preview?amount=4000`,
+      `/contacts/${person.id}/receipt-preview?amount=70000&currency=EUR`,
     );
     expect(preview.statusCode, preview.body).toBe(200);
-    expect(preview.json().openTotal).toEqual({
-      amount: usd.amount.amount,
-      currency: "USD",
+    const shown = preview.json();
+    expect(shown.openTotal).toEqual({ amount: 100000, currency: "EUR" });
+    expect(
+      shown.allocations.map((a: { applied: object }) => a.applied),
+    ).toEqual([
+      { amount: 60000, currency: "EUR" },
+      { amount: 10000, currency: "EUR" },
+    ]);
+    const saved = await write(`/contacts/${person.id}/receipts`, {
+      amount: { amount: 70000, currency: "EUR" },
+      accountId: eur,
+      categoryId,
+      date: "2026-10-07",
+      expectedAllocations: shown.allocations.map(
+        (a: { receivableId: string; version: number; applied: Money }) => ({
+          receivableId: a.receivableId,
+          expectedVersion: a.version,
+          applied: a.applied.amount,
+        }),
+      ),
     });
+    expect(saved.statusCode, saved.body).toBe(201);
+    expect(saved.json().amount).toEqual({ amount: 70000, currency: "EUR" });
+    expect((await read(`/receivables/${first.id}`)).json().status).toBe("paid");
+  });
+
+  it("shares the amount received exactly across a receipt's payments when the account uses another currency", async () => {
+    await addCurrency("EUR", "0.8");
+    const usd = await account("USD");
+    await item(10000, "EUR");
+    await item(10000, "EUR");
+    await item(10000, "EUR");
+    const shown = (
+      await read(
+        `/contacts/${person.id}/receipt-preview?amount=30000&currency=EUR`,
+      )
+    ).json();
+    const body = (extra: object) => ({
+      amount: { amount: 30000, currency: "EUR" },
+      accountId: usd,
+      categoryId,
+      date: "2026-10-07",
+      expectedAllocations: shown.allocations.map(
+        (a: { receivableId: string; version: number; applied: Money }) => ({
+          receivableId: a.receivableId,
+          expectedVersion: a.version,
+          applied: a.applied.amount,
+        }),
+      ),
+      ...extra,
+    });
+    const missing = await write(`/contacts/${person.id}/receipts`, body({}));
+    expect(missing.statusCode).toBe(409);
+    expect(missing.json().errors[0].field).toBe("receivedAmount");
+    // 100.00 USD across three equal payments cannot split evenly; the shares still add up.
+    const saved = await write(
+      `/contacts/${person.id}/receipts`,
+      body({ receivedAmount: { amount: 10000, currency: "USD" } }),
+    );
+    expect(saved.statusCode, saved.body).toBe(201);
+    const payments = saved.json().payments as ReceivablePayment[];
+    const entries = await Promise.all(payments.map((p) => entryOf(p.id)));
+    expect(entries.map((e) => e?.amount).sort()).toEqual([3333, 3333, 3334]);
+    expect(entries.reduce((sum, e) => sum + (e?.baseAmount ?? 0), 0)).toBe(
+      10000,
+    );
+    // Too little to give every payment something is refused with nothing saved.
+    const tiny = await write(
+      `/contacts/${person.id}/receipts`,
+      body({ receivedAmount: { amount: 2, currency: "USD" } }),
+    );
+    expect([404, 409]).toContain(tiny.statusCode);
+  });
+
+  it("edits a receipt's account to another currency only with the amount received, shared exactly", async () => {
+    await addCurrency("EUR", "0.8");
+    const eur = await account("EUR");
+    const usd = await account("USD");
+    await item(10000, "EUR");
+    await item(5000, "EUR");
+    const shown = (
+      await read(
+        `/contacts/${person.id}/receipt-preview?amount=15000&currency=EUR`,
+      )
+    ).json();
+    const saved = await write(`/contacts/${person.id}/receipts`, {
+      amount: { amount: 15000, currency: "EUR" },
+      accountId: eur,
+      categoryId,
+      date: "2026-10-07",
+      expectedAllocations: shown.allocations.map(
+        (a: { receivableId: string; version: number; applied: Money }) => ({
+          receivableId: a.receivableId,
+          expectedVersion: a.version,
+          applied: a.applied.amount,
+        }),
+      ),
+    });
+    expect(saved.statusCode, saved.body).toBe(201);
+    const receipt = saved.json();
+    const expectedPayments = (r: { payments: ReceivablePayment[] }) =>
+      r.payments.map((p) => ({
+        paymentId: p.id,
+        expectedVersion: p.version,
+        expectedReceivableVersion: p.receivable.version,
+      }));
+    const edit = (extra: object, r = receipt) =>
+      write(
+        `/receipts/${r.id}`,
+        {
+          accountId: usd,
+          categoryId,
+          date: "2026-10-07",
+          expectedPayments: expectedPayments(r),
+          ...extra,
+        },
+        "PATCH",
+      );
+    const refused = await edit({});
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().errors[0].field).toBe("receivedAmount");
+    const ok = await edit({
+      receivedAmount: { amount: 18000, currency: "USD" },
+    });
+    expect(ok.statusCode, ok.body).toBe(200);
+    const entries = await Promise.all(
+      (ok.json().payments as ReceivablePayment[]).map((p) => entryOf(p.id)),
+    );
+    expect(entries.map((e) => [e?.currency, e?.amount]).sort()).toEqual([
+      ["USD", 12000],
+      ["USD", 6000],
+    ]);
   });
 });
