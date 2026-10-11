@@ -1,20 +1,20 @@
 import {
   allocateBaseAmounts,
-  type BudgetMonthView,
   newId,
   transactionSchema,
 } from "@ledgerline/shared";
-import { inArray, sql } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app";
 import { readConfig } from "../../config";
-import { createDatabase, type Database } from "../../db/client";
+import { createDatabase } from "../../db/client";
 import { applyMigrations } from "../../db/migrate";
 import {
   accounts,
   budgets,
   categories,
   account as credentials,
+  exchangeRates,
   ledgerMembers,
   ledgers,
   session,
@@ -27,7 +27,6 @@ import { hashPassword } from "../auth/password";
 import { getBudgetMonth } from "../budgets/service";
 import { getHomeSummary } from "../home/service";
 import { postedCategoryTotals } from "./balance-service";
-import { transactionRepository } from "./repo";
 
 const url = process.env.TEST_DATABASE_URL;
 if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
@@ -48,36 +47,25 @@ const app = await buildApp(db, config);
 const ledgerId = newId();
 const ownerId = newId();
 const accountId = newId();
+const eurAccountId = newId();
 const food = newId();
 const rent = newId();
 const salary = newId();
 let cookie = "";
 const month = "2026-10";
 
-class Rollback extends Error {}
-/** Run `work` in a transaction that is always rolled back, with the USD-only check removed. */
-async function withForeignRows<T>(
-  work: (tx: Database) => Promise<T>,
-): Promise<T> {
-  let result: T | undefined;
-  try {
-    await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`ALTER TABLE transactions DROP CONSTRAINT transactions_usd_check`,
-      );
-      result = await work(tx as unknown as Database);
-      throw new Rollback();
-    });
-  } catch (failure) {
-    if (!(failure instanceof Rollback)) throw failure;
-  }
-  return result as T;
-}
 const base = {
   ledgerId,
   accountId,
   date: "2026-10-05",
   status: "cleared" as const,
+};
+// Entries in the EUR account are saved in EUR with their frozen rate and base amount.
+const eur = {
+  ...base,
+  accountId: eurAccountId,
+  currency: "EUR",
+  fxRate: "1.1217",
 };
 async function signIn() {
   const response = await app.inject({
@@ -106,6 +94,9 @@ async function clearRows() {
   });
   await db.delete(budgets).where(inArray(budgets.ledgerId, [ledgerId]));
   await db
+    .delete(exchangeRates)
+    .where(inArray(exchangeRates.ledgerId, [ledgerId]));
+  await db
     .delete(writeReceipts)
     .where(inArray(writeReceipts.ledgerId, [ledgerId]));
 }
@@ -133,13 +124,23 @@ beforeAll(async () => {
     { id: rent, ledgerId, name: "Rent", kind: "expense", sortOrder: 1 },
     { id: salary, ledgerId, name: "Salary", kind: "income", sortOrder: 0 },
   ]);
-  await db.insert(accounts).values({
-    id: accountId,
-    ledgerId,
-    name: "Cash",
-    type: "cash",
-    openingBalance: 0,
-  });
+  await db.insert(accounts).values([
+    {
+      id: accountId,
+      ledgerId,
+      name: "Cash",
+      type: "cash",
+      openingBalance: 0,
+    },
+    {
+      id: eurAccountId,
+      ledgerId,
+      name: "Euro cash",
+      type: "cash",
+      currency: "EUR",
+      openingBalance: 50000,
+    },
+  ]);
   await app.ready();
   cookie = await signIn();
 });
@@ -161,94 +162,81 @@ afterAll(async () => {
 
 describe("totals read the frozen base amount", () => {
   it("sums money in, money out, category totals and budget spending in the base currency", async () => {
-    const seen = await withForeignRows(async (tx) => {
-      // 100.00 EUR at 1.1217 = 112.17 USD; salary of 1000.00 EUR = 1121.70 USD.
-      await tx.insert(transactions).values([
-        {
-          ...base,
-          categoryId: food,
-          kind: "expense",
-          amount: -10000,
-          currency: "EUR",
-          fxRate: 1.1217,
-          baseAmount: -11217,
-        },
-        {
-          ...base,
-          categoryId: salary,
-          kind: "income",
-          amount: 100000,
-          currency: "EUR",
-          fxRate: 1.1217,
-          baseAmount: 112170,
-        },
-        {
-          ...base,
-          categoryId: rent,
-          kind: "expense",
-          amount: -5000,
-          baseAmount: -5000,
-        },
-        // Pending entries never count.
-        {
-          ...base,
-          categoryId: food,
-          kind: "expense",
-          status: "pending",
-          amount: -9999,
-          currency: "EUR",
-          fxRate: 1.1217,
-          baseAmount: -11200,
-        },
-      ]);
-      await tx.insert(budgets).values({
-        ledgerId,
+    // 100.00 EUR at 1.1217 = 112.17 USD; salary of 1000.00 EUR = 1121.70 USD.
+    await db.insert(transactions).values([
+      {
+        ...eur,
         categoryId: food,
-        month: "2026-10-01",
-        amount: 50000,
-      });
-      // Home's money in and out come from this query; its "latest" list needs the wider
-      // currency schema that step 2b-3 adds, so it is not exercised with foreign rows here.
-      const flow = await transactionRepository(tx, ledgerId).monthFlow(
-        "2026-10-01",
-        "2026-10-31",
-      );
-      const view = await getBudgetMonth(tx, ownerId, ledgerId, month);
-      const totals = await postedCategoryTotals(
-        tx,
-        ledgerId,
-        "2026-10-01",
-        "2026-10-31",
-      );
-      return { flow, view, totals };
+        kind: "expense",
+        amount: -10000,
+        baseAmount: -11217,
+      },
+      {
+        ...eur,
+        categoryId: salary,
+        kind: "income",
+        amount: 100000,
+        baseAmount: 112170,
+      },
+      {
+        ...base,
+        categoryId: rent,
+        kind: "expense",
+        amount: -5000,
+        baseAmount: -5000,
+      },
+      // Pending entries never count.
+      {
+        ...eur,
+        categoryId: food,
+        kind: "expense",
+        status: "pending",
+        amount: -9999,
+        baseAmount: -11200,
+      },
+    ]);
+    await db.insert(budgets).values({
+      ledgerId,
+      categoryId: food,
+      month: "2026-10-01",
+      amount: 50000,
     });
-    const flowOf = (kind: string) =>
-      BigInt(seen.flow.find((row) => row.kind === kind)?.total ?? "0");
-    expect(flowOf("expense")).toBe(-BigInt(11217 + 5000));
-    expect(flowOf("income")).toBe(112170n);
-    const view: BudgetMonthView = seen.view;
+    const home = await getHomeSummary(db, ownerId, ledgerId, month);
+    expect(home.moneyOut.amount).toBe(11217 + 5000);
+    expect(home.moneyIn.amount).toBe(112170);
+    const view = await getBudgetMonth(db, ownerId, ledgerId, month);
     const foodLine = view.items.find((item) => item.categoryId === food);
     expect(foodLine?.spent.amount).toBe(11217);
     expect(foodLine?.left?.amount).toBe(50000 - 11217);
-    expect(seen.totals.get(food)).toBe(-11217n);
-    expect(seen.totals.get(salary)).toBe(112170n);
-    expect(seen.totals.get(rent)).toBe(-5000n);
+    const totals = await postedCategoryTotals(
+      db,
+      ledgerId,
+      "2026-10-01",
+      "2026-10-31",
+    );
+    expect(totals.get(food)).toBe(-11217n);
+    expect(totals.get(salary)).toBe(112170n);
+    expect(totals.get(rent)).toBe(-5000n);
+    // The latest list shows each entry in its own currency with its frozen base value.
+    const first = home.latest.find(
+      (row) => row.transaction.amount.currency === "EUR",
+    );
+    expect(first?.transaction.fxRate).toBe("1.1217");
+    expect(first?.transaction.baseAmount.currency).toBe("USD");
   });
 
   it("counts a split entry by its lines' base amounts, which add up to the parent's", async () => {
     const lines = [-3333, -3333, -3334];
     const bases = allocateBaseAmounts(-10000, -11217, lines);
-    const seen = await withForeignRows(async (tx) => {
+    await db.transaction(async (tx) => {
       const parentId = newId();
       await tx.insert(transactions).values({
-        ...base,
+        ...eur,
         id: parentId,
         categoryId: null,
         kind: "expense",
         isSplit: true,
         amount: -10000,
-        currency: "EUR",
-        fxRate: 1.1217,
         baseAmount: -11217,
       });
       await tx.insert(transactionSplits).values(
@@ -262,37 +250,28 @@ describe("totals read the frozen base amount", () => {
           position,
         })),
       );
-      await tx.execute(sql`SET CONSTRAINTS ALL IMMEDIATE`);
-      const view = await getBudgetMonth(tx, ownerId, ledgerId, month);
-      const flow = await transactionRepository(tx, ledgerId).monthFlow(
-        "2026-10-01",
-        "2026-10-31",
-      );
-      return { view, flow };
     });
+    const view = await getBudgetMonth(db, ownerId, ledgerId, month);
     const spent = (id: string) =>
-      seen.view.items.find((item) => item.categoryId === id)?.spent.amount;
+      view.items.find((item) => item.categoryId === id)?.spent.amount;
     expect(spent(food)).toBe(-((bases[0] as number) + (bases[1] as number)));
     expect(spent(rent)).toBe(-(bases[2] as number));
     expect((spent(food) as number) + (spent(rent) as number)).toBe(11217);
-    expect(
-      BigInt(seen.flow.find((row) => row.kind === "expense")?.total ?? "0"),
-    ).toBe(-11217n);
+    const home = await getHomeSummary(db, ownerId, ledgerId, month);
+    expect(home.moneyOut.amount).toBe(11217);
   });
 
   it("refuses a split whose base amounts do not add up to the parent's", async () => {
     await expect(
-      withForeignRows(async (tx) => {
+      db.transaction(async (tx) => {
         const parentId = newId();
         await tx.insert(transactions).values({
-          ...base,
+          ...eur,
           id: parentId,
           categoryId: null,
           kind: "expense",
           isSplit: true,
           amount: -10000,
-          currency: "EUR",
-          fxRate: 1.1217,
           baseAmount: -11217,
         });
         await tx.insert(transactionSplits).values(
@@ -306,7 +285,6 @@ describe("totals read the frozen base amount", () => {
             position,
           })),
         );
-        await tx.execute(sql`SET CONSTRAINTS ALL IMMEDIATE`);
       }),
     ).rejects.toThrow();
   });
@@ -345,7 +323,7 @@ describe("USD results are unchanged", () => {
     });
     expect(response.statusCode).toBe(201);
     const created = transactionSchema.parse(response.json());
-    expect(created.fxRate).toBe(1);
+    expect(created.fxRate).toBe("1");
     expect(created.baseAmount.amount).toBe(-3000);
     const lines = await db
       .select()

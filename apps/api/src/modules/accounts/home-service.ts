@@ -21,6 +21,7 @@ export async function accountBalanceOverview(
     name: row.name,
     type: row.type,
     archived: row.archivedAt !== null,
+    currency: row.currency,
     balance: postedBalance(row.openingBalance, totals.get(row.id)),
   }));
 }

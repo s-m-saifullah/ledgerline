@@ -3,6 +3,7 @@ import {
   allocateBaseAmounts,
   convertMinor,
   currencyDigits,
+  deriveRate,
   formatRate,
   invertRate,
   parseRate,
@@ -188,5 +189,37 @@ describe("allocateBaseAmounts", () => {
     );
     expect(() => allocateBaseAmounts(0, 0, [])).toThrow(RangeError);
     expect(() => allocateBaseAmounts(100, 100, [100, 0])).toThrow(RangeError);
+  });
+});
+
+describe("deriveRate", () => {
+  it("recovers the rate behind a converted amount", () => {
+    expect(deriveRate(11217, 10000, "EUR", "USD")).toBe("1.1217");
+    expect(deriveRate(-11217, -10000, "EUR", "USD")).toBe("1.1217");
+    expect(deriveRate(812, 100000, "BDT", "USD")).toBe("0.00812");
+    expect(deriveRate(670, 1000, "JPY", "USD")).toBe("0.0067");
+    expect(deriveRate(10000, 10000, "USD", "USD")).toBe("1");
+  });
+  it("rounds to the stored precision and is never zero", () => {
+    expect(deriveRate(1, 3, "USD", "USD")).toBe("0.3333333333");
+    expect(deriveRate(0, 100, "USD", "USD")).toBe("0.0000000001");
+  });
+  it("feeds back into the same base amount", () => {
+    for (const [base, amount] of [
+      [11217, 10000],
+      [11200, 9999],
+      [1234567, 1000000],
+    ] as const)
+      expect(
+        convertMinor(
+          amount,
+          deriveRate(base, amount, "EUR", "USD"),
+          "EUR",
+          "USD",
+        ),
+      ).toBe(base);
+  });
+  it("rejects a zero source amount", () => {
+    expect(() => deriveRate(100, 0, "EUR", "USD")).toThrow(RangeError);
   });
 });

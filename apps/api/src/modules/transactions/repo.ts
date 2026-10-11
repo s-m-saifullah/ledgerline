@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { transactionSplits, transactions } from "../../db/schema";
+import type { EntryPricing } from "./pricing";
 
 export type TransactionRow = typeof transactions.$inferSelect;
 export function transactionRepository(
@@ -78,6 +79,7 @@ export function transactionRepository(
         time: body.time ?? null,
         amount: body.amount.amount,
         currency: "USD",
+        fxRate: "1",
         baseAmount: body.amount.amount,
         status: "cleared" as const,
         payee: body.payee,
@@ -157,7 +159,7 @@ export function transactionRepository(
         );
       return (await (lock ? query.for("update") : query))[0];
     },
-    create: async (body: CreateTransaction) =>
+    create: async (body: CreateTransaction, pricing: EntryPricing) =>
       (
         await db
           .insert(transactions)
@@ -170,7 +172,8 @@ export function transactionRepository(
             ledgerId,
             amount: body.amount.amount,
             currency: body.amount.currency,
-            baseAmount: body.amount.amount,
+            fxRate: pricing.fxRate,
+            baseAmount: pricing.baseAmount,
           })
           .returning()
       )[0],
@@ -179,6 +182,7 @@ export function transactionRepository(
       expectedVersion: number,
       body: CreateTransaction,
       version: number,
+      pricing: EntryPricing,
     ) =>
       db
         .update(transactions)
@@ -187,7 +191,8 @@ export function transactionRepository(
           isSplit: !!body.splits,
           amount: body.amount.amount,
           currency: body.amount.currency,
-          baseAmount: body.amount.amount,
+          fxRate: pricing.fxRate,
+          baseAmount: pricing.baseAmount,
           version,
         })
         .where(

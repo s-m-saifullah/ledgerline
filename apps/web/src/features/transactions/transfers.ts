@@ -1,5 +1,7 @@
 import {
   type CreateTransfer,
+  deriveRate,
+  type JsonValue,
   type Transfer,
   transferSchema,
 } from "@ledgerline/shared";
@@ -17,7 +19,12 @@ export function prepareTransferSave(
   const run = prepareFinancialWrite<unknown>(
     `/ledgers/${ledgerId}/transfers${baseline ? `/${baseline.id}` : ""}`,
     baseline ? "PATCH" : "POST",
-    baseline ? { ...body, expectedVersion: baseline.version } : body,
+    // Optional fields that were left out stay out of the request.
+    JSON.parse(
+      JSON.stringify(
+        baseline ? { ...body, expectedVersion: baseline.version } : body,
+      ),
+    ) as JsonValue,
   );
   return async () => transferSchema.parse(await run());
 }
@@ -31,9 +38,18 @@ export function transferLeg(row: Transfer) {
     kind: "transfer" as const,
     date: row.date,
     time: row.time,
-    amount: { amount: -row.amount.amount, currency: "USD" as const },
-    baseAmount: { amount: -row.amount.amount, currency: "USD" as const },
-    fxRate: 1 as const,
+    amount: { amount: -row.amount.amount, currency: row.amount.currency },
+    baseAmount: { amount: -row.baseAmount.amount, currency: "USD" as const },
+    // The rate this leg's amounts imply; exactly 1 in the base currency.
+    fxRate:
+      row.amount.currency === "USD"
+        ? "1"
+        : deriveRate(
+            row.baseAmount.amount,
+            row.amount.amount,
+            row.amount.currency,
+            "USD",
+          ),
     payee: null,
     note: row.note,
     status: "cleared" as const,

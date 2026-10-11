@@ -34,9 +34,19 @@ it("rejects invalid account names, money, types and caller-controlled fields", (
     { ...valid, ledgerId: "another-ledger" },
     { ...valid, archivedAt: "2026-01-01" },
     { ...valid, openingBalance: { amount: 1.25, currency: "USD" } },
-    { ...valid, openingBalance: { amount: 1, currency: "BDT" } },
+    { ...valid, openingBalance: { amount: 1, currency: "bdt" } },
+    { ...valid, openingBalance: { amount: 1, currency: "ZZZ" } },
   ])
     expect(createAccountSchema.safeParse(body).success).toBe(false);
+});
+it("accepts an opening balance in any known currency, which sets the account's currency", () => {
+  expect(
+    createAccountSchema.parse({
+      name: "Bank",
+      type: "bank",
+      openingBalance: { amount: 1, currency: "BDT" },
+    }).openingBalance.currency,
+  ).toBe("BDT");
 });
 it("requires an expected version and at least one real edit", () => {
   expect(

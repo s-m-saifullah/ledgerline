@@ -40,7 +40,7 @@ function entry(over: Record<string, unknown> = {}) {
     status: "cleared",
     payee: null,
     note: null,
-    fxRate: 1,
+    fxRate: "1",
     baseAmount: usd(-4500),
     transferId: null,
     receivablePaymentId: null,

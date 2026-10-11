@@ -170,11 +170,12 @@ export function splitRepository(db: DatabaseConnection, ledgerId: string) {
       ).length > 0,
   };
 }
-export function splitDto(row: SplitRow): TransactionSplit {
+/** A split line is always in its parent entry's currency. */
+export function splitDto(row: SplitRow, currency: string): TransactionSplit {
   return {
     id: row.id,
     categoryId: row.categoryId,
-    amount: { amount: row.amount, currency: "USD" },
+    amount: { amount: row.amount, currency },
     note: row.note,
     version: row.version,
     createdAt: row.createdAt.toISOString(),

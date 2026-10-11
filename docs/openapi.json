@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.21"
+    "version": "0.1.22"
   },
   "components": {
     "schemas": {
@@ -592,9 +592,7 @@
                           },
                           "currency": {
                             "type": "string",
-                            "enum": [
-                              "USD"
-                            ]
+                            "pattern": "^[A-Z]{3}$"
                           },
                           "openingBalance": {
                             "type": "object",
@@ -606,9 +604,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -627,9 +623,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -1069,9 +1063,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -1152,9 +1144,7 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": [
-                        "USD"
-                      ]
+                      "pattern": "^[A-Z]{3}$"
                     },
                     "openingBalance": {
                       "type": "object",
@@ -1166,9 +1156,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -1187,9 +1175,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -1640,9 +1626,7 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": [
-                        "USD"
-                      ]
+                      "pattern": "^[A-Z]{3}$"
                     },
                     "openingBalance": {
                       "type": "object",
@@ -1654,9 +1638,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -1675,9 +1657,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -2102,9 +2082,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -2193,9 +2171,7 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": [
-                        "USD"
-                      ]
+                      "pattern": "^[A-Z]{3}$"
                     },
                     "openingBalance": {
                       "type": "object",
@@ -2207,9 +2183,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -2228,9 +2202,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -3105,9 +3077,7 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": [
-                        "USD"
-                      ]
+                      "pattern": "^[A-Z]{3}$"
                     },
                     "openingBalance": {
                       "type": "object",
@@ -3119,9 +3089,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -3140,9 +3108,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -3624,9 +3590,7 @@
                     },
                     "currency": {
                       "type": "string",
-                      "enum": [
-                        "USD"
-                      ]
+                      "pattern": "^[A-Z]{3}$"
                     },
                     "openingBalance": {
                       "type": "object",
@@ -3638,9 +3602,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -3659,9 +3621,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -7067,9 +7027,7 @@
                                               },
                                               "currency": {
                                                 "type": "string",
-                                                "enum": [
-                                                  "USD"
-                                                ]
+                                                "pattern": "^[A-Z]{3}$"
                                               }
                                             },
                                             "required": [
@@ -7118,10 +7076,8 @@
                                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                                           },
                                           "fxRate": {
-                                            "type": "number",
-                                            "enum": [
-                                              1
-                                            ]
+                                            "type": "string",
+                                            "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                                           },
                                           "baseAmount": {
                                             "type": "object",
@@ -7212,9 +7168,7 @@
                                                     },
                                                     "currency": {
                                                       "type": "string",
-                                                      "enum": [
-                                                        "USD"
-                                                      ]
+                                                      "pattern": "^[A-Z]{3}$"
                                                     }
                                                   },
                                                   "required": [
@@ -7645,9 +7599,7 @@
                                           },
                                           "currency": {
                                             "type": "string",
-                                            "enum": [
-                                              "USD"
-                                            ]
+                                            "pattern": "^[A-Z]{3}$"
                                           }
                                         },
                                         "required": [
@@ -7696,10 +7648,8 @@
                                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                                       },
                                       "fxRate": {
-                                        "type": "number",
-                                        "enum": [
-                                          1
-                                        ]
+                                        "type": "string",
+                                        "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                                       },
                                       "baseAmount": {
                                         "type": "object",
@@ -7790,9 +7740,7 @@
                                                 },
                                                 "currency": {
                                                   "type": "string",
-                                                  "enum": [
-                                                    "USD"
-                                                  ]
+                                                  "pattern": "^[A-Z]{3}$"
                                                 }
                                               },
                                               "required": [
@@ -11545,9 +11493,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -11596,10 +11542,8 @@
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                               },
                               "fxRate": {
-                                "type": "number",
-                                "enum": [
-                                  1
-                                ]
+                                "type": "string",
+                                "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                               },
                               "baseAmount": {
                                 "type": "object",
@@ -11690,9 +11634,7 @@
                                         },
                                         "currency": {
                                           "type": "string",
-                                          "enum": [
-                                            "USD"
-                                          ]
+                                          "pattern": "^[A-Z]{3}$"
                                         }
                                       },
                                       "required": [
@@ -12644,9 +12586,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -12695,10 +12635,8 @@
                           "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                         },
                         "fxRate": {
-                          "type": "number",
-                          "enum": [
-                            1
-                          ]
+                          "type": "string",
+                          "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                         },
                         "baseAmount": {
                           "type": "object",
@@ -12789,9 +12727,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -13639,9 +13575,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -13690,10 +13624,8 @@
                           "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                         },
                         "fxRate": {
-                          "type": "number",
-                          "enum": [
-                            1
-                          ]
+                          "type": "string",
+                          "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                         },
                         "baseAmount": {
                           "type": "object",
@@ -13784,9 +13716,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -14734,9 +14664,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -14785,10 +14713,8 @@
                           "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                         },
                         "fxRate": {
-                          "type": "number",
-                          "enum": [
-                            1
-                          ]
+                          "type": "string",
+                          "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                         },
                         "baseAmount": {
                           "type": "object",
@@ -14879,9 +14805,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -19147,9 +19071,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -19198,10 +19120,8 @@
                           "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                         },
                         "fxRate": {
-                          "type": "number",
-                          "enum": [
-                            1
-                          ]
+                          "type": "string",
+                          "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                         },
                         "baseAmount": {
                           "type": "object",
@@ -19292,9 +19212,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -20836,9 +20754,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -20887,10 +20803,8 @@
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                               },
                               "fxRate": {
-                                "type": "number",
-                                "enum": [
-                                  1
-                                ]
+                                "type": "string",
+                                "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                               },
                               "baseAmount": {
                                 "type": "object",
@@ -20981,9 +20895,7 @@
                                         },
                                         "currency": {
                                           "type": "string",
-                                          "enum": [
-                                            "USD"
-                                          ]
+                                          "pattern": "^[A-Z]{3}$"
                                         }
                                       },
                                       "required": [
@@ -21868,9 +21780,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -21919,10 +21829,8 @@
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                               },
                               "fxRate": {
-                                "type": "number",
-                                "enum": [
-                                  1
-                                ]
+                                "type": "string",
+                                "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                               },
                               "baseAmount": {
                                 "type": "object",
@@ -22013,9 +21921,7 @@
                                         },
                                         "currency": {
                                           "type": "string",
-                                          "enum": [
-                                            "USD"
-                                          ]
+                                          "pattern": "^[A-Z]{3}$"
                                         }
                                       },
                                       "required": [
@@ -22999,9 +22905,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -23050,10 +22954,8 @@
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                               },
                               "fxRate": {
-                                "type": "number",
-                                "enum": [
-                                  1
-                                ]
+                                "type": "string",
+                                "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                               },
                               "baseAmount": {
                                 "type": "object",
@@ -23144,9 +23046,7 @@
                                         },
                                         "currency": {
                                           "type": "string",
-                                          "enum": [
-                                            "USD"
-                                          ]
+                                          "pattern": "^[A-Z]{3}$"
                                         }
                                       },
                                       "required": [
@@ -24507,9 +24407,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -24558,10 +24456,8 @@
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                               },
                               "fxRate": {
-                                "type": "number",
-                                "enum": [
-                                  1
-                                ]
+                                "type": "string",
+                                "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                               },
                               "baseAmount": {
                                 "type": "object",
@@ -24652,9 +24548,7 @@
                                         },
                                         "currency": {
                                           "type": "string",
-                                          "enum": [
-                                            "USD"
-                                          ]
+                                          "pattern": "^[A-Z]{3}$"
                                         }
                                       },
                                       "required": [
@@ -37106,9 +37000,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -37157,10 +37049,8 @@
                             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                           },
                           "fxRate": {
-                            "type": "number",
-                            "enum": [
-                              1
-                            ]
+                            "type": "string",
+                            "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                           },
                           "baseAmount": {
                             "type": "object",
@@ -37251,9 +37141,7 @@
                                     },
                                     "currency": {
                                       "type": "string",
-                                      "enum": [
-                                        "USD"
-                                      ]
+                                      "pattern": "^[A-Z]{3}$"
                                     }
                                   },
                                   "required": [
@@ -37756,9 +37644,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -37825,9 +37711,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -37854,6 +37738,10 @@
                       ],
                       "additionalProperties": false
                     }
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   }
                 },
                 "required": [
@@ -37956,9 +37844,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -38007,10 +37893,8 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                     },
                     "fxRate": {
-                      "type": "number",
-                      "enum": [
-                        1
-                      ]
+                      "type": "string",
+                      "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                     },
                     "baseAmount": {
                       "type": "object",
@@ -38101,9 +37985,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -38618,9 +38500,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -38669,10 +38549,8 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                     },
                     "fxRate": {
-                      "type": "number",
-                      "enum": [
-                        1
-                      ]
+                      "type": "string",
+                      "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                     },
                     "baseAmount": {
                       "type": "object",
@@ -38763,9 +38641,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -39226,9 +39102,7 @@
                                 },
                                 "currency": {
                                   "type": "string",
-                                  "enum": [
-                                    "USD"
-                                  ]
+                                  "pattern": "^[A-Z]{3}$"
                                 }
                               },
                               "required": [
@@ -39260,6 +39134,10 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   },
                   "accountId": {
                     "type": "string",
@@ -39313,9 +39191,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -39464,9 +39340,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -39515,10 +39389,8 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                     },
                     "fxRate": {
-                      "type": "number",
-                      "enum": [
-                        1
-                      ]
+                      "type": "string",
+                      "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                     },
                     "baseAmount": {
                       "type": "object",
@@ -39609,9 +39481,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -40550,9 +40420,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -40601,10 +40469,8 @@
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                     },
                     "fxRate": {
-                      "type": "number",
-                      "enum": [
-                        1
-                      ]
+                      "type": "string",
+                      "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                     },
                     "baseAmount": {
                       "type": "object",
@@ -40695,9 +40561,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -41178,9 +41042,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -41217,6 +41079,46 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "receivedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "baseAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
                     },
                     "id": {
                       "type": "string",
@@ -41261,6 +41163,8 @@
                     "date",
                     "time",
                     "note",
+                    "receivedAmount",
+                    "baseAmount",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -41633,9 +41537,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -41671,6 +41573,28 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "receivedAmount": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   },
                   "expectedVersion": {
                     "type": "integer",
@@ -41756,9 +41680,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -41795,6 +41717,46 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "receivedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "baseAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
                     },
                     "id": {
                       "type": "string",
@@ -41839,6 +41801,8 @@
                     "date",
                     "time",
                     "note",
+                    "receivedAmount",
+                    "baseAmount",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -42606,9 +42570,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -42646,6 +42608,28 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "receivedAmount": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   }
                 },
                 "required": [
@@ -42713,9 +42697,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -42752,6 +42734,46 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "receivedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "baseAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
                     },
                     "id": {
                       "type": "string",
@@ -42796,6 +42818,8 @@
                     "date",
                     "time",
                     "note",
+                    "receivedAmount",
+                    "baseAmount",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -43228,9 +43252,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -43267,6 +43289,46 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "receivedAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "pattern": "^[A-Z]{3}$"
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "baseAmount": {
+                      "type": "object",
+                      "properties": {
+                        "amount": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "currency": {
+                          "type": "string",
+                          "enum": [
+                            "USD"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "amount",
+                        "currency"
+                      ],
+                      "additionalProperties": false
                     },
                     "id": {
                       "type": "string",
@@ -43311,6 +43373,8 @@
                     "date",
                     "time",
                     "note",
+                    "receivedAmount",
+                    "baseAmount",
                     "id",
                     "ledgerId",
                     "fromTransactionId",
@@ -43803,9 +43867,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -43813,13 +43875,43 @@
                               "currency"
                             ],
                             "additionalProperties": false
+                          },
+                          "baseBalance": {
+                            "default": null,
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "amount": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "currency": {
+                                    "type": "string",
+                                    "enum": [
+                                      "USD"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "amount",
+                                  "currency"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
                           }
                         },
                         "required": [
                           "id",
                           "name",
                           "type",
-                          "balance"
+                          "balance",
+                          "baseBalance"
                         ],
                         "additionalProperties": false
                       }
@@ -44042,9 +44134,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -44093,10 +44183,8 @@
                                 "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
                               },
                               "fxRate": {
-                                "type": "number",
-                                "enum": [
-                                  1
-                                ]
+                                "type": "string",
+                                "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                               },
                               "baseAmount": {
                                 "type": "object",
@@ -44187,9 +44275,7 @@
                                         },
                                         "currency": {
                                           "type": "string",
-                                          "enum": [
-                                            "USD"
-                                          ]
+                                          "pattern": "^[A-Z]{3}$"
                                         }
                                       },
                                       "required": [
@@ -44319,6 +44405,14 @@
                         "hasCategory"
                       ],
                       "additionalProperties": false
+                    },
+                    "unconvertedCurrencies": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
                     }
                   },
                   "required": [
@@ -44336,7 +44430,8 @@
                     "owed",
                     "pendingCount",
                     "latest",
-                    "setup"
+                    "setup",
+                    "unconvertedCurrencies"
                   ],
                   "additionalProperties": false
                 }

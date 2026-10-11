@@ -140,6 +140,12 @@ export const accounts = pgTable(
   },
   (table) => [
     uniqueIndex("accounts_ledger_id_id_idx").on(table.ledgerId, table.id),
+    // Lets each entry's currency be tied to its account's currency.
+    uniqueIndex("accounts_ledger_id_currency_idx").on(
+      table.ledgerId,
+      table.id,
+      table.currency,
+    ),
     check(
       "accounts_name_check",
       sql`char_length(btrim(${table.name})) BETWEEN 1 AND 100`,
@@ -148,7 +154,7 @@ export const accounts = pgTable(
       "accounts_type_check",
       sql`${table.type} IN ('bank', 'cash', 'card', 'wallet', 'loan', 'savings')`,
     ),
-    check("accounts_currency_check", sql`${table.currency} = 'USD'`),
+    check("accounts_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check(
       "accounts_opening_balance_check",
       sql`${table.openingBalance} BETWEEN -9007199254740991 AND 9007199254740991`,
@@ -280,11 +286,10 @@ export const transactions = pgTable(
       .$type<"cleared" | "pending">()
       .notNull()
       .default("cleared"),
-    // Exact decimal in the database (ADR 0020). Read as a JS number only while every rate is 1;
-    // step 2b-3 switches this to text before any other rate can exist.
-    fxRate: numeric("fx_rate", { precision: 20, scale: 10, mode: "number" })
+    // Exact decimal text (ADR 0020): base-currency value of one unit of `currency`.
+    fxRate: numeric("fx_rate", { precision: 20, scale: 10 })
       .notNull()
-      .default(1),
+      .default("1"),
     baseAmount: bigint("base_amount", { mode: "number" }).notNull(),
     version: integer("version").notNull().default(1),
     ...audit(),
@@ -294,6 +299,12 @@ export const transactions = pgTable(
       name: "transactions_scoped_account_fk",
       columns: [table.ledgerId, table.accountId],
       foreignColumns: [accounts.ledgerId, accounts.id],
+    }),
+    // An entry is always in its account's currency.
+    foreignKey({
+      name: "transactions_account_currency_fk",
+      columns: [table.ledgerId, table.accountId, table.currency],
+      foreignColumns: [accounts.ledgerId, accounts.id, accounts.currency],
     }),
     foreignKey({
       name: "transactions_scoped_payment_fk",
@@ -347,9 +358,10 @@ export const transactions = pgTable(
       "transactions_amount_check",
       sql`${table.amount} BETWEEN -9007199254740991 AND 9007199254740991`,
     ),
+    // Base-currency (USD) entries are worth exactly themselves; every entry has a positive rate.
     check(
-      "transactions_usd_check",
-      sql`${table.currency} = 'USD' AND ${table.fxRate} = 1 AND ${table.baseAmount} = ${table.amount}`,
+      "transactions_currency_check",
+      sql`${table.currency} ~ '^[A-Z]{3}$' AND ${table.fxRate} > 0 AND (${table.currency} <> 'USD' OR (${table.fxRate} = 1 AND ${table.baseAmount} = ${table.amount}))`,
     ),
     check(
       "transactions_status_check",

@@ -112,7 +112,7 @@ describe("receivable contracts", () => {
       date: "2026-10-07",
       amount: { amount: 1, currency: "USD" },
       baseAmount: { amount: 1, currency: "USD" },
-      fxRate: 1,
+      fxRate: "1",
       status: "cleared",
       payee: null,
       note: null,

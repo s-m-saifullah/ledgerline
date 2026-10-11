@@ -62,7 +62,7 @@ const transaction: Transaction = {
   time: null,
   amount: { amount: -4215, currency: "USD" },
   baseAmount: { amount: -4215, currency: "USD" },
-  fxRate: 1,
+  fxRate: "1",
   transferId: null,
   receivablePaymentId: null,
   receivableId: null,

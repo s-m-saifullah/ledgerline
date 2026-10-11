@@ -1,7 +1,7 @@
-import { transactionSchema } from "@ledgerline/shared";
 import type { DatabaseConnection } from "../../db/client";
+import { transactionDto } from "./dto";
 import { transactionRepository } from "./repo";
-import { splitDto, splitRepository } from "./split-repo";
+import { splitRepository } from "./split-repo";
 
 /** Cleared income/expense for a calendar range, pending count and the latest rows. */
 export async function homeTransactionOverview(
@@ -34,16 +34,10 @@ export async function homeTransactionOverview(
       destinationAccountId: row.transferId
         ? (destinations.get(row.transferId) ?? null)
         : null,
-      transaction: transactionSchema.parse({
-        ...row,
-        amount: { amount: row.amount, currency: row.currency },
-        baseAmount: { amount: row.baseAmount, currency: row.currency },
-        splits: splits
-          .filter((line) => line.transactionId === row.id)
-          .map(splitDto),
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      }),
+      transaction: transactionDto(
+        row,
+        splits.filter((line) => line.transactionId === row.id),
+      ),
     })),
   };
 }

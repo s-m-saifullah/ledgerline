@@ -7,9 +7,11 @@ import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { accountBalanceOverview } from "../accounts/home-service";
 import { categoryLabelOverview } from "../categories/home-service";
+import { latestRates } from "../currencies/service";
 import { requireLedgerRead } from "../ledgers/service";
 import { owedOverview } from "../receivables/balance-service";
 import { homeTransactionOverview } from "../transactions/home-service";
+import { convertOrConflict } from "../transactions/pricing";
 
 const SHOWN_ACCOUNTS = 8;
 const LATEST = 5;
@@ -30,9 +32,11 @@ const usd = (amount: bigint | number) => ({
   amount: typeof amount === "bigint" ? safe(amount) : amount,
   currency: "USD" as const,
 });
-const group = (rows: { balance: number }[]) => ({
+const group = (rows: { baseBalance: number | null }[]) => ({
   count: rows.length,
-  balance: usd(rows.reduce((sum, row) => sum + BigInt(row.balance), 0n)),
+  balance: usd(
+    rows.reduce((sum, row) => sum + BigInt(row.baseBalance ?? 0), 0n),
+  ),
 });
 
 /** One repeatable-read snapshot so totals, balances and latest rows always agree. */
@@ -45,8 +49,34 @@ export async function getHomeSummary(
   const range = monthRange(month);
   return db.transaction(
     async (tx) => {
-      await requireLedgerRead(tx, actorId, ledgerId);
-      const accounts = await accountBalanceOverview(tx, ledgerId);
+      const ledger = await requireLedgerRead(tx, actorId, ledgerId);
+      const base = ledger.baseCurrency;
+      const rows = await accountBalanceOverview(tx, ledgerId);
+      // Balances are valued at the newest stored rate; spending and income use frozen amounts.
+      const rates = await latestRates(
+        tx,
+        ledgerId,
+        rows.map((row) => row.currency).filter((code) => code !== base),
+      );
+      const unconverted = new Set<string>();
+      const accounts = rows.map((row) => {
+        let baseBalance: number | null = null;
+        if (row.currency === base) baseBalance = row.balance;
+        else {
+          const rate = rates.get(row.currency);
+          if (rate)
+            baseBalance = convertOrConflict(
+              row.balance,
+              rate,
+              row.currency,
+              base,
+            );
+          else unconverted.add(row.currency);
+        }
+        return { ...row, baseBalance };
+      });
+      // Accounts whose currency has no rate yet are left out of the base totals.
+      const counted = accounts.filter((row) => row.baseBalance !== null);
       const flow = await homeTransactionOverview(
         tx,
         ledgerId,
@@ -61,22 +91,22 @@ export async function getHomeSummary(
       const assets = accounts.filter((row) => isAssetAccountType(row.type));
       const activeAssets = assets.filter((row) => !row.archived);
       const debts = accounts.filter((row) => !isAssetAccountType(row.type));
+      const valued = (row: { baseBalance: number | null }) =>
+        BigInt(row.baseBalance ?? 0);
       return {
         month,
         monthStart: range.start,
         monthEnd: range.end,
         inHand: usd(
           activeAssets.reduce(
-            (sum, row) => (row.balance > 0 ? sum + BigInt(row.balance) : sum),
+            (sum, row) => (valued(row) > 0n ? sum + valued(row) : sum),
             0n,
           ),
         ),
-        netWorth: usd(
-          accounts.reduce((sum, row) => sum + BigInt(row.balance), 0n),
-        ),
+        netWorth: usd(counted.reduce((sum, row) => sum + valued(row), 0n)),
         liabilitiesOwed: usd(
           debts.reduce(
-            (sum, row) => (row.balance < 0 ? sum - BigInt(row.balance) : sum),
+            (sum, row) => (valued(row) < 0n ? sum - valued(row) : sum),
             0n,
           ),
         ),
@@ -84,7 +114,8 @@ export async function getHomeSummary(
           id: row.id,
           name: row.name,
           type: row.type,
-          balance: usd(row.balance),
+          balance: { amount: row.balance, currency: row.currency },
+          baseBalance: row.baseBalance === null ? null : usd(row.baseBalance),
         })),
         otherActive: group(activeAssets.slice(SHOWN_ACCOUNTS)),
         archived: group(assets.filter((row) => row.archived)),
@@ -106,6 +137,7 @@ export async function getHomeSummary(
           hasActiveAccount: active.length > 0,
           hasCategory: categories.hasActive,
         },
+        unconvertedCurrencies: [...unconverted].sort(),
       };
     },
     { isolationLevel: "repeatable read" },
