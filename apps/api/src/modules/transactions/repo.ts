@@ -64,6 +64,7 @@ export function transactionRepository(
       id: string,
       expectedVersion: number | undefined,
       body: CreateTransaction,
+      pricing: EntryPricing,
       link: {
         paymentId: string;
         receivableId: string;
@@ -78,9 +79,9 @@ export function transactionRepository(
         date: body.date,
         time: body.time ?? null,
         amount: body.amount.amount,
-        currency: "USD",
-        fxRate: "1",
-        baseAmount: body.amount.amount,
+        currency: body.amount.currency,
+        fxRate: pricing.fxRate,
+        baseAmount: pricing.baseAmount,
         status: "cleared" as const,
         payee: body.payee,
         note: body.note,

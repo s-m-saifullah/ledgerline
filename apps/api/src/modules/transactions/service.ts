@@ -3,6 +3,7 @@ import {
   createTransactionSchema,
   type DeleteTransaction,
   type JsonValue,
+  type Money,
   type RestoreTransaction,
   type TransactionListQuery,
   transactionSchema,
@@ -25,7 +26,7 @@ import {
 import { nextVersion, requireVersionUpdate } from "../writes/version";
 import { postedBalance, postedTransactionTotals } from "./balance-service";
 import { transactionDto } from "./dto";
-import { priceEntry } from "./pricing";
+import { type EntryPricing, priceEntry, pricePayment } from "./pricing";
 import { type TransactionRow, transactionRepository } from "./repo";
 
 import { type SplitRow, splitRepository } from "./split-repo";
@@ -76,7 +77,11 @@ export async function paymentIncome(
     paymentId: string;
     receivableId: string;
     expectedVersion: number;
+    /** `body.amount` is what the payment settles, in the item's currency. */
     body?: CreateTransaction;
+    /** What arrives in the account when its currency differs from the item's. */
+    receivedAmount?: Money | undefined;
+    fxRate?: string | undefined;
     deletedAt?: Date;
   },
 ) {
@@ -105,7 +110,7 @@ export async function paymentIncome(
           kind: "income",
           date: current.date,
           time: current.time,
-          amount: { amount: current.amount, currency: "USD" },
+          amount: { amount: current.amount, currency: current.currency },
           status: "cleared",
           payee: current.payee,
           note: current.note,
@@ -113,16 +118,29 @@ export async function paymentIncome(
       : null);
   if (!body) throw new Error("Missing payment fields");
   const rows = await references(context, body, current);
-  // Money owed is USD-only for now, so payments are received into USD accounts (ADR 0022).
-  if (action !== "delete" && accountOf(rows, body.accountId).currency !== "USD")
-    throw new ApiProblem(
-      409,
-      "Conflict",
-      "Payments can be received into USD accounts for now.",
-      [{ field: "accountId", message: "Choose a USD account." }],
-    );
+  // A new or changed payment is priced here; delete and restore keep the entry as it was saved.
+  let entryBody = body;
+  let pricing: EntryPricing | undefined = current
+    ? { fxRate: current.fxRate, baseAmount: current.baseAmount }
+    : undefined;
+  if (input.body && (action === "create" || action === "edit")) {
+    const account = accountOf(rows, body.accountId);
+    const priced = await pricePayment(context, {
+      accountCurrency: account.currency,
+      item: body.amount,
+      received: input.receivedAmount,
+      date: body.date,
+      manualRate: input.fxRate,
+      // An edit keeps the entry's saved rate unless one is set by hand.
+      keepRate:
+        current?.currency === account.currency ? current.fxRate : undefined,
+    });
+    entryBody = { ...body, amount: priced.entry };
+    pricing = priced.pricing;
+  }
+  if (!pricing) throw new Error("Missing payment pricing");
   const row = required(
-    await repo.saveLinked(input.id, current?.version, body, {
+    await repo.saveLinked(input.id, current?.version, entryBody, pricing, {
       paymentId: input.paymentId,
       receivableId: input.receivableId,
       version,

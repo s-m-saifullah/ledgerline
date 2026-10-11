@@ -84,7 +84,7 @@ export async function getHomeSummary(
         range.end,
         LATEST,
       );
-      const owed = await owedOverview(tx, ledgerId);
+      const owed = await owedOverview(tx, ledgerId, base);
       const categories = await categoryLabelOverview(tx, ledgerId);
       const active = accounts.filter((row) => !row.archived);
       const names = new Map(accounts.map((row) => [row.id, row.name]));
@@ -121,7 +121,12 @@ export async function getHomeSummary(
         archived: group(assets.filter((row) => row.archived)),
         moneyIn: usd(flow.income),
         moneyOut: usd(flow.spending),
-        owed: { total: usd(owed.total), personCount: owed.personCount },
+        owed: {
+          total: usd(owed.total),
+          personCount: owed.personCount,
+          otherCurrencies: owed.otherCurrencies,
+          unconvertedCurrencies: owed.unconvertedCurrencies,
+        },
         pendingCount: flow.pendingCount,
         latest: flow.latest.map((row) => ({
           transaction: row.transaction,

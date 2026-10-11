@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.24"
+    "version": "0.1.25"
   },
   "components": {
     "schemas": {
@@ -4398,6 +4398,37 @@
                             ],
                             "additionalProperties": false
                           },
+                          "openBalances": {
+                            "default": [],
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "amount": {
+                                  "type": "integer",
+                                  "minimum": -9007199254740991,
+                                  "maximum": 9007199254740991
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "pattern": "^[A-Z]{3}$"
+                                }
+                              },
+                              "required": [
+                                "amount",
+                                "currency"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "unconvertedCurrencies": {
+                            "default": [],
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[A-Z]{3}$"
+                            }
+                          },
                           "oldestOpenServiceDate": {
                             "anyOf": [
                               {
@@ -4423,6 +4454,8 @@
                           "version",
                           "archivedAt",
                           "openBalance",
+                          "openBalances",
+                          "unconvertedCurrencies",
                           "oldestOpenServiceDate"
                         ],
                         "additionalProperties": false
@@ -4973,6 +5006,37 @@
                       ],
                       "additionalProperties": false
                     },
+                    "openBalances": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unconvertedCurrencies": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
                     "oldestOpenServiceDate": {
                       "anyOf": [
                         {
@@ -4998,6 +5062,8 @@
                     "version",
                     "archivedAt",
                     "openBalance",
+                    "openBalances",
+                    "unconvertedCurrencies",
                     "oldestOpenServiceDate"
                   ],
                   "additionalProperties": false
@@ -5471,6 +5537,37 @@
                       ],
                       "additionalProperties": false
                     },
+                    "openBalances": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unconvertedCurrencies": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
                     "oldestOpenServiceDate": {
                       "anyOf": [
                         {
@@ -5496,6 +5593,8 @@
                     "version",
                     "archivedAt",
                     "openBalance",
+                    "openBalances",
+                    "unconvertedCurrencies",
                     "oldestOpenServiceDate"
                   ],
                   "additionalProperties": false
@@ -6042,6 +6141,37 @@
                       ],
                       "additionalProperties": false
                     },
+                    "openBalances": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unconvertedCurrencies": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
                     "oldestOpenServiceDate": {
                       "anyOf": [
                         {
@@ -6067,6 +6197,8 @@
                     "version",
                     "archivedAt",
                     "openBalance",
+                    "openBalances",
+                    "unconvertedCurrencies",
                     "oldestOpenServiceDate"
                   ],
                   "additionalProperties": false
@@ -6989,9 +7121,7 @@
                                           },
                                           "currency": {
                                             "type": "string",
-                                            "enum": [
-                                              "USD"
-                                            ]
+                                            "pattern": "^[A-Z]{3}$"
                                           }
                                         },
                                         "required": [
@@ -7035,9 +7165,7 @@
                                           },
                                           "currency": {
                                             "type": "string",
-                                            "enum": [
-                                              "USD"
-                                            ]
+                                            "pattern": "^[A-Z]{3}$"
                                           }
                                         },
                                         "required": [
@@ -7056,9 +7184,7 @@
                                           },
                                           "currency": {
                                             "type": "string",
-                                            "enum": [
-                                              "USD"
-                                            ]
+                                            "pattern": "^[A-Z]{3}$"
                                           }
                                         },
                                         "required": [
@@ -7077,9 +7203,7 @@
                                           },
                                           "currency": {
                                             "type": "string",
-                                            "enum": [
-                                              "USD"
-                                            ]
+                                            "pattern": "^[A-Z]{3}$"
                                           }
                                         },
                                         "required": [
@@ -7121,9 +7245,7 @@
                                               },
                                               "currency": {
                                                 "type": "string",
-                                                "enum": [
-                                                  "USD"
-                                                ]
+                                                "pattern": "^[A-Z]{3}$"
                                               }
                                             },
                                             "required": [
@@ -7575,9 +7697,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -7621,9 +7741,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -7642,9 +7760,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -7663,9 +7779,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -7707,9 +7821,7 @@
                                           },
                                           "currency": {
                                             "type": "string",
-                                            "enum": [
-                                              "USD"
-                                            ]
+                                            "pattern": "^[A-Z]{3}$"
                                           }
                                         },
                                         "required": [
@@ -8638,9 +8750,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -8684,9 +8794,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -8705,9 +8813,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -8726,9 +8832,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -8770,9 +8874,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -9233,9 +9335,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -9339,9 +9439,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -9385,9 +9483,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -9406,9 +9502,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -9427,9 +9521,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -9471,9 +9563,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -9942,9 +10032,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -9988,9 +10076,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10009,9 +10095,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10030,9 +10114,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10074,9 +10156,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -10516,9 +10596,7 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
@@ -10639,9 +10717,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10685,9 +10761,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10706,9 +10780,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10727,9 +10799,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -10771,9 +10841,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -11641,9 +11709,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -12035,9 +12101,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -12081,9 +12145,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -12102,9 +12164,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -12123,9 +12183,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -12167,9 +12225,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -12605,15 +12661,35 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
                       "amount",
                       "currency"
                     ]
+                  },
+                  "receivedAmount": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   },
                   "accountId": {
                     "type": "string",
@@ -12748,9 +12824,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -13142,9 +13216,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -13188,9 +13260,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -13209,9 +13279,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -13230,9 +13298,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -13274,9 +13340,7 @@
                                 },
                                 "currency": {
                                   "type": "string",
-                                  "enum": [
-                                    "USD"
-                                  ]
+                                  "pattern": "^[A-Z]{3}$"
                                 }
                               },
                               "required": [
@@ -13751,9 +13815,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -14145,9 +14207,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -14191,9 +14251,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -14212,9 +14270,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -14233,9 +14289,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -14277,9 +14331,7 @@
                                 },
                                 "currency": {
                                   "type": "string",
-                                  "enum": [
-                                    "USD"
-                                  ]
+                                  "pattern": "^[A-Z]{3}$"
                                 }
                               },
                               "required": [
@@ -14695,15 +14747,35 @@
                       },
                       "currency": {
                         "type": "string",
-                        "enum": [
-                          "USD"
-                        ]
+                        "pattern": "^[A-Z]{3}$"
                       }
                     },
                     "required": [
                       "amount",
                       "currency"
                     ]
+                  },
+                  "receivedAmount": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "currency": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
+                    "required": [
+                      "amount",
+                      "currency"
+                    ]
+                  },
+                  "fxRate": {
+                    "type": "string",
+                    "pattern": "^\\d{1,10}(?:\\.\\d{1,10})?$"
                   },
                   "accountId": {
                     "type": "string",
@@ -14854,9 +14926,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -15248,9 +15318,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -15294,9 +15362,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -15315,9 +15381,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -15336,9 +15400,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -15380,9 +15442,7 @@
                                 },
                                 "currency": {
                                   "type": "string",
-                                  "enum": [
-                                    "USD"
-                                  ]
+                                  "pattern": "^[A-Z]{3}$"
                                 }
                               },
                               "required": [
@@ -16355,6 +16415,37 @@
                       ],
                       "additionalProperties": false
                     },
+                    "openBalances": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unconvertedCurrencies": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
                     "oldestOpenServiceDate": {
                       "anyOf": [
                         {
@@ -16380,6 +16471,8 @@
                     "version",
                     "archivedAt",
                     "openBalance",
+                    "openBalances",
+                    "unconvertedCurrencies",
                     "oldestOpenServiceDate"
                   ],
                   "additionalProperties": false
@@ -16884,6 +16977,37 @@
                       ],
                       "additionalProperties": false
                     },
+                    "openBalances": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "currency": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "required": [
+                          "amount",
+                          "currency"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "unconvertedCurrencies": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{3}$"
+                      }
+                    },
                     "oldestOpenServiceDate": {
                       "anyOf": [
                         {
@@ -16909,6 +17033,8 @@
                     "version",
                     "archivedAt",
                     "openBalance",
+                    "openBalances",
+                    "unconvertedCurrencies",
                     "oldestOpenServiceDate"
                   ],
                   "additionalProperties": false
@@ -17365,9 +17491,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -17411,9 +17535,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -17432,9 +17554,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -17453,9 +17573,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -17497,9 +17615,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -18011,9 +18127,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18057,9 +18171,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18078,9 +18190,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18099,9 +18209,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18143,9 +18251,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -18645,9 +18751,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18691,9 +18795,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18712,9 +18814,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18733,9 +18833,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -18777,9 +18875,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -19275,9 +19371,7 @@
                         },
                         "currency": {
                           "type": "string",
-                          "enum": [
-                            "USD"
-                          ]
+                          "pattern": "^[A-Z]{3}$"
                         }
                       },
                       "required": [
@@ -19669,9 +19763,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -19715,9 +19807,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -19736,9 +19826,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -19757,9 +19845,7 @@
                             },
                             "currency": {
                               "type": "string",
-                              "enum": [
-                                "USD"
-                              ]
+                              "pattern": "^[A-Z]{3}$"
                             }
                           },
                           "required": [
@@ -19801,9 +19887,7 @@
                                 },
                                 "currency": {
                                   "type": "string",
-                                  "enum": [
-                                    "USD"
-                                  ]
+                                  "pattern": "^[A-Z]{3}$"
                                 }
                               },
                               "required": [
@@ -20972,9 +21056,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -21366,9 +21448,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -21412,9 +21492,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -21433,9 +21511,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -21454,9 +21530,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -21498,9 +21572,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -22012,9 +22084,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -22406,9 +22476,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -22452,9 +22520,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -22473,9 +22539,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -22494,9 +22558,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -22538,9 +22600,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -23151,9 +23211,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -23545,9 +23603,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -23591,9 +23647,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -23612,9 +23666,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -23633,9 +23685,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -23677,9 +23727,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -24667,9 +24715,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "enum": [
-                                  "USD"
-                                ]
+                                "pattern": "^[A-Z]{3}$"
                               }
                             },
                             "required": [
@@ -25061,9 +25107,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -25107,9 +25151,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -25128,9 +25170,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -25149,9 +25189,7 @@
                                   },
                                   "currency": {
                                     "type": "string",
-                                    "enum": [
-                                      "USD"
-                                    ]
+                                    "pattern": "^[A-Z]{3}$"
                                   }
                                 },
                                 "required": [
@@ -25193,9 +25231,7 @@
                                       },
                                       "currency": {
                                         "type": "string",
-                                        "enum": [
-                                          "USD"
-                                        ]
+                                        "pattern": "^[A-Z]{3}$"
                                       }
                                     },
                                     "required": [
@@ -45227,11 +45263,29 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 9007199254740991
+                        },
+                        "otherCurrencies": {
+                          "default": [],
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
+                        },
+                        "unconvertedCurrencies": {
+                          "default": [],
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[A-Z]{3}$"
+                          }
                         }
                       },
                       "required": [
                         "total",
-                        "personCount"
+                        "personCount",
+                        "otherCurrencies",
+                        "unconvertedCurrencies"
                       ],
                       "additionalProperties": false
                     },

@@ -71,8 +71,13 @@ export const homeSummarySchema = z.object({
   moneyIn: usdMoneySchema,
   moneyOut: usdMoneySchema,
   owed: z.object({
+    // Open money owed to you, valued in the base currency at the newest stored rates.
     total: usdMoneySchema,
     personCount: z.number().int().min(0),
+    // Non-base currencies someone owes in (so the screen can say the total uses latest rates).
+    otherCurrencies: z.array(currencySchema).default([]),
+    // Owed currencies with no stored rate yet; they are left out of the total.
+    unconvertedCurrencies: z.array(currencySchema).default([]),
   }),
   pendingCount: z.number().int().min(0),
   latest: z.array(homeLatestSchema).max(5),

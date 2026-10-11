@@ -62,7 +62,7 @@ export function receivableRepository(db: DatabaseConnection, ledgerId: string) {
             serviceTime: body.serviceTime ?? null,
             ledgerId,
             amount: body.amount.amount,
-            currency: "USD",
+            currency: body.amount.currency,
           })
           .returning()
       )[0],
@@ -85,7 +85,7 @@ export function receivableRepository(db: DatabaseConnection, ledgerId: string) {
           .returning()
       )[0],
     /** Live, unwaived services with money left, oldest service date first (ties by ID). */
-    openForContact: (contactId: string) =>
+    openForContact: (contactId: string, currency: string) =>
       db
         .select()
         .from(receivables)
@@ -93,6 +93,7 @@ export function receivableRepository(db: DatabaseConnection, ledgerId: string) {
           and(
             scope,
             eq(receivables.contactId, contactId),
+            eq(receivables.currency, currency),
             isNull(receivables.deletedAt),
             isNull(receivables.writtenOffAt),
             sql`${receivables.amount} > ${received}::numeric`,
@@ -114,9 +115,15 @@ export function receivableRepository(db: DatabaseConnection, ledgerId: string) {
             ),
           )
       )[0]?.total ?? "0",
+    /** Open balance per person and currency (one row each), with the oldest open service date. */
     summaries: () =>
-      db.execute<{ contactId: string; total: string; oldest: string | null }>(
-        sql`select contact_id as "contactId",coalesce(sum(amount-${received}::numeric),0)::text as total,min(service_date)::text as oldest from receivables where ledger_id=${ledgerId} and deleted_at is null and written_off_at is null and amount>${received}::numeric group by contact_id`,
+      db.execute<{
+        contactId: string;
+        currency: string;
+        total: string;
+        oldest: string | null;
+      }>(
+        sql`select contact_id as "contactId",currency,coalesce(sum(amount-${received}::numeric),0)::text as total,min(service_date)::text as oldest from receivables where ledger_id=${ledgerId} and deleted_at is null and written_off_at is null and amount>${received}::numeric group by contact_id,currency`,
       ),
     hasContact: async (id: string) =>
       (
