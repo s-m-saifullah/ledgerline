@@ -1,3 +1,4 @@
+import type { Account } from "@ledgerline/shared";
 import { describe, expect, it } from "vitest";
 import { accountBody, bpsToPercent, formDefaults, percentToBps } from "./form";
 import {
@@ -23,6 +24,8 @@ it("converts the chosen debt direction without floating-point rounding", () => {
       amount: "12.29",
       bonusRate: "",
       bonusCategoryId: "",
+      defaultFee: "",
+      feeCategoryId: "",
     }),
   ).toEqual({
     name: "My card",
@@ -30,6 +33,8 @@ it("converts the chosen debt direction without floating-point rounding", () => {
     openingBalance: { amount: -1229, currency: "USD" },
     inboundBonusBps: null,
     bonusCategoryId: null,
+    feeCategoryId: null,
+    defaultFee: null,
   });
   expect(
     accountBody({
@@ -40,6 +45,8 @@ it("converts the chosen debt direction without floating-point rounding", () => {
       amount: "90071992547409.91",
       bonusRate: "",
       bonusCategoryId: "",
+      defaultFee: "",
+      feeCategoryId: "",
     }).openingBalance.amount,
   ).toBe(Number.MAX_SAFE_INTEGER);
   expect(formDefaults().amount).toBe("0.00");
@@ -54,6 +61,8 @@ it("converts the chosen debt direction without floating-point rounding", () => {
         amount,
         bonusRate: "",
         bonusCategoryId: "",
+        defaultFee: "",
+        feeCategoryId: "",
       }),
     ).toThrow();
 });
@@ -68,6 +77,8 @@ it("reads the opening balance in the chosen currency's own minor units", () => {
       amount,
       bonusRate: "",
       bonusCategoryId: "",
+      defaultFee: "",
+      feeCategoryId: "",
     });
   expect(body("EUR", "12.34").openingBalance).toEqual({
     amount: 1234,
@@ -88,6 +99,8 @@ it("reads the opening balance in the chosen currency's own minor units", () => {
     amount: "0",
     bonusRate: "",
     bonusCategoryId: "",
+    defaultFee: "",
+    feeCategoryId: "",
   });
 });
 
@@ -148,6 +161,8 @@ it("sends the bonus settings, and turns them off with nulls", () => {
     amount: "0.00",
     bonusRate: "2.5",
     bonusCategoryId: "01a12893-cfa9-779c-8f78-2e662dc63531",
+    defaultFee: "",
+    feeCategoryId: "",
   };
   expect(accountBody(values)).toMatchObject({
     inboundBonusBps: 250,
@@ -156,6 +171,43 @@ it("sends the bonus settings, and turns them off with nulls", () => {
   expect(accountBody({ ...values, bonusRate: "" })).toMatchObject({
     inboundBonusBps: null,
     bonusCategoryId: null,
+    feeCategoryId: null,
+    defaultFee: null,
   });
   expect(() => accountBody({ ...values, bonusRate: "150" })).toThrow();
+});
+it("sends the default fee as a fixed amount or basis points, with its category", () => {
+  const values = {
+    name: "Wallet",
+    type: "wallet" as const,
+    currency: "USD",
+    direction: "positive" as const,
+    amount: "0.00",
+    bonusRate: "",
+    bonusCategoryId: "",
+    defaultFee: "2",
+    feeCategoryId: "01a12893-cfa9-779c-8f78-2e662dc63532",
+  };
+  expect(accountBody(values)).toMatchObject({
+    defaultFee: { amount: { amount: 200, currency: "USD" } },
+    feeCategoryId: values.feeCategoryId,
+  });
+  expect(accountBody({ ...values, defaultFee: "1.5%" })).toMatchObject({
+    defaultFee: { basisPoints: 150 },
+  });
+  expect(accountBody({ ...values, defaultFee: "" })).toMatchObject({
+    defaultFee: null,
+    feeCategoryId: values.feeCategoryId,
+  });
+  expect(() => accountBody({ ...values, defaultFee: "abc" })).toThrow();
+  expect(() => accountBody({ ...values, defaultFee: "101%" })).toThrow();
+  expect(
+    formDefaults({
+      ...({} as Account),
+      currency: "USD",
+      openingBalance: { amount: 0, currency: "USD" },
+      defaultFee: { basisPoints: 250 },
+      feeCategoryId: values.feeCategoryId,
+    }),
+  ).toMatchObject({ defaultFee: "2.5%", feeCategoryId: values.feeCategoryId });
 });

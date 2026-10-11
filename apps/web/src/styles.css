@@ -1370,6 +1370,27 @@ kbd {
 .transaction-details .account-fields {
   margin-top: 8px;
 }
+.transfer-fee,
+.transfer-bonus {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+.transfer-fee > label {
+  font-size: 12px;
+  font-weight: 500;
+}
+/* What the fee comes to reads as a result, not as more help text. */
+.transfer-fee #transfer-fee-preview {
+  color: var(--text);
+  font-weight: 500;
+}
+.transfer-fee #transfer-fee-preview:empty {
+  display: none;
+}
+.transfer-more-hint {
+  font-size: 13px;
+}
 .transaction-details textarea,
 .transaction-fields textarea {
   width: 100%;

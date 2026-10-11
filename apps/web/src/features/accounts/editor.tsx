@@ -6,11 +6,12 @@ import {
 } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { ChevronDown } from "lucide-react";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { ApiError } from "../../lib/api";
 import { CategoryPicker } from "../categories/picker";
 import { PrivacyContext } from "../shell/preferences";
+import { feeHint } from "../transactions/fee";
 import { getAccount, prepareAccountSave } from "./api";
 import { AccountDialog } from "./dialog";
 import {
@@ -68,6 +69,12 @@ export function AccountEditor({
   const liability = isLiability(watch("type"));
   const currency = watch("currency");
   const bonusRate = watch("bonusRate");
+  const [moreOpen, setMoreOpen] = useState(false);
+  // The default categories live under More; open it when one of them has a problem to show.
+  const categoryProblem = !!errors.bonusCategoryId || !!errors.feeCategoryId;
+  useEffect(() => {
+    if (categoryProblem) setMoreOpen(true);
+  }, [categoryProblem]);
   const busy = isSubmitting || reloading;
   const submit = handleSubmit(async (values) => {
     if (inFlight.current || conflict) return;
@@ -107,6 +114,10 @@ export function AccountEditor({
               setFieldError("bonusRate", { message: issue.message });
             if (field === "bonusCategoryId")
               setFieldError("bonusCategoryId", { message: issue.message });
+            if (field.startsWith("defaultFee"))
+              setFieldError("defaultFee", { message: issue.message });
+            if (field === "feeCategoryId")
+              setFieldError("feeCategoryId", { message: issue.message });
             if (field === "openingBalance.amount")
               setFieldError("amount", { message: issue.message });
           }
@@ -286,15 +297,69 @@ export function AccountEditor({
               {errors.bonusRate.message}
             </p>
           )}
-          {bonusRate.trim() !== "" && (
-            <CategoryPicker
-              categories={categories}
-              kind="income"
-              label="Bonus category"
-              value={watch("bonusCategoryId") || null}
-              onChange={(id) => setValue("bonusCategoryId", id ?? "")}
-            />
+          <h3 className="account-section-title">Fee on outgoing transfers</h3>
+          <p className="form-help">
+            If sending money from this account usually costs a fee, enter it
+            here and new transfers will start with it filled in. {feeHint} Leave
+            it empty for none.
+          </p>
+          <label htmlFor="account-default-fee">Usual fee</label>
+          <input
+            id="account-default-fee"
+            type={privateMode ? "password" : "text"}
+            inputMode="text"
+            autoComplete="off"
+            placeholder="2 or 2%"
+            aria-invalid={!!errors.defaultFee}
+            aria-describedby={
+              errors.defaultFee ? "default-fee-error" : undefined
+            }
+            {...register("defaultFee")}
+          />
+          {errors.defaultFee && (
+            <p id="default-fee-error" className="field-error">
+              {errors.defaultFee.message}
+            </p>
           )}
+          <details
+            className="transaction-details"
+            open={moreOpen}
+            onToggle={(event) => setMoreOpen(event.currentTarget.open)}
+          >
+            <summary>
+              More <span className="muted">default categories</span>
+            </summary>
+            <div className="account-fields">
+              <CategoryPicker
+                categories={categories}
+                kind="expense"
+                label="Fee category"
+                allowNone
+                noneLabel="No default category"
+                value={watch("feeCategoryId") || null}
+                onChange={(id) => setValue("feeCategoryId", id ?? "")}
+              />
+              {errors.feeCategoryId && (
+                <p className="field-error">{errors.feeCategoryId.message}</p>
+              )}
+              {bonusRate.trim() !== "" && (
+                <CategoryPicker
+                  categories={categories}
+                  kind="income"
+                  label="Bonus category"
+                  value={watch("bonusCategoryId") || null}
+                  onChange={(id) => setValue("bonusCategoryId", id ?? "")}
+                />
+              )}
+              {errors.bonusCategoryId && (
+                <p className="field-error">{errors.bonusCategoryId.message}</p>
+              )}
+              <p className="form-help">
+                Transfers use these when they have a fee or a bonus, so you do
+                not have to choose each time.
+              </p>
+            </div>
+          </details>
           {privateMode && (
             <p className="form-help">
               Privacy mode hides this amount. Use the eye control in the header

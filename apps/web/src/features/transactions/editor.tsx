@@ -73,6 +73,9 @@ export function TransactionEditor({
   } = form;
   const kind = watch("kind");
   const canWrite = writable && !baseline.transferId;
+  // A transfer's fee or bonus keeps its kind and is never split (ADRs 0023, 0025).
+  const linkedToTransfer =
+    !!baseline.feeTransferId || !!baseline.relatedTransferId;
   useEffect(() => {
     onLock(busy || uncertain);
   }, [busy, uncertain, onLock]);
@@ -176,6 +179,12 @@ export function TransactionEditor({
       {baseline.transferId && (
         <p className="form-help">Transfer entries must be changed together.</p>
       )}
+      {baseline.feeTransferId && (
+        <p className="form-help">
+          This is a transfer's fee. You can change its amount, category and
+          date, but it stays one expense.
+        </p>
+      )}
       <form
         noValidate
         onSubmit={handleSubmit((values) => execute("edit", values))}
@@ -187,6 +196,7 @@ export function TransactionEditor({
           <label htmlFor="edit-transaction-kind">Entry type</label>
           <NativeSelect
             id="edit-transaction-kind"
+            disabled={linkedToTransfer}
             value={kind}
             onChange={(event) => {
               setValue("kind", event.target.value as "expense" | "income");
@@ -238,7 +248,9 @@ export function TransactionEditor({
               !canWrite || busy || uncertain || conflict || confirmDelete
             }
           />
-          <SplitFields form={form} categories={categories} kind={kind} />
+          {!linkedToTransfer && (
+            <SplitFields form={form} categories={categories} kind={kind} />
+          )}
           {!watch("splitEnabled") && (
             <CategoryPicker
               categories={categories}

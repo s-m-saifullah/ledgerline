@@ -7,7 +7,13 @@ import {
   parseMinorUnits,
 } from "@ledgerline/shared";
 import { z } from "zod";
-import { cleanAmountText, decimalFromCents } from "./money";
+import { defaultFeeText, parseFee } from "../transactions/fee";
+import {
+  bpsToPercent,
+  cleanAmountText,
+  decimalFromCents,
+  percentToBps,
+} from "./money";
 
 export const accountFormSchema = z
   .object({
@@ -24,8 +30,18 @@ export const accountFormSchema = z
     // Optional bonus on incoming transfers (ADR 0023): a percentage such as 2.5; empty is off.
     bonusRate: z.string().trim(),
     bonusCategoryId: z.string(),
+    // Optional default fee on outgoing transfers (ADR 0025): "2" is fixed, "2%" a percentage.
+    defaultFee: z.string().trim(),
+    feeCategoryId: z.string(),
   })
   .superRefine((values, ctx) => {
+    const fee = parseFee(values.defaultFee, values.currency);
+    if (fee.kind === "invalid")
+      ctx.addIssue({
+        code: "custom",
+        path: ["defaultFee"],
+        message: fee.message,
+      });
     if (values.bonusRate !== "" && percentToBps(values.bonusRate) === null)
       ctx.addIssue({
         code: "custom",
@@ -53,16 +69,7 @@ export const accountFormSchema = z
             : `Enter an amount with up to ${digits === 2 ? "two" : digits} decimal places, within the supported range.`,
       });
   });
-/** "2.5" becomes 250 basis points; anything that is not 0.01 to 100 with at most two decimals is null. */
-export function percentToBps(text: string): number | null {
-  const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(text.trim());
-  if (!match) return null;
-  const bps = Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
-  return bps >= 1 && bps <= 10_000 ? bps : null;
-}
-export function bpsToPercent(bps: number | null | undefined): string {
-  return bps ? String(bps / 100) : "";
-}
+export { bpsToPercent, percentToBps };
 export type AccountFormValues = z.infer<typeof accountFormSchema>;
 export const accountTypes = {
   bank: "Bank account",
@@ -91,11 +98,14 @@ export function formDefaults(
     ),
     bonusRate: bpsToPercent(account?.inboundBonusBps),
     bonusCategoryId: account?.bonusCategoryId ?? "",
+    defaultFee: defaultFeeText(account),
+    feeCategoryId: account?.feeCategoryId ?? "",
   };
 }
 export function accountBody(values: AccountFormValues) {
   const parsed = accountFormSchema.parse(values);
   const cents = parseMinorUnits(parsed.amount, currencyDigits(parsed.currency));
+  const fee = parseFee(parsed.defaultFee, parsed.currency);
   return createAccountSchema.parse({
     name: parsed.name,
     type: parsed.type,
@@ -105,5 +115,12 @@ export function accountBody(values: AccountFormValues) {
     },
     inboundBonusBps: percentToBps(parsed.bonusRate),
     bonusCategoryId: parsed.bonusRate ? parsed.bonusCategoryId || null : null,
+    feeCategoryId: parsed.feeCategoryId || null,
+    defaultFee:
+      fee.kind === "fixed"
+        ? { amount: { amount: fee.minor, currency: parsed.currency } }
+        : fee.kind === "percent"
+          ? { basisPoints: fee.bps }
+          : null,
   });
 }

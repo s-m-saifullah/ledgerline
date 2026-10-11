@@ -44,7 +44,7 @@ export function prepareTransactionCreate(
 export function prepareTransactionUndo(
   ledgerId: string,
   transaction: Transaction,
-  options: { deleteBonus?: boolean } = {},
+  options: { deleteBonus?: boolean; deleteFee?: boolean } = {},
 ) {
   return prepareFinancialWrite<void>(
     `/ledgers/${ledgerId}/${transaction.transferId ? `transfers/${transaction.transferId}` : `transactions/${transaction.id}`}`,
@@ -54,6 +54,10 @@ export function prepareTransactionUndo(
       // A transfer's bonus entry goes with it only when asked (ADR 0023).
       ...(transaction.transferId && options.deleteBonus
         ? { deleteBonus: true }
+        : {}),
+      // Likewise its fee entry (ADR 0025).
+      ...(transaction.transferId && options.deleteFee
+        ? { deleteFee: true }
         : {}),
     },
   );

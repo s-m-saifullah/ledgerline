@@ -73,8 +73,9 @@ export function QuickAdd({
     refetchOnMount: "always",
   });
   const [saved, setSaved] = useState<Transaction | null>(null);
-  // A saved transfer that came with a bonus entry: Undo removes both.
+  // A saved transfer that came with a bonus or fee entry: Undo removes them too.
   const [savedBonus, setSavedBonus] = useState(false);
+  const [savedFee, setSavedFee] = useState(false);
   const [undoError, setUndoError] = useState("");
   const [undoBusy, setUndoBusy] = useState(false);
   const [formLocked, setFormLocked] = useState(false);
@@ -103,6 +104,7 @@ export function QuickAdd({
     setUndoError("");
     undoAttempt.current ??= prepareTransactionUndo(ledgerId, saved, {
       deleteBonus: savedBonus,
+      deleteFee: savedFee,
     });
     try {
       await undoAttempt.current();
@@ -180,6 +182,7 @@ export function QuickAdd({
           onSaved={(transaction, info) => {
             setSaved(transaction);
             setSavedBonus(!!info?.bonus);
+            setSavedFee(!!info?.fee);
             setUndoError("");
             setUndoUncertain(false);
             undoAttempt.current = null;
@@ -217,6 +220,7 @@ export function QuickAdd({
           onSaved={(transaction) => {
             setSaved(transaction);
             setSavedBonus(false);
+            setSavedFee(false);
             setUndoError("");
             setUndoUncertain(false);
             undoAttempt.current = null;

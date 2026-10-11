@@ -44,6 +44,7 @@ Open **Budgets** to plan spending month by month.
 - **Spend money:** Add, enter the amount, choose a category, Save. The last used account and today's date are pre-filled, and an Undo appears. Time is optional.
 - **Get paid:** an *income* entry into the account that receives it, with an income category.
 - **Move money between your accounts:** switch Add to *Transfer*. A transfer is two linked entries and is not income or spending.
+- **A fee for sending money:** on the transfer form, type it in the **Fee** box. A plain number such as `2` is a fixed fee in the sending account's currency; a number with a percent sign such as `1.5%` is a percentage of the amount sent. The fee is charged to the sending account only, so sending 100 with a fee of 2 takes 102 from it and the other account still receives 100. It is saved as its own expense, in a category you choose under **More** on the form. An account can remember its usual fee and category (edit the account), so the box starts filled in. Deleting the transfer asks whether to delete its fee too.
 - **Pay a credit card:** a transfer from your bank account to the card account. It is not an expense.
 - **Card interest or fees:** an expense on the card account (it increases what you owe). **Cashback:** income on the card account (it reduces what you owe). Compare the card balance with the statement each month; a difference means a missing entry.
 - **Split a purchase:** use the split editor to allocate one payment across several categories. The account changes once; each category gets its share.
