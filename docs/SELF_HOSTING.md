@@ -41,6 +41,8 @@ A reverse proxy on the host owns ports 80/443 and routes your domain to `127.0.0
 
 `.env.example` documents each setting. Production requires `APP_URL` (your public address), `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ random characters), `OWNER_EMAIL`, `OWNER_PASSWORD` and the image names. Keep `.env` out of Git and out of backups you share.
 
+The API also runs background jobs on the same PostgreSQL database (pg-boss, in its own `pgboss` schema): an hourly tick that refreshes exchange rates once per ledger day and, later, creates recurring entries. They need no extra container or setting; `JOBS_ENABLED=false` switches them off for debugging. The backup and restore drill include the schema, and what is due is always worked out from your data, so the job tables carry nothing you could lose.
+
 ## Updating and rolling back
 
 Each tagged release repeats step 5. The deploy script takes a verified backup first and stops if it fails, pulls the new images, waits for health and restores the previous images if the health check fails. Migrations run when the API starts and are not reversed by an image rollback, so migrations are written to stay backward compatible.

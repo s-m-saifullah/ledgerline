@@ -97,4 +97,11 @@ if [[ -n "${seen_tables[transactions]:-}" ]]; then
   test "$invalid" = 0 || { echo 'Restored account balances failed validation'; exit 1; }
 fi
 
+# pg-boss keeps its job tables in their own schema. They are in the dump but not fingerprinted (job
+# state is volatile; what is due is always worked out from the rules). When the schema is present it
+# must have restored with its core tables.
+if [[ "$(psql_restore "SELECT to_regnamespace('pgboss') IS NOT NULL")" == t ]]; then
+  [[ "$(psql_restore "SELECT to_regclass('pgboss.job') IS NOT NULL AND to_regclass('pgboss.queue') IS NOT NULL AND to_regclass('pgboss.schedule') IS NOT NULL")" == t ]] || { echo 'Restored job tables failed validation'; exit 1; }
+fi
+
 printf 'Restore drill passed: %s tables and %s derived checks match the backup snapshot, including IDs, balances, transfers, splits, linked payments, tombstones and receipts where present.\n' "$checked" "$verified"
