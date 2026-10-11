@@ -255,6 +255,13 @@ export function HomePage() {
                         ? "From 1 person"
                         : `From ${data.owed.personCount} people`}
                   </span>
+                  {data.owed.otherCurrencies.length > 0 && (
+                    <span className="muted">
+                      {data.owed.unconvertedCurrencies.length > 0
+                        ? `At today's rates. Not counting ${data.owed.unconvertedCurrencies.join(", ")} until it has a rate.`
+                        : "At today's rates."}
+                    </span>
+                  )}
                 </Link>
               </section>
               <section className="activity-card">

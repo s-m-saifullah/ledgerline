@@ -5,6 +5,8 @@ import {
   createPaymentSchema,
   createReceiptSchema,
   createReceivableSchema,
+  currencyDigits,
+  deriveRate,
   type JsonValue,
   paymentSchema,
   type Receipt,
@@ -34,12 +36,15 @@ import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { Toast } from "../../components/toast";
 import { ApiError } from "../../lib/api";
-import { decimalFromCents, formatUsd } from "../accounts/money";
+import { decimalFromCents, formatMoney } from "../accounts/money";
 import { getCategories } from "../categories/api";
 import { CategoryPicker } from "../categories/picker";
+import { useBaseValues } from "../currencies/base-value";
+import { EntryRate } from "../currencies/entry-rate";
+import { rateSentence } from "../currencies/format";
 import { PrivacyContext } from "../shell/preferences";
 import { getAllAccounts } from "../transactions/api";
-import { localToday } from "../transactions/form";
+import { amountMinor, localToday } from "../transactions/form";
 import {
   getAllPeople,
   getPayment,
@@ -49,7 +54,7 @@ import {
   getService,
   preparePeopleWrite,
 } from "./api";
-import { paymentDefault, positiveCents } from "./form";
+import { paymentDefault, positiveMoney } from "./form";
 export type PeopleOperation =
   | { kind: "contact"; person?: Contact }
   | { kind: "service"; person: Contact; service?: Receivable }
@@ -99,6 +104,11 @@ type Fields = {
   serviceTime: string;
   dueDate: string;
   amount: string;
+  // Money owed in other currencies (ADR 0022).
+  currency: string;
+  receiptCurrency: string;
+  receivedAmount: string;
+  fxRate: string;
   accountId: string;
   categoryId: string;
   date: string;
@@ -116,6 +126,10 @@ const empty = (): Fields => ({
   serviceTime: "",
   dueDate: "",
   amount: "",
+  currency: "USD",
+  receiptCurrency: "USD",
+  receivedAmount: "",
+  fxRate: "",
   accountId: "",
   categoryId: "",
   date: localToday(),
@@ -141,7 +155,11 @@ function fieldsFor(op: PeopleOperation): Fields {
             serviceDate: op.service.serviceDate,
             serviceTime: op.service.serviceTime ?? "",
             dueDate: op.service.dueDate ?? "",
-            amount: decimalFromCents(op.service.amount.amount),
+            currency: op.service.amount.currency,
+            amount: decimalFromCents(
+              op.service.amount.amount,
+              currencyDigits(op.service.amount.currency),
+            ),
           }
         : {}),
     });
@@ -149,9 +167,19 @@ function fieldsFor(op: PeopleOperation): Fields {
     Object.assign(f, {
       amount: decimalFromCents(
         op.payment?.amount.amount ?? op.service.outstanding.amount,
+        currencyDigits(op.service.amount.currency),
       ),
       ...(op.payment
         ? {
+            // What arrived, when the account's currency is not the service's.
+            receivedAmount:
+              op.payment.transaction.amount.currency !==
+              op.service.amount.currency
+                ? decimalFromCents(
+                    op.payment.transaction.amount.amount,
+                    currencyDigits(op.payment.transaction.amount.currency),
+                  )
+                : "",
             accountId: op.payment.transaction.accountId,
             categoryId: op.payment.transaction.categoryId ?? "",
             date: op.payment.transaction.date,
@@ -162,9 +190,29 @@ function fieldsFor(op: PeopleOperation): Fields {
     });
   if (op.kind === "receipt") {
     const first = op.receipt?.payments[0]?.transaction;
+    const owed = op.person.openBalances;
     Object.assign(f, {
+      receiptCurrency: op.receipt
+        ? op.receipt.amount.currency
+        : ((owed.find((b) => b.currency === "USD") ?? owed[0])?.currency ??
+          "USD"),
       ...(op.receipt
-        ? { amount: decimalFromCents(op.receipt.amount.amount) }
+        ? {
+            amount: decimalFromCents(
+              op.receipt.amount.amount,
+              currencyDigits(op.receipt.amount.currency),
+            ),
+            receivedAmount:
+              first && first.amount.currency !== op.receipt.amount.currency
+                ? decimalFromCents(
+                    op.receipt.payments.reduce(
+                      (sum, p) => sum + p.transaction.amount.amount,
+                      0,
+                    ),
+                    currencyDigits(first.amount.currency),
+                  )
+                : "",
+          }
         : {}),
       ...(first
         ? {
@@ -268,11 +316,30 @@ export function PeopleWorkspace({
     queryFn: ({ signal }) => getCategories(ledgerId as string, signal),
     enabled: !!ledgerId && paymentMode,
   });
+  const baseValues = useBaseValues(ledgerId);
+  // The currency a payment settles in, and what the chosen account uses (ADR 0022).
+  const itemCurrency =
+    op?.kind === "payment"
+      ? op.service.amount.currency
+      : op?.kind === "receipt"
+        ? op.receipt
+          ? op.receipt.amount.currency
+          : values.receiptCurrency
+        : "USD";
+  const accountCurrency =
+    accounts.data?.find((a) => a.id === values.accountId)?.currency ?? null;
+  const needsReceived =
+    paymentMode && !!accountCurrency && accountCurrency !== itemCurrency;
+  const rateSettable =
+    paymentMode &&
+    !!accountCurrency &&
+    accountCurrency !== "USD" &&
+    itemCurrency !== "USD";
   const receiptCreate = op?.kind === "receipt" && !op.receipt ? op : null;
   const previewCents = (() => {
     if (!receiptCreate) return null;
     try {
-      return positiveCents(values.amount).amount;
+      return positiveMoney(values.amount, values.receiptCurrency).amount;
     } catch {
       return null;
     }
@@ -283,6 +350,7 @@ export function PeopleWorkspace({
       ledgerId,
       "receipt-preview",
       receiptCreate?.person.id,
+      values.receiptCurrency,
       previewCents,
     ],
     queryFn: ({ signal }) =>
@@ -290,6 +358,7 @@ export function PeopleWorkspace({
         ledgerId as string,
         (receiptCreate as { person: Contact }).person.id,
         previewCents as number,
+        values.receiptCurrency,
         signal,
       ),
     enabled: !!ledgerId && !!receiptCreate && previewCents !== null && open,
@@ -504,6 +573,20 @@ export function PeopleWorkspace({
     onLock(false);
     invalidate();
   }
+  /** What arrived, and any rate set by hand, when the account's currency calls for them. */
+  function received() {
+    return {
+      ...(needsReceived && accountCurrency
+        ? {
+            receivedAmount: positiveMoney(
+              values.receivedAmount,
+              accountCurrency,
+            ),
+          }
+        : {}),
+      ...(rateSettable && values.fxRate ? { fxRate: values.fxRate } : {}),
+    };
+  }
   function prepare(operation: PeopleOperation): () => Promise<void> {
     if (!ledgerId) throw new Error("Choose a ledger.");
     const l = ledgerId;
@@ -538,7 +621,7 @@ export function PeopleWorkspace({
         // Blank means no time (null clears a saved one).
         serviceTime: values.serviceTime || null,
         dueDate: values.dueDate || null,
-        amount: positiveCents(values.amount),
+        amount: positiveMoney(values.amount, values.currency),
       });
       const withTime = <T extends { serviceTime?: string | null | undefined }>(
         row: T,
@@ -571,7 +654,8 @@ export function PeopleWorkspace({
     }
     if (operation.kind === "payment") {
       const body = createPaymentSchema.parse({
-        amount: positiveCents(values.amount),
+        amount: positiveMoney(values.amount, operation.service.amount.currency),
+        ...received(),
         accountId: values.accountId,
         categoryId: values.categoryId,
         date: values.date,
@@ -618,6 +702,7 @@ export function PeopleWorkspace({
         date: values.date,
         time: values.time || null,
         note: values.note || null,
+        ...received(),
       };
       if (operation.receipt) {
         const run = preparePeopleWrite(
@@ -639,7 +724,7 @@ export function PeopleWorkspace({
           completed("Receipt saved.");
         };
       }
-      const amount = positiveCents(values.amount),
+      const amount = positiveMoney(values.amount, values.receiptCurrency),
         shown = preview.data;
       if (
         !shown ||
@@ -776,7 +861,7 @@ export function PeopleWorkspace({
           ? "We couldn't confirm this action. Retry the same request."
           : e instanceof Error
             ? e.name === "ZodError"
-              ? "Check the required fields and exact USD amount."
+              ? "Check the required fields and the exact amount."
               : e.message
             : "Could not save.",
       );
@@ -873,6 +958,35 @@ export function PeopleWorkspace({
             ))}
         </NativeSelect>
       </label>
+      {needsReceived && accountCurrency && (
+        <>
+          {input(
+            "receivedAmount",
+            `Amount received (${accountCurrency})`,
+            privateMode ? "password" : "text",
+            true,
+          )}
+          <PaymentRate
+            settled={amountMinor(values.amount, itemCurrency)}
+            received={amountMinor(values.receivedAmount, accountCurrency)}
+            itemCurrency={itemCurrency}
+            accountCurrency={accountCurrency}
+          />
+        </>
+      )}
+      {rateSettable && accountCurrency && ledgerId && (
+        <EntryRate
+          ledgerId={ledgerId}
+          currency={accountCurrency}
+          date={values.date}
+          amountMinor={amountMinor(
+            needsReceived ? values.receivedAmount : values.amount,
+            accountCurrency,
+          )}
+          manualRate={values.fxRate}
+          onManualRate={(rate) => setValues((v) => ({ ...v, fxRate: rate }))}
+        />
+      )}
       <CategoryPicker
         label="Income category"
         categories={categories.data ?? []}
@@ -1014,9 +1128,39 @@ export function PeopleWorkspace({
                     {input("serviceDate", "Service date", "date", true)}
                     {input("serviceTime", "Service time (optional)", "time")}
                     {input("dueDate", "Due date", "date")}
+                    {baseValues.currencies.length > 1 && (
+                      <label className="form-field" htmlFor="people-currency">
+                        Currency
+                        <NativeSelect
+                          id="people-currency"
+                          value={values.currency}
+                          disabled={
+                            !!op.service && op.service.received.amount > 0
+                          }
+                          onChange={(e) =>
+                            setValues((v) => ({
+                              ...v,
+                              currency: e.target.value,
+                            }))
+                          }
+                        >
+                          {baseValues.currencies.map((code) => (
+                            <option key={code} value={code}>
+                              {code}
+                            </option>
+                          ))}
+                        </NativeSelect>
+                        {!!op.service && op.service.received.amount > 0 && (
+                          <span className="form-help">
+                            It stays {op.service.amount.currency}, the currency
+                            payments were recorded in.
+                          </span>
+                        )}
+                      </label>
+                    )}
                     {input(
                       "amount",
-                      "Service amount (USD)",
+                      `Service amount (${values.currency})`,
                       privateMode ? "password" : "text",
                       true,
                     )}
@@ -1036,11 +1180,14 @@ export function PeopleWorkspace({
                       Outstanding:{" "}
                       {privateMode
                         ? "••••"
-                        : formatUsd(op.service.outstanding.amount)}
+                        : formatMoney(
+                            op.service.outstanding.amount,
+                            op.service.outstanding.currency,
+                          )}
                     </p>
                     {input(
                       "amount",
-                      "Payment amount (USD)",
+                      `Payment amount (${itemCurrency})`,
                       privateMode ? "password" : "text",
                       true,
                     )}
@@ -1059,7 +1206,10 @@ export function PeopleWorkspace({
                           Receipt total:{" "}
                           {privateMode
                             ? "••••"
-                            : formatUsd(op.receipt.amount.amount)}
+                            : formatMoney(
+                                op.receipt.amount.amount,
+                                op.receipt.amount.currency,
+                              )}
                           , split across {op.receipt.payments.length} services.
                         </p>
                         <p className="muted">
@@ -1069,15 +1219,48 @@ export function PeopleWorkspace({
                       </>
                     ) : (
                       <>
+                        {op.person.openBalances.length > 1 && (
+                          <label
+                            className="form-field"
+                            htmlFor="people-receipt-currency"
+                          >
+                            Currency being paid
+                            <NativeSelect
+                              id="people-receipt-currency"
+                              value={values.receiptCurrency}
+                              onChange={(e) =>
+                                setValues((v) => ({
+                                  ...v,
+                                  receiptCurrency: e.target.value,
+                                  amount: "",
+                                  receivedAmount: "",
+                                  fxRate: "",
+                                }))
+                              }
+                            >
+                              {op.person.openBalances.map((b) => (
+                                <option key={b.currency} value={b.currency}>
+                                  {b.currency}
+                                </option>
+                              ))}
+                            </NativeSelect>
+                          </label>
+                        )}
                         <p>
                           Open balance:{" "}
                           {privateMode
                             ? "••••"
-                            : formatUsd(op.person.openBalance.amount)}
+                            : formatMoney(
+                                owedInCurrency(
+                                  op.person,
+                                  values.receiptCurrency,
+                                ),
+                                values.receiptCurrency,
+                              )}
                         </p>
                         {input(
                           "amount",
-                          "Payment amount (USD)",
+                          `Payment amount (${values.receiptCurrency})`,
                           privateMode ? "password" : "text",
                           true,
                         )}
@@ -1089,7 +1272,8 @@ export function PeopleWorkspace({
                             setValues((v) => ({
                               ...v,
                               amount: decimalFromCents(
-                                op.person.openBalance.amount,
+                                owedInCurrency(op.person, v.receiptCurrency),
+                                currencyDigits(v.receiptCurrency),
                               ),
                             }))
                           }
@@ -1097,6 +1281,7 @@ export function PeopleWorkspace({
                           Pay full balance
                         </button>
                         <ReceiptPreview
+                          currency={values.receiptCurrency}
                           query={preview}
                           hasAmount={previewCents !== null}
                           hidden={privateMode}
@@ -1279,7 +1464,9 @@ function ReceiptPreview({
   query,
   hasAmount,
   hidden,
+  currency,
 }: {
+  currency: string;
   query: {
     data: ReceiptPreviewData | undefined;
     isError: boolean;
@@ -1287,7 +1474,8 @@ function ReceiptPreview({
   hasAmount: boolean;
   hidden: boolean;
 }) {
-  const money = (cents: number) => (hidden ? "••••" : formatUsd(cents));
+  const money = (cents: number) =>
+    hidden ? "••••" : formatMoney(cents, currency);
   if (!hasAmount)
     return (
       <p className="muted">
@@ -1339,5 +1527,45 @@ function ReceiptPreview({
         ))}
       </ul>
     </div>
+  );
+}
+
+/** What a person owes in one currency (0 when nothing is open in it). */
+function owedInCurrency(person: Contact, currency: string) {
+  return person.openBalances.find((b) => b.currency === currency)?.amount ?? 0;
+}
+/**
+ * When one side of a payment is in USD, the two amounts fix the rate; show it so a typo in the
+ * amount received is easy to spot ("1 USD = 120 BDT").
+ */
+function PaymentRate({
+  settled,
+  received,
+  itemCurrency,
+  accountCurrency,
+}: {
+  settled: number | null;
+  received: number | null;
+  itemCurrency: string;
+  accountCurrency: string;
+}) {
+  if (settled === null || received === null) return null;
+  const base =
+    itemCurrency === "USD"
+      ? settled
+      : accountCurrency === "USD"
+        ? received
+        : null;
+  if (base === null) return null;
+  const foreign = itemCurrency === "USD" ? accountCurrency : itemCurrency;
+  const foreignAmount = itemCurrency === "USD" ? received : settled;
+  return (
+    <p className="form-help" aria-live="polite">
+      {rateSentence(
+        foreign,
+        deriveRate(base, foreignAmount, foreign, "USD"),
+        "USD",
+      )}
+    </p>
   );
 }

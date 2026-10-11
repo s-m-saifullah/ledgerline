@@ -1,4 +1,8 @@
-import { type Category, parseMinorUnits } from "@ledgerline/shared";
+import {
+  type Category,
+  currencyDigits,
+  parseMinorUnits,
+} from "@ledgerline/shared";
 import { cleanAmountText } from "../accounts/money";
 export function paymentDefault(
   categories: Category[],
@@ -18,13 +22,22 @@ export function paymentDefault(
     ""
   );
 }
-export function positiveCents(text: string) {
+/** A positive amount typed in the currency's own units (USD 2 decimals, JPY none, BHD 3). */
+export function positiveMoney(text: string, currency: string) {
+  const digits = currencyDigits(currency);
   const cleaned = cleanAmountText(text);
-  if (!/^\d+(?:\.\d{1,2})?$/.test(cleaned))
+  const pattern =
+    digits === 0 ? /^\d+$/ : new RegExp(`^\\d+(?:\\.\\d{1,${digits}})?$`);
+  if (!pattern.test(cleaned))
     throw new Error(
-      "Enter a positive USD amount with up to two decimal places.",
+      digits === 0
+        ? `Enter a whole positive ${currency} amount.`
+        : `Enter a positive ${currency} amount with up to ${digits === 2 ? "two" : digits} decimal places.`,
     );
-  const amount = parseMinorUnits(cleaned);
-  if (amount <= 0) throw new Error("Enter a positive USD amount.");
-  return { amount, currency: "USD" as const };
+  const amount = parseMinorUnits(cleaned, digits);
+  if (amount <= 0) throw new Error(`Enter a positive ${currency} amount.`);
+  return { amount, currency };
+}
+export function positiveCents(text: string) {
+  return { ...positiveMoney(text, "USD"), currency: "USD" as const };
 }
