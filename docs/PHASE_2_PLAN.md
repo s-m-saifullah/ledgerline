@@ -28,7 +28,7 @@ The detailed step plan is in [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md); this section 
 - Replace `transactions.fx_rate` (integer) with an exact decimal and drop the USD-only checks on accounts, transactions, receivables and received payments (ADR 0020).
 - Tables: `currencies` (pinned list per ledger; USD base, BDT pinned) and `exchange_rates` (date, base, quote, rate, source `api` or `manual`). Manual rates are never overwritten.
 - `base_amount` is computed once at save time by one shared, tested helper that accounts for each currency's minor-unit digits and rounds half away from zero. Existing rows migrate to rate 1.
-- Account balances stay in the account currency. Home, net worth and budgets sum `base_amount`.
+- Account balances stay in the account currency. Home and net worth value balances at the newest stored rates; money in and out and budgets sum frozen `base_amount` values (ADR 0022).
 - Entry shows the base equivalent under the amount, with a pencil to set a manual rate. A transfer between currencies asks for the received amount.
 - Rates: a daily Frankfurter fetch for pinned and used currencies with the documented fallback source, and a Settings, Currencies screen with "Refresh now". The app works fully with manual rates when the network call fails. The call sends currency codes only.
 
