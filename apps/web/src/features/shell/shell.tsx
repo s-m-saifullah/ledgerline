@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { api, getLedgers, type Session } from "../../lib/api";
+import { TimeZoneCard } from "../ledger/time-zone-card";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
 import { type Preferences, ThemeContext } from "./preferences";
@@ -611,11 +612,7 @@ export function MorePage() {
           throughout your ledger.
         </p>
       </section>
-      <section className="settings-card">
-        <h2>Personal ledger</h2>
-        <p>USD accounts are available now. More currencies are coming later.</p>
-        <p className="muted">Use Add to record income and expenses in USD.</p>
-      </section>
+      <TimeZoneCard />
       <AppVersion phoneOnly />
     </>
   );

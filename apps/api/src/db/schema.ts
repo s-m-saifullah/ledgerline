@@ -96,12 +96,18 @@ export const verification = pgTable(
   },
   (table) => [index("auth_verifications_identifier_idx").on(table.identifier)],
 );
-export const ledgers = pgTable("ledgers", {
-  id: primaryId(),
-  name: text("name").notNull(),
-  baseCurrency: text("base_currency").notNull().default("USD"),
-  ...audit(),
-});
+export const ledgers = pgTable(
+  "ledgers",
+  {
+    id: primaryId(),
+    name: text("name").notNull(),
+    baseCurrency: text("base_currency").notNull().default("USD"),
+    timeZone: text("time_zone"),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [check("ledgers_version_check", sql`${table.version} >= 1`)],
+);
 export const ledgerMembers = pgTable(
   "ledger_members",
   {

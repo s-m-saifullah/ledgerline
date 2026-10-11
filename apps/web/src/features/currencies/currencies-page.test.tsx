@@ -65,7 +65,16 @@ function mount(
       return new Response(JSON.stringify(data));
     return new Response(
       JSON.stringify({
-        items: [{ id: ledgerId, name: "Personal", baseCurrency: "USD", role }],
+        items: [
+          {
+            id: ledgerId,
+            name: "Personal",
+            baseCurrency: "USD",
+            timeZone: null,
+            version: 1,
+            role,
+          },
+        ],
       }),
     );
   });

@@ -35,12 +35,36 @@ export type JsonValue =
   | string
   | JsonValue[]
   | { [key: string]: JsonValue };
+/** An IANA time zone name such as America/Chicago (offsets like +05:00 are not accepted). */
+export function isTimeZone(value: string): boolean {
+  if (!/^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/.test(value))
+    return false;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+export const timeZoneSchema = z
+  .string()
+  .max(64)
+  .refine(isTimeZone, "Use a time zone name such as America/Chicago.");
 export const ledgerSchema = z.object({
   id: idSchema,
   name: z.string(),
   baseCurrency: currencySchema,
+  /** Decides what "today" means for scheduled work; null until the owner sets it. */
+  timeZone: timeZoneSchema.nullable(),
+  version: versionSchema,
   role: z.enum(["owner", "editor", "viewer"]),
 });
+export const updateLedgerSchema = z.object({
+  timeZone: timeZoneSchema,
+  expectedVersion: versionSchema,
+});
+export type Ledger = z.infer<typeof ledgerSchema>;
+export type UpdateLedger = z.infer<typeof updateLedgerSchema>;
 export const problemSchema = z.object({
   type: z.string(),
   title: z.string(),
