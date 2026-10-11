@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Account } from "@ledgerline/shared";
+import { type Account, currencyDigits } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { ChevronDown } from "lucide-react";
 import { useContext, useRef, useState } from "react";
@@ -16,6 +16,7 @@ import {
   formDefaults,
   isLiability,
 } from "./form";
+import { decimalFromCents } from "./money";
 
 export function AccountEditor({
   ledgerId,
@@ -24,9 +25,12 @@ export function AccountEditor({
   onDismiss,
   onUnconfirmed,
   onSaved,
+  currencies = ["USD"],
 }: {
   ledgerId: string;
   account?: Account | undefined;
+  /** Currencies a new account can use: the base currency, then the ones added. */
+  currencies?: string[];
   open: boolean;
   onDismiss: () => void;
   onUnconfirmed: (value: boolean) => void;
@@ -54,6 +58,7 @@ export function AccountEditor({
     defaultValues: formDefaults(account),
   });
   const liability = isLiability(watch("type"));
+  const currency = watch("currency");
   const busy = isSubmitting || reloading;
   const submit = handleSubmit(async (values) => {
     if (inFlight.current || conflict) return;
@@ -185,7 +190,43 @@ export function AccountEditor({
               <span>{liability ? "Money owed" : "Overdrawn"}</span>
             </label>
           </fieldset>
-          <label htmlFor="account-amount">Opening balance (USD)</label>
+          {baseline ? (
+            <p className="form-help">
+              Currency: {baseline.currency}. It stays the same for the life of
+              the account.
+            </p>
+          ) : (
+            currencies.length > 1 && (
+              <>
+                <label htmlFor="account-currency">Currency</label>
+                <div className="theme-picker account-select">
+                  <select
+                    id="account-currency"
+                    {...register("currency", {
+                      onChange: (event) => {
+                        if (!getFieldState("amount").isDirty)
+                          setValue(
+                            "amount",
+                            decimalFromCents(
+                              0,
+                              currencyDigits(event.target.value),
+                            ),
+                          );
+                      },
+                    })}
+                  >
+                    {currencies.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown size={16} aria-hidden="true" />
+                </div>
+              </>
+            )
+          )}
+          <label htmlFor="account-amount">Opening balance ({currency})</label>
           <input
             id="account-amount"
             type={privateMode ? "password" : "text"}

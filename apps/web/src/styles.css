@@ -2659,3 +2659,15 @@ button.budget-line:hover {
   margin-top: 0;
   margin-bottom: 16px;
 }
+.base-note {
+  display: block;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.home-account-amount {
+  display: grid;
+  justify-items: end;
+}
+.account-base-value {
+  margin: 0;
+}

@@ -182,3 +182,86 @@ it("masks the opening balance in privacy mode", () => {
     "password",
   );
 });
+
+it("offers added currencies for a new account and reads the balance in that currency's units", async () => {
+  const saved = vi.fn();
+  const fetchMock = vi.fn<typeof fetch>(async () =>
+    json(
+      {
+        ...fixture,
+        name: "Yen wallet",
+        currency: "JPY",
+        openingBalance: { amount: 1500, currency: "JPY" },
+        balance: { amount: 1500, currency: "JPY" },
+      },
+      201,
+    ),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={saved}
+      currencies={["USD", "EUR", "JPY"]}
+    />,
+  );
+  const choice = screen.getByLabelText("Currency");
+  expect(
+    Array.from(choice.querySelectorAll("option"), (option) => option.value),
+  ).toEqual(["USD", "EUR", "JPY"]);
+  await userEvent.type(screen.getByLabelText("Account name"), "Yen wallet");
+  await userEvent.selectOptions(choice, "JPY");
+  // The untouched balance restarts in the new currency's units, and the label follows.
+  expect(screen.getByLabelText("Opening balance (JPY)")).toHaveValue("0");
+  await userEvent.clear(screen.getByLabelText("Opening balance (JPY)"));
+  await userEvent.type(screen.getByLabelText("Opening balance (JPY)"), "15.5");
+  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  expect(await screen.findByText(/Enter a whole amount/)).toBeInTheDocument();
+  expect(fetchMock).not.toHaveBeenCalled();
+  await userEvent.clear(screen.getByLabelText("Opening balance (JPY)"));
+  await userEvent.type(screen.getByLabelText("Opening balance (JPY)"), "1500");
+  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+  expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+    name: "Yen wallet",
+    type: "bank",
+    openingBalance: { amount: 1500, currency: "JPY" },
+  });
+});
+
+it("shows only the base currency to choose from when none are added, and fixes it when editing", () => {
+  const { unmount } = render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(screen.queryByLabelText("Currency")).toBeNull();
+  expect(screen.getByLabelText("Opening balance (USD)")).toBeInTheDocument();
+  unmount();
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      account={{
+        ...fixture,
+        currency: "EUR",
+        openingBalance: { amount: 1000, currency: "EUR" },
+        balance: { amount: 1000, currency: "EUR" },
+      }}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      currencies={["USD", "EUR"]}
+    />,
+  );
+  expect(screen.queryByLabelText("Currency")).toBeNull();
+  expect(screen.getByText(/Currency: EUR\./)).toBeInTheDocument();
+  expect(screen.getByLabelText("Opening balance (EUR)")).toHaveValue("10.00");
+});

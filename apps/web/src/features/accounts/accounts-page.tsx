@@ -20,12 +20,14 @@ import { useContext, useState } from "react";
 import type { z } from "zod";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
+import { useBaseValues } from "../currencies/base-value";
+import { Amount } from "../home/amount";
 import { PrivacyContext } from "../shell/preferences";
 import { getAccounts } from "./api";
 import { ArchiveAccountDialog } from "./archive";
 import { AccountEditor } from "./editor";
 import { accountTypes, isLiability } from "./form";
-import { formatUsd } from "./money";
+import { formatMoney } from "./money";
 import { NetWorthCard } from "./net-worth-card";
 
 const icons = {
@@ -72,6 +74,8 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [notice, setNotice] = useState("");
   const writable = ledger.role !== "viewer";
+  const values = useBaseValues(ledger.id);
+  const baseValueOf = values.baseValue;
   const accounts = useInfiniteQuery({
     queryKey: ["accounts", ledger.id, status],
     initialPageParam: null as string | null,
@@ -284,13 +288,24 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
                     <span className="sr-only">Amount hidden</span>
                   </>
                 ) : (
-                  formatUsd(
+                  formatMoney(
                     debt
                       ? Math.abs(account.balance.amount)
                       : account.balance.amount,
+                    account.balance.currency,
                   )
                 )}
               </p>
+              {baseValueOf(account.balance) !== null && (
+                <p className="form-help account-base-value">
+                  About{" "}
+                  <Amount
+                    cents={Math.abs(baseValueOf(account.balance) as number)}
+                    currency={values.baseCurrency}
+                  />{" "}
+                  in {values.baseCurrency} at today's rate
+                </p>
+              )}
               {writable && (
                 <div className="account-card-actions">
                   <button
@@ -366,6 +381,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
           onDismiss={dismiss}
           onUnconfirmed={unconfirmed}
           onSaved={saved}
+          currencies={values.currencies}
         />
       )}
       {(dialog?.kind === "archive" ||

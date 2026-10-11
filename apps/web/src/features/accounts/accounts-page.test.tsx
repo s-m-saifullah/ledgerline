@@ -104,3 +104,78 @@ it("permits viewer reads without exposing mutation controls", async () => {
     screen.queryByRole("button", { name: /Add.*account|Edit.*|Archive.*/ }),
   ).not.toBeInTheDocument();
 });
+
+it("shows a foreign account in its own currency with today's value in the base currency", async () => {
+  const euro: Account = {
+    ...account,
+    id: newId(),
+    name: "Euro bank",
+    type: "bank",
+    currency: "EUR",
+    openingBalance: { amount: 100000, currency: "EUR" },
+    balance: { amount: 100000, currency: "EUR" },
+  };
+  const rate = {
+    id: newId(),
+    ledgerId,
+    code: "EUR",
+    date: "2026-10-09",
+    rate: "1.1217",
+    source: "api",
+    version: 1,
+    createdAt: "2026-10-09T00:00:00.000Z",
+    updatedAt: "2026-10-09T00:00:00.000Z",
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async (url) => {
+      const target = String(url);
+      const body = target.includes("/accounts")
+        ? { items: [euro], nextCursor: null }
+        : target.endsWith("/currencies")
+          ? {
+              baseCurrency: "USD",
+              items: [
+                {
+                  id: newId(),
+                  ledgerId,
+                  code: "EUR",
+                  version: 1,
+                  latestRate: rate,
+                  createdAt: rate.createdAt,
+                  updatedAt: rate.updatedAt,
+                },
+              ],
+            }
+          : {
+              items: [
+                {
+                  id: ledgerId,
+                  name: "Personal",
+                  baseCurrency: "USD",
+                  role: "owner",
+                },
+              ],
+            };
+      return new Response(JSON.stringify(body));
+    }),
+  );
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <PrivacyContext value={false}>
+        <AccountsPage />
+      </PrivacyContext>
+    </QueryClientProvider>,
+  );
+  expect(await screen.findByText("€1,000.00")).toBeInTheDocument();
+  // The note is split across elements, so read the whole line.
+  expect(
+    await screen.findByText(
+      (_, element) =>
+        !!element?.classList.contains("account-base-value") &&
+        element.textContent?.replace(/\s+/g, " ").trim() ===
+          "About $1,121.70 in USD at today's rate",
+    ),
+  ).toBeInTheDocument();
+});
