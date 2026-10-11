@@ -128,10 +128,14 @@ test("command palette filters pages and actions and runs them from the keyboard"
     dialog.getByRole("group", { name: "Results" }).getByRole("button"),
   ).toHaveText([/People/]);
   // Every More screen is reachable from here, including Currencies.
-  await search.fill("curr");
+  await search.fill("currenc");
   await expect(
     dialog.getByRole("group", { name: "Results" }).getByRole("button"),
   ).toHaveText([/Currencies/]);
+  await search.fill("recurr");
+  await expect(
+    dialog.getByRole("group", { name: "Results" }).getByRole("button"),
+  ).toHaveText([/Recurring/]);
   await search.fill("zzzz");
   await expect(dialog.getByText("Nothing matches")).toBeVisible();
   await search.fill("theme: dark");
