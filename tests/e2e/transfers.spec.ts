@@ -71,6 +71,8 @@ test.beforeEach(async ({ page }, testInfo) => {
           {
             id: ledgerId,
             name: "Synthetic transfers ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },
@@ -513,6 +515,8 @@ test("requires explicit stale reload, preserves archived corrections, and provid
           {
             id: ledgerId,
             name: "Synthetic transfers ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "viewer",
           },

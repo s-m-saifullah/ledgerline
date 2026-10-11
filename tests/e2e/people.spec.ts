@@ -59,6 +59,8 @@ test.beforeEach(async ({ page }, info) => {
           {
             id: ledgerId,
             name: "Synthetic owed ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },
@@ -713,6 +715,8 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
           {
             id: ledgerId,
             name: "Synthetic owed ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "viewer",
           },

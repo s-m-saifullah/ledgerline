@@ -75,6 +75,8 @@ test.beforeEach(async ({ page }, testInfo) => {
           {
             id: ledgerId,
             name: "Synthetic splits ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "owner",
           },
@@ -429,6 +431,8 @@ test("reloads stale splits, preserves archived corrections and private viewer de
           {
             id: ledgerId,
             name: "Synthetic splits ledger",
+            timeZone: null,
+            version: 1,
             baseCurrency: "USD",
             role: "viewer",
           },
