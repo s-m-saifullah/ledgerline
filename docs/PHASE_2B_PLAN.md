@@ -2,6 +2,10 @@
 
 Approved by the owner on 2026-10-10. This expands slice 2b of [PHASE_2_PLAN.md](PHASE_2_PLAN.md). Decisions are in ADR 0020 (exact rates), [0022](adr/0022-currency-valuation-and-rate-rules.md) (valuation and rate rules) and [0023](adr/0023-transfer-bonus.md) (transfer bonus).
 
+## Status (2026-10-11)
+
+Steps 1 to 3 are built and merged to `main`, not yet released: foundation (rates tables, Currencies screen, API 0.1.20), read side (API 0.1.21), and enabling currencies (API 0.1.22 and 0.1.23, migrations 0012 to 0014, the entry screens). Steps 4 (transfer bonus) and 5 (money owed in other currencies) remain.
+
 ## Steps, each its own pull request and release candidate
 
 Production data stays USD-only until step 3, so nothing visible changes before it.

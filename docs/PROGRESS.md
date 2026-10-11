@@ -4,9 +4,10 @@ Read this at the start of every session and update it when a piece of work lands
 
 ## Current status
 
-- **Phase:** 1 (Core ledger) is complete. The owner ended the seven-day trial (ADR 0013) early, on day 2, and accepted the gate as passed on 2026-10-10. Phase 2 is designed and awaiting its first slice ([PHASE_2_PLAN.md](PHASE_2_PLAN.md)).
+- **Phase:** 1 (Core ledger) is complete (the owner ended the seven-day trial early and accepted the gate on 2026-10-10, ADR 0013). Phase 2 is in progress ([PHASE_2_PLAN.md](PHASE_2_PLAN.md), [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)): slice 2a (budgets) and steps 1 to 3 of slice 2b (currencies) are built and merged but **not released**.
 - **Latest release:** `v0.0.10` (API 0.1.18, migrations 0000 to 0010).
-- **Next:** currencies (slice 2b, step 4, the transfer bonus, next), then recurring entries (2c). Slice 2a, budgets with rollover, is built and awaiting release together with the version label.
+- **On `main`, not yet released:** the version label in the web app, budgets with computed rollover, the Currencies screen, base-currency totals and split base amounts, accounts, entries and transfers in other currencies (API 0.1.23, migrations 0011 to 0014). The next release also needs its verified backup and restore drill first; migrations 0013 and 0014 rewrite existing split and transfer rules.
+- **Next:** release what is on `main`; then slice 2b step 4 (the transfer bonus, ADR 0023) and step 5 (money owed in other currencies); then slice 2c (recurring entries with pg-boss and a ledger time zone).
 - **Known follow-ups:** review Dependabot's grouped Actions updates when they appear; automated off-site backups are Phase 4.
 
 ## Phase checklist
@@ -14,7 +15,7 @@ Read this at the start of every session and update it when a piece of work lands
 - [x] Phase 0, foundations: monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy
 - [x] Phase 1, core ledger: safe writes, accounts, categories, transactions, quick add, list and editor, transfers, account and category deletion, splits, money owed (People), category merge, Home
 - [x] Phase 1 gate: daily use (owner accepted it after two days of the seven-day trial)
-- [ ] Phase 2, budgets: budgets with rollover, recurring rules, currencies
+- [ ] Phase 2: budgets with rollover (built), currencies (steps 1 to 3 built; bonus and money owed pending), recurring rules (pending)
 - [ ] Phase 3, insights and import: reports, tags and receipts, CSV import and export
 - [ ] Phase 4, hardening: two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility
 - [ ] Phase 5, Android
