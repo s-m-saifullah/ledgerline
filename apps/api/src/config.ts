@@ -12,6 +12,11 @@ const schema = z.object({
   OWNER_EMAIL: z.email(),
   OWNER_NAME: z.string().min(1).default("Owner"),
   OWNER_PASSWORD: z.string().min(12).max(128),
+  // Background jobs (recurring entries, daily rates). Turn off only for debugging.
+  JOBS_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((value) => value === "true"),
 });
 export type Config = z.infer<typeof schema>;
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {

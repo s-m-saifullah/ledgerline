@@ -9,6 +9,10 @@ Approved by the owner on 2026-10-11. This expands slice 2c of [PHASE_2_PLAN.md](
 3. **Rules API and runner.** Tables `recurring_rules` and `recurring_runs`, the schedule calculator in `packages/shared` (month-end clamping, leap days, intervals), create, edit, pause, skip and delete endpoints, and the runner with catch-up. The runner takes a clock so tests need no real waiting; one test uses real pg-boss. Backup manifest and drill cover the new tables.
 4. **Screens.** A Recurring screen under More: list with next date, amount and Paused or Needs attention badges; an editor with a preview of the next dates; a runs history per rule; pause and delete (red). A browser test, and a check at 320 px, 390 px and desktop in light and dark.
 
+## Built so far
+
+- PR 1 (time zone) is merged. PR 2 adds the job runner: an hourly tick and one at start. The daily rate refresh checks the day's saved key before it calls the rate source, so a day that is done never reaches the network again. If every fetch fails, that day's result is kept and the Refresh now button on the Currencies screen stays the way to retry.
+
 ## Rules
 
 - Rules are created and edited only by owners and editors, with version checks, idempotency keys and ledger scoping; every endpoint has a cross-ledger test.

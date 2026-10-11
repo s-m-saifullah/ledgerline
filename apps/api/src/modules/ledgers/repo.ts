@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { ledgerMembers, ledgers } from "../../db/schema";
 
@@ -48,4 +48,25 @@ export function ledgerRepository(db: DatabaseConnection, userId: string) {
           .for("share", { of: [ledgers, ledgerMembers] })
       )[0],
   };
+}
+
+/** Background jobs act as a ledger's owner; this lists each live ledger with its earliest owner. */
+export async function listLedgerOwners(db: DatabaseConnection) {
+  const rows = await db
+    .select({
+      id: ledgers.id,
+      timeZone: ledgers.timeZone,
+      ownerId: ledgerMembers.userId,
+    })
+    .from(ledgers)
+    .innerJoin(ledgerMembers, eq(ledgers.id, ledgerMembers.ledgerId))
+    .where(
+      and(
+        isNull(ledgers.deletedAt),
+        isNull(ledgerMembers.deletedAt),
+        eq(ledgerMembers.role, "owner"),
+      ),
+    )
+    .orderBy(asc(ledgerMembers.createdAt));
+  return [...new Map(rows.map((row) => [row.id, row])).values()];
 }
