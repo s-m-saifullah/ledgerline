@@ -141,7 +141,7 @@ export function BudgetEditor({
               checked={rollover}
               onChange={(event) => setRollover(event.target.checked)}
             />
-            <span>
+            <span className="check-text">
               Carry over what is left, or what is overspent, to the next month
             </span>
           </label>

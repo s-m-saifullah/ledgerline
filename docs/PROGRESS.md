@@ -4,10 +4,10 @@ Read this at the start of every session and update it when a piece of work lands
 
 ## Current status
 
-- **Phase:** 1 (Core ledger) is complete (the owner ended the seven-day trial early and accepted the gate on 2026-10-10, ADR 0013). Phase 2 is in progress ([PHASE_2_PLAN.md](PHASE_2_PLAN.md), [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)): slice 2a (budgets) and slice 2b (currencies, including the transfer bonus and money owed in other currencies) are built and merged but **not released**; slice 2c (recurring entries) remains.
+- **Phase:** 1 (Core ledger) is complete (the owner ended the seven-day trial early and accepted the gate on 2026-10-10, ADR 0013). Phase 2 is in progress ([PHASE_2_PLAN.md](PHASE_2_PLAN.md), [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)): slice 2a (budgets) and slice 2b (currencies, including the transfer bonus and money owed in other currencies) and slice 2c (recurring entries) are built and merged but **not released**.
 - **Latest release:** `v0.0.10` (API 0.1.18, migrations 0000 to 0010).
 - **On `main`, not yet released:** the version label in the web app, budgets with computed rollover, the Currencies screen, base-currency totals and split base amounts, accounts, entries and transfers in other currencies, the transfer bonus, and money owed in other currencies (API 0.1.28, migrations 0011 to 0018). The release also needs its verified backup and restore drill first; migrations 0013, 0014 and 0016 rewrite existing split, transfer and money-owed rules.
-- **Next:** slice 2c (recurring entries with pg-boss and a ledger time zone), then the single Phase 2 release. The owner chose to release once, when all of Phase 2 is ready, so nothing on `main` ships before then.
+- **Next:** prepare the single Phase 2 release (upgrade checks on a scratch database, then the release steps). The owner chose to release once, when all of Phase 2 is ready, so nothing on `main` ships before then.
 - **Known follow-ups:** review Dependabot's grouped Actions updates when they appear; automated off-site backups are Phase 4.
 
 ## Phase checklist
@@ -15,7 +15,7 @@ Read this at the start of every session and update it when a piece of work lands
 - [x] Phase 0, foundations: monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy
 - [x] Phase 1, core ledger: safe writes, accounts, categories, transactions, quick add, list and editor, transfers, account and category deletion, splits, money owed (People), category merge, Home
 - [x] Phase 1 gate: daily use (owner accepted it after two days of the seven-day trial)
-- [ ] Phase 2: budgets with rollover (built), currencies with transfer bonus and money owed in other currencies (built), recurring rules (pending)
+- [ ] Phase 2: budgets with rollover (built), currencies with transfer bonus and money owed in other currencies (built), recurring rules (built)
 - [ ] Phase 3, insights and import: reports, tags and receipts, CSV import and export
 - [ ] Phase 4, hardening: two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility
 - [ ] Phase 5, Android
@@ -24,6 +24,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 Newest first. One short entry per piece of work.
 
+- **2026-10-11:** Slice 2c step 4, the Recurring screen: More, Recurring lists each rule with its schedule, next date and flags (paused, needs attention); an editor adds or changes a rule (expense, income or transfer, with the next dates previewed and how many entries are already due), shows what the rule has done, skips an occurrence that needs attention, pauses, resumes and deletes (red, with confirmation). It asks for the ledger time zone first. Checked at 320, 390 and desktop in light and dark, and by a browser test. Slice 2c is complete. Not released.
 - **2026-10-11:** Slice 2c step 3, recurring rules and the runner (ADR 0024, API 0.1.28, migration 0018): rules for expenses, income and transfers on daily, weekly, monthly or yearly schedules (a transfer rule can carry an explicit bonus and a fixed received amount). The hourly job creates every occurrence that has come due, dated on its own day, with stable keys so nothing is duplicated and a deleted entry is never recreated; occurrences that cannot be created wait with a fixed reason, are retried and can be skipped. Pause skips what came due, edits only touch future occurrences, and a rule whose creator lost write access is paused. The backup and restore drill cover the new tables and check their links. Screens are the next step. Not released.
 - **2026-10-11:** Slice 2c step 2, job runner (ADR 0021 and 0024): pg-boss starts with the API, with an hourly tick and one at start. First job: the daily exchange-rate refresh, once per ledger-local day for each ledger with pinned currencies, run as the ledger's owner. `JOBS_ENABLED=false` turns jobs off. The restore drill now also checks that the `pgboss` schema restored when it is present (tried on a scratch database). No API change, no migration of ours. Not released.
 - **2026-10-11:** Slice 2c step 1, ledger time zone (ADR 0024, API 0.1.27, migration 0017): a ledger has an optional IANA time zone, empty until the owner sets it, and a version. New `PATCH /ledgers/{id}` (owner only) and a Time zone setting in More. Recurring entries will use it to decide what today is. Not released.

@@ -24,6 +24,7 @@ import { CategoriesPage } from "./features/categories/categories-page";
 import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
 import { PeoplePage } from "./features/people/people-page";
+import { RecurringPage } from "./features/recurring/recurring-page";
 import {
   PrivacyContext,
   ThemeContext,
@@ -151,6 +152,11 @@ const currenciesRoute = createRoute({
   path: "/more/currencies",
   component: CurrenciesPage,
 });
+const recurring = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/more/recurring",
+  component: RecurringPage,
+});
 const people = createRoute({
   getParentRoute: () => rootRoute,
   path: "/more/people",
@@ -166,6 +172,7 @@ const router = createRouter({
     accounts,
     categories,
     currenciesRoute,
+    recurring,
     people,
   ]),
 });

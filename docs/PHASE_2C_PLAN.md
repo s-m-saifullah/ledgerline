@@ -15,6 +15,8 @@ Approved by the owner on 2026-10-11. This expands slice 2c of [PHASE_2_PLAN.md](
 
 - PR 3 adds the rules and the runner: tables `recurring_rules` and `recurring_runs` (migration 0018), the schedule calculator in `packages/shared`, the endpoints, and the runner that catches up on every tick. Creating, resuming or editing a rule also runs it at once, so due entries appear without waiting for the hour. A rule's accounts and categories cannot be deleted while it exists. The backup manifest and drill cover both tables, and the drill checks that every created occurrence points at an entry that exists.
 
+- PR 4 adds the Recurring screen under More: the list, the editor with a preview of the next dates and a count of entries already due, the history with Skip, pause, resume and delete, and the request for a time zone first. Slice 2c is complete; the single Phase 2 release comes next.
+
 ## Rules
 
 - Rules are created and edited only by owners and editors, with version checks, idempotency keys and ledger scoping; every endpoint has a cross-ledger test.
