@@ -47,4 +47,5 @@ export function isoDate(value: string): string {
 export * from "./home";
 export * from "./receipts";
 export * from "./receivables";
+export * from "./recurring";
 export * from "./transfers";

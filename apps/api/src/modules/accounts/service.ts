@@ -23,7 +23,10 @@ import {
   postedBalance,
   postedTransactionTotals,
 } from "../transactions/balance-service";
-import { requireNoActiveTransactions } from "../transactions/reference-service";
+import {
+  requireNoActiveRules,
+  requireNoActiveTransactions,
+} from "../transactions/reference-service";
 import { runFinancialWrite, type WriteIdentity } from "../writes/service";
 import { nextVersion, requireVersionUpdate } from "../writes/version";
 import { type AccountRow, accountRepository } from "./repo";
@@ -292,6 +295,7 @@ export function deleteAccount(
       const current = requireAccount(await repo.lockForAssignment(id));
       const version = nextVersion(current.version, body.expectedVersion);
       await requireNoActiveTransactions(tx, ledgerId, "accountId", id);
+      await requireNoActiveRules(tx, ledgerId, "accountId", id);
       requireVersionUpdate(
         await repo.remove(id, body.expectedVersion, version),
       );

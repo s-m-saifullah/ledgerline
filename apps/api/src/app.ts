@@ -37,13 +37,17 @@ import { ledgerRoutes } from "./modules/ledgers/routes";
 import { ledgerService } from "./modules/ledgers/service";
 import { receiptRoutes } from "./modules/receivables/receipt-routes";
 import { peopleRoutes } from "./modules/receivables/routes";
+import { recurringRoutes } from "./modules/recurring/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
 
 export async function buildApp(
   db: Database,
   config: Config,
-  { fetchRate = createRateProvider() }: { fetchRate?: RateFetcher } = {},
+  {
+    fetchRate = createRateProvider(),
+    now = () => new Date(),
+  }: { fetchRate?: RateFetcher; now?: () => Date } = {},
 ) {
   // Deliberately log only request IDs, methods and status; URLs may contain private filters.
   const app = Fastify({
@@ -57,7 +61,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.27" },
+      info: { title: "Ledgerline API", version: "0.1.28" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -296,6 +300,7 @@ export async function buildApp(
   await app.register(peopleRoutes, { db, config, auth });
   await app.register(receiptRoutes, { db, config, auth });
   await app.register(categoryRoutes, { db, config, auth });
+  await app.register(recurringRoutes, { db, config, auth, now });
   await app.register(budgetRoutes, { db, config, auth });
   await app.register(currencyRoutes, { db, config, auth, fetchRate });
   await app.register(transactionRoutes, { db, config, auth });

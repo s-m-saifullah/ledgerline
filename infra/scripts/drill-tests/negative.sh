@@ -39,6 +39,10 @@ psqlx "SET session_replication_role=replica; UPDATE receivable_payments SET vers
 psqlx "INSERT INTO contacts (id,ledger_id,name) VALUES ('00000000-0000-7000-8000-000000000c0b','00000000-0000-7000-8000-0000000000a1','Other'); SET session_replication_role=replica; UPDATE receivables SET contact_id='00000000-0000-7000-8000-000000000c0b' WHERE id='00000000-0000-7000-8000-000000000502'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "receipt across two people" "Restored receipt contacts failed validation" bash restore-drill.sh "$(latest)"
 psqlx "SET session_replication_role=replica; UPDATE receivables SET contact_id='00000000-0000-7000-8000-000000000c0a' WHERE id='00000000-0000-7000-8000-000000000502'; DELETE FROM contacts WHERE id='00000000-0000-7000-8000-000000000c0b'" >/dev/null
+# 9b. a created occurrence pointing at an entry that does not exist
+psqlx "UPDATE recurring_runs SET transaction_id='00000000-0000-7000-8000-00000000dead' WHERE id='00000000-0000-7000-8000-0000000007b1'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "recurring run without its entry" "Restored recurring links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE recurring_runs SET transaction_id='00000000-0000-7000-8000-0000000000d1' WHERE id='00000000-0000-7000-8000-0000000007b1'" >/dev/null
 # 10. clean again, then concurrent writes during the backup must not break the drill
 bash backup.sh >/dev/null; bash restore-drill.sh "$(latest)" >/dev/null 2>&1 && echo "PASS  clean data restores after repairs" || echo "FAIL  clean data did not restore"
 ( for i in $(seq 1 150); do psqlx "INSERT INTO transactions (id,ledger_id,account_id,category_id,kind,date,amount,base_amount) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b1','00000000-0000-7000-8000-0000000000c1','expense','2026-10-09',-$i,-$i)" >/dev/null; done ) &

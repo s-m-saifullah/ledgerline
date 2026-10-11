@@ -5,9 +5,9 @@
 # copy, so expectations always come from the same snapshot as the dump.
 
 # Checks that become manifest lines (check|name|value).
-VERIFY_CHECKS=(balances networth owed transfers splits linked receipts)
+VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links)
 
 verify_requires() {
   case "$1" in
@@ -16,6 +16,7 @@ verify_requires() {
     transfers|transfer_pairs) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='transfer_id')" ;;
     splits|split_allocations) echo "SELECT to_regclass('public.transaction_splits') IS NOT NULL" ;;
     receipts|receipt_contacts) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='receivable_payments' AND column_name='receipt_id')" ;;
+    recurring|recurring_links) echo "SELECT to_regclass('public.recurring_rules') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL" ;;
     *) echo "SELECT false" ;;
   esac
 }
@@ -44,6 +45,10 @@ verify_sql() {
     split_allocations) echo "SELECT (SELECT count(*) FROM transactions p WHERE p.is_split AND ((SELECT count(*) FROM transaction_splits s WHERE $split_filter) NOT BETWEEN 2 AND 50 OR (SELECT coalesce(sum(s.amount),0) FROM transaction_splits s WHERE $split_filter) <> p.amount::numeric OR EXISTS (SELECT 1 FROM transaction_splits s WHERE $split_filter AND NOT (s.kind=p.kind AND s.version=p.version AND s.updated_at=p.updated_at)) OR (p.deleted_at IS NOT NULL AND EXISTS (SELECT 1 FROM transaction_splits s WHERE s.ledger_id=p.ledger_id AND s.transaction_id=p.id AND s.deleted_at IS NULL)))) + (SELECT count(*) FROM transaction_splits s JOIN transactions t ON t.ledger_id=s.ledger_id AND t.id=s.transaction_id WHERE s.deleted_at IS NULL AND NOT t.is_split)" ;;
     # A receipt never spans more than one person.
     receipt_contacts) echo "SELECT count(*) FROM (SELECT p.ledger_id, p.receipt_id FROM receivable_payments p JOIN receivables r ON r.ledger_id=p.ledger_id AND r.id=p.receivable_id WHERE p.receipt_id IS NOT NULL GROUP BY p.ledger_id, p.receipt_id HAVING count(DISTINCT r.contact_id) > 1) bad" ;;
+    # Live rules, and runs by outcome.
+    recurring) echo "SELECT (SELECT count(*) FROM recurring_rules WHERE deleted_at IS NULL) || '|' || (SELECT count(*) FROM recurring_runs WHERE status='created') || '|' || (SELECT count(*) FROM recurring_runs WHERE status='attention') || '|' || (SELECT count(*) FROM recurring_runs WHERE status='skipped')" ;;
+    # Every created occurrence points at an entry that exists, and a transfer's link matches that entry.
+    recurring_links) echo "SELECT count(*) FROM recurring_runs r WHERE r.status='created' AND NOT EXISTS (SELECT 1 FROM transactions t WHERE t.ledger_id=r.ledger_id AND t.id=r.transaction_id AND t.transfer_id IS NOT DISTINCT FROM r.transfer_id)" ;;
     *) return 1 ;;
   esac
 }

@@ -13,6 +13,8 @@ Approved by the owner on 2026-10-11. This expands slice 2c of [PHASE_2_PLAN.md](
 
 - PR 1 (time zone) is merged. PR 2 adds the job runner: an hourly tick and one at start. The daily rate refresh checks the day's saved key before it calls the rate source, so a day that is done never reaches the network again. If every fetch fails, that day's result is kept and the Refresh now button on the Currencies screen stays the way to retry.
 
+- PR 3 adds the rules and the runner: tables `recurring_rules` and `recurring_runs` (migration 0018), the schedule calculator in `packages/shared`, the endpoints, and the runner that catches up on every tick. Creating, resuming or editing a rule also runs it at once, so due entries appear without waiting for the hour. A rule's accounts and categories cannot be deleted while it exists. The backup manifest and drill cover both tables, and the drill checks that every created occurrence points at an entry that exists.
+
 ## Rules
 
 - Rules are created and edited only by owners and editors, with version checks, idempotency keys and ledger scoping; every endpoint has a cross-ledger test.
