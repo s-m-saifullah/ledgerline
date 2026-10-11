@@ -1738,6 +1738,11 @@ kbd {
 .date-time-field > input::-webkit-calendar-picker-indicator {
   display: none;
 }
+/* Newer Chromium draws its own dropdown arrow here; ours is the only button. A separate rule,
+   because a browser that does not know ::picker-icon would drop a whole shared selector list. */
+.date-time-field > input::picker-icon {
+  display: none;
+}
 .date-time-trigger {
   position: absolute;
   top: 50%;
