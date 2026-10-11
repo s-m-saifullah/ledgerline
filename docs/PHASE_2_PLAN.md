@@ -34,6 +34,8 @@ The detailed step plan is in [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md); this section 
 
 ## 2c. Recurring entries
 
+The detailed plan is [PHASE_2C_PLAN.md](PHASE_2C_PLAN.md) and ADR [0024](adr/0024-recurring-rules-details.md); this section is the summary.
+
 - Table `recurring_rules`: template, schedule, next run date, end date, paused flag. A daily pg-boss job creates the transactions as posted (ADR 0021).
 - Missed runs are caught up, one transaction per missed occurrence, using stable idempotency keys so a retry never duplicates.
 - A ledger time zone setting decides what "today" means for the job. Entry dates remain calendar dates.
