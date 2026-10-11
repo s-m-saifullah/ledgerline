@@ -7,7 +7,7 @@ Read this at the start of every session and update it when a piece of work lands
 - **Phase:** 1 (Core ledger) is complete (the owner ended the seven-day trial early and accepted the gate on 2026-10-10, ADR 0013). Phase 2 is in progress ([PHASE_2_PLAN.md](PHASE_2_PLAN.md), [PHASE_2B_PLAN.md](PHASE_2B_PLAN.md)): slice 2a (budgets) and steps 1 to 3 of slice 2b (currencies) are built and merged but **not released**.
 - **Latest release:** `v0.0.10` (API 0.1.18, migrations 0000 to 0010).
 - **On `main`, not yet released:** the version label in the web app, budgets with computed rollover, the Currencies screen, base-currency totals and split base amounts, accounts, entries and transfers in other currencies (API 0.1.23, migrations 0011 to 0014). The next release also needs its verified backup and restore drill first; migrations 0013 and 0014 rewrite existing split and transfer rules.
-- **Next:** finish slice 2b step 4 (the transfer bonus, ADR 0023, in review), then step 5 (money owed in other currencies), then slice 2c (recurring entries with pg-boss and a ledger time zone). The owner chose to release once, when all of Phase 2 is ready, so nothing on `main` ships before then.
+- **Next:** slice 2c (recurring entries with pg-boss and a ledger time zone), then the single Phase 2 release. The owner chose to release once, when all of Phase 2 is ready, so nothing on `main` ships before then.
 - **Known follow-ups:** review Dependabot's grouped Actions updates when they appear; automated off-site backups are Phase 4.
 
 ## Phase checklist
@@ -23,6 +23,8 @@ Read this at the start of every session and update it when a piece of work lands
 ## Session log
 
 Newest first. One short entry per piece of work.
+
+- **2026-10-11:** Slice 2b step 5, money owed in other currencies (ADR 0022, API 0.1.25 and 0.1.26, migration 0016): an item owed has a currency (fixed once a payment exists), payments settle it in that currency and take the amount received when the account's currency differs, and person-level receipts settle one currency at a time with the received amount shared exactly. People show balances per currency with a dollar value at today's rates, and Home says when its Owed to you total uses today's rates. Slice 2b is complete. Not released.
 
 - **2026-10-11:** Slice 2b step 4, transfer bonus (ADR 0023): an account can have a bonus rate (percent, stored as whole basis points) and a default income category. A new transfer into it suggests the bonus on the amount received, editable and switchable off, and saves it with the transfer as one linked income entry. Deleting a transfer can delete its bonus too, and Undo brings both back; editing a transfer leaves the bonus alone. Migration 0015 and API 0.1.24. Not released; the release now waits for all of Phase 2.
 - **2026-10-11:** Fixed three small things found while checking the currency screens: account cards show their own currency, the Currencies page names itself in the top bar, and quick add no longer says USD only.

@@ -32,11 +32,12 @@ export async function getReceiptPreview(
   l: string,
   contactId: string,
   amount: number,
+  currency: string,
   signal?: AbortSignal,
 ) {
   return receiptPreviewSchema.parse(
     await api(
-      `${peoplePath(l)}/contacts/${contactId}/receipt-preview?amount=${amount}`,
+      `${peoplePath(l)}/contacts/${contactId}/receipt-preview?amount=${amount}&currency=${currency}`,
       { ...(signal ? { signal } : {}) },
     ),
   );

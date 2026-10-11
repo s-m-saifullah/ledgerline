@@ -18,7 +18,7 @@ import { ActionButton } from "../../components/action-button";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { formatTime12 } from "../../lib/time";
-import { formatUsd } from "../accounts/money";
+import { formatMoney } from "../accounts/money";
 import { PrivacyContext } from "../shell/preferences";
 import { localToday } from "../transactions/form";
 import {
@@ -42,7 +42,13 @@ const labels: Record<ReceivableEvent["action"], string> = {
   paymentDeleted: "Payment deleted",
   paymentRestored: "Payment restored",
 };
-function Amount({ value }: { value: number }) {
+function Amount({
+  value,
+  currency = "USD",
+}: {
+  value: number;
+  currency?: string;
+}) {
   const hidden = useContext(PrivacyContext);
   return (
     <span className="amount">
@@ -52,8 +58,30 @@ function Amount({ value }: { value: number }) {
           <span className="sr-only">Amount hidden</span>
         </>
       ) : (
-        formatUsd(value)
+        formatMoney(value, currency)
       )}
+    </span>
+  );
+}
+/** What a person owes: each currency's balance, then its value in dollars at today's rates. */
+function Balances({ person }: { person: Contact }) {
+  if (!person.openBalances.length) return <Amount value={0} />;
+  const foreign = person.openBalances.some((b) => b.currency !== "USD");
+  if (!foreign)
+    return person.openBalances.map((b) => (
+      <Amount key={b.currency} value={b.amount} currency={b.currency} />
+    ));
+  return (
+    <span className="person-balances">
+      {person.openBalances.map((b) => (
+        <Amount key={b.currency} value={b.amount} currency={b.currency} />
+      ))}
+      <span className="balance-note muted">
+        About <Amount value={person.openBalance.amount} /> at today's rates
+        {person.unconvertedCurrencies.length > 0
+          ? `, not counting ${person.unconvertedCurrencies.join(", ")} (no rate yet)`
+          : ""}
+      </span>
     </span>
   );
 }
@@ -141,7 +169,7 @@ export function PeoplePage() {
                   {person.data.archivedAt ? " (archived)" : ""}
                 </h2>
                 <p>
-                  Open balance <Amount value={person.data.openBalance.amount} />
+                  Open balance <Balances person={person.data} />
                 </p>
                 {person.data.oldestOpenServiceDate && (
                   <p className="muted">
@@ -155,7 +183,7 @@ export function PeoplePage() {
                   <ActionBar
                     menuLabel={`More actions for ${person.data.name}`}
                     primary={
-                      person.data.openBalance.amount > 0
+                      person.data.openBalances.length > 0
                         ? {
                             key: "pay",
                             id: "record-person-payment",
@@ -183,7 +211,7 @@ export function PeoplePage() {
                           }
                     }
                     featured={
-                      person.data.openBalance.amount > 0
+                      person.data.openBalances.length > 0
                         ? {
                             key: "log",
                             id: "log-service",
@@ -321,27 +349,42 @@ export function PeoplePage() {
                                   <>
                                     <Amount
                                       value={e.before.payment.amount.amount}
+                                      currency={
+                                        e.before.payment.amount.currency
+                                      }
                                     />{" "}
                                     →{" "}
                                   </>
                                 )}
-                                <Amount value={e.after.payment.amount.amount} />
+                                <Amount
+                                  value={e.after.payment.amount.amount}
+                                  currency={e.after.payment.amount.currency}
+                                />
                               </span>
                             ) : (
-                              <Amount value={e.after.service.amount.amount} />
+                              <Amount
+                                value={e.after.service.amount.amount}
+                                currency={e.after.service.amount.currency}
+                              />
                             )}
                           </div>
                         </div>
                         <p className="muted row-meta">
                           {new Date(e.createdAt).toLocaleString()} · service
                           version {e.receivableVersion} · Open after{" "}
-                          <Amount value={e.after.service.outstanding.amount} />
+                          <Amount
+                            value={e.after.service.outstanding.amount}
+                            currency={e.after.service.outstanding.currency}
+                          />
                           {e.after.service.writtenOffAmount && (
                             <>
                               {" "}
                               · Waived{" "}
                               <Amount
                                 value={e.after.service.writtenOffAmount.amount}
+                                currency={
+                                  e.after.service.writtenOffAmount.currency
+                                }
                               />
                             </>
                           )}
@@ -441,7 +484,7 @@ export function PeoplePage() {
                       {p.name}
                       {p.archivedAt ? " (archived)" : ""}
                     </strong>
-                    <Amount value={p.openBalance.amount} />
+                    <Balances person={p} />
                     <span className="muted">
                       {p.oldestOpenServiceDate
                         ? `Oldest unpaid: ${p.oldestOpenServiceDate}`
@@ -512,16 +555,24 @@ function ServiceRow({
         </div>
         <div className="row-figure">
           <span className="sr-only">Outstanding</span>
-          <Amount value={s.outstanding.amount} />
+          <Amount
+            value={s.outstanding.amount}
+            currency={s.outstanding.currency}
+          />
         </div>
       </div>
       <p className="muted row-meta">
-        Service <Amount value={s.amount.amount} /> · Received{" "}
-        <Amount value={s.received.amount} />
+        Service <Amount value={s.amount.amount} currency={s.amount.currency} />{" "}
+        · Received{" "}
+        <Amount value={s.received.amount} currency={s.received.currency} />
         {s.writtenOffAmount && (
           <>
             {" "}
-            · Written off <Amount value={s.writtenOffAmount.amount} />
+            · Written off{" "}
+            <Amount
+              value={s.writtenOffAmount.amount}
+              currency={s.writtenOffAmount.currency}
+            />
           </>
         )}
       </p>
@@ -634,7 +685,11 @@ function ServiceRow({
                       {p.transaction.time
                         ? ` · ${formatTime12(p.transaction.time)}`
                         : ""}{" "}
-                      · <Amount value={p.amount.amount} />
+                      ·{" "}
+                      <Amount
+                        value={p.amount.amount}
+                        currency={p.amount.currency}
+                      />
                     </p>
                     {p.transaction.note && <p>{p.transaction.note}</p>}
                     {p.receiptId ? (

@@ -2686,3 +2686,23 @@ button.budget-line:hover {
   display: grid;
   gap: 8px;
 }
+
+/* A person who owes in other currencies: each currency's balance, then its value in dollars. */
+.person-balances {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+}
+.person-balances .amount {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.person-balances .balance-note {
+  flex-basis: 100%;
+  font-size: 0.875rem;
+}
+.person-balances .balance-note .amount {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
