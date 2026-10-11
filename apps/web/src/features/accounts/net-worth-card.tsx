@@ -26,6 +26,12 @@ export function NetWorthCard({ ledgerId }: { ledgerId: string }) {
         Everything you own minus everything you owe, across all accounts
         including archived ones. Money owed to you in People is not included.
       </p>
+      {data.unconvertedCurrencies.length > 0 && (
+        <p className="muted" role="note">
+          Accounts in {data.unconvertedCurrencies.join(", ")} are left out until
+          they have an exchange rate.
+        </p>
+      )}
       <p className="net-worth-owed">
         <span>Owed on cards and loans</span>
         <strong>

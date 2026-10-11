@@ -281,3 +281,19 @@ export function deriveRate(
   const rounded = (numerator * 2n + denominator) / (denominator * 2n);
   return formatRate(rounded > 0n ? rounded : 1n);
 }
+
+export const rateLookupQuerySchema = z.object({
+  code: currencySchema,
+  date: z.iso.date(),
+});
+/** The rate an entry in `code` on `date` would get; rate is null when none exists yet. */
+export const rateLookupSchema = z.object({
+  code: currencySchema,
+  date: z.iso.date(),
+  baseCurrency: currencySchema,
+  rate: rateSchema.nullable(),
+  /** The date of the stored rate used (an earlier day on weekends and holidays). */
+  rateDate: z.iso.date().nullable(),
+  source: z.enum(["api", "manual", "base"]).nullable(),
+});
+export type RateLookup = z.infer<typeof rateLookupSchema>;

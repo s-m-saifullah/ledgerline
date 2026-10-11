@@ -826,7 +826,7 @@ describe("Transfers API", () => {
   });
   it("documents all five secured transfer endpoints and paired versions", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.22");
+    expect(doc.info.version).toBe("0.1.23");
     const prefix = "/api/v1/ledgers/{ledgerId}/transfers";
     for (const [path, method] of [
       [prefix, "post"],

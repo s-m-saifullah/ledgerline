@@ -325,6 +325,11 @@ export function Shell({
                     icon: Shapes,
                   } as const,
                   {
+                    to: "/more/currencies",
+                    label: "Currencies",
+                    icon: Coins,
+                  } as const,
+                  {
                     to: "/more/people",
                     label: "People",
                     icon: Wallet,

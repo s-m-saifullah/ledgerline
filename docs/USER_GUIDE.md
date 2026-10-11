@@ -1,6 +1,6 @@
 # Ledgerline user guide
 
-This guide walks through a first session and the everyday money flows. Amounts are in USD for now. All examples use made-up names.
+This guide walks through a first session and the everyday money flows. USD is the base currency; accounts and entries can also use other currencies (see Other currencies). Money owed to you (People) is USD-only for now. All examples use made-up names.
 
 ## First run
 
@@ -20,6 +20,14 @@ This guide walks through a first session and the everyday money flows. Amounts a
 **A negative balance means you owe money.** The opening balance is the balance before the entries you record in Ledgerline, so do not mix today's balance with older history.
 
 Home shows **In hand**: the positive balances of your active bank, cash, wallet and savings accounts. Cards and loans stay on the Accounts screen, where **Net worth** and the amount owed on cards and loans are shown at the top. Money you hold for someone else inside your bank balance is counted as in hand until you pay it on.
+
+## Other currencies
+
+1. Open **More, Currencies** and choose **Add a currency**. Ledgerline fetches today's rate; you can set a rate yourself on any date and it is kept, never replaced by a refresh. Rates read base-currency first: *1 USD = 0.89 EUR*.
+2. When you create an account, pick its currency. It cannot change afterwards, and the opening balance is entered in it.
+3. An entry in a euro account is entered in euros. The form shows what it is worth in dollars (*About $112.17*) and the rate it will use: the newest stored rate on or before the entry's date, or a rate you set by hand. If no rate is stored yet, you are asked to set one before saving. The rate is saved with the entry, so later rate changes do not rewrite your history; editing the entry keeps its rate unless you change it.
+4. A **transfer between currencies** asks for the amount sent and the amount received. If one account is in USD the two amounts fix the rate; between two other currencies the sent currency's stored rate sets the dollar value. Either way the two legs net to zero in dollars.
+5. **Home** and **Net worth** show totals in dollars. Foreign balances are valued at the newest stored rate and shown beside their own amount. A currency with no rate yet is left out of the totals, and Home says so. Spending, income and budgets use each entry's saved dollar value.
 
 ## Everyday flows
 

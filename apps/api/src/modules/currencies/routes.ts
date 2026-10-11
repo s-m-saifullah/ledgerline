@@ -11,6 +11,8 @@ import {
   pinCurrencySchema,
   pinnedCurrencySchema,
   problemSchema,
+  rateLookupQuerySchema,
+  rateLookupSchema,
   refreshRatesResultSchema,
   refreshRatesSchema,
   setExchangeRateSchema,
@@ -31,6 +33,7 @@ import {
   listCurrencies,
   listRates,
   pinCurrency,
+  previewRate,
   refreshRates,
   setRate,
   unpinCurrency,
@@ -152,6 +155,29 @@ export async function currencyRoutes(
         request.params.ledgerId,
         request.query.code,
         request.query.limit,
+      ),
+  );
+  app.get(
+    "/api/v1/ledgers/:ledgerId/exchange-rates/lookup",
+    {
+      schema: {
+        summary: "Preview the rate an entry would get",
+        description:
+          "The rate an entry in a currency on a date would be saved with: the newest stored rate on or before the date, exactly 1 for the base currency, or null when none exists yet. The same lookup the save uses.",
+        tags: ["Currencies"],
+        security,
+        params: ledgerParamsSchema,
+        querystring: rateLookupQuerySchema,
+        response: { 200: rateLookupSchema, ...errors },
+      },
+    },
+    async (request) =>
+      previewRate(
+        db,
+        await actor(request),
+        request.params.ledgerId,
+        request.query.code,
+        request.query.date,
       ),
   );
   app.put(

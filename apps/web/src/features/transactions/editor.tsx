@@ -9,6 +9,7 @@ import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
 import { CategoryPicker } from "../categories/picker";
+import { EntryRate } from "../currencies/entry-rate";
 import { PrivacyContext } from "../shell/preferences";
 import {
   getTransaction,
@@ -16,12 +17,12 @@ import {
   prepareTransactionUndo,
 } from "./api";
 import {
+  amountMinor,
   type TransactionFormValues,
   transactionBody,
   transactionEditDefaults,
   transactionFormSchema,
 } from "./form";
-
 import { SplitFields } from "./split-fields";
 
 export function TransactionEditor({
@@ -203,7 +204,9 @@ export function TransactionEditor({
             <option value="expense">Expense</option>
             <option value="income">Income</option>
           </NativeSelect>
-          <label htmlFor="edit-transaction-amount">Amount (USD)</label>
+          <label htmlFor="edit-transaction-amount">
+            Amount ({watch("currency")})
+          </label>
           <input
             id="edit-transaction-amount"
             type={privateMode ? "password" : "text"}
@@ -218,6 +221,23 @@ export function TransactionEditor({
           <p className="form-help">
             Enter a positive amount; the entry type sets its direction.
           </p>
+          <EntryRate
+            ledgerId={ledgerId}
+            currency={watch("currency")}
+            date={watch("date")}
+            amountMinor={amountMinor(watch("amount"), watch("currency"))}
+            manualRate={watch("fxRate")}
+            // An edit keeps the entry's own rate until one is set here or the currency changes.
+            savedRate={
+              watch("currency") === baseline.amount.currency
+                ? baseline.fxRate
+                : undefined
+            }
+            onManualRate={(rate) => setValue("fxRate", rate)}
+            disabled={
+              !canWrite || busy || uncertain || conflict || confirmDelete
+            }
+          />
           <SplitFields form={form} categories={categories} kind={kind} />
           {!watch("splitEnabled") && (
             <CategoryPicker
@@ -233,7 +253,17 @@ export function TransactionEditor({
           <label htmlFor="edit-transaction-account">Account</label>
           <NativeSelect
             id="edit-transaction-account"
-            {...register("accountId")}
+            {...register("accountId", {
+              onChange: (event) => {
+                // The entry follows its account's currency; a rate set by hand was for the old one.
+                setValue(
+                  "currency",
+                  accounts.find((row) => row.id === event.target.value)
+                    ?.currency ?? baseline.amount.currency,
+                );
+                setValue("fxRate", "");
+              },
+            })}
           >
             <option value="" disabled>
               Choose an account

@@ -66,7 +66,7 @@ export function SplitFields({
                 <p className="field-error">Choose a category.</p>
               )}
               <label htmlFor={`split-amount-${index}`}>
-                Split {index + 1} amount (USD)
+                Split {index + 1} amount ({form.watch("currency")})
               </label>
               <input
                 id={`split-amount-${index}`}
@@ -77,7 +77,7 @@ export function SplitFields({
               />
               {form.formState.errors.splits?.[index]?.amount && (
                 <p className="field-error">
-                  Enter a positive exact USD amount.
+                  Enter a positive exact {form.watch("currency")} amount.
                 </p>
               )}
               <label htmlFor={`split-note-${index}`}>

@@ -390,3 +390,33 @@ export async function requireUsableCurrency(
       `Add ${code} in Currencies before using it for an account.`,
     );
 }
+
+/** What `lookupRate` would give an entry, without failing when no rate exists yet. */
+export async function previewRate(
+  db: Database,
+  actorId: string,
+  ledgerId: string,
+  code: string,
+  date: string,
+) {
+  const ledger = await requireLedgerRead(db, actorId, ledgerId);
+  const base = ledger.baseCurrency;
+  if (code === base)
+    return {
+      code,
+      date,
+      baseCurrency: base,
+      rate: "1",
+      rateDate: date,
+      source: "base" as const,
+    };
+  const row = await rateRepository(db, ledgerId).onOrBefore(code, date);
+  return {
+    code,
+    date,
+    baseCurrency: base,
+    rate: row ? rateDto(row).rate : null,
+    rateDate: row?.date ?? null,
+    source: row?.source ?? null,
+  };
+}

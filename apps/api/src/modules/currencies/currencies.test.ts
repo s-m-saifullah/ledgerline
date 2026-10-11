@@ -397,6 +397,82 @@ describe("rate lookup for entries", () => {
   });
 });
 
+describe("rate preview for entries", () => {
+  const preview = (query: string, ledger = ledgerId, cookie = ownerCookie) =>
+    app.inject({
+      url: `${root(ledger)}/exchange-rates/lookup?${query}`,
+      headers: { cookie },
+    });
+  it("gives the rate an entry would be saved with, without failing when none exists", async () => {
+    await pin("EUR");
+    await setRate("EUR", "2026-10-02", "1.1217");
+    const exact = (await preview("code=EUR&date=2026-10-02")).json();
+    expect(exact).toMatchObject({
+      code: "EUR",
+      baseCurrency: "USD",
+      rate: "1.1217",
+      rateDate: "2026-10-02",
+      source: "manual",
+    });
+    // A Sunday uses the Friday rate, and says which day it came from.
+    expect((await preview("code=EUR&date=2026-10-04")).json()).toMatchObject({
+      rate: "1.1217",
+      rateDate: "2026-10-02",
+    });
+    // Before any stored rate there is none to preview.
+    expect((await preview("code=EUR&date=2026-09-01")).json()).toMatchObject({
+      rate: null,
+      rateDate: null,
+      source: null,
+    });
+    expect((await preview("code=USD&date=2026-10-04")).json()).toMatchObject({
+      rate: "1",
+      source: "base",
+    });
+  });
+
+  it("matches what saving uses and rejects bad input", async () => {
+    await pin("EUR");
+    await setRate("EUR", "2026-10-02", "1.1217");
+    const preview1 = (await preview("code=EUR&date=2026-10-09")).json();
+    const looked = await lookupRate(db, ledgerId, "EUR", "USD", "2026-10-09");
+    expect(preview1.rate).toBe(looked.rate);
+    for (const bad of [
+      "code=EUR",
+      "date=2026-10-02",
+      "code=eur&date=2026-10-02",
+      "code=EUR&date=2026-13-40",
+    ])
+      expect((await preview(bad)).statusCode).toBe(400);
+    expect(
+      (
+        await app.inject({
+          url: `${root()}/exchange-rates/lookup?code=EUR&date=2026-10-02`,
+        })
+      ).statusCode,
+    ).toBe(401);
+  });
+
+  it("is readable by viewers and never uses another ledger's rates", async () => {
+    await pin("EUR");
+    await db.insert(exchangeRates).values({
+      ledgerId: foreignLedger,
+      code: "EUR",
+      date: "2026-10-02",
+      rate: "9.9",
+      source: "manual",
+    });
+    expect((await preview("code=EUR&date=2026-10-03")).json().rate).toBeNull();
+    expect(
+      (await preview("code=EUR&date=2026-10-03", ledgerId, viewerCookie))
+        .statusCode,
+    ).toBe(200);
+    expect(
+      (await preview("code=EUR&date=2026-10-03", foreignLedger)).statusCode,
+    ).toBe(404);
+  });
+});
+
 describe("access", () => {
   it("lets viewers read but not write, and editors write", async () => {
     await pin("EUR");

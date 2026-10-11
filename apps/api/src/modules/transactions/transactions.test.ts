@@ -1240,7 +1240,7 @@ describe("Transactions API", () => {
   });
   it("documents all six secured endpoints with keys, versions and problem responses", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.22");
+    expect(doc.info.version).toBe("0.1.23");
     const prefix = "/api/v1/ledgers/{ledgerId}/transactions";
     for (const [path, method] of [
       [prefix, "get"],

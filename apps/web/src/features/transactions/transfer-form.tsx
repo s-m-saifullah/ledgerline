@@ -2,23 +2,31 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   type Account,
   createTransferSchema,
+  currencyDigits,
+  deriveRate,
   parseMinorUnits,
+  rateSchema,
   type Transaction,
   type Transfer,
 } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
-import { decimalFromCents } from "../accounts/money";
+import { cleanAmountText, decimalFromCents } from "../accounts/money";
+import { EntryRate } from "../currencies/entry-rate";
+import { rateSentence } from "../currencies/format";
 import { PrivacyContext } from "../shell/preferences";
 import { prepareTransactionUndo } from "./api";
 import {
+  amountMessage,
+  amountMinor,
+  isPositiveAmount,
   lastActiveAccount,
   localToday,
   rememberAccount,
@@ -26,20 +34,54 @@ import {
 } from "./form";
 import { getTransfer, prepareTransferSave, transferLeg } from "./transfers";
 
-const formSchema = z
-  .object({
-    amount: transactionFormSchema.shape.amount,
-    fromAccountId: createTransferSchema.shape.fromAccountId,
-    toAccountId: createTransferSchema.shape.toAccountId,
-    date: createTransferSchema.shape.date,
-    time: transactionFormSchema.shape.time,
-    note: transactionFormSchema.shape.note,
-  })
-  .refine((row) => row.fromAccountId !== row.toAccountId, {
-    path: ["toAccountId"],
-    message: "Choose two different accounts.",
-  });
-type Values = z.infer<typeof formSchema>;
+/** The transfer form's rules depend on the two accounts' currencies, so they are built per list. */
+function makeSchema(accounts: readonly Account[]) {
+  const currencyOf = (id: string) =>
+    accounts.find((row) => row.id === id)?.currency ?? "USD";
+  return z
+    .object({
+      amount: z.string().trim().transform(cleanAmountText),
+      // Only used when the two accounts have different currencies.
+      receivedAmount: z.string().trim().transform(cleanAmountText),
+      // A rate set by hand ("" means use the stored one); only for transfers between two
+      // non-USD currencies.
+      fxRate: z.string(),
+      fromAccountId: createTransferSchema.shape.fromAccountId,
+      toAccountId: createTransferSchema.shape.toAccountId,
+      date: createTransferSchema.shape.date,
+      time: transactionFormSchema.shape.time,
+      note: transactionFormSchema.shape.note,
+    })
+    .superRefine((row, ctx) => {
+      const from = currencyOf(row.fromAccountId);
+      const to = currencyOf(row.toAccountId);
+      if (row.fromAccountId === row.toAccountId)
+        ctx.addIssue({
+          code: "custom",
+          path: ["toAccountId"],
+          message: "Choose two different accounts.",
+        });
+      if (!isPositiveAmount(row.amount, from))
+        ctx.addIssue({
+          code: "custom",
+          path: ["amount"],
+          message: amountMessage(from),
+        });
+      if (from !== to && !isPositiveAmount(row.receivedAmount, to))
+        ctx.addIssue({
+          code: "custom",
+          path: ["receivedAmount"],
+          message: `Enter how much arrives in ${to}.`,
+        });
+      if (row.fxRate !== "" && !rateSchema.safeParse(row.fxRate).success)
+        ctx.addIssue({
+          code: "custom",
+          path: ["fxRate"],
+          message: "Enter a valid exchange rate.",
+        });
+    });
+}
+type Values = z.infer<ReturnType<typeof makeSchema>>;
 function defaults(
   row: Transfer | undefined,
   accounts: readonly Account[],
@@ -49,7 +91,19 @@ function defaults(
   const from = lastActiveAccount(actorId, ledgerId, accounts);
   return row
     ? {
-        amount: decimalFromCents(row.amount.amount),
+        amount: decimalFromCents(
+          row.amount.amount,
+          currencyDigits(row.amount.currency),
+        ),
+        receivedAmount:
+          row.receivedAmount.currency === row.amount.currency
+            ? ""
+            : decimalFromCents(
+                row.receivedAmount.amount,
+                currencyDigits(row.receivedAmount.currency),
+              ),
+        // The transfer keeps its saved rate unless one is set here.
+        fxRate: "",
         fromAccountId: row.fromAccountId,
         toAccountId: row.toAccountId,
         date: row.date,
@@ -58,6 +112,8 @@ function defaults(
       }
     : {
         amount: "",
+        receivedAmount: "",
+        fxRate: "",
         fromAccountId: from,
         toAccountId:
           accounts.find((account) => !account.archivedAt && account.id !== from)
@@ -107,15 +163,23 @@ export function TransferForm({
   const attempt = useRef<(() => Promise<Transfer | undefined>) | null>(null),
     inFlight = useRef(false);
   const operation = useRef<"save" | "delete">("save");
+  const schema = useMemo(() => makeSchema(accounts), [accounts]);
   const {
     register,
     reset,
+    watch,
+    setValue,
     handleSubmit,
     formState: { errors },
   } = useForm<Values>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(schema),
     defaultValues: defaults(transfer, accounts, actorId, ledgerId),
   });
+  const currencyOf = (id: string) =>
+    accounts.find((row) => row.id === id)?.currency ?? "USD";
+  const fromCurrency = currencyOf(watch("fromAccountId"));
+  const toCurrency = currencyOf(watch("toAccountId"));
+  const crossCurrency = fromCurrency !== toCurrency;
   useEffect(() => {
     onLock(busy || uncertain);
   }, [busy, uncertain, onLock]);
@@ -139,9 +203,25 @@ export function TransferForm({
         };
       } else {
         if (!values) return;
+        const from = currencyOf(values.fromAccountId);
+        const to = currencyOf(values.toAccountId);
+        const { receivedAmount, fxRate, ...fields } = values;
         const body = createTransferSchema.parse({
-          ...values,
-          amount: { amount: parseMinorUnits(values.amount), currency: "USD" },
+          ...fields,
+          amount: {
+            amount: parseMinorUnits(values.amount, currencyDigits(from)),
+            currency: from,
+          },
+          ...(from !== to
+            ? {
+                receivedAmount: {
+                  amount: parseMinorUnits(receivedAmount, currencyDigits(to)),
+                  currency: to,
+                },
+              }
+            : {}),
+          // A hand-set rate only matters when neither account is in the base currency.
+          ...(fxRate && from !== "USD" && to !== "USD" ? { fxRate } : {}),
           time: values.time || null,
           note: values.note || null,
         });
@@ -259,7 +339,11 @@ export function TransferForm({
             !writable
           }
         >
-          <label htmlFor="transfer-amount">Amount (USD)</label>
+          <label htmlFor="transfer-amount">
+            {crossCurrency
+              ? `Amount sent (${fromCurrency})`
+              : `Amount (${fromCurrency})`}
+          </label>
           <input
             id="transfer-amount"
             className="transaction-amount"
@@ -271,13 +355,52 @@ export function TransferForm({
           {errors.amount && (
             <p className="field-error">{errors.amount.message}</p>
           )}
+          {crossCurrency && (
+            <>
+              <label htmlFor="transfer-received">
+                Amount received ({toCurrency})
+              </label>
+              <input
+                id="transfer-received"
+                type={privateMode ? "password" : "text"}
+                inputMode="decimal"
+                autoComplete="off"
+                {...register("receivedAmount")}
+              />
+              {errors.receivedAmount && (
+                <p className="field-error">{errors.receivedAmount.message}</p>
+              )}
+              <TransferRate
+                sent={amountMinor(watch("amount"), fromCurrency)}
+                received={amountMinor(watch("receivedAmount"), toCurrency)}
+                fromCurrency={fromCurrency}
+                toCurrency={toCurrency}
+              />
+              {fromCurrency !== "USD" && toCurrency !== "USD" && (
+                <EntryRate
+                  ledgerId={ledgerId}
+                  currency={fromCurrency}
+                  date={watch("date")}
+                  amountMinor={amountMinor(watch("amount"), fromCurrency)}
+                  manualRate={watch("fxRate")}
+                  onManualRate={(rate) => setValue("fxRate", rate)}
+                />
+              )}
+            </>
+          )}
           <div className="transaction-context">
             {(["fromAccountId", "toAccountId"] as const).map((field) => (
               <div key={field}>
                 <label htmlFor={`transfer-${field}`}>
                   {field === "fromAccountId" ? "From account" : "To account"}
                 </label>
-                <NativeSelect id={`transfer-${field}`} {...register(field)}>
+                <NativeSelect
+                  id={`transfer-${field}`}
+                  {...register(field, {
+                    // A rate set by hand belonged to the old accounts.
+                    onChange: () => setValue("fxRate", ""),
+                  })}
+                >
                   <option value="" disabled>
                     Choose an account
                   </option>
@@ -428,5 +551,37 @@ export function TransferForm({
         </div>
       </form>
     </EditorDialog>
+  );
+}
+
+/**
+ * When one account is in USD, the amounts themselves fix the rate; show it so a typo in the
+ * received amount is easy to spot ("1 USD = 0.89 EUR").
+ */
+function TransferRate({
+  sent,
+  received,
+  fromCurrency,
+  toCurrency,
+}: {
+  sent: number | null;
+  received: number | null;
+  fromCurrency: string;
+  toCurrency: string;
+}) {
+  if (sent === null || received === null) return null;
+  const base =
+    fromCurrency === "USD" ? sent : toCurrency === "USD" ? received : null;
+  if (base === null) return null;
+  const foreign = fromCurrency === "USD" ? toCurrency : fromCurrency;
+  const foreignAmount = fromCurrency === "USD" ? received : sent;
+  return (
+    <p className="form-help" aria-live="polite">
+      {rateSentence(
+        foreign,
+        deriveRate(base, foreignAmount, foreign, "USD"),
+        "USD",
+      )}
+    </p>
   );
 }
