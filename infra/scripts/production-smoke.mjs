@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parseEnv } from "node:util";
 import { chromium, expect } from "@playwright/test";
-import { compareHome } from "./home-consistency.mjs";
+import { compareHome, readHomeRates } from "./home-consistency.mjs";
 import { readSmokeConfig } from "./smoke-config.mjs";
 
 // Settings come from SMOKE_* environment variables (see smoke-config.mjs); credentials are never printed.
@@ -81,12 +81,18 @@ try {
   const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const homeResponse = await page.request.get(`${base}/home?month=${month}`);
   expect(homeResponse.status()).toBe(200);
+  const sources = {
+    baseCurrency: ledgerItems[0].baseCurrency,
+    accounts: await readAll("/accounts?status=all"),
+    people: await readAll("/contacts?status=all"),
+  };
+  const rates = await readHomeRates(sources, readAll);
   const mismatches = compareHome({
+    ...sources,
+    rates,
     monthStart: `${month}-01`,
     monthEnd: `${month}-${String(last).padStart(2, "0")}`,
     home: await homeResponse.json(),
-    accounts: await readAll("/accounts?status=all"),
-    people: await readAll("/contacts?status=all"),
     transactions: await readAll("/transactions?limit=100"),
   });
   if (mismatches.length)
