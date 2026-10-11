@@ -270,7 +270,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
                 <div>
                   <h2 id={`account-title-${account.id}`}>{account.name}</h2>
                   <p className="form-help">
-                    {accountTypes[account.type]} · USD
+                    {accountTypes[account.type]} · {account.currency}
                   </p>
                 </div>
                 {account.archivedAt && (

@@ -491,7 +491,7 @@ export function QuickAddForm({
     <EditorDialog
       open={open}
       title="Add transaction"
-      description="Amount, category, save. USD only."
+      description="Amount, category, save."
       busy={busy}
       onDismiss={onDismiss}
       contentClassName="transaction-dialog"
