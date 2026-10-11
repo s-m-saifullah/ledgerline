@@ -64,6 +64,7 @@ function rule(extra: Partial<RecurringRule> = {}): RecurringRule {
     amount: { amount: -120000, currency: "USD" },
     receivedAmount: null,
     bonus: null,
+    fee: null,
     payee: null,
     note: null,
     frequency: "month",

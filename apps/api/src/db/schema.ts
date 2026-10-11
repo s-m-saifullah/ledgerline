@@ -564,6 +564,10 @@ export const recurringRules = pgTable(
     bonusAmount: bigint("bonus_amount", { mode: "number" }),
     bonusCurrency: text("bonus_currency"),
     bonusCategoryId: uuid("bonus_category_id"),
+    // Transfers only: an explicit fee on the sending account (ADR 0025), fixed or basis points.
+    feeAmount: bigint("fee_amount", { mode: "number" }),
+    feeBps: integer("fee_bps"),
+    feeCategoryId: uuid("fee_category_id"),
     payee: text("payee"),
     note: text("note"),
     frequency: text("frequency", {
@@ -602,6 +606,17 @@ export const recurringRules = pgTable(
       columns: [table.ledgerId, table.bonusCategoryId],
       foreignColumns: [categories.ledgerId, categories.id],
     }),
+    foreignKey({
+      name: "recurring_rules_scoped_fee_category_fk",
+      columns: [table.ledgerId, table.feeCategoryId],
+      foreignColumns: [categories.ledgerId, categories.id],
+    }),
+    // A fee is a positive fixed amount or whole basis points (never both), has a category, and only
+    // transfers carry one.
+    check(
+      "recurring_rules_fee_check",
+      sql`(${table.feeAmount} IS NULL OR ${table.feeAmount} > 0) AND (${table.feeBps} IS NULL OR ${table.feeBps} BETWEEN 1 AND 10000) AND (${table.feeAmount} IS NULL OR ${table.feeBps} IS NULL) AND ((${table.feeAmount} IS NULL AND ${table.feeBps} IS NULL) = (${table.feeCategoryId} IS NULL)) AND (${table.kind} = 'transfer' OR ${table.feeCategoryId} IS NULL)`,
+    ),
     check(
       "recurring_rules_title_check",
       sql`char_length(${table.title}) BETWEEN 1 AND 80`,

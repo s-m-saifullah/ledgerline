@@ -26,10 +26,10 @@ import { cleanAmountText, decimalFromCents } from "../accounts/money";
 import { CategoryPicker } from "../categories/picker";
 import { EntryRate } from "../currencies/entry-rate";
 import { rateSentence } from "../currencies/format";
-import { Amount } from "../home/amount";
 import { PrivacyContext } from "../shell/preferences";
 import { prepareTransactionUndo } from "./api";
 import { defaultFeeText, feeHint, feeMinor, parseFee } from "./fee";
+import { FeePreview } from "./fee-preview";
 import {
   amountMessage,
   amountMinor,
@@ -929,35 +929,5 @@ function TransferRate({
         "USD",
       )}
     </p>
-  );
-}
-
-/** What the fee comes to, and what leaves the sending account in all. */
-function FeePreview({
-  fee,
-  cost,
-  sent,
-  currency,
-  accountName,
-}: {
-  fee: "none" | "fixed" | "percent" | "invalid";
-  cost: number | null;
-  sent: number | null;
-  currency: string;
-  accountName: string;
-}) {
-  if (fee === "none" || fee === "invalid") return null;
-  if (cost === null) return <>Enter the amount to see the fee.</>;
-  return (
-    <>
-      Fee <Amount cents={cost} currency={currency} />
-      {sent !== null && (
-        <>
-          {" "}
-          · <Amount cents={sent + cost} currency={currency} /> leaves{" "}
-          {accountName}
-        </>
-      )}
-    </>
   );
 }

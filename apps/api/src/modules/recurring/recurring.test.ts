@@ -4,7 +4,7 @@ import {
   recurringRuleSchema,
   recurringRunListSchema,
 } from "@ledgerline/shared";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -66,6 +66,7 @@ const ids = {
   rent: newId(),
   salary: newId(),
   bonus: newId(),
+  fees: newId(),
   foreignAccount: newId(),
   foreignCategory: newId(),
 };
@@ -100,6 +101,7 @@ const rent = (extra: object = {}) => ({
   amount: { amount: -120000, currency: "USD" },
   receivedAmount: null,
   bonus: null,
+  fee: null,
   payee: "Landlord",
   note: null,
   frequency: "month",
@@ -229,6 +231,7 @@ beforeAll(async () => {
     { id: ids.rent, ledgerId, name: "Rent", kind: "expense" },
     { id: ids.salary, ledgerId, name: "Salary", kind: "income" },
     { id: ids.bonus, ledgerId, name: "Bonus", kind: "income" },
+    { id: ids.fees, ledgerId, name: "Fees", kind: "expense" },
     {
       id: ids.foreignCategory,
       ledgerId: foreignLedger,
@@ -393,6 +396,148 @@ describe("creating rules", () => {
       .set({ archivedAt: new Date() })
       .where(eq(accounts.id, ids.savings));
     await bad(transfer(), "toAccountId");
+  });
+});
+
+describe("transfer fee on a rule (ADR 0025)", () => {
+  const fee = (extra: object = {}) => ({
+    amount: { amount: 200, currency: "USD" },
+    categoryId: ids.fees,
+    ...extra,
+  });
+  it("saves a fixed or percentage fee on a transfer rule and shows it back", async () => {
+    const fixed = await make(transfer({ fee: fee() }));
+    expect(fixed.fee).toEqual(fee());
+    const percent = await make(
+      transfer({
+        title: "Percent",
+        fee: { basisPoints: 150, categoryId: ids.fees },
+      }),
+    );
+    expect(percent.fee).toEqual({ basisPoints: 150, categoryId: ids.fees });
+    expect((await make(transfer({ title: "No fee" }))).fee).toBeNull();
+    // A rule saved before fees existed has no fee field and still reads as none.
+    const { fee: _unused, ...older } = transfer({ title: "Older client" }) as {
+      fee: unknown;
+    };
+    expect((await make(older)).fee).toBeNull();
+  });
+
+  it("refuses a fee on an expense or income rule, a bad shape, a wrong category, a wrong currency and a fee that rounds to nothing", async () => {
+    const post = (body: object) => send("POST", "/recurring-rules", body);
+    expect((await post(rent({ fee: fee() }))).statusCode).toBe(400);
+    for (const bad of [
+      { basisPoints: 0, categoryId: ids.fees },
+      { basisPoints: 10001, categoryId: ids.fees },
+      { amount: { amount: 0, currency: "USD" }, categoryId: ids.fees },
+      { ...fee(), basisPoints: 100 },
+      { amount: { amount: 200, currency: "USD" } },
+    ])
+      expect((await post(transfer({ fee: bad }))).statusCode).toBe(400);
+    const conflict = async (body: object, field: string) => {
+      const response = await post(transfer({ fee: body }));
+      expect(response.statusCode).toBe(409);
+      expect(JSON.stringify(response.json().errors)).toContain(field);
+    };
+    await conflict(
+      fee({ amount: { amount: 200, currency: "EUR" } }),
+      "fee.amount",
+    );
+    // 0.01% of 40.00 is 0.004 of a cent, which rounds to nothing.
+    expect(
+      (
+        await post(
+          transfer({
+            amount: { amount: 4000, currency: "USD" },
+            fee: { basisPoints: 1, categoryId: ids.fees },
+          }),
+        )
+      ).statusCode,
+    ).toBe(409);
+    expect(
+      (await post(transfer({ fee: fee({ categoryId: ids.salary }) })))
+        .statusCode,
+    ).toBe(409);
+    expect([404, 409]).toContain(
+      (await post(transfer({ fee: fee({ categoryId: ids.foreignCategory }) })))
+        .statusCode,
+    );
+  });
+
+  it("creates the fee with each transfer, working a percentage out again every time", async () => {
+    const saved = await make(
+      transfer({
+        startDate: "2026-10-01",
+        fee: { basisPoints: 150, categoryId: ids.fees },
+      }),
+    );
+    const fees = () =>
+      db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.ledgerId, ledgerId),
+            isNotNull(transactions.feeTransferId),
+            isNull(transactions.deletedAt),
+          ),
+        )
+        .orderBy(transactions.date);
+    const [first] = await fees();
+    // 1.5% of 50.00 is 0.75, charged to the sending account.
+    expect(first).toMatchObject({
+      kind: "expense",
+      accountId: ids.checking,
+      categoryId: ids.fees,
+      amount: -75,
+      date: "2026-10-01",
+    });
+    const legs = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.transferId, first?.feeTransferId ?? ""));
+    expect(legs).toHaveLength(2);
+    // Running again never creates it twice.
+    await run();
+    expect(await fees()).toHaveLength(1);
+    // An edit changes future occurrences only; the percentage follows the new amount.
+    const edited = await send("PATCH", `/recurring-rules/${saved.id}`, {
+      ...transfer({
+        startDate: "2026-10-01",
+        amount: { amount: 10000, currency: "USD" },
+        fee: { basisPoints: 150, categoryId: ids.fees },
+      }),
+      expectedVersion: saved.version,
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    at("2026-11-01T12:00:00Z");
+    expect(await run()).toMatchObject({ created: 1 });
+    expect((await fees()).map((row) => row.amount)).toEqual([-75, -150]);
+  });
+
+  it("keeps the fee category from being deleted while a rule uses it", async () => {
+    await make(transfer({ fee: fee() }));
+    const category = await send("DELETE", `/categories/${ids.fees}`, {
+      expectedVersion: 1,
+    });
+    expect(category.statusCode).toBe(409);
+  });
+
+  it("makes the transfer wait with a fixed reason when its fee cannot be saved", async () => {
+    const saved = await make(transfer({ startDate: "2026-11-01", fee: fee() }));
+    await db
+      .update(categories)
+      .set({ archivedAt: new Date() })
+      .where(eq(categories.id, ids.fees));
+    at("2026-11-01T12:00:00Z");
+    expect(await run()).toMatchObject({ attention: 1, created: 0 });
+    expect(await liveEntries(ids.savings)).toHaveLength(0);
+    expect((await runsOf(saved.id))[0]).toMatchObject({ status: "attention" });
+    await db
+      .update(categories)
+      .set({ archivedAt: null })
+      .where(eq(categories.id, ids.fees));
+    expect(await run()).toMatchObject({ created: 1 });
   });
 });
 

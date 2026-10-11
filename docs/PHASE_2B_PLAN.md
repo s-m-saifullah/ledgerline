@@ -32,4 +32,4 @@ Cross-ledger test per endpoint, idempotency keys, an upgrade test over rows shap
 
 ## Addition: transfer fee (ADR 0025, approved 2026-10-11)
 
-An optional fee on the sending account, saved with the transfer as one expense entry. Three pull requests: (1) migration 0019 and the API (fee on create, delete and restore, account defaults); (2) the screens (one Fee box taking `2` or `2%`, hints and a live preview, a collapsible More section for the fee and bonus categories on the transfer form and the account editor, delete choices, a list marker); (3) recurring transfer rules.
+An optional fee on the sending account, saved with the transfer as one expense entry. Three pull requests: (1) migration 0019 and the API (fee on create, delete and restore, account defaults); (2) the screens (one Fee box taking `2` or `2%`, hints and a live preview, a collapsible More section for the fee and bonus categories on the transfer form and the account editor, delete choices, a list marker); (3) recurring transfer rules (migration 0020). All three are built; not released.

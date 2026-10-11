@@ -1,5 +1,6 @@
 import {
   type CreateRecurringRule,
+  feeFromBps,
   firstOccurrenceOnOrAfter,
   type RecurringRule,
   type RecurringRun,
@@ -56,6 +57,15 @@ export function ruleDto(row: RuleRow, needsAttention: number): RecurringRule {
             amount: { amount: row.bonusAmount, currency: row.bonusCurrency },
             categoryId: row.bonusCategoryId,
           },
+    fee:
+      row.feeCategoryId === null
+        ? null
+        : row.feeAmount !== null
+          ? {
+              amount: { amount: row.feeAmount, currency: row.currency },
+              categoryId: row.feeCategoryId,
+            }
+          : { basisPoints: row.feeBps ?? 0, categoryId: row.feeCategoryId },
     payee: row.payee,
     note: row.note,
     frequency: row.frequency,
@@ -99,6 +109,9 @@ const columns = (body: RuleInput) => ({
   bonusAmount: body.bonus?.amount.amount ?? null,
   bonusCurrency: body.bonus?.amount.currency ?? null,
   bonusCategoryId: body.bonus?.categoryId ?? null,
+  feeAmount: body.fee && "amount" in body.fee ? body.fee.amount.amount : null,
+  feeBps: body.fee && "basisPoints" in body.fee ? body.fee.basisPoints : null,
+  feeCategoryId: body.fee?.categoryId ?? null,
   payee: body.payee,
   note: body.note,
   frequency: body.frequency,
@@ -147,6 +160,19 @@ async function validateTemplate(context: WriteContext, body: RuleInput) {
         "receivedAmount",
         "Use the receiving account's currency for the amount that arrives.",
       );
+    if (body.fee) {
+      // The fee is charged to the sending account, in its currency (ADR 0025).
+      if ("amount" in body.fee && body.fee.amount.currency !== from.currency)
+        conflict(
+          "fee.amount",
+          "Use the sending account's currency for the fee.",
+        );
+      if (
+        "basisPoints" in body.fee &&
+        feeFromBps(body.amount.amount, body.fee.basisPoints) < 1
+      )
+        conflict("fee", "That fee comes to less than the smallest unit.");
+    }
     if (body.bonus && body.bonus.amount.currency !== to.currency)
       conflict(
         "bonus.amount",
@@ -159,6 +185,14 @@ async function validateTemplate(context: WriteContext, body: RuleInput) {
       context.ledgerId,
       body.categoryId,
       body.kind,
+      true,
+    );
+  if (body.fee)
+    await validateTransactionCategory(
+      context.tx,
+      context.ledgerId,
+      body.fee.categoryId,
+      "expense",
       true,
     );
   if (body.bonus)

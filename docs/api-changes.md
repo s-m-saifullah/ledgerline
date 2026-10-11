@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.30 — Fee on recurring transfer rules
+
+Not released yet. Migration 0020 (ADR 0025). A transfer rule (`POST` and `PATCH /ledgers/{ledgerId}/recurring-rules`) accepts an optional `fee`, `{ amount, categoryId }` (a fixed positive amount in the sending account's currency) or `{ basisPoints, categoryId }` (1 to 10000), confirmed when the rule is saved; the category is required and must be an active expense category. Expense and income rules refuse it (400). A percentage that comes to less than one smallest unit of the rule's amount is refused (409, field `fee`). A missing `fee` reads as `null`, so older clients keep working. Each occurrence creates its fee entry together with its transfer under the same stable key, working a percentage out again from the amount sent; if the fee cannot be saved (for example its category was archived) the occurrence needs attention like any other failure. A category used as a rule's fee category cannot be deleted while the rule exists.
+
 ## 0.1.29 — Transfer fee
 
 Not released yet. Migration 0019 (ADR 0025). `POST /ledgers/{ledgerId}/transfers` accepts an optional `fee` charged to the sending account only: either `{ amount, categoryId? }` (a fixed positive amount in the sending account's currency) or `{ basisPoints, categoryId? }` (1 to 10000, whole basis points of the amount sent, so 1.5% is 150). The server works out a percentage and rounds half away from zero to the sender currency's smallest unit; a fee that comes to less than one unit is refused (409). Without a `categoryId` the sending account's `feeCategoryId` is used; with neither, 409 with the field `fee.categoryId`. The fee is saved in the same atomic write and under the same `Idempotency-Key` as the transfer, as one expense entry in the sending account (priced like any entry at the transfer's date; a missing rate blocks the save). The received amount is unaffected. A transfer has at most one fee, and may also have a bonus.

@@ -47,6 +47,7 @@ export function recurringRepository(db: DatabaseConnection, ledgerId: string) {
           : or(
               eq(recurringRules.categoryId, id),
               eq(recurringRules.bonusCategoryId, id),
+              eq(recurringRules.feeCategoryId, id),
             );
       return (
         (

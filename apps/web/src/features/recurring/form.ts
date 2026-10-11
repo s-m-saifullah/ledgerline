@@ -6,7 +6,8 @@ import {
   type RecurringFrequency,
   type RecurringRule,
 } from "@ledgerline/shared";
-import { decimalFromCents } from "../accounts/money";
+import { bpsToPercent, decimalFromCents } from "../accounts/money";
+import { feeMinor, parseFee } from "../transactions/fee";
 import { amountMessage, amountMinor } from "../transactions/form";
 
 export type RuleFormValues = {
@@ -20,6 +21,9 @@ export type RuleFormValues = {
   bonusOn: boolean;
   bonusAmount: string;
   bonusCategoryId: string;
+  // The fee on each transfer (ADR 0025): "2" is fixed, "2%" a percentage of the amount sent.
+  feeText: string;
+  feeCategoryId: string;
   payee: string;
   note: string;
   frequency: RecurringFrequency;
@@ -44,6 +48,8 @@ export function ruleDefaults(
     bonusOn: false,
     bonusAmount: "",
     bonusCategoryId: "",
+    feeText: "",
+    feeCategoryId: "",
     payee: "",
     note: "",
     frequency: "month",
@@ -77,6 +83,15 @@ export function valuesFromRule(rule: RecurringRule): RuleFormValues {
         )
       : "",
     bonusCategoryId: rule.bonus?.categoryId ?? "",
+    feeText: rule.fee
+      ? "basisPoints" in rule.fee
+        ? `${bpsToPercent(rule.fee.basisPoints)}%`
+        : decimalFromCents(
+            rule.fee.amount.amount,
+            currencyDigits(rule.fee.amount.currency),
+          )
+      : "",
+    feeCategoryId: rule.fee?.categoryId ?? "",
     payee: rule.payee ?? "",
     note: rule.note ?? "",
     frequency: rule.frequency,
@@ -121,6 +136,20 @@ export function ruleBody(
     if (!values.bonusCategoryId)
       errors.bonusCategoryId = "Choose an income category for the bonus.";
   }
+  const fee = transfer
+    ? parseFee(values.feeText, currency)
+    : { kind: "none" as const };
+  if (fee.kind === "invalid") errors.feeText = fee.message;
+  else if (fee.kind !== "none") {
+    if (
+      fee.kind === "percent" &&
+      minor !== null &&
+      (feeMinor(fee, minor) ?? 0) < 1
+    )
+      errors.feeText = "That fee comes to less than the smallest unit.";
+    if (!values.feeCategoryId)
+      errors.feeCategoryId = "Choose an expense category for the fee.";
+  }
   const interval = Number(values.interval);
   if (!Number.isInteger(interval) || interval < 1 || interval > 365)
     errors.interval = "Use a whole number from 1 to 365.";
@@ -149,6 +178,15 @@ export function ruleBody(
             categoryId: values.bonusCategoryId,
           }
         : null,
+    fee:
+      fee.kind === "fixed"
+        ? {
+            amount: { amount: fee.minor, currency },
+            categoryId: values.feeCategoryId,
+          }
+        : fee.kind === "percent"
+          ? { basisPoints: fee.bps, categoryId: values.feeCategoryId }
+          : null,
     payee: transfer ? null : values.payee.trim() || null,
     note: values.note.trim() || null,
     frequency: values.frequency,
