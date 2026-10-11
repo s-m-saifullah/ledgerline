@@ -12,13 +12,13 @@ A private, self-hosted personal finance app. Record income, expenses and transfe
 
 Accounts (bank, cash, card, wallet, loan, savings) with computed balances · income and expense transactions with optional time · paired transfers · split transactions · two-level categories with optional starter sets · money owed to you (people, services, payments, write-offs) · category merge · Home with money in hand, net worth, this month and latest entries · soft deletes with Undo · a command palette (Cmd/Ctrl+K).
 
-Planned: budgets, recurring entries, multi-currency rates, reports, CSV import/export, two-factor sign-in, off-site backups and a native Android app. See [docs/PLAN.md](docs/PLAN.md).
+Built so far: accounts, transactions, transfers and splits, money owed, monthly budgets with rollover, other currencies with exchange rates, and recurring entries. Planned: reports, CSV import/export, two-factor sign-in, off-site backups and a native Android app. See [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ## Documentation
 
 - [User guide](docs/USER_GUIDE.md): first run, accounts, categories and everyday money flows.
 - [Self-hosting guide](docs/SELF_HOSTING.md): installing, releasing, backing up and restoring.
-- [Plan](docs/PLAN.md) and [Phase 1 scope](docs/PHASE_1_PLAN.md): scope, data model and design.
+- [Plan](docs/PLAN.md), [Phase 1 scope](docs/PHASE_1_PLAN.md) and [Phase 2 scope](docs/PHASE_2_PLAN.md): scope, data model and design.
 - [Decisions](docs/adr/): one short file per decision that changed the plan.
 - [API contract](docs/openapi.json) and [API change notes](docs/api-changes.md).
 - [CI rules](docs/CI.md), [contributing](CONTRIBUTING.md) and [security policy](SECURITY.md).

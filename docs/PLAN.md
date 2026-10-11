@@ -76,7 +76,10 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 | transactions | account_id, date, optional local time, signed amount, currency, payee, category_id, note, transfer_id, status (cleared/pending), fx_rate, base_amount |
 | transaction_splits | transaction_id, category_id, amount, note, position |
 | contacts, receivables, receivable_payments, receivable_events | people you provide services to, what they owe, linked received payments and an append-only history |
-| tags, budgets, recurring_rules, goals, exchange_rates, attachments, import_batches | later phases |
+| budgets | category_id, month, amount, rollover flag; carried-over amounts are computed, never stored |
+| currencies, exchange_rates | the currencies a ledger has added, and exact stored rates (fetched or set by hand) |
+| recurring_rules, recurring_runs | what to create and when, and what happened to each occurrence |
+| tags, goals, attachments, import_batches | later phases |
 
 **Rules every table follows**
 

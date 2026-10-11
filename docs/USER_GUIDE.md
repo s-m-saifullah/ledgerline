@@ -21,6 +21,16 @@ This guide walks through a first session and the everyday money flows. USD is th
 
 Home shows **In hand**: the positive balances of your active bank, cash, wallet and savings accounts. Cards and loans stay on the Accounts screen, where **Net worth** and the amount owed on cards and loans are shown at the top. Money you hold for someone else inside your bank balance is counted as in hand until you pay it on.
 
+## Budgets
+
+Open **Budgets** to plan spending month by month.
+
+1. Pick a month, then choose an expense category and enter how much to spend on it that month. Budgets are set on top-level categories; spending in their subcategories counts toward them.
+2. Each category shows how much is left, with a bar. It turns red only when you have overspent. At the top, **Left this month** sums every budget.
+3. **Spent** adds up cleared expenses and split lines in that month, in your base currency. Transfers and pending entries are not counted.
+4. Turn on **carry over** for a category and what is left (or overspent, as a negative) moves into the next month. It is worked out from your entries each time, so editing an old entry or budget updates later months by itself.
+5. **Copy from last month** fills in a new month from the previous one. Amounts are hidden in privacy mode like everywhere else.
+
 ## Other currencies
 
 1. Open **More, Currencies** and choose **Add a currency**. Ledgerline fetches today's rate; you can set a rate yourself on any date and it is kept, never replaced by a refresh. Rates read base-currency first: *1 USD = 0.89 EUR*.
