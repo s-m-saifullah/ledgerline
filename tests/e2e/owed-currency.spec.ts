@@ -4,6 +4,7 @@ import { expect, test } from "@playwright/test";
 import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
+import { clickAction } from "./people-actions";
 import { signIn } from "./sign-in";
 
 const env = parseEnv(readFileSync(".env", "utf8"));
@@ -141,11 +142,7 @@ test("money owed in euros is shown in euros and settled into a dollar account wi
   ).toBeVisible();
 
   // 2. Record a payment: the dollar account asks for the dollars that arrived.
-  await page
-    .getByRole("button", { name: /Record payment from Euro client/ })
-    .filter({ visible: true })
-    .first()
-    .click();
+  await clickAction(page, "Record payment from Euro client");
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Pay full balance" }).click();
   await expect(dialog.getByLabel("Payment amount (EUR)")).toHaveValue("800.00");

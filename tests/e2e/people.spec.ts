@@ -555,13 +555,49 @@ test("client and service actions use one primary plus a menu on phones and inlin
   await expect(
     page.getByRole("button", { name: "More actions for Website work" }),
   ).toBeVisible();
-  // Log service stays a visible button on the person card next to the primary action.
-  await expect(
-    page.getByRole("button", { name: "Log service", exact: true }),
-  ).toBeVisible();
+  // On the client card Log service is the one visible primary; Record payment sits in the menu.
+  const logService = page.getByRole("button", {
+    name: "Log service",
+    exact: true,
+  });
+  await expect(logService).toBeVisible();
+  await expect(logService).toHaveClass(/action-primary/);
   await expect(
     page.getByRole("button", { name: /^Record payment from/ }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  const cardBar = page.locator(".people-detail .action-bar");
+  const cardButtons = await cardBar.locator("button").all();
+  expect(cardButtons).toHaveLength(2);
+  const heights = await Promise.all(
+    cardButtons.map(async (b) => (await b.boundingBox())?.height ?? 0),
+  );
+  expect(heights[0]).toBe(heights[1]);
+  for (const [width, theme] of [
+    [320, "light"],
+    [320, "dark"],
+    [390, "light"],
+    [390, "dark"],
+  ] as const) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.emulateMedia({ colorScheme: theme });
+    await page.locator(".people-detail").screenshot({
+      path: join(tmpdir(), `ledgerline-client-card-${width}-${theme}.png`),
+    });
+  }
+  await page.setViewportSize({ width: 320, height: 800 });
+  const cardMenu = cardBar.getByRole("button", { name: /^More actions for/ });
+  await cardMenu.focus();
+  await page.keyboard.press("Enter");
+  const payItem = page.getByRole("menuitem", {
+    name: /^Record payment from/,
+  });
+  await expect(payItem).toBeVisible();
+  expect((await payItem.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole("menuitem").first()).toHaveText(
+    /^Record payment from/,
+  );
+  await page.keyboard.press("Escape");
+  await expect(cardMenu).toBeFocused();
   const bars = page.locator(".action-bar");
   await expect(bars).toHaveCount(2);
   for (const button of await page.locator(".action-bar button").all()) {

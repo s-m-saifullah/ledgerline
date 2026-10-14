@@ -37,15 +37,16 @@ export function useIsPhone() {
 export function ActionBar({
   primary,
   actions,
-  featured,
   extra,
   menuLabel,
+  menuId,
 }: {
   primary?: BarAction | undefined;
-  featured?: BarAction | undefined;
   actions: BarAction[];
   extra?: BarAction | undefined;
   menuLabel: string;
+  /** DOM id of the phone menu button, so a dialog can return focus to it. */
+  menuId?: string;
 }) {
   const phone = useIsPhone();
   const PrimaryIcon = primary?.icon;
@@ -79,25 +80,18 @@ export function ActionBar({
     );
   };
   return (
-    <div
-      className={featured && phone ? "action-bar has-featured" : "action-bar"}
-    >
+    <div className="action-bar">
       {primary &&
         PrimaryIcon &&
         button(primary, "button action-primary action-btn", true, phone)}
       {phone ? (
         <>
-          {featured &&
-            button(
-              featured,
-              "secondary-button action-featured action-btn",
-              true,
-            )}
           {extra &&
             button(extra, "secondary-button action-square action-btn", false)}
           {actions.length > 0 && (
             <Menu.Root>
               <Menu.Trigger
+                id={menuId}
                 className="secondary-button action-square action-btn"
                 aria-label={menuLabel}
                 title={menuLabel}
@@ -135,8 +129,6 @@ export function ActionBar({
         </>
       ) : (
         <>
-          {featured &&
-            button(featured, "secondary-button action-inline action-btn", true)}
           {actions.map((action) =>
             button(action, "secondary-button action-inline action-btn", true),
           )}

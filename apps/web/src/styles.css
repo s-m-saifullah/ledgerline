@@ -2270,6 +2270,7 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
   justify-content: center;
   gap: 8px;
   min-height: 44px;
+  padding-block: 10px;
 }
 .action-primary {
   flex: 1 1 auto;
@@ -2467,28 +2468,6 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
 }
 .more-details > .form-field {
   margin-bottom: 12px;
-}
-
-.action-featured {
-  flex: 1 1 0;
-  min-width: 0;
-}
-@media (max-width: 700px) {
-  .action-bar.has-featured .action-btn:not(.action-square) {
-    padding-inline: 12px;
-    line-height: 1.2;
-    text-align: center;
-  }
-}
-@media (max-width: 380px) {
-  .action-bar.has-featured .action-btn:not(.action-square) {
-    padding-inline: 8px;
-    overflow-wrap: normal;
-    word-break: normal;
-  }
-  .action-bar.has-featured .action-btn:not(.action-square) svg {
-    display: none;
-  }
 }
 
 /* Personal starter categories: grouped preview, first-run button and hover hint. */
