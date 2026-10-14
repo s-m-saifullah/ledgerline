@@ -167,9 +167,11 @@ test("one payment from a person pays older services first and can be undone as a
   await clickAction(page, "Record payment from Sam");
   const amount = page.getByLabel("Payment amount (USD)", { exact: true });
   await amount.fill("800");
-  await expect(page.getByRole("alert")).toContainText(
-    "more than the open balance",
-  );
+  // More than is owed is no longer refused: the extra becomes a tip (ADR 0027).
+  await expect(
+    page.getByRole("status").filter({ hasText: "tip" }),
+  ).toContainText("The extra $100.00 is saved as a tip");
+  await expect(page.getByRole("alert")).toHaveCount(0);
   await amount.fill("500");
   await expect(
     page.getByText("Pays 2 services in full and part of one more."),

@@ -861,3 +861,88 @@ test("hourly work: hours at a rate fills the amount and a blank description", as
     "3.5 h at $40.00/h",
   );
 });
+async function addTipCategory() {
+  const id = newId();
+  await pool.query(
+    "insert into categories(id,ledger_id,name,kind) values($1,$2,'Tips','income')",
+    [id, ledgerId],
+  );
+  return id;
+}
+const incomeRows = async () =>
+  (
+    await pool.query(
+      "select amount::text as amount, tip_payment_id, receivable_payment_id, deleted_at from transactions where ledger_id=$1 and kind='income' order by amount",
+      [ledgerId],
+    )
+  ).rows as {
+    amount: string;
+    tip_payment_id: string | null;
+    receivable_payment_id: string | null;
+    deleted_at: Date | null;
+  }[];
+test("paying more than is owed saves the extra as a separate tip, and Undo removes both", async ({
+  page,
+}) => {
+  await addTipCategory();
+  await signIn(page);
+  await people(page);
+  await person(page);
+  await log(page);
+  await page
+    .getByRole("button", { name: "Record payment", exact: true })
+    .click();
+  await expect(page.getByLabel("Receiving account")).toBeVisible();
+  await expect(page.getByText("Tip category")).toHaveCount(0);
+  await page.getByLabel("Payment amount (USD)", { exact: true }).fill("120.00");
+  await expect(
+    page.getByRole("status").filter({ hasText: "tip" }),
+  ).toContainText("settles $100.00. The extra $20.00 is saved as a tip");
+  await expect(page.getByText("Tip category")).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 1100 });
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    await page.getByRole("dialog").screenshot({
+      path: join(tmpdir(), `ledgerline-tip-320-${theme}.png`),
+    });
+  }
+  await page.getByRole("button", { name: "Save payment", exact: true }).click();
+  await expect(page.getByText("Payment saved.", { exact: true })).toBeVisible();
+  const saved = await incomeRows();
+  expect(saved.map((r) => r.amount)).toEqual(["10000", "2000"]);
+  expect(saved.find((r) => r.amount === "2000")?.tip_payment_id).toBeTruthy();
+  await page
+    .getByRole("button", { name: "Show payments", exact: true })
+    .click();
+  await expect(page.locator(".people-payments")).toContainText("Tip $20.00");
+  await expect(page.locator(".people-detail")).toContainText("$0.00");
+  await page
+    .getByRole("button", { name: "Undo Client action", exact: true })
+    .click();
+  await confirm(page);
+  expect((await incomeRows()).every((r) => r.deleted_at !== null)).toBe(true);
+});
+test("one receipt above the open balance saves a single tip", async ({
+  page,
+}) => {
+  await addTipCategory();
+  await signIn(page);
+  await people(page);
+  await person(page);
+  await log(page);
+  await clickAction(page, "Record payment from Sam");
+  await page.getByLabel("Payment amount (USD)", { exact: true }).fill("130.00");
+  await expect(
+    page.getByRole("status").filter({ hasText: "tip" }),
+  ).toContainText("The extra $30.00 is saved as a tip");
+  await expect(page.getByText("Pays 1 service in full.")).toBeVisible();
+  await page.getByRole("button", { name: "Save payment", exact: true }).click();
+  await expect(
+    page.getByText("Payment applied to the client's services.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  const saved = await incomeRows();
+  expect(saved.map((r) => r.amount)).toEqual(["10000", "3000"]);
+  expect(saved.filter((r) => r.tip_payment_id)).toHaveLength(1);
+});

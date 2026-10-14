@@ -365,6 +365,16 @@ export function PeoplePage() {
                             value={e.after.service.outstanding.amount}
                             currency={e.after.service.outstanding.currency}
                           />
+                          {e.after.tip && !e.after.tip.deletedAt && (
+                            <>
+                              {" "}
+                              · Tip{" "}
+                              <Amount
+                                value={e.after.tip.amount.amount}
+                                currency={e.after.tip.amount.currency}
+                              />
+                            </>
+                          )}
                           {e.after.service.writtenOffAmount && (
                             <>
                               {" "}
@@ -681,6 +691,16 @@ function ServiceRow({
                       />
                     </p>
                     {p.transaction.note && <p>{p.transaction.note}</p>}
+                    {p.tip && !p.tip.deletedAt && (
+                      <p className="muted">
+                        Tip{" "}
+                        <Amount
+                          value={p.tip.amount.amount}
+                          currency={p.tip.amount.currency}
+                        />{" "}
+                        (separate income, not part of the balance)
+                      </p>
+                    )}
                     {p.receiptId ? (
                       <>
                         <p className="muted">

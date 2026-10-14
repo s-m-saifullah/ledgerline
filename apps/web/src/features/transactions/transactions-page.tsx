@@ -309,6 +309,7 @@ export function TransactionsPage() {
                           {row.time ? ` · ${formatTime12(row.time)}` : ""}
                           {row.receivablePaymentId ? " · Service payment" : ""}
                           {row.feeTransferId ? " · Transfer fee" : ""}
+                          {row.tipPaymentId ? " · Tip" : ""}
                         </span>
                         {row.note && (
                           <span className="transaction-row-note">
