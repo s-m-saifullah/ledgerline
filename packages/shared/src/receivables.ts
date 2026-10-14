@@ -252,3 +252,22 @@ export type ReceivablePayment = z.infer<typeof paymentSchema>;
 export type ReceivableEvent = z.infer<typeof receivableEventSchema>;
 export type EventSnapshot = z.infer<typeof eventSnapshotSchema>;
 export type PageQuery = z.infer<typeof pageQuerySchema>;
+
+/** Hours typed as a decimal with at most two places ("3.5", "0.25"), as whole hundredths of an hour; null when invalid. */
+export function hoursToHundredths(text: string): number | null {
+  const match = /^(\d{1,4})(?:\.(\d{1,2}))?$/.exec(text.trim());
+  if (!match) return null;
+  const hundredths =
+    Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
+  return hundredths >= 1 ? hundredths : null;
+}
+
+/**
+ * What hourly work comes to (ADR 0026): the rate in minor units for one hour times the hours in
+ * hundredths, rounded half up to the smallest unit. Pure integer maths, never a float; null if
+ * the total is beyond the safe money range.
+ */
+export function hourlyTotal(rate: number, hundredths: number): number | null {
+  const total = (BigInt(rate) * BigInt(hundredths) + 50n) / 100n;
+  return total <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(total) : null;
+}

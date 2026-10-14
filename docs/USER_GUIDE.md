@@ -65,7 +65,7 @@ For rent, salary, subscriptions and regular transfers, open **More, Recurring** 
 
 ## Money owed to you (Clients)
 
-Open **More, Clients** to add a client, log a service you provided (what, date, amount, optional due date) and record full or partial payments as they arrive. Logging a service does not count as income; a payment creates the income in the account that received it. Write off an amount that will never be paid: it leaves the open total but stays in history. Archiving a client keeps their balances and history.
+Open **More, Clients** to add a client, log a service you provided (what, date, amount, optional due date) and record full or partial payments as they arrive. Logging a service does not count as income; a payment creates the income in the account that received it. Write off an amount that will never be paid: it leaves the open total but stays in history. Archiving a client keeps their balances and history. For work paid by the hour, open **Work paid by the hour?** on the Log service form, enter the hours and your hourly rate, and choose **Use this total**: it fills the amount (and a blank description such as "3.5 h at $40.00/h"). Only the total is stored.
 
 ## Finding and fixing entries
 
