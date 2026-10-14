@@ -15,9 +15,10 @@ export async function clickAction(page: Page, name: string) {
     .filter({ visible: true });
   const trigger = page
     .getByRole("button", {
-      name: personActions.has(name)
-        ? /^More actions for (?!Website work)/
-        : /^More actions for Website work/,
+      name:
+        personActions.has(name) || name.startsWith("Record payment from")
+          ? /^More actions for (?!Website work)/
+          : /^More actions for Website work/,
     })
     .first();
   // Wait for the action bar to render in either layout before choosing.

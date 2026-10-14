@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
-import { ActionBar } from "../../components/action-bar";
+import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { ActionButton } from "../../components/action-button";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
@@ -86,6 +86,7 @@ function Balances({ person }: { person: Contact }) {
   );
 }
 export function PeoplePage() {
+  const phone = useIsPhone();
   const ledger = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers }).data
       ?.items[0],
     workspace = usePeopleWorkspace();
@@ -182,51 +183,39 @@ export function PeoplePage() {
                 {writable && (
                   <ActionBar
                     menuLabel={`More actions for ${person.data.name}`}
-                    primary={
-                      person.data.openBalances.length > 0
-                        ? {
-                            key: "pay",
-                            id: "record-person-payment",
-                            label: `Record payment from ${person.data.name}`,
-                            shortLabel: "Record payment",
-                            icon: HandCoins,
-                            disabled,
-                            onSelect: () =>
-                              workspace?.open(
-                                { kind: "receipt", person: person.data },
-                                "record-person-payment",
-                              ),
-                          }
-                        : {
-                            key: "log",
-                            id: "log-service",
-                            label: "Log service",
-                            icon: Plus,
-                            disabled: disabled || !!person.data.archivedAt,
-                            onSelect: () =>
-                              workspace?.open(
-                                { kind: "service", person: person.data },
-                                "log-service",
-                              ),
-                          }
-                    }
-                    featured={
-                      person.data.openBalances.length > 0
-                        ? {
-                            key: "log",
-                            id: "log-service",
-                            label: "Log service",
-                            icon: Plus,
-                            disabled: disabled || !!person.data.archivedAt,
-                            onSelect: () =>
-                              workspace?.open(
-                                { kind: "service", person: person.data },
-                                "main-content",
-                              ),
-                          }
-                        : undefined
-                    }
+                    menuId="client-menu"
+                    primary={{
+                      key: "log",
+                      id: "log-service",
+                      label: "Log service",
+                      icon: Plus,
+                      disabled: disabled || !!person.data.archivedAt,
+                      onSelect: () =>
+                        workspace?.open(
+                          { kind: "service", person: person.data },
+                          "log-service",
+                        ),
+                    }}
                     actions={[
+                      ...(person.data.openBalances.length > 0
+                        ? [
+                            {
+                              key: "pay",
+                              id: "record-person-payment",
+                              label: `Record payment from ${person.data.name}`,
+                              shortLabel: "Record payment",
+                              icon: HandCoins,
+                              disabled,
+                              onSelect: () =>
+                                workspace?.open(
+                                  { kind: "receipt", person: person.data },
+                                  phone
+                                    ? "client-menu"
+                                    : "record-person-payment",
+                                ),
+                            },
+                          ]
+                        : []),
                       {
                         key: "edit",
                         label: "Edit client",

@@ -3,6 +3,7 @@ import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
 import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
+import { clickAction } from "./people-actions";
 import { signIn } from "./sign-in";
 
 const env = parseEnv(readFileSync(".env", "utf8")),
@@ -163,9 +164,7 @@ test("one payment from a person pays older services first and can be undone as a
   await expect(page.locator(".people-detail")).toContainText("$700.00");
   const start = await balance(page);
 
-  await page
-    .getByRole("button", { name: "Record payment from Sam", exact: true })
-    .click();
+  await clickAction(page, "Record payment from Sam");
   const amount = page.getByLabel("Payment amount (USD)", { exact: true });
   await amount.fill("800");
   await expect(page.getByRole("alert")).toContainText(
@@ -234,9 +233,7 @@ test("receipt details are editable, amounts are not, and privacy hides allocatio
   await signIn(page);
   await people(page);
   await createPerson(page);
-  await page
-    .getByRole("button", { name: "Record payment from Sam", exact: true })
-    .click();
+  await clickAction(page, "Record payment from Sam");
   await page.getByRole("button", { name: "Pay full balance" }).click();
   await expect(
     page.getByLabel("Payment amount (USD)", { exact: true }),
