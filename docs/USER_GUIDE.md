@@ -1,6 +1,6 @@
 # Ledgerline user guide
 
-This guide walks through a first session and the everyday money flows. USD is the base currency; accounts and entries can also use other currencies (see Other currencies). Money owed to you (People) is USD-only for now. All examples use made-up names.
+This guide walks through a first session and the everyday money flows. USD is the base currency; accounts and entries can also use other currencies (see Other currencies). Money owed to you (Clients) can also use other currencies. All examples use made-up names.
 
 ## First run
 
@@ -63,9 +63,9 @@ For rent, salary, subscriptions and regular transfers, open **More, Recurring** 
 5. An entry that cannot be created, for example because the account is archived or a currency has no rate yet, waits under **Needs attention** with the reason and is tried again automatically. Fix the cause, or choose **Skip this one**.
 6. **Pause** stops a rule; when you resume it, what came due in between is skipped, not caught up. Editing a rule changes only entries not created yet, and **Delete rule** keeps the entries it already made. An account or category used by a rule cannot be deleted while the rule exists; archive it instead.
 
-## Money owed to you (People)
+## Money owed to you (Clients)
 
-Open **More, People** to add a person, log a service you provided (what, date, amount, optional due date) and record full or partial payments as they arrive. Logging a service does not count as income; a payment creates the income in the account that received it. Write off an amount that will never be paid: it leaves the open total but stays in history. Archiving a person keeps their balances and history.
+Open **More, Clients** to add a client, log a service you provided (what, date, amount, optional due date) and record full or partial payments as they arrive. Logging a service does not count as income; a payment creates the income in the account that received it. Write off an amount that will never be paid: it leaves the open total but stays in history. Archiving a client keeps their balances and history.
 
 ## Finding and fixing entries
 

@@ -4,7 +4,7 @@ Scope and rules for the first usable version of Ledgerline: daily expense tracki
 
 ## Outcome and boundaries
 
-Create accounts and categories, enter income and expenses, move money between accounts, split purchases, find and correct entries, track unpaid services and payments per person, and see accurate Home totals. Entry is USD-only in this phase (ADR 0003). Budgets, recurring entries, foreign currencies, reports, tags, receipts, imports and Android belong to later phases.
+Create accounts and categories, enter income and expenses, move money between accounts, split purchases, find and correct entries, track unpaid services and payments per client, and see accurate Home totals. Entry is USD-only in this phase (ADR 0003). Budgets, recurring entries, foreign currencies, reports, tags, receipts, imports and Android belong to later phases.
 
 The phase gate is **seven consecutive days of logging every expense** (ADR 0013).
 

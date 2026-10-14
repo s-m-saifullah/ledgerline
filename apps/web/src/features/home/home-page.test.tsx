@@ -175,7 +175,7 @@ describe("Home", () => {
     expect(screen.getByText("$2,650.00")).toBeInTheDocument();
     expect(screen.getByText("$147.75")).toBeInTheDocument();
     expect(screen.getByText("$280.00")).toBeInTheDocument();
-    expect(screen.getByText("From 2 people")).toBeInTheDocument();
+    expect(screen.getByText("From 2 clients")).toBeInTheDocument();
     expect(
       screen.getByText("1 pending entry isn't counted yet."),
     ).toBeInTheDocument();
@@ -194,7 +194,7 @@ describe("Home", () => {
     expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Owed to you/ })).toHaveAttribute(
       "href",
-      "/more/people",
+      "/more/clients",
     );
     expect(screen.getByRole("link", { name: "View all" })).toHaveAttribute(
       "href",
@@ -277,7 +277,7 @@ describe("Home", () => {
         `${element.getAttribute("aria-label")}${element.getAttribute("title")}`,
       ).not.toMatch(/\$|\d[\d,]*\.\d\d/);
     // Counts are not amounts.
-    expect(screen.getByText("From 2 people")).toBeInTheDocument();
+    expect(screen.getByText("From 2 clients")).toBeInTheDocument();
   });
 
   it("explains when there are only cards or loans and no money accounts", async () => {

@@ -159,7 +159,7 @@ const recurring = createRoute({
 });
 const people = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/more/people",
+  path: "/more/clients",
   component: PeoplePage,
 });
 const router = createRouter({

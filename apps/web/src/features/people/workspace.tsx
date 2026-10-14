@@ -230,9 +230,9 @@ function fieldsFor(op: PeopleOperation): Fields {
   return f;
 }
 const names = {
-  archive: "Archive person",
-  unarchive: "Unarchive person",
-  deleteContact: "Delete person",
+  archive: "Archive client",
+  unarchive: "Unarchive client",
+  deleteContact: "Delete client",
   deleteService: "Delete service",
   restoreService: "Undo service deletion",
   writeOff: "Write off remainder",
@@ -610,7 +610,7 @@ export function PeopleWorkspace({
       );
       return async () => {
         contactSchema.parse(await run());
-        completed("Person saved.");
+        completed("Client saved.");
       };
     }
     if (operation.kind === "service") {
@@ -754,7 +754,7 @@ export function PeopleWorkspace({
       return async () => {
         const r = receiptSchema.parse(await run());
         localStorage.setItem(preference, values.categoryId);
-        completed("Payment applied to the person's services.", {
+        completed("Payment applied to the client's services.", {
           kind: "action",
           action: "deleteReceipt",
           receipt: r,
@@ -834,7 +834,7 @@ export function PeopleWorkspace({
           });
         }
         setDeletedPersonId(person.id);
-        completed("Person deleted.", null);
+        completed("Client deleted.", null);
         return;
       }
       completed("Action completed.", next);
@@ -877,8 +877,8 @@ export function PeopleWorkspace({
         : `Record payment from ${op.person.name}`
       : op?.kind === "contact"
         ? op.person
-          ? "Edit person"
-          : "Add person"
+          ? "Edit client"
+          : "Add client"
         : op?.kind === "service"
           ? op.service
             ? "Edit service"
@@ -1027,13 +1027,13 @@ export function PeopleWorkspace({
       {children}
       {op && !open && uncertain && (
         <div className="transaction-toast people-toast">
-          <p role="status">A People action needs confirmation.</p>
+          <p role="status">A Client action needs confirmation.</p>
           <button
             className="secondary-button"
             type="button"
             onClick={() => setOpen(true)}
           >
-            Resume People action
+            Resume Client action
           </button>
         </div>
       )}
@@ -1045,18 +1045,18 @@ export function PeopleWorkspace({
             op?.kind === "receipt"
               ? op.receipt
                 ? "Correct the details of one payment you received. Amounts stay as recorded; to change them, delete the receipt and enter it again."
-                : "Record money received from this person. It pays their oldest services first, each with its own linked income entry."
+                : "Record money received from this client. It pays their oldest services first, each with its own linked income entry."
               : op?.kind === "payment"
                 ? "Record only money actually received. This creates one linked income entry."
                 : op?.kind === "service"
                   ? "Logging a service creates no income and changes no account balance."
-                  : "Keep people and their payment history together."
+                  : "Keep clients and their payment history together."
           }
           busy={busy}
           onDismiss={dismiss}
           returnFocusId={trigger}
           fallbackFocusId="main-content"
-          closeLabel="Close People editor"
+          closeLabel="Close Client editor"
           initialFocusId={
             uncertain
               ? "people-retry"
@@ -1095,12 +1095,12 @@ export function PeopleWorkspace({
                 {op?.kind === "service" && (
                   <>
                     <p>
-                      Person: {op.person.name}
+                      Client: {op.person.name}
                       {op.person.archivedAt ? " (archived)" : ""}
                     </p>
                     {op.service && (
                       <label className="form-field" htmlFor="people-person">
-                        Person
+                        Client
                         <NativeSelect
                           id="people-person"
                           value={values.contactId}
@@ -1168,11 +1168,11 @@ export function PeopleWorkspace({
                 )}
                 {op?.kind === "payment" && (
                   <>
-                    {op.person && <p>Person: {op.person.name}</p>}
+                    {op.person && <p>Client: {op.person.name}</p>}
                     <p>{op.service.description}</p>
                     {op.service.status === "writtenOff" && (
                       <p className="muted">
-                        Reopen this service in People before correcting its
+                        Reopen this service in Clients before correcting its
                         payments.
                       </p>
                     )}
@@ -1199,7 +1199,7 @@ export function PeopleWorkspace({
                 )}
                 {op?.kind === "receipt" && (
                   <>
-                    <p>Person: {op.person.name}</p>
+                    <p>Client: {op.person.name}</p>
                     {op.receipt ? (
                       <>
                         <p>
@@ -1308,7 +1308,7 @@ export function PeopleWorkspace({
                               : op.action === "reopen"
                                 ? "Return the waived remainder to money owed."
                                 : op.action === "deleteContact"
-                                  ? "Delete this person only after all their services are deleted. Archive to retain accessible history."
+                                  ? "Delete this client only after all their services are deleted. Archive to retain accessible history."
                                   : op.action === "deleteService"
                                     ? "Delete this service only after its payments are deleted."
                                     : "Confirm this action using the loaded version."}
@@ -1395,7 +1395,7 @@ export function PeopleWorkspace({
                             : "Save payment"
                           : op.kind === "service"
                             ? "Save service"
-                            : "Save person"}
+                            : "Save client"}
                     </button>
                   )
                 )}
@@ -1416,12 +1416,12 @@ export function PeopleWorkspace({
             void begin(next, "main-content", false);
           }}
         >
-          Undo People action
+          Undo Client action
         </button>
       )}
       {notice && !open && !toastDone && (
         <Toast
-          label="People notification"
+          label="Client notification"
           className="people-toast"
           durationMs={blocked || frozen ? null : undo ? 5000 : 3000}
           onExpire={() => {
@@ -1441,7 +1441,7 @@ export function PeopleWorkspace({
                 void begin(next, "main-content", false);
               }}
             >
-              Undo People action
+              Undo Client action
             </button>
           )}
           <button

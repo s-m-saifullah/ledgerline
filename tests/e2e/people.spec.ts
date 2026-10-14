@@ -15,7 +15,7 @@ if (
   !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
   !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
 )
-  throw new Error("People browser tests require local database.");
+  throw new Error("Clients browser tests require local database.");
 const { pool } = createDatabase(databaseUrl);
 let ledgerId = "",
   accountId = "",
@@ -130,18 +130,18 @@ async function selectFits(page: Page, label: string) {
   expect(geometry.leftInset).toBeGreaterThanOrEqual(8);
 }
 async function people(page: Page) {
-  await page.goto("/more/people");
+  await page.goto("/more/clients");
   await expect(
-    page.getByRole("heading", { name: "People", exact: true }),
+    page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();
 }
 async function person(page: Page) {
-  await selectFits(page, "People status");
-  await page.getByRole("button", { name: "Add person", exact: true }).click();
+  await selectFits(page, "Client status");
+  await page.getByRole("button", { name: "Add client", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Sam");
   await page.getByLabel("Email", { exact: true }).fill("sam@example.com");
-  await page.getByRole("button", { name: "Save person", exact: true }).click();
-  await expect(page.getByText("Person saved.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save client", exact: true }).click();
+  await expect(page.getByText("Client saved.", { exact: true })).toBeVisible();
   await page.locator(".person-card").filter({ hasText: "Sam" }).click();
   await expect(
     page.getByRole("heading", { name: "Sam", exact: true }),
@@ -161,10 +161,10 @@ async function person(page: Page) {
 async function log(page: Page, amount = "100.00") {
   await clickAction(page, "Log service");
   await expect(
-    page.getByRole("dialog").getByRole("combobox", { name: /^Person/ }),
+    page.getByRole("dialog").getByRole("combobox", { name: /^Client/ }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("dialog").getByText("Person: Sam", { exact: true }),
+    page.getByRole("dialog").getByText("Client: Sam", { exact: true }),
   ).toBeVisible();
   await page.getByLabel("Description", { exact: true }).fill("Website work");
   await page.getByLabel("Service amount (USD)", { exact: true }).fill(amount);
@@ -269,7 +269,7 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
     page.getByText("Loading latest details…", { exact: true }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Close People editor", exact: true })
+    .getByRole("button", { name: "Close Client editor", exact: true })
     .click();
   release();
   await page.unroute(detailRoute, delayDetail);
@@ -289,7 +289,7 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
   await expect(
     page.getByRole("dialog", { name: "Edit payment", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Person: Sam", { exact: true })).toBeVisible();
+  await expect(page.getByText("Client: Sam", { exact: true })).toBeVisible();
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("30.00");
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await expect(page.getByText("Payment saved.", { exact: true })).toBeVisible();
@@ -305,7 +305,7 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
   await confirm(page);
   expect(await balance(page)).toBe(1000);
   await page
-    .getByRole("button", { name: "Undo People action", exact: true })
+    .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await confirm(page);
   expect(await balance(page)).toBe(4000);
@@ -334,7 +334,7 @@ test("write-off and reopen retain received income and immutable correction histo
   await confirm(page);
   await expect(page.locator(".people-detail")).toContainText("$60.00");
   await page
-    .getByRole("button", { name: "Undo People action", exact: true })
+    .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await confirm(page);
   await expect(page.locator(".people-detail")).toContainText("$0.00");
@@ -374,7 +374,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
     page.getByRole("button", { name: "Undo deletion", exact: true }),
   ).toBeEnabled();
   await navigate(page, "More");
-  await page.getByRole("link", { name: /^People/ }).click();
+  await page.getByRole("link", { name: /^Clients/ }).click();
   await page.locator(".person-card").filter({ hasText: "Sam" }).click();
   let interrupted = false;
   const seen: { key: string | null; body: string | null }[] = [];
@@ -404,7 +404,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   ).toBeVisible();
   expect(await balance(page)).toBe(5000);
   await page
-    .getByRole("button", { name: "Close People editor", exact: true })
+    .getByRole("button", { name: "Close Client editor", exact: true })
     .click();
   await navigate(page, "Transactions");
   await expect(
@@ -432,7 +432,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
     .getByRole("button", { name: "Close transaction dialog", exact: true })
     .click();
   await page
-    .getByRole("button", { name: "Resume People action", exact: true })
+    .getByRole("button", { name: "Resume Client action", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Retry same action", exact: true })
@@ -477,18 +477,18 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
       page.getByRole("button", { name: "Retry same action", exact: true }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Close People editor", exact: true })
+      .getByRole("button", { name: "Close Client editor", exact: true })
       .click();
     await navigate(page, "Transactions");
     await page
-      .getByRole("button", { name: "Resume People action", exact: true })
+      .getByRole("button", { name: "Resume Client action", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Retry same action", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await navigate(page, "More");
-    await page.getByRole("link", { name: "People", exact: false }).click();
+    await page.getByRole("link", { name: "Clients", exact: false }).click();
     await page.locator(".person-card").click();
   }
   await page.getByRole("button", { name: "Edit payment", exact: true }).click();
@@ -506,7 +506,7 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
   await retry();
   expect(await balance(page)).toBe(1000);
   await page
-    .getByRole("button", { name: "Undo People action", exact: true })
+    .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await retry();
@@ -524,29 +524,29 @@ for (const [name, size] of [
   ["desktop", { width: 1280, height: 800 }],
   ["phone", { width: 390, height: 800 }],
 ] as const) {
-  test(`deleting a person returns to All people without an error (${name})`, async ({
+  test(`deleting a client returns to All clients without an error (${name})`, async ({
     page,
   }) => {
     await page.setViewportSize(size);
     await signIn(page);
     await people(page);
     await person(page);
-    await clickAction(page, "Delete person");
+    await clickAction(page, "Delete client");
     await page.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(
-      page.getByText("Person deleted.", { exact: true }),
+      page.getByText("Client deleted.", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText(/Could not load/)).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "All people", exact: true }),
+      page.getByRole("button", { name: "All clients", exact: true }),
     ).toHaveCount(0);
     await expect(page.locator(".person-card")).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "Add person", exact: true }),
+      page.getByRole("button", { name: "Add client", exact: true }),
     ).toBeVisible();
   });
 }
-test("person and service actions use one primary plus a menu on phones and inline buttons on desktop", async ({
+test("client and service actions use one primary plus a menu on phones and inline buttons on desktop", async ({
   page,
 }) => {
   await setup(page);
@@ -598,8 +598,8 @@ test("person and service actions use one primary plus a menu on phones and inlin
   // Desktop: the same actions are inline text buttons.
   await page.setViewportSize({ width: 1280, height: 800 });
   await expect(
-    page.getByRole("button", { name: "Edit person", exact: true }),
-  ).toContainText("Edit person");
+    page.getByRole("button", { name: "Edit client", exact: true }),
+  ).toContainText("Edit client");
   await expect(
     page.getByRole("button", { name: "Delete service", exact: true }),
   ).toHaveCSS("color", /^rgb\(185, 28, 28\)$|^rgb\(252, 165, 165\)$/);
@@ -645,12 +645,12 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     page.getByLabel("Payment amount (USD)", { exact: true }),
   ).toHaveValue("40.00");
   await page
-    .getByRole("button", { name: "Close People editor", exact: true })
+    .getByRole("button", { name: "Close Client editor", exact: true })
     .click();
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
   await expect(page.locator(".people-detail")).not.toContainText("$");
   await expect(
-    page.getByRole("region", { name: "Person history", exact: true }),
+    page.getByRole("region", { name: "Client history", exact: true }),
   ).not.toContainText("$");
   await page.getByRole("button", { name: "Edit payment", exact: true }).click();
   await expect(
@@ -677,7 +677,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     });
   }
   await page
-    .getByRole("button", { name: "Close People editor", exact: true })
+    .getByRole("button", { name: "Close Client editor", exact: true })
     .click();
   const contacts = await page.request.get(`${root()}/contacts`);
   expect(contacts.status()).toBe(200);
@@ -742,7 +742,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     page.getByRole("button", { name: "Save payment", exact: true }),
   ).toHaveCount(0);
 });
-test("service deletion Undo and person archive preserve open history; removed account blocks payment Undo", async ({
+test("service deletion Undo and client archive preserve open history; removed account blocks payment Undo", async ({
   page,
 }) => {
   await setup(page);
@@ -750,12 +750,12 @@ test("service deletion Undo and person archive preserve open history; removed ac
   await confirm(page);
   await expect(page.locator(".service-row")).toHaveCount(0);
   await page
-    .getByRole("button", { name: "Undo People action", exact: true })
+    .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await confirm(page);
   await expect(page.locator(".service-row")).toHaveCount(1);
   await record(page);
-  await clickAction(page, "Archive person");
+  await clickAction(page, "Archive client");
   await confirm(page);
   await expect(page.locator(".people-detail")).toContainText("$60.00");
   await page
@@ -774,7 +774,7 @@ test("service deletion Undo and person archive preserve open history; removed ac
     ).status(),
   ).toBe(204);
   await page
-    .getByRole("button", { name: "Undo People action", exact: true })
+    .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("not found");

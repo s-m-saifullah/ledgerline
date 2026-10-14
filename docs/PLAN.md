@@ -11,7 +11,7 @@ Ledgerline is a self-hosted personal finance tracker: one place to record money 
 - Accounts (bank, cash, card, wallet, loan, savings) with computed balances.
 - Transactions, transfers between accounts and split transactions.
 - Your own categories and subcategories (create, rename, recolor, reorder, merge, archive, unarchive, delete), plus free-form tags.
-- Money owed to you: log unpaid services per person, record full or partial payments, see who owes what.
+- Money owed to you: log unpaid services per client, record full or partial payments, see who owes what.
 - Monthly budgets per category, with rollover.
 - Recurring transactions (rent, salary, subscriptions).
 - Dashboard and reports: spending by category, cash flow, net worth over time.
@@ -75,7 +75,7 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 | categories | ledger_id, parent_id, name, kind (income/expense), icon, color; two levels deep |
 | transactions | account_id, date, optional local time, signed amount, currency, payee, category_id, note, transfer_id, status (cleared/pending), fx_rate, base_amount |
 | transaction_splits | transaction_id, category_id, amount, note, position |
-| contacts, receivables, receivable_payments, receivable_events | people you provide services to, what they owe, linked received payments and an append-only history |
+| contacts, receivables, receivable_payments, receivable_events | clients you provide services to, what they owe, linked received payments and an append-only history |
 | budgets | category_id, month, amount, rollover flag; carried-over amounts are computed, never stored |
 | currencies, exchange_rates | the currencies a ledger has added, and exact stored rates (fetched or set by hand) |
 | recurring_rules, recurring_runs | what to create and when, and what happened to each occurrence |
@@ -157,7 +157,7 @@ Releases: a version tag runs the full checks, builds `linux/arm64` images, pushe
 | Phase | Scope | Gate |
 | --- | --- | --- |
 | 0 Foundations | Monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy | App shell live over HTTPS |
-| 1 Core ledger | Accounts, categories, transactions, transfers, splits, money owed, quick add, list, People, Home | Daily use for seven consecutive days |
+| 1 Core ledger | Accounts, categories, transactions, transfers, splits, money owed, quick add, list, Clients, Home | Daily use for seven consecutive days |
 | 2 Budgets | Budgets with rollover, currencies, recurring rules (see [PHASE_2_PLAN.md](PHASE_2_PLAN.md)) | One full month budgeted and reviewed |
 | 3 Insights and import | Reports, tags and receipts, CSV import and export | Imported statements match the bank |
 | 4 Hardening | Two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility | Restore drill passes; v1.0 tagged |

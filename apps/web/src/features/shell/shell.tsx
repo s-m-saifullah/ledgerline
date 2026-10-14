@@ -61,8 +61,8 @@ export function Shell({
       ? "Accounts"
       : pathname === "/more/categories"
         ? "Categories"
-        : pathname === "/more/people"
-          ? "People"
+        : pathname === "/more/clients"
+          ? "Clients"
           : pathname === "/more/currencies"
             ? "Currencies"
             : pathname === "/more/recurring"
@@ -342,8 +342,8 @@ export function Shell({
                     icon: Repeat,
                   } as const,
                   {
-                    to: "/more/people",
-                    label: "People",
+                    to: "/more/clients",
+                    label: "Clients",
                     icon: Wallet,
                   } as const,
                 ].map(({ to, label, icon }) => ({
@@ -593,12 +593,12 @@ export function MorePage() {
         </Link>
       </section>
       <section className="settings-card">
-        <Link to="/more/people" className="settings-link">
+        <Link to="/more/clients" className="settings-link">
           <span className="account-icon">
             <Wallet size={22} />
           </span>
           <div>
-            <h2>People</h2>
+            <h2>Clients</h2>
             <p>Track unpaid services, payments and money owed to you.</p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />

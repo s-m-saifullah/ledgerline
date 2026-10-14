@@ -2,10 +2,10 @@ import type { Page } from "@playwright/test";
 
 const personActions = new Set([
   "Log service",
-  "Edit person",
-  "Archive person",
-  "Unarchive person",
-  "Delete person",
+  "Edit client",
+  "Archive client",
+  "Unarchive client",
+  "Delete client",
 ]);
 
 /** Click a People action: inline on wide screens, from the "more actions" menu on phones. */

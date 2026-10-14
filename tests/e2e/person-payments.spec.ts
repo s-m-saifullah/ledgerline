@@ -12,7 +12,7 @@ if (
   !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
   !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
 )
-  throw new Error("People browser tests require local database.");
+  throw new Error("Clients browser tests require local database.");
 const { pool } = createDatabase(databaseUrl);
 let ledgerId = "",
   accountId = "",
@@ -109,9 +109,9 @@ test.afterEach(async () => {
 });
 test.afterAll(async () => pool.end());
 async function people(page: Page) {
-  await page.goto("/more/people");
+  await page.goto("/more/clients");
   await expect(
-    page.getByRole("heading", { name: "People", exact: true }),
+    page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();
 }
 async function balance(page: Page) {
@@ -120,10 +120,10 @@ async function balance(page: Page) {
   return (await r.json()).balance.amount as number;
 }
 async function createPerson(page: Page) {
-  await page.getByRole("button", { name: "Add person", exact: true }).click();
+  await page.getByRole("button", { name: "Add client", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Sam");
-  await page.getByRole("button", { name: "Save person", exact: true }).click();
-  await expect(page.getByText("Person saved.", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Save client", exact: true }).click();
+  await expect(page.getByText("Client saved.", { exact: true })).toBeVisible();
   const contact = (await (await page.request.get(`${root()}/contacts`)).json())
     .items[0];
   for (const [date, description, amount] of [
@@ -190,7 +190,7 @@ test("one payment from a person pays older services first and can be undone as a
   await page.getByLabel("Payment note", { exact: true }).fill("Bank transfer");
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await expect(
-    page.getByText("Payment applied to the person's services.", {
+    page.getByText("Payment applied to the client's services.", {
       exact: true,
     }),
   ).toBeVisible();
@@ -216,12 +216,12 @@ test("one payment from a person pays older services first and can be undone as a
   ).toBeVisible();
 
   // Undo the whole receipt, then undo the deletion.
-  await page.getByRole("button", { name: "Undo People action" }).click();
+  await page.getByRole("button", { name: "Undo Client action" }).click();
   await confirm(page, "Delete receipt");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start);
   await expect(page.locator(".people-detail")).toContainText("$700.00");
-  await page.getByRole("button", { name: "Undo People action" }).click();
+  await page.getByRole("button", { name: "Undo Client action" }).click();
   await confirm(page, "Undo receipt deletion");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);
@@ -244,7 +244,7 @@ test("receipt details are editable, amounts are not, and privacy hides allocatio
   await expect(page.getByText("Pays 3 services in full.")).toBeVisible();
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await expect(
-    page.getByText("Payment applied to the person's services.", {
+    page.getByText("Payment applied to the client's services.", {
       exact: true,
     }),
   ).toBeVisible();
