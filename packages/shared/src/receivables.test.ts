@@ -3,6 +3,8 @@ import {
   createContactSchema,
   createPaymentSchema,
   createReceivableSchema,
+  hourlyTotal,
+  hoursToHundredths,
   newId,
   paymentActionSchema,
   receivableSnapshotSchema,
@@ -124,5 +126,22 @@ describe("receivable contracts", () => {
     expect(transactionSchema.parse(row).receivableId).toBeNull();
     expect(transactionSchema.parse(row).receivablePaymentId).toBeNull();
     expect(transactionSchema.parse(row).relatedTransferId).toBeNull();
+  });
+});
+
+describe("hourly work totals", () => {
+  it("reads hours with at most two decimals", () => {
+    expect(hoursToHundredths("3.5")).toBe(350);
+    expect(hoursToHundredths(" 0.25 ")).toBe(25);
+    expect(hoursToHundredths("8")).toBe(800);
+    for (const bad of ["", "0", "0.00", "-1", "1.234", "1,5", "abc", "10000"])
+      expect(hoursToHundredths(bad)).toBeNull();
+  });
+  it("multiplies in integer minor units and rounds half up", () => {
+    expect(hourlyTotal(4000, 350)).toBe(14000);
+    expect(hourlyTotal(3333, 25)).toBe(833); // 833.25
+    expect(hourlyTotal(3334, 25)).toBe(834); // 833.5 rounds up
+    expect(hourlyTotal(1, 1)).toBe(0);
+    expect(hourlyTotal(Number.MAX_SAFE_INTEGER, 999_900)).toBeNull();
   });
 });

@@ -822,3 +822,44 @@ test("service deletion Undo and client archive preserve open history; removed ac
   ).rows[0].count;
   expect(count).toBe("0");
 });
+test("hourly work: hours at a rate fills the amount and a blank description", async ({
+  page,
+}) => {
+  await signIn(page);
+  await people(page);
+  await person(page);
+  await page.getByRole("button", { name: "Log service", exact: true }).click();
+  await page
+    .locator("summary")
+    .filter({ hasText: "Work paid by the hour" })
+    .click();
+  await page.getByLabel("Hours", { exact: true }).fill("3.5");
+  await page.getByLabel("Hourly rate (USD)", { exact: true }).fill("40");
+  await expect(
+    page.getByRole("status").filter({ hasText: "3.5 h at" }),
+  ).toContainText("$140.00");
+  await page.setViewportSize({ width: 320, height: 900 });
+  for (const theme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: theme });
+    await page
+      .getByRole("dialog")
+      .screenshot({
+        path: join(tmpdir(), `ledgerline-hourly-320-${theme}.png`),
+      });
+  }
+  await page
+    .getByRole("button", { name: "Use this total", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Service amount (USD)", { exact: true }),
+  ).toHaveValue("140.00");
+  await expect(page.getByLabel("Description", { exact: true })).toHaveValue(
+    "3.5 h at $40.00/h",
+  );
+  await page.getByRole("button", { name: "Save service", exact: true }).click();
+  await expect(page.getByText("Service saved.", { exact: true })).toBeVisible();
+  await expect(page.locator(".service-row").first()).toContainText("$140.00");
+  await expect(page.locator(".service-row").first()).toContainText(
+    "3.5 h at $40.00/h",
+  );
+});

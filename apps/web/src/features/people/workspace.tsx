@@ -55,6 +55,7 @@ import {
   preparePeopleWrite,
 } from "./api";
 import { paymentDefault, positiveMoney } from "./form";
+import { HourlyHelper } from "./hourly-helper";
 export type PeopleOperation =
   | { kind: "contact"; person?: Contact }
   | { kind: "service"; person: Contact; service?: Receivable }
@@ -1164,6 +1165,19 @@ export function PeopleWorkspace({
                       privateMode ? "password" : "text",
                       true,
                     )}
+                    <HourlyHelper
+                      currency={values.currency}
+                      secret={privateMode}
+                      disabled={frozen || !allowWrite}
+                      descriptionBlank={!values.description.trim()}
+                      onUse={(amount, description) =>
+                        setValues((v) => ({
+                          ...v,
+                          amount,
+                          ...(description ? { description } : {}),
+                        }))
+                      }
+                    />
                   </>
                 )}
                 {op?.kind === "payment" && (
