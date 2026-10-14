@@ -1943,36 +1943,36 @@ kbd {
   }
 }
 
-/* People uses the existing ledger surfaces and mobile sheet. */
-.people-toolbar,
-.people-actions {
+/* Clients use the existing ledger surfaces and mobile sheet. */
+.client-toolbar,
+.client-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   align-items: end;
 }
-.people-toolbar {
+.client-toolbar {
   margin-bottom: 24px;
 }
-.people-actions {
+.client-actions {
   margin-top: 20px;
 }
-.people-toolbar .category-select select,
-.people-fields .category-select select {
+.client-toolbar .category-select select,
+.client-fields .category-select select {
   min-height: 48px;
   font: inherit;
 }
-.people-toolbar label {
+.client-toolbar label {
   display: grid;
   gap: 8px;
   flex: 1 1 180px;
 }
-.people-grid {
+.client-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   gap: 16px;
 }
-.person-card {
+.client-card {
   min-width: 0;
   overflow-wrap: anywhere;
   display: grid;
@@ -1981,12 +1981,12 @@ kbd {
   width: 100%;
   cursor: pointer;
 }
-.people-detail {
+.client-detail {
   margin: 16px 0;
   overflow-wrap: anywhere;
 }
 /* Services and history are dense rows inside one list, not a card each. */
-.people-rows {
+.client-rows {
   list-style: none;
   margin: 12px 0 0;
   padding: 0;
@@ -2020,7 +2020,7 @@ kbd {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.people-rows .amount {
+.client-rows .amount {
   font-size: inherit;
   margin: 0;
 }
@@ -2032,14 +2032,14 @@ kbd {
   margin: 6px 0 0;
   font-size: 12px;
 }
-.service-row .people-actions {
+.service-row .client-actions {
   margin-top: 10px;
   gap: 8px;
 }
-.people-section {
+.client-section {
   margin-top: 28px;
 }
-.people-fields {
+.client-fields {
   overflow-wrap: anywhere;
   display: grid;
   gap: 16px;
@@ -2048,11 +2048,11 @@ kbd {
   border: 0;
   min-width: 0;
 }
-.people-fields .form-field {
+.client-fields .form-field {
   display: grid;
   gap: 8px;
 }
-.people-fields input {
+.client-fields input {
   width: 100%;
   min-width: 0;
 }
@@ -2065,39 +2065,39 @@ kbd {
   padding: 16px 0;
   background: var(--surface);
 }
-.people-payments {
+.client-payments {
   margin-top: 12px;
 }
-.people-payments article {
+.client-payments article {
   padding: 10px 0;
   border-top: 1px solid var(--border);
   font-size: 13px;
 }
-.people-actions button,
+.client-actions button,
 .form-actions button {
   min-height: 44px;
 }
-.service-row .people-actions button {
+.service-row .client-actions button {
   font-size: 13px;
 }
 
-body:has(.people-toast) .main-content {
+body:has(.client-toast) .main-content {
   padding-bottom: 280px;
 }
 @media (max-width: 700px) {
-  body:has(.people-toast) .main-content {
+  body:has(.client-toast) .main-content {
     padding-bottom: calc(360px + env(safe-area-inset-bottom));
   }
 }
 
-body:has(.transaction-toast:not(.people-toast)) .people-toast {
+body:has(.transaction-toast:not(.client-toast)) .client-toast {
   bottom: 200px;
 }
 @media (max-width: 700px) {
-  body:has(.transaction-toast:not(.people-toast)) .people-toast {
+  body:has(.transaction-toast:not(.client-toast)) .client-toast {
     bottom: calc(320px + env(safe-area-inset-bottom));
   }
-  body:has(.people-toast):has(.transaction-toast:not(.people-toast))
+  body:has(.client-toast):has(.transaction-toast:not(.client-toast))
     .main-content {
     padding-bottom: calc(540px + env(safe-area-inset-bottom));
   }
@@ -2221,7 +2221,7 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
 .receipt-preview {
   margin: 4px 0 8px;
 }
-.receipt-preview .people-rows {
+.receipt-preview .client-rows {
   margin-top: 8px;
 }
 
@@ -2249,10 +2249,10 @@ body:has(.transaction-toast:not(.people-toast)) .people-toast {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .people-actions {
+  .client-actions {
     gap: 8px;
   }
-  .people-actions .button {
+  .client-actions .button {
     flex: 1 1 100%;
   }
 }
@@ -2713,22 +2713,22 @@ button.budget-line:hover {
   gap: 8px;
 }
 
-/* A person who owes in other currencies: each currency's balance, then its value in dollars. */
-.person-balances {
+/* A client who owes in other currencies: each currency's balance, then its value in dollars. */
+.client-balances {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.25rem 1rem;
 }
-.person-balances .amount {
+.client-balances .amount {
   font-size: 1.25rem;
   font-variant-numeric: tabular-nums;
 }
-.person-balances .balance-note {
+.client-balances .balance-note {
   flex-basis: 100%;
   font-size: 0.875rem;
 }
-.person-balances .balance-note .amount {
+.client-balances .balance-note .amount {
   font-size: 0.875rem;
   font-weight: 600;
 }

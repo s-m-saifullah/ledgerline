@@ -171,11 +171,11 @@ async function snapshot() {
   return result;
 }
 async function linked(categoryId: string, amounts = [1000, 2000]) {
-  const person = await saved<{ id: string }>("/contacts", {
-    name: "Synthetic person",
+  const client = await saved<{ id: string }>("/contacts", {
+    name: "Synthetic client",
   });
   let service = await saved<{ id: string; version: number }>("/receivables", {
-    contactId: person.id,
+    contactId: client.id,
     description: "Synthetic service",
     amount: money(10000),
     serviceDate: "2026-10-07",
@@ -199,7 +199,7 @@ async function linked(categoryId: string, amounts = [1000, 2000]) {
     payments.push(p);
     service = p.receivable;
   }
-  return { service, payments, person };
+  return { service, payments, client };
 }
 beforeAll(async () => {
   await applyMigrations(url);
@@ -411,7 +411,7 @@ describe("Category merge preview and atomic maintenance", () => {
         })
       ).statusCode,
     ).toBe(200);
-    await write(`/contacts/${fixture.person.id}/archive`, {
+    await write(`/contacts/${fixture.client.id}/archive`, {
       expectedVersion: 1,
     });
     await write(`/accounts/${accountId}/archive`, { expectedVersion: 1 });

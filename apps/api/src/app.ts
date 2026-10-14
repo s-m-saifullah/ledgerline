@@ -36,7 +36,7 @@ import { homeRoutes } from "./modules/home/routes";
 import { ledgerRoutes } from "./modules/ledgers/routes";
 import { ledgerService } from "./modules/ledgers/service";
 import { receiptRoutes } from "./modules/receivables/receipt-routes";
-import { peopleRoutes } from "./modules/receivables/routes";
+import { clientRoutes } from "./modules/receivables/routes";
 import { recurringRoutes } from "./modules/recurring/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
@@ -297,7 +297,7 @@ export async function buildApp(
   );
   await app.register(ledgerRoutes, { db, config, auth });
   await app.register(accountRoutes, { db, config, auth });
-  await app.register(peopleRoutes, { db, config, auth });
+  await app.register(clientRoutes, { db, config, auth });
   await app.register(receiptRoutes, { db, config, auth });
   await app.register(categoryRoutes, { db, config, auth });
   await app.register(recurringRoutes, { db, config, auth, now });

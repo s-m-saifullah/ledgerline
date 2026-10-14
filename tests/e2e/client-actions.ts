@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-const personActions = new Set([
+const clientActions = new Set([
   "Log service",
   "Edit client",
   "Archive client",
@@ -8,7 +8,7 @@ const personActions = new Set([
   "Delete client",
 ]);
 
-/** Click a People action: inline on wide screens, from the "more actions" menu on phones. */
+/** Click a Clients action: inline on wide screens, from the "more actions" menu on phones. */
 export async function clickAction(page: Page, name: string) {
   const inline = page
     .getByRole("button", { name, exact: true })
@@ -16,7 +16,7 @@ export async function clickAction(page: Page, name: string) {
   const trigger = page
     .getByRole("button", {
       name:
-        personActions.has(name) || name.startsWith("Record payment from")
+        clientActions.has(name) || name.startsWith("Record payment from")
           ? /^More actions for (?!Website work)/
           : /^More actions for Website work/,
     })

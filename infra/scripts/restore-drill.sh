@@ -85,7 +85,7 @@ if [[ -n "${seen_tables[receivables]:-}" ]]; then
   test "$invalid" = 0 || { echo 'Restored owed totals failed validation'; exit 1; }
 fi
 if [[ -n "${seen_tables[receivable_payments]:-}" ]]; then
-  # Person-level receipts live or die together; older dumps predate receipt_id.
+  # Client-level receipts live or die together; older dumps predate receipt_id.
   has_receipts=$(docker exec "$name" psql -XqAtv ON_ERROR_STOP=1 -U postgres -d restore -c "SELECT count(*) FROM information_schema.columns WHERE table_name='receivable_payments' AND column_name='receipt_id'")
   if [[ "$has_receipts" = 1 ]]; then
     invalid=$(docker exec "$name" psql -XqAtv ON_ERROR_STOP=1 -U postgres -d restore -c "SELECT count(*) FROM (SELECT 1 FROM receivable_payments WHERE receipt_id IS NOT NULL GROUP BY ledger_id,receipt_id HAVING bool_or(deleted_at IS NULL) AND bool_or(deleted_at IS NOT NULL)) bad")

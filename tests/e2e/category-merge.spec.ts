@@ -316,14 +316,14 @@ test("corrects written-off linked income privately, fits 320px light/dark layout
 }, info) => {
   const source = await category(page, "Original income", "income"),
     destination = await category(page, "Consolidated income", "income");
-  const person = await saved<{ id: string }>(page, "/contacts", {
-    name: "Synthetic person",
+  const client = await saved<{ id: string }>(page, "/contacts", {
+    name: "Synthetic client",
   });
   const service = await saved<{ id: string; version: number }>(
     page,
     "/receivables",
     {
-      contactId: person.id,
+      contactId: client.id,
       description: "Synthetic service",
       amount: money(1000),
       serviceDate: "2026-10-08",

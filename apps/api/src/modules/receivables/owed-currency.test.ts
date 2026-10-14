@@ -52,7 +52,7 @@ const ledgerId = newId(),
 let cookie = "",
   accountId = "",
   categoryId = "",
-  person: Contact;
+  client: Contact;
 const base = (l = ledgerId) => `/api/v1/ledgers/${l}`;
 const headers = (actor = cookie, key = newId()) => ({
   cookie: actor,
@@ -171,7 +171,7 @@ beforeEach(async () => {
     note: "Synthetic",
   });
   expect(r.statusCode).toBe(201);
-  person = r.json();
+  client = r.json();
 });
 afterAll(async () => {
   await app.close();
@@ -210,7 +210,7 @@ async function account(code: string, name = `${code} account`) {
 }
 const item = async (amount: number, currency: string) => {
   const r = await write("/receivables", {
-    contactId: person.id,
+    contactId: client.id,
     description: `Work in ${currency}`,
     serviceDate: "2026-10-07",
     dueDate: null,
@@ -244,7 +244,7 @@ describe("Money owed in other currencies", () => {
     expect(s.amount).toEqual({ amount: 125000, currency: "EUR" });
     expect(s.remaining).toEqual({ amount: 125000, currency: "EUR" });
     const refused = await write("/receivables", {
-      contactId: person.id,
+      contactId: client.id,
       description: "Work",
       serviceDate: "2026-10-07",
       dueDate: null,
@@ -257,7 +257,7 @@ describe("Money owed in other currencies", () => {
     expect(
       (
         await write("/receivables", {
-          contactId: person.id,
+          contactId: client.id,
           description: "Work",
           serviceDate: "2026-10-07",
           dueDate: null,
@@ -414,7 +414,7 @@ describe("Money owed in other currencies", () => {
       write(
         `/receivables/${s.id}`,
         {
-          contactId: person.id,
+          contactId: client.id,
           description: "Website work",
           serviceDate: "2026-10-07",
           dueDate: null,
@@ -455,14 +455,14 @@ describe("Money owed in other currencies", () => {
     ).rejects.toThrow();
   });
 
-  it("shows each person's balance per currency, valued at the newest rates, and names a missing rate", async () => {
+  it("shows each client's balance per currency, valued at the newest rates, and names a missing rate", async () => {
     await addCurrency("EUR", "0.8");
     await addCurrency("BDT");
     await item(10000, "USD");
     await item(50000, "EUR");
     await item(900000, "BDT");
-    const people = (await read("/contacts")).json();
-    const sam = people.items.find((row: Contact) => row.id === person.id);
+    const clients = (await read("/contacts")).json();
+    const sam = clients.items.find((row: Contact) => row.id === client.id);
     expect(sam.openBalances).toEqual([
       { amount: 900000, currency: "BDT" },
       { amount: 50000, currency: "EUR" },
@@ -480,14 +480,14 @@ describe("Money owed in other currencies", () => {
     });
   });
 
-  it("previews and saves a receipt in one currency, ignoring the person's items in other currencies", async () => {
+  it("previews and saves a receipt in one currency, ignoring the client's items in other currencies", async () => {
     await addCurrency("EUR", "0.8");
     const eur = await account("EUR");
     const first = await item(60000, "EUR");
     await item(40000, "EUR");
     await item(99999, "USD");
     const preview = await read(
-      `/contacts/${person.id}/receipt-preview?amount=70000&currency=EUR`,
+      `/contacts/${client.id}/receipt-preview?amount=70000&currency=EUR`,
     );
     expect(preview.statusCode, preview.body).toBe(200);
     const shown = preview.json();
@@ -498,7 +498,7 @@ describe("Money owed in other currencies", () => {
       { amount: 60000, currency: "EUR" },
       { amount: 10000, currency: "EUR" },
     ]);
-    const saved = await write(`/contacts/${person.id}/receipts`, {
+    const saved = await write(`/contacts/${client.id}/receipts`, {
       amount: { amount: 70000, currency: "EUR" },
       accountId: eur,
       categoryId,
@@ -524,7 +524,7 @@ describe("Money owed in other currencies", () => {
     await item(10000, "EUR");
     const shown = (
       await read(
-        `/contacts/${person.id}/receipt-preview?amount=30000&currency=EUR`,
+        `/contacts/${client.id}/receipt-preview?amount=30000&currency=EUR`,
       )
     ).json();
     const body = (extra: object) => ({
@@ -541,12 +541,12 @@ describe("Money owed in other currencies", () => {
       ),
       ...extra,
     });
-    const missing = await write(`/contacts/${person.id}/receipts`, body({}));
+    const missing = await write(`/contacts/${client.id}/receipts`, body({}));
     expect(missing.statusCode).toBe(409);
     expect(missing.json().errors[0].field).toBe("receivedAmount");
     // 100.00 USD across three equal payments cannot split evenly; the shares still add up.
     const saved = await write(
-      `/contacts/${person.id}/receipts`,
+      `/contacts/${client.id}/receipts`,
       body({ receivedAmount: { amount: 10000, currency: "USD" } }),
     );
     expect(saved.statusCode, saved.body).toBe(201);
@@ -558,7 +558,7 @@ describe("Money owed in other currencies", () => {
     );
     // Too little to give every payment something is refused with nothing saved.
     const tiny = await write(
-      `/contacts/${person.id}/receipts`,
+      `/contacts/${client.id}/receipts`,
       body({ receivedAmount: { amount: 2, currency: "USD" } }),
     );
     expect([404, 409]).toContain(tiny.statusCode);
@@ -572,10 +572,10 @@ describe("Money owed in other currencies", () => {
     await item(5000, "EUR");
     const shown = (
       await read(
-        `/contacts/${person.id}/receipt-preview?amount=15000&currency=EUR`,
+        `/contacts/${client.id}/receipt-preview?amount=15000&currency=EUR`,
       )
     ).json();
-    const saved = await write(`/contacts/${person.id}/receipts`, {
+    const saved = await write(`/contacts/${client.id}/receipts`, {
       amount: { amount: 15000, currency: "EUR" },
       accountId: eur,
       categoryId,

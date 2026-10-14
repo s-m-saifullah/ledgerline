@@ -55,7 +55,7 @@ try {
   expect(ledgers.status()).toBe(200);
   const ledgerItems = (await ledgers.json()).items;
   expect(ledgerItems).toHaveLength(1);
-  // Read-only checks: published API version, then Home against Accounts, People and Transactions.
+  // Read-only checks: published API version, then Home against Accounts, Clients and Transactions.
   const spec = await (await page.request.get("/api/v1/openapi.json")).json();
   const expectedVersion = process.argv
     .find((argument) => argument.startsWith("--expect-version="))
@@ -84,7 +84,7 @@ try {
   const sources = {
     baseCurrency: ledgerItems[0].baseCurrency,
     accounts: await readAll("/accounts?status=all"),
-    people: await readAll("/contacts?status=all"),
+    clients: await readAll("/contacts?status=all"),
   };
   const rates = await readHomeRates(sources, readAll);
   const mismatches = compareHome({
@@ -118,7 +118,7 @@ try {
   ).toBe(404);
   expect(pageErrors).toEqual([]);
   console.log(
-    "Production HTTPS login, secure httpOnly session, Home matching Accounts, People and Transactions (read-only), logout and anonymous denial verified.",
+    "Production HTTPS login, secure httpOnly session, Home matching Accounts, Clients and Transactions (read-only), logout and anonymous denial verified.",
   );
 } catch (error) {
   // Only our own consistency message is safe to print; anything else may carry credentials or data.

@@ -167,7 +167,7 @@ it("keeps one immutable key/body through an uncertain result, closing and naviga
     "transactions",
     "contacts",
     "receivables",
-    "peopleHistory",
+    "clientHistory",
     "accounts",
     "home",
   ]);

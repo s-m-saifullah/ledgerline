@@ -51,7 +51,7 @@ let cookie = "",
   viewer = "",
   accountId = "",
   categoryId = "",
-  person: Contact;
+  client: Contact;
 const base = (l = ledgerId) => `/api/v1/ledgers/${l}`;
 const money = (amount: number) => ({ amount, currency: "USD" });
 const headers = (actor = cookie, key = newId()) => ({
@@ -177,7 +177,7 @@ beforeEach(async () => {
     note: "Synthetic",
   });
   expect(r.statusCode).toBe(201);
-  person = r.json();
+  client = r.json();
 });
 afterAll(async () => {
   await app.close();
@@ -189,7 +189,7 @@ afterAll(async () => {
   await db.delete(user).where(inArray(user.id, users));
   await pool.end();
 });
-async function svc(date: string, amount: number, who = person) {
+async function svc(date: string, amount: number, who = client) {
   const r = await write("/receivables", {
     contactId: who.id,
     description: `Work ${date}`,
@@ -266,7 +266,7 @@ describe("Tips on payments (ADR 0027)", () => {
     });
     // The payment settles exactly what was owed; the tip is extra money in the account.
     expect(await balance()).toBe(1000 + 10000 + 2000);
-    expect((await people()).openBalances).toEqual([]);
+    expect((await clients()).openBalances).toEqual([]);
   });
 
   it("never lets a payment itself exceed what is owed", async () => {
@@ -426,7 +426,7 @@ describe("Tips on payments (ADR 0027)", () => {
     await svc("2026-09-15", 20000);
     const preview = (
       await app.inject({
-        url: `${base()}/contacts/${person.id}/receipt-preview?amount=30000`,
+        url: `${base()}/contacts/${client.id}/receipt-preview?amount=30000`,
         headers: { cookie },
       })
     ).json();
@@ -450,7 +450,7 @@ describe("Tips on payments (ADR 0027)", () => {
         }),
       ),
     };
-    const made = await write(`/contacts/${person.id}/receipts`, body);
+    const made = await write(`/contacts/${client.id}/receipts`, body);
     expect(made.statusCode, made.body).toBe(201);
     const receipt = made.json() as Receipt;
     expect(receipt.payments).toHaveLength(2);
@@ -557,7 +557,7 @@ describe("Tips on payments (ADR 0027)", () => {
     ).rejects.toThrow();
   });
 });
-const people = async () =>
+const clients = async () =>
   ((await read("/contacts")).json().items as Contact[]).find(
-    (c) => c.id === person.id,
+    (c) => c.id === client.id,
   ) as Contact;

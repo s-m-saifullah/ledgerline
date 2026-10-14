@@ -46,26 +46,26 @@ import { PrivacyContext } from "../shell/preferences";
 import { getAllAccounts } from "../transactions/api";
 import { amountMinor, localToday } from "../transactions/form";
 import {
-  getAllPeople,
+  getAllClients,
+  getClient,
   getPayment,
-  getPerson,
   getReceipt,
   getReceiptPreview,
   getService,
-  preparePeopleWrite,
+  prepareClientWrite,
 } from "./api";
 import { paymentDefault, positiveMoney, splitExtra, tipDefault } from "./form";
 import { HourlyHelper } from "./hourly-helper";
-export type PeopleOperation =
-  | { kind: "contact"; person?: Contact }
-  | { kind: "service"; person: Contact; service?: Receivable }
+export type ClientOperation =
+  | { kind: "contact"; client?: Contact }
+  | { kind: "service"; client: Contact; service?: Receivable }
   | {
       kind: "payment";
       service: Receivable;
-      person?: Contact;
+      client?: Contact;
       payment?: ReceivablePayment;
     }
-  | { kind: "receipt"; person: Contact; receipt?: Receipt; receiptId?: string }
+  | { kind: "receipt"; client: Contact; receipt?: Receipt; receiptId?: string }
   | {
       kind: "action";
       action:
@@ -82,19 +82,19 @@ export type PeopleOperation =
         | "restoreReceipt";
       receipt?: Receipt;
       receiptId?: string;
-      person?: Contact;
+      client?: Contact;
       reason?: string | null;
       service?: Receivable;
       payment?: ReceivablePayment;
     };
 type Workspace = {
   blocked: boolean;
-  /** The most recently deleted person, so the People page can leave their detail view. */
-  deletedPersonId: string | null;
-  open: (op: PeopleOperation, trigger: string) => void;
+  /** The most recently deleted client, so the Clients page can leave their detail view. */
+  deletedClientId: string | null;
+  open: (op: ClientOperation, trigger: string) => void;
 };
 const Context = createContext<Workspace | null>(null);
-export const usePeopleWorkspace = () => useContext(Context);
+export const useClientsWorkspace = () => useContext(Context);
 type Fields = {
   name: string;
   phone: string;
@@ -143,18 +143,18 @@ const empty = (): Fields => ({
   contactId: "",
   reason: "",
 });
-function fieldsFor(op: PeopleOperation): Fields {
+function fieldsFor(op: ClientOperation): Fields {
   const f = empty();
-  if (op.kind === "contact" && op.person)
+  if (op.kind === "contact" && op.client)
     Object.assign(f, {
-      name: op.person.name,
-      phone: op.person.phone ?? "",
-      email: op.person.email ?? "",
-      note: op.person.note ?? "",
+      name: op.client.name,
+      phone: op.client.phone ?? "",
+      email: op.client.email ?? "",
+      note: op.client.note ?? "",
     });
   if (op.kind === "service")
     Object.assign(f, {
-      contactId: op.person.id,
+      contactId: op.client.id,
       ...(op.service
         ? {
             description: op.service.description,
@@ -196,7 +196,7 @@ function fieldsFor(op: PeopleOperation): Fields {
     });
   if (op.kind === "receipt") {
     const first = op.receipt?.payments[0]?.transaction;
-    const owed = op.person.openBalances;
+    const owed = op.client.openBalances;
     Object.assign(f, {
       receiptCurrency: op.receipt
         ? op.receipt.amount.currency
@@ -266,7 +266,7 @@ function bumped(receipt: Receipt): Receipt {
     })),
   };
 }
-export function PeopleWorkspace({
+export function ClientsWorkspace({
   ledgerId,
   actorId,
   writable,
@@ -285,9 +285,9 @@ export function PeopleWorkspace({
   onLinkedOpened: () => void;
   children: ReactNode;
 }) {
-  const client = useQueryClient(),
+  const queryClient = useQueryClient(),
     privateMode = useContext(PrivacyContext);
-  const [op, setOp] = useState<PeopleOperation | null>(null),
+  const [op, setOp] = useState<ClientOperation | null>(null),
     [values, setValues] = useState<Fields>(empty),
     [open, setOpen] = useState(false),
     [loading, setLoading] = useState(false),
@@ -297,19 +297,19 @@ export function PeopleWorkspace({
     [conflict, setConflict] = useState(false),
     [trigger, setTrigger] = useState("main-content"),
     [notice, setNotice] = useState(""),
-    [deletedPersonId, setDeletedPersonId] = useState<string | null>(null),
+    [deletedClientId, setDeletedClientId] = useState<string | null>(null),
     // The toast closes itself; an Undo stays reachable from a pill until used or replaced.
     [toastDone, setToastDone] = useState(false),
-    [undo, setUndo] = useState<PeopleOperation | null>(null);
+    [undo, setUndo] = useState<ClientOperation | null>(null);
   const attempt = useRef<(() => Promise<void>) | null>(null),
     inFlight = useRef(false),
     loadSequence = useRef(0);
   const paymentMode = op?.kind === "payment" || op?.kind === "receipt";
   const allowWrite =
     writable && !(op?.kind === "payment" && op.service.status === "writtenOff");
-  const people = useQuery({
+  const clients = useQuery({
     queryKey: ["contacts", ledgerId, "choices"],
-    queryFn: ({ signal }) => getAllPeople(ledgerId as string, signal),
+    queryFn: ({ signal }) => getAllClients(ledgerId as string, signal),
     enabled: !!ledgerId && op?.kind === "service" && !!op.service,
   });
   const accounts = useQuery({
@@ -349,7 +349,7 @@ export function PeopleWorkspace({
     op?.kind === "payment"
       ? op.service.outstanding.amount
       : receiptCreate
-        ? owedInCurrency(receiptCreate.person, values.receiptCurrency)
+        ? owedInCurrency(receiptCreate.client, values.receiptCurrency)
         : 0;
   const extra =
     creatingPayment && !needsReceived
@@ -376,14 +376,14 @@ export function PeopleWorkspace({
       "receivables",
       ledgerId,
       "receipt-preview",
-      receiptCreate?.person.id,
+      receiptCreate?.client.id,
       values.receiptCurrency,
       previewCents,
     ],
     queryFn: ({ signal }) =>
       getReceiptPreview(
         ledgerId as string,
-        (receiptCreate as { person: Contact }).person.id,
+        (receiptCreate as { client: Contact }).client.id,
         previewCents as number,
         values.receiptCurrency,
         signal,
@@ -398,12 +398,12 @@ export function PeopleWorkspace({
     for (const key of [
       "contacts",
       "receivables",
-      "peopleHistory",
+      "clientHistory",
       "accounts",
       "transactions",
       "home",
     ])
-      void client.invalidateQueries({ queryKey: [key, ledgerId] });
+      void queryClient.invalidateQueries({ queryKey: [key, ledgerId] });
   };
   const frozen = busy || uncertain || loading;
   const dismiss = () => {
@@ -417,7 +417,7 @@ export function PeopleWorkspace({
       if (linkedTransaction) onLinkedOpened();
     }
   };
-  async function begin(next: PeopleOperation, id: string, fresh = true) {
+  async function begin(next: ClientOperation, id: string, fresh = true) {
     if (inFlight.current || uncertain || blocked) return;
     const sequence = ++loadSequence.current;
     setOpen(true);
@@ -436,12 +436,12 @@ export function PeopleWorkspace({
     setLoading(true);
     try {
       let loaded = next;
-      if (next.kind === "contact" && next.person)
-        loaded = { ...next, person: await getPerson(ledgerId, next.person.id) };
+      if (next.kind === "contact" && next.client)
+        loaded = { ...next, client: await getClient(ledgerId, next.client.id) };
       else if (next.kind === "service")
         loaded = {
           ...next,
-          person: await getPerson(ledgerId, next.person.id),
+          client: await getClient(ledgerId, next.client.id),
           ...(next.service
             ? { service: await getService(ledgerId, next.service.id) }
             : {}),
@@ -449,7 +449,7 @@ export function PeopleWorkspace({
       else if (next.kind === "receipt")
         loaded = {
           ...next,
-          person: await getPerson(ledgerId, next.person.id),
+          client: await getClient(ledgerId, next.client.id),
           ...(next.receipt || next.receiptId
             ? {
                 receipt: await getReceipt(
@@ -464,7 +464,7 @@ export function PeopleWorkspace({
         loaded = {
           ...next,
           service,
-          person: await getPerson(ledgerId, service.contactId),
+          client: await getClient(ledgerId, service.contactId),
           ...(next.payment
             ? {
                 payment: await getPayment(
@@ -478,8 +478,8 @@ export function PeopleWorkspace({
       } else if (next.kind === "action") {
         loaded = {
           ...next,
-          ...(next.person
-            ? { person: await getPerson(ledgerId, next.person.id) }
+          ...(next.client
+            ? { client: await getClient(ledgerId, next.client.id) }
             : {}),
           ...(next.service
             ? { service: await getService(ledgerId, next.service.id) }
@@ -511,8 +511,11 @@ export function PeopleWorkspace({
           getCategories(ledgerId),
         ]);
         if (loadSequence.current !== sequence) return;
-        client.setQueryData(["accounts", ledgerId, "history"], freshAccounts);
-        client.setQueryData(["categories", ledgerId], freshCategories);
+        queryClient.setQueryData(
+          ["accounts", ledgerId, "history"],
+          freshAccounts,
+        );
+        queryClient.setQueryData(["categories", ledgerId], freshCategories);
         if (!(loaded.kind === "payment" ? loaded.payment : loaded.receipt)) {
           fields.accountId = freshAccounts.find((a) => !a.archivedAt)?.id ?? "";
           fields.categoryId = paymentDefault(
@@ -560,17 +563,17 @@ export function PeopleWorkspace({
       row.receivablePaymentId as string,
     )
       .then(async (payment) => {
-        const person = await getPerson(ledgerId, payment.receivable.contactId);
+        const client = await getClient(ledgerId, payment.receivable.contactId);
         const receipt = payment.receiptId
           ? await getReceipt(ledgerId, payment.receiptId)
           : undefined;
         if (active && loadSequence.current === sequence) {
-          const next: PeopleOperation = receipt
-            ? { kind: "receipt", person, receipt }
+          const next: ClientOperation = receipt
+            ? { kind: "receipt", client, receipt }
             : {
                 kind: "payment",
                 service: payment.receivable,
-                person,
+                client,
                 payment,
               };
           setOp(next);
@@ -593,7 +596,7 @@ export function PeopleWorkspace({
       active = false;
     };
   }, [linkedTransaction, ledgerId, onLock, onLinkedOpened]);
-  function completed(message: string, nextUndo: PeopleOperation | null = null) {
+  function completed(message: string, nextUndo: ClientOperation | null = null) {
     attempt.current = null;
     setUncertain(false);
     setConflict(false);
@@ -639,7 +642,7 @@ export function PeopleWorkspace({
       },
     };
   }
-  function prepare(operation: PeopleOperation): () => Promise<void> {
+  function prepare(operation: ClientOperation): () => Promise<void> {
     if (!ledgerId) throw new Error("Choose a ledger.");
     const l = ledgerId;
     if (operation.kind === "contact") {
@@ -649,14 +652,14 @@ export function PeopleWorkspace({
         email: values.email || null,
         note: values.note || null,
       });
-      const run = preparePeopleWrite(
+      const run = prepareClientWrite(
         l,
-        operation.person ? `/contacts/${operation.person.id}` : "/contacts",
-        operation.person ? "PATCH" : "POST",
-        operation.person
+        operation.client ? `/contacts/${operation.client.id}` : "/contacts",
+        operation.client ? "PATCH" : "POST",
+        operation.client
           ? updateContactSchema.parse({
               ...body,
-              expectedVersion: operation.person.version,
+              expectedVersion: operation.client.version,
             })
           : body,
       );
@@ -679,7 +682,7 @@ export function PeopleWorkspace({
         row: T,
       ) => ({ ...row, serviceTime: row.serviceTime ?? null });
       const body = withTime(parsed);
-      const run = preparePeopleWrite(
+      const run = prepareClientWrite(
         l,
         operation.service
           ? `/receivables/${operation.service.id}`
@@ -721,7 +724,7 @@ export function PeopleWorkspace({
         note: values.note || null,
         expectedReceivableVersion: operation.service.version,
       });
-      const run = preparePeopleWrite(
+      const run = prepareClientWrite(
         l,
         `/receivables/${operation.service.id}/payments${operation.payment ? `/${operation.payment.id}` : ""}`,
         operation.payment ? "PATCH" : "POST",
@@ -764,7 +767,7 @@ export function PeopleWorkspace({
         ...received(),
       };
       if (operation.receipt) {
-        const run = preparePeopleWrite(
+        const run = prepareClientWrite(
           l,
           `/receipts/${operation.receipt.id}`,
           "PATCH",
@@ -794,9 +797,9 @@ export function PeopleWorkspace({
         shown.tooManyServices
       )
         throw new Error("Wait for the allocation preview to match the amount.");
-      const run = preparePeopleWrite(
+      const run = prepareClientWrite(
         l,
-        `/contacts/${operation.person.id}/receipts`,
+        `/contacts/${operation.client.id}/receipts`,
         "POST",
         JSON.parse(
           JSON.stringify(
@@ -829,7 +832,7 @@ export function PeopleWorkspace({
       s = operation.service,
       p = operation.payment,
       r = operation.receipt,
-      person = operation.person;
+      client = operation.client;
     let path = "",
       method: "POST" | "DELETE" = "POST",
       body: JsonValue = {};
@@ -837,10 +840,10 @@ export function PeopleWorkspace({
       path = `/receipts/${r.id}${a === "restoreReceipt" ? "/restore" : ""}`;
       method = a === "deleteReceipt" ? "DELETE" : "POST";
       body = { expectedPayments: expectedPayments(r) };
-    } else if (person) {
-      path = `/contacts/${person.id}${a === "deleteContact" ? "" : `/${a}`}`;
+    } else if (client) {
+      path = `/contacts/${client.id}${a === "deleteContact" ? "" : `/${a}`}`;
       method = a === "deleteContact" ? "DELETE" : "POST";
-      body = { expectedVersion: person.version };
+      body = { expectedVersion: client.version };
     } else if (p) {
       path = `/receivables/${p.receivableId}/payments/${p.id}${a === "restorePayment" ? "/restore" : ""}`;
       method = a === "deletePayment" ? "DELETE" : "POST";
@@ -856,10 +859,10 @@ export function PeopleWorkspace({
         ...(a === "writeOff" ? { reason: values.reason || null } : {}),
       };
     } else throw new Error("Missing action target.");
-    const run = preparePeopleWrite(l, path, method, body);
+    const run = prepareClientWrite(l, path, method, body);
     return async () => {
       const result = await run();
-      let next: PeopleOperation | null = null;
+      let next: ClientOperation | null = null;
       if (a === "deleteService" && s)
         next = {
           kind: "action",
@@ -889,15 +892,15 @@ export function PeopleWorkspace({
           ...(a === "reopen" ? { reason: s.writeOffReason } : {}),
         };
       }
-      if (a === "deleteContact" && person) {
-        // Drop the deleted person's detail queries first so nothing refetches them (they would 404).
-        for (const key of ["contacts", "receivables", "peopleHistory"]) {
-          client.removeQueries({
+      if (a === "deleteContact" && client) {
+        // Drop the deleted client's detail queries first so nothing refetches them (they would 404).
+        for (const key of ["contacts", "receivables", "clientHistory"]) {
+          queryClient.removeQueries({
             queryKey: [key, l],
-            predicate: (query) => query.queryKey.includes(person.id),
+            predicate: (query) => query.queryKey.includes(client.id),
           });
         }
-        setDeletedPersonId(person.id);
+        setDeletedClientId(client.id);
         completed("Client deleted.", null);
         return;
       }
@@ -938,9 +941,9 @@ export function PeopleWorkspace({
     op?.kind === "receipt"
       ? op.receipt
         ? "Edit receipt"
-        : `Record payment from ${op.person.name}`
+        : `Record payment from ${op.client.name}`
       : op?.kind === "contact"
-        ? op.person
+        ? op.client
           ? "Edit client"
           : "Add client"
         : op?.kind === "service"
@@ -960,12 +963,12 @@ export function PeopleWorkspace({
     type = "text",
     required = false,
   ) => (
-    <label className="form-field" htmlFor={`people-${key}`} key={key}>
+    <label className="form-field" htmlFor={`client-${key}`} key={key}>
       {label}
       {type === "date" || type === "time" ? (
         <DateTimeInput
           label={label}
-          id={`people-${key}`}
+          id={`client-${key}`}
           type={type}
           value={values[key]}
           required={required}
@@ -977,7 +980,7 @@ export function PeopleWorkspace({
         />
       ) : (
         <input
-          id={`people-${key}`}
+          id={`client-${key}`}
           type={type}
           value={values[key]}
           required={required}
@@ -999,10 +1002,10 @@ export function PeopleWorkspace({
     creating: boolean,
   ) => (
     <>
-      <label className="form-field" htmlFor="people-account">
+      <label className="form-field" htmlFor="client-account">
         Receiving account
         <NativeSelect
-          id="people-account"
+          id="client-account"
           value={values.accountId}
           onChange={(e) =>
             setValues((v) => ({
@@ -1114,7 +1117,7 @@ export function PeopleWorkspace({
     <Context
       value={{
         blocked: blocked || frozen || !!op,
-        deletedPersonId,
+        deletedClientId,
         open: (next, id) => {
           void begin(next, id);
         },
@@ -1122,7 +1125,7 @@ export function PeopleWorkspace({
     >
       {children}
       {op && !open && uncertain && (
-        <div className="transaction-toast people-toast">
+        <div className="transaction-toast client-toast">
           <p role="status">A Client action needs confirmation.</p>
           <button
             className="secondary-button"
@@ -1155,14 +1158,14 @@ export function PeopleWorkspace({
           closeLabel="Close Client editor"
           initialFocusId={
             uncertain
-              ? "people-retry"
+              ? "client-retry"
               : op?.kind === "payment" ||
                   (op?.kind === "receipt" && !op.receipt)
-                ? "people-amount"
+                ? "client-amount"
                 : op?.kind === "service"
-                  ? "people-description"
+                  ? "client-description"
                   : op?.kind === "contact"
-                    ? "people-name"
+                    ? "client-name"
                     : undefined
           }
         >
@@ -1178,7 +1181,7 @@ export function PeopleWorkspace({
             >
               <fieldset
                 disabled={frozen || !allowWrite}
-                className="people-fields"
+                className="client-fields"
               >
                 {op?.kind === "contact" && (
                   <>
@@ -1191,14 +1194,14 @@ export function PeopleWorkspace({
                 {op?.kind === "service" && (
                   <>
                     <p>
-                      Client: {op.person.name}
-                      {op.person.archivedAt ? " (archived)" : ""}
+                      Client: {op.client.name}
+                      {op.client.archivedAt ? " (archived)" : ""}
                     </p>
                     {op.service && (
-                      <label className="form-field" htmlFor="people-person">
+                      <label className="form-field" htmlFor="client-picker">
                         Client
                         <NativeSelect
-                          id="people-person"
+                          id="client-picker"
                           value={values.contactId}
                           onChange={(e) =>
                             setValues((v) => ({
@@ -1207,9 +1210,9 @@ export function PeopleWorkspace({
                             }))
                           }
                         >
-                          {(people.data ?? [op.person])
+                          {(clients.data ?? [op.client])
                             .filter(
-                              (p) => !p.archivedAt || p.id === op.person.id,
+                              (p) => !p.archivedAt || p.id === op.client.id,
                             )
                             .map((p) => (
                               <option key={p.id} value={p.id}>
@@ -1225,10 +1228,10 @@ export function PeopleWorkspace({
                     {input("serviceTime", "Service time (optional)", "time")}
                     {input("dueDate", "Due date", "date")}
                     {baseValues.currencies.length > 1 && (
-                      <label className="form-field" htmlFor="people-currency">
+                      <label className="form-field" htmlFor="client-currency">
                         Currency
                         <NativeSelect
-                          id="people-currency"
+                          id="client-currency"
                           value={values.currency}
                           disabled={
                             !!op.service && op.service.received.amount > 0
@@ -1277,7 +1280,7 @@ export function PeopleWorkspace({
                 )}
                 {op?.kind === "payment" && (
                   <>
-                    {op.person && <p>Client: {op.person.name}</p>}
+                    {op.client && <p>Client: {op.client.name}</p>}
                     <p>{op.service.description}</p>
                     {op.service.status === "writtenOff" && (
                       <p className="muted">
@@ -1314,7 +1317,7 @@ export function PeopleWorkspace({
                 )}
                 {op?.kind === "receipt" && (
                   <>
-                    <p>Client: {op.person.name}</p>
+                    <p>Client: {op.client.name}</p>
                     {op.receipt ? (
                       <>
                         <p>
@@ -1334,14 +1337,14 @@ export function PeopleWorkspace({
                       </>
                     ) : (
                       <>
-                        {op.person.openBalances.length > 1 && (
+                        {op.client.openBalances.length > 1 && (
                           <label
                             className="form-field"
-                            htmlFor="people-receipt-currency"
+                            htmlFor="client-receipt-currency"
                           >
                             Currency being paid
                             <NativeSelect
-                              id="people-receipt-currency"
+                              id="client-receipt-currency"
                               value={values.receiptCurrency}
                               onChange={(e) =>
                                 setValues((v) => ({
@@ -1353,7 +1356,7 @@ export function PeopleWorkspace({
                                 }))
                               }
                             >
-                              {op.person.openBalances.map((b) => (
+                              {op.client.openBalances.map((b) => (
                                 <option key={b.currency} value={b.currency}>
                                   {b.currency}
                                 </option>
@@ -1367,7 +1370,7 @@ export function PeopleWorkspace({
                             ? "••••"
                             : formatMoney(
                                 owedInCurrency(
-                                  op.person,
+                                  op.client,
                                   values.receiptCurrency,
                                 ),
                                 values.receiptCurrency,
@@ -1387,7 +1390,7 @@ export function PeopleWorkspace({
                             setValues((v) => ({
                               ...v,
                               amount: decimalFromCents(
-                                owedInCurrency(op.person, v.receiptCurrency),
+                                owedInCurrency(op.client, v.receiptCurrency),
                                 currencyDigits(v.receiptCurrency),
                               ),
                             }))
@@ -1471,7 +1474,7 @@ export function PeopleWorkspace({
                 </button>
                 {uncertain ? (
                   <button
-                    id="people-retry"
+                    id="client-retry"
                     type="button"
                     className="button"
                     disabled={busy || blocked || !writable}
@@ -1545,7 +1548,7 @@ export function PeopleWorkspace({
       {notice && !open && !toastDone && (
         <Toast
           label="Client notification"
-          className="people-toast"
+          className="client-toast"
           durationMs={blocked || frozen ? null : undo ? 5000 : 3000}
           onExpire={() => {
             if (undo && writable) setToastDone(true);
@@ -1631,7 +1634,7 @@ function ReceiptPreview({
           ? `Pays ${full.length} ${full.length === 1 ? "service" : "services"} in full.`
           : `Pays ${full.length} ${full.length === 1 ? "service" : "services"} in full and part of one more.`}
       </p>
-      <ul className="people-rows">
+      <ul className="client-rows">
         {data.allocations.map((a) => (
           <li className="service-row" key={a.receivableId}>
             <div className="row-main">
@@ -1653,9 +1656,9 @@ function ReceiptPreview({
   );
 }
 
-/** What a person owes in one currency (0 when nothing is open in it). */
-function owedInCurrency(person: Contact, currency: string) {
-  return person.openBalances.find((b) => b.currency === currency)?.amount ?? 0;
+/** What a client owes in one currency (0 when nothing is open in it). */
+function owedInCurrency(client: Contact, currency: string) {
+  return client.openBalances.find((b) => b.currency === currency)?.amount ?? 0;
 }
 /**
  * When one side of a payment is in USD, the two amounts fix the rate; show it so a typo in the

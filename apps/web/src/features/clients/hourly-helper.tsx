@@ -25,10 +25,10 @@ export function HourlyHelper({
   return (
     <details className="more-details hourly-helper">
       <summary>Work paid by the hour? Calculate the amount</summary>
-      <label className="form-field" htmlFor="people-hours">
+      <label className="form-field" htmlFor="client-hours">
         Hours
         <input
-          id="people-hours"
+          id="client-hours"
           inputMode="decimal"
           value={hours}
           disabled={disabled}
@@ -36,10 +36,10 @@ export function HourlyHelper({
           onChange={(e) => setHours(e.target.value)}
         />
       </label>
-      <label className="form-field" htmlFor="people-hourly-rate">
+      <label className="form-field" htmlFor="client-hourly-rate">
         Hourly rate ({currency})
         <input
-          id="people-hourly-rate"
+          id="client-hourly-rate"
           type={secret ? "password" : "text"}
           inputMode="decimal"
           value={rate}

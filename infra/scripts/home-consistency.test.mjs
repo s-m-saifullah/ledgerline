@@ -23,7 +23,7 @@ const accounts = [
     archivedAt: "2026-10-01T00:00:00.000Z",
   },
 ];
-const people = [
+const clients = [
   { openBalance: usd(25000), openBalances: [usd(25000)] },
   { openBalance: usd(3000), openBalances: [usd(3000)] },
   { openBalance: usd(0), openBalances: [] },
@@ -69,7 +69,7 @@ const input = {
   monthEnd: "2026-10-31",
   home,
   accounts,
-  people,
+  clients,
   transactions,
 };
 
@@ -99,7 +99,7 @@ test("each wrong figure is named without revealing amounts", () => {
     "money in",
     "money out",
     "owed total",
-    "people owing",
+    "clients owing",
     "pending count",
     "latest entries",
   ])
@@ -186,7 +186,7 @@ function currencyFixture() {
       ["NZD", null],
     ]),
     accounts: rows,
-    people: [
+    clients: [
       { openBalance: usd(10), openBalances: [usd(10), money(49, "BDT")] },
       { openBalance: usd(0), openBalances: [money(49, "BDT")] },
       { openBalance: usd(0), openBalances: [money(10, "EUR")] },
@@ -226,11 +226,11 @@ test("foreign balances use current rates, currency digits and signed half-away r
   assert.deepEqual(compareHome(currencyFixture()), []);
 });
 
-test("owed amounts are combined by currency before rounding and unvalued people still count", () => {
+test("owed amounts are combined by currency before rounding and unvalued clients still count", () => {
   const fixture = currencyFixture();
-  fixture.home.owed.total = usd(10); // Adding the already-rounded People values loses a cent.
+  fixture.home.owed.total = usd(10); // Adding the already-rounded Clients values loses a cent.
   fixture.home.owed.personCount = 1;
-  assert.deepEqual(compareHome(fixture), ["owed total", "people owing"]);
+  assert.deepEqual(compareHome(fixture), ["owed total", "clients owing"]);
 });
 
 test("wrong foreign totals, itemized values and missing-rate notices still fail without leaking values", () => {
@@ -265,7 +265,7 @@ test("wrong foreign totals, itemized values and missing-rate notices still fail 
 
 test("reads only the newest stored rate once per used currency, including owed-only currencies", async () => {
   const fixture = currencyFixture();
-  fixture.people.push({ openBalances: [money(1, "CAD")] });
+  fixture.clients.push({ openBalances: [money(1, "CAD")] });
   const paths = [];
   const rates = await readHomeRates(fixture, async (path) => {
     paths.push(path);

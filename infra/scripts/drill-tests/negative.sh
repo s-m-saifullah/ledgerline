@@ -35,9 +35,9 @@ psqlx "SET session_replication_role=replica; UPDATE transaction_splits SET amoun
 psqlx "SET session_replication_role=replica; UPDATE receivable_payments SET version=version+1 WHERE id='00000000-0000-7000-8000-000000000701'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "desynced linked pair" "Invalid linked income" bash restore-drill.sh "$(latest)"
 psqlx "SET session_replication_role=replica; UPDATE receivable_payments SET version=version-1 WHERE id='00000000-0000-7000-8000-000000000701'" >/dev/null
-# 9. receipt spanning two people
+# 9. receipt spanning two clients
 psqlx "INSERT INTO contacts (id,ledger_id,name) VALUES ('00000000-0000-7000-8000-000000000c0b','00000000-0000-7000-8000-0000000000a1','Other'); SET session_replication_role=replica; UPDATE receivables SET contact_id='00000000-0000-7000-8000-000000000c0b' WHERE id='00000000-0000-7000-8000-000000000502'" >/dev/null
-bash backup.sh >/dev/null; expect_fail "receipt across two people" "Restored receipt contacts failed validation" bash restore-drill.sh "$(latest)"
+bash backup.sh >/dev/null; expect_fail "receipt across two clients" "Restored receipt contacts failed validation" bash restore-drill.sh "$(latest)"
 psqlx "SET session_replication_role=replica; UPDATE receivables SET contact_id='00000000-0000-7000-8000-000000000c0a' WHERE id='00000000-0000-7000-8000-000000000502'; DELETE FROM contacts WHERE id='00000000-0000-7000-8000-000000000c0b'" >/dev/null
 # 9b. a created occurrence pointing at an entry that does not exist
 psqlx "UPDATE recurring_runs SET transaction_id='00000000-0000-7000-8000-00000000dead' WHERE id='00000000-0000-7000-8000-0000000007b1'" >/dev/null

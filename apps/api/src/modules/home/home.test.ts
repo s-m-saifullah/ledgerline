@@ -191,7 +191,7 @@ async function fixture() {
     { expectedVersion: gone.version },
     "DELETE",
   );
-  const person = await send("/contacts", { name: "Sam" });
+  const client = await send("/contacts", { name: "Sam" });
   const service = async (contactId: string, amount: number) =>
     send("/receivables", {
       contactId,
@@ -200,7 +200,7 @@ async function fixture() {
       dueDate: null,
       amount: money(amount),
     });
-  const main = await service(person.id, 40000);
+  const main = await service(client.id, 40000);
   await send(`/receivables/${main.id}/payments`, {
     amount: money(15000),
     accountId: checking,
@@ -210,12 +210,12 @@ async function fixture() {
     note: null,
     expectedReceivableVersion: main.version,
   });
-  const waived = await service(person.id, 10000);
+  const waived = await service(client.id, 10000);
   await send(`/receivables/${waived.id}/write-off`, {
     expectedVersion: waived.version,
     reason: null,
   });
-  const removed = await service(person.id, 7000);
+  const removed = await service(client.id, 7000);
   await send(
     `/receivables/${removed.id}`,
     { expectedVersion: removed.version },
@@ -394,11 +394,11 @@ describe("Home summary", () => {
       expect(summary.netWorth.amount).toBe(
         accountList.reduce((total, row) => total + row.balance.amount, 0),
       );
-      const people = (await get("/contacts?status=all")).json().items as {
+      const clients = (await get("/contacts?status=all")).json().items as {
         openBalance: { amount: number };
       }[];
       expect(summary.owed.total.amount).toBe(
-        people.reduce((total, row) => total + row.openBalance.amount, 0),
+        clients.reduce((total, row) => total + row.openBalance.amount, 0),
       );
       expect(summary.latest.map((row) => row.transaction.id)).toEqual(
         (await get("/transactions?limit=100"))

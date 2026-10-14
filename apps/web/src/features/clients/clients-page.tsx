@@ -22,13 +22,13 @@ import { formatMoney } from "../accounts/money";
 import { PrivacyContext } from "../shell/preferences";
 import { localToday } from "../transactions/form";
 import {
+  getClient,
+  getClients,
   getHistory,
   getPayments,
-  getPeople,
-  getPerson,
   getServices,
 } from "./api";
-import { usePeopleWorkspace } from "./workspace";
+import { useClientsWorkspace } from "./workspace";
 
 const labels: Record<ReceivableEvent["action"], string> = {
   created: "Service logged",
@@ -63,57 +63,57 @@ function Amount({
     </span>
   );
 }
-/** What a person owes: each currency's balance, then its value in dollars at today's rates. */
-function Balances({ person }: { person: Contact }) {
-  if (!person.openBalances.length) return <Amount value={0} />;
-  const foreign = person.openBalances.some((b) => b.currency !== "USD");
+/** What a client owes: each currency's balance, then its value in dollars at today's rates. */
+function Balances({ client }: { client: Contact }) {
+  if (!client.openBalances.length) return <Amount value={0} />;
+  const foreign = client.openBalances.some((b) => b.currency !== "USD");
   if (!foreign)
-    return person.openBalances.map((b) => (
+    return client.openBalances.map((b) => (
       <Amount key={b.currency} value={b.amount} currency={b.currency} />
     ));
   return (
-    <span className="person-balances">
-      {person.openBalances.map((b) => (
+    <span className="client-balances">
+      {client.openBalances.map((b) => (
         <Amount key={b.currency} value={b.amount} currency={b.currency} />
       ))}
       <span className="balance-note muted">
-        About <Amount value={person.openBalance.amount} /> at today's rates
-        {person.unconvertedCurrencies.length > 0
-          ? `, not counting ${person.unconvertedCurrencies.join(", ")} (no rate yet)`
+        About <Amount value={client.openBalance.amount} /> at today's rates
+        {client.unconvertedCurrencies.length > 0
+          ? `, not counting ${client.unconvertedCurrencies.join(", ")} (no rate yet)`
           : ""}
       </span>
     </span>
   );
 }
-export function PeoplePage() {
+export function ClientsPage() {
   const phone = useIsPhone();
   const ledger = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers }).data
       ?.items[0],
-    workspace = usePeopleWorkspace();
+    workspace = useClientsWorkspace();
   const [selected, setSelected] = useState<string | null>(null),
     [status, setStatus] = useState("all"),
     [text, setText] = useState("");
-  const people = useInfiniteQuery({
+  const clients = useInfiniteQuery({
     queryKey: ["contacts", ledger?.id, "list", status, text],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
-      getPeople(ledger?.id as string, status, text, pageParam, signal),
+      getClients(ledger?.id as string, status, text, pageParam, signal),
     getNextPageParam: (p, _pages, _param, params) =>
       p.nextCursor && !params.includes(p.nextCursor) ? p.nextCursor : undefined,
     enabled: !!ledger,
   });
-  const deletedPersonId = workspace?.deletedPersonId ?? null;
+  const deletedClientId = workspace?.deletedClientId ?? null;
   useEffect(() => {
-    if (deletedPersonId)
-      setSelected((id) => (id === deletedPersonId ? null : id));
-  }, [deletedPersonId]);
-  const person = useQuery({
+    if (deletedClientId)
+      setSelected((id) => (id === deletedClientId ? null : id));
+  }, [deletedClientId]);
+  const client = useQuery({
     queryKey: ["contacts", ledger?.id, "detail", selected],
-    queryFn: () => getPerson(ledger?.id as string, selected as string),
+    queryFn: () => getClient(ledger?.id as string, selected as string),
     enabled: !!ledger && !!selected,
   });
   const services = useInfiniteQuery({
-    queryKey: ["receivables", ledger?.id, "person", selected],
+    queryKey: ["receivables", ledger?.id, "client", selected],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getServices(ledger?.id as string, selected as string, pageParam, signal),
@@ -122,7 +122,7 @@ export function PeoplePage() {
     enabled: !!ledger && !!selected,
   });
   const history = useInfiniteQuery({
-    queryKey: ["peopleHistory", ledger?.id, selected],
+    queryKey: ["clientHistory", ledger?.id, selected],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getHistory(ledger?.id as string, selected as string, pageParam, signal),
@@ -132,9 +132,9 @@ export function PeoplePage() {
   });
   const writable = !!ledger && ledger.role !== "viewer",
     disabled = workspace?.blocked ?? false;
-  const rows = people.data?.pages.flatMap((p) => p.items) ?? [];
-  const editPerson = (p: Contact) =>
-    workspace?.open({ kind: "contact", person: p }, `person-${p.id}`);
+  const rows = clients.data?.pages.flatMap((p) => p.items) ?? [];
+  const editClient = (p: Contact) =>
+    workspace?.open({ kind: "contact", client: p }, `client-${p.id}`);
   return (
     <>
       <div className="page-heading">
@@ -155,63 +155,63 @@ export function PeoplePage() {
           >
             All clients
           </button>
-          {person.isError ? (
+          {client.isError ? (
             <p role="alert">
               Could not load this client.{" "}
-              <button type="button" onClick={() => void person.refetch()}>
+              <button type="button" onClick={() => void client.refetch()}>
                 Try again
               </button>
             </p>
           ) : (
-            person.data && (
-              <section className="settings-card people-detail">
+            client.data && (
+              <section className="settings-card client-detail">
                 <h2>
-                  {person.data.name}
-                  {person.data.archivedAt ? " (archived)" : ""}
+                  {client.data.name}
+                  {client.data.archivedAt ? " (archived)" : ""}
                 </h2>
                 <p>
-                  Open balance <Balances person={person.data} />
+                  Open balance <Balances client={client.data} />
                 </p>
-                {person.data.oldestOpenServiceDate && (
+                {client.data.oldestOpenServiceDate && (
                   <p className="muted">
-                    Oldest unpaid service: {person.data.oldestOpenServiceDate}
+                    Oldest unpaid service: {client.data.oldestOpenServiceDate}
                   </p>
                 )}
-                {person.data.phone && <p>{person.data.phone}</p>}
-                {person.data.email && <p>{person.data.email}</p>}
-                {person.data.note && <p>{person.data.note}</p>}
+                {client.data.phone && <p>{client.data.phone}</p>}
+                {client.data.email && <p>{client.data.email}</p>}
+                {client.data.note && <p>{client.data.note}</p>}
                 {writable && (
                   <ActionBar
-                    menuLabel={`More actions for ${person.data.name}`}
+                    menuLabel={`More actions for ${client.data.name}`}
                     menuId="client-menu"
                     primary={{
                       key: "log",
                       id: "log-service",
                       label: "Log service",
                       icon: Plus,
-                      disabled: disabled || !!person.data.archivedAt,
+                      disabled: disabled || !!client.data.archivedAt,
                       onSelect: () =>
                         workspace?.open(
-                          { kind: "service", person: person.data },
+                          { kind: "service", client: client.data },
                           "log-service",
                         ),
                     }}
                     actions={[
-                      ...(person.data.openBalances.length > 0
+                      ...(client.data.openBalances.length > 0
                         ? [
                             {
                               key: "pay",
-                              id: "record-person-payment",
-                              label: `Record payment from ${person.data.name}`,
+                              id: "record-client-payment",
+                              label: `Record payment from ${client.data.name}`,
                               shortLabel: "Record payment",
                               icon: HandCoins,
                               disabled,
                               onSelect: () =>
                                 workspace?.open(
-                                  { kind: "receipt", person: person.data },
+                                  { kind: "receipt", client: client.data },
                                   phone
                                     ? "client-menu"
-                                    : "record-person-payment",
+                                    : "record-client-payment",
                                 ),
                             },
                           ]
@@ -221,23 +221,23 @@ export function PeoplePage() {
                         label: "Edit client",
                         icon: Pencil,
                         disabled,
-                        onSelect: () => editPerson(person.data),
+                        onSelect: () => editClient(client.data),
                       },
                       {
                         key: "archive",
-                        label: person.data.archivedAt
+                        label: client.data.archivedAt
                           ? "Unarchive client"
                           : "Archive client",
-                        icon: person.data.archivedAt ? ArchiveRestore : Archive,
+                        icon: client.data.archivedAt ? ArchiveRestore : Archive,
                         disabled,
                         onSelect: () =>
                           workspace?.open(
                             {
                               kind: "action",
-                              action: person.data.archivedAt
+                              action: client.data.archivedAt
                                 ? "unarchive"
                                 : "archive",
-                              person: person.data,
+                              client: client.data,
                             },
                             "main-content",
                           ),
@@ -253,7 +253,7 @@ export function PeoplePage() {
                             {
                               kind: "action",
                               action: "deleteContact",
-                              person: person.data,
+                              client: client.data,
                             },
                             "main-content",
                           ),
@@ -264,7 +264,7 @@ export function PeoplePage() {
               </section>
             )
           )}
-          <section aria-label="Services" className="people-section">
+          <section aria-label="Services" className="client-section">
             <h2>Services</h2>
             {services.isPending ? (
               <p role="status">Loading services…</p>
@@ -282,7 +282,7 @@ export function PeoplePage() {
                     No services yet. Log work you have done for this client.
                   </p>
                 )}
-                <ul className="people-rows" aria-label="Services">
+                <ul className="client-rows" aria-label="Services">
                   {services.data?.pages
                     .flatMap((p) => p.items)
                     .map((s) => (
@@ -290,7 +290,7 @@ export function PeoplePage() {
                         key={s.id}
                         service={s}
                         ledgerId={ledger.id}
-                        person={person.data}
+                        client={client.data}
                         writable={writable}
                       />
                     ))}
@@ -308,7 +308,7 @@ export function PeoplePage() {
               </>
             )}
           </section>
-          <section aria-label="Client history" className="people-section">
+          <section aria-label="Client history" className="client-section">
             <h2>History</h2>
             {history.isPending ? (
               <p role="status">Loading history…</p>
@@ -321,11 +321,11 @@ export function PeoplePage() {
               </p>
             ) : (
               <>
-                <ul className="people-rows" aria-label="Client history">
+                <ul className="client-rows" aria-label="Client history">
                   {history.data?.pages
                     .flatMap((p) => p.items)
                     .map((e) => (
-                      <li className="history-row people-event" key={e.id}>
+                      <li className="history-row client-event" key={e.id}>
                         <div className="row-main">
                           <div className="row-text">
                             <h3>{labels[e.action]}</h3>
@@ -412,7 +412,7 @@ export function PeoplePage() {
         </>
       ) : (
         <>
-          <div className="people-toolbar">
+          <div className="client-toolbar">
             <label>
               Search clients
               <input
@@ -422,10 +422,10 @@ export function PeoplePage() {
                 onChange={(e) => setText(e.target.value)}
               />
             </label>
-            <label htmlFor="people-status">
+            <label htmlFor="client-status">
               Client status
               <NativeSelect
-                id="people-status"
+                id="client-status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
@@ -436,24 +436,24 @@ export function PeoplePage() {
             </label>
             {writable && (
               <button
-                id="add-person"
+                id="add-client"
                 type="button"
                 className="button"
                 disabled={disabled}
                 onClick={() =>
-                  workspace?.open({ kind: "contact" }, "add-person")
+                  workspace?.open({ kind: "contact" }, "add-client")
                 }
               >
                 Add client
               </button>
             )}
           </div>
-          {people.isPending ? (
+          {clients.isPending ? (
             <p role="status">Loading clients…</p>
-          ) : people.isError ? (
+          ) : clients.isError ? (
             <p role="alert">
               Could not load clients.{" "}
-              <button type="button" onClick={() => void people.refetch()}>
+              <button type="button" onClick={() => void clients.refetch()}>
                 Try again
               </button>
             </p>
@@ -470,12 +470,12 @@ export function PeoplePage() {
                   </p>
                 </section>
               )}
-              <div className="people-grid">
+              <div className="client-grid">
                 {rows.map((p) => (
                   <button
-                    id={`person-${p.id}`}
+                    id={`client-${p.id}`}
                     type="button"
-                    className="settings-card person-card"
+                    className="settings-card client-card"
                     key={p.id}
                     onClick={() => setSelected(p.id)}
                   >
@@ -483,7 +483,7 @@ export function PeoplePage() {
                       {p.name}
                       {p.archivedAt ? " (archived)" : ""}
                     </strong>
-                    <Balances person={p} />
+                    <Balances client={p} />
                     <span className="muted">
                       {p.oldestOpenServiceDate
                         ? `Oldest unpaid: ${p.oldestOpenServiceDate}`
@@ -492,12 +492,12 @@ export function PeoplePage() {
                   </button>
                 ))}
               </div>
-              {people.hasNextPage && (
+              {clients.hasNextPage && (
                 <button
                   className="secondary-button"
                   type="button"
-                  disabled={people.isFetchingNextPage}
-                  onClick={() => void people.fetchNextPage()}
+                  disabled={clients.isFetchingNextPage}
+                  onClick={() => void clients.fetchNextPage()}
                 >
                   Load more clients
                 </button>
@@ -512,15 +512,15 @@ export function PeoplePage() {
 function ServiceRow({
   service: s,
   ledgerId,
-  person,
+  client,
   writable,
 }: {
   service: Receivable;
   ledgerId: string;
-  person: Contact | undefined;
+  client: Contact | undefined;
   writable: boolean;
 }) {
-  const workspace = usePeopleWorkspace(),
+  const workspace = useClientsWorkspace(),
     [showPayments, setShowPayments] = useState(false);
   const payments = useInfiniteQuery({
     queryKey: ["receivables", ledgerId, "payments", s.id],
@@ -596,7 +596,7 @@ function ServiceRow({
         actions={
           writable
             ? [
-                ...(s.status !== "writtenOff" && person
+                ...(s.status !== "writtenOff" && client
                   ? [
                       {
                         key: "edit",
@@ -605,7 +605,7 @@ function ServiceRow({
                         disabled: blocked,
                         onSelect: () =>
                           workspace?.open(
-                            { kind: "service", service: s, person },
+                            { kind: "service", service: s, client },
                             "main-content",
                           ),
                       },
@@ -660,7 +660,7 @@ function ServiceRow({
         }}
       />
       {showPayments && (
-        <div className="people-payments">
+        <div className="client-payments">
           {payments.isPending ? (
             <p role="status">Loading payments…</p>
           ) : payments.isError ? (
@@ -706,18 +706,18 @@ function ServiceRow({
                         <p className="muted">
                           Part of one payment applied across several services.
                         </p>
-                        <div className="people-actions">
+                        <div className="client-actions">
                           <ActionButton
                             icon={Pencil}
                             id={`payment-${p.id}`}
                             variant="secondary"
-                            disabled={blocked || !person}
+                            disabled={blocked || !client}
                             onClick={() =>
-                              person &&
+                              client &&
                               workspace?.open(
                                 {
                                   kind: "receipt",
-                                  person,
+                                  client,
                                   receiptId: p.receiptId as string,
                                 },
                                 `payment-${p.id}`,
@@ -749,7 +749,7 @@ function ServiceRow({
                         </div>
                       </>
                     ) : (
-                      <div className="people-actions">
+                      <div className="client-actions">
                         <ActionButton
                           icon={Pencil}
                           id={`payment-${p.id}`}

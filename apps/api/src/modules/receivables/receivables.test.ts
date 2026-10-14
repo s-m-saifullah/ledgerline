@@ -52,7 +52,7 @@ let cookie = "",
   viewer = "",
   accountId = "",
   categoryId = "",
-  person: Contact;
+  client: Contact;
 const base = (l = ledgerId) => `/api/v1/ledgers/${l}`;
 const money = (amount: number) => ({ amount, currency: "USD" });
 const headers = (actor = cookie, key = newId()) => ({
@@ -79,7 +79,7 @@ const write = (
   });
 async function service(amount = 10000): Promise<Receivable> {
   const r = await write("/receivables", {
-    contactId: person.id,
+    contactId: client.id,
     description: "Website work",
     serviceDate: "2026-10-07",
     dueDate: "2026-10-20",
@@ -203,7 +203,7 @@ beforeEach(async () => {
     note: "Synthetic",
   });
   expect(r.statusCode).toBe(201);
-  person = r.json();
+  client = r.json();
 });
 afterAll(async () => {
   await app.close();
@@ -227,7 +227,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     expect(p.receivable.status).toBe("paid");
     expect(await balance()).toBe(11000);
     expect(
-      (await read(`/contacts/${person.id}`)).json().openBalance.amount,
+      (await read(`/contacts/${client.id}`)).json().openBalance.amount,
     ).toBe(0);
     expect(
       (
@@ -239,7 +239,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const plain = await service();
     expect(plain.serviceTime).toBeNull();
     const timed = await write("/receivables", {
-      contactId: person.id,
+      contactId: client.id,
       description: "Evening visit",
       serviceDate: "2026-10-07",
       serviceTime: "09:05",
@@ -251,7 +251,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     expect(row.serviceTime).toBe("09:05");
     for (const bad of ["24:00", "9:5", "12:60", "noon"]) {
       const r = await write("/receivables", {
-        contactId: person.id,
+        contactId: client.id,
         description: "Bad time",
         serviceDate: "2026-10-07",
         serviceTime: bad,
@@ -263,7 +263,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
       write(
         `/receivables/${row.id}`,
         {
-          contactId: person.id,
+          contactId: client.id,
           description: row.description,
           serviceDate: row.serviceDate,
           dueDate: row.dueDate,
@@ -376,7 +376,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     });
     expect(reopened.statusCode).toBe(200);
     expect(reopened.json().outstanding.amount).toBe(6000);
-    const h = (await read(`/contacts/${person.id}/history`)).json().items;
+    const h = (await read(`/contacts/${client.id}/history`)).json().items;
     expect(h.map((e: { action: string }) => e.action)).toEqual([
       "reopened",
       "writtenOff",
@@ -435,7 +435,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
         await write(
           `/receivables/${s.id}`,
           {
-            contactId: person.id,
+            contactId: client.id,
             description: "Stale",
             serviceDate: s.serviceDate,
             dueDate: null,
@@ -508,7 +508,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const p = await pay(await service());
     await write(`/accounts/${accountId}/archive`, { expectedVersion: 1 });
     await write(`/categories/${categoryId}/archive`, { expectedVersion: 1 });
-    await write(`/contacts/${person.id}/archive`, { expectedVersion: 1 });
+    await write(`/contacts/${client.id}/archive`, { expectedVersion: 1 });
     const r = await write(
       path(p),
       { ...paymentBody(p.receivable, 3000), expectedVersion: p.version },
@@ -528,7 +528,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     expect(
       (
         await write("/receivables", {
-          contactId: person.id,
+          contactId: client.id,
           description: "New",
           serviceDate: "2026-10-07",
           amount: money(1),
@@ -536,7 +536,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
       ).statusCode,
     ).toBe(409);
     expect(
-      (await read(`/contacts/${person.id}`)).json().openBalance.amount,
+      (await read(`/contacts/${client.id}`)).json().openBalance.amount,
     ).toBe(7000);
   });
   it("live payment blocks reference deletion; deleted references block paired Undo atomically", async () => {
@@ -574,7 +574,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
   it("service deletion never cascades; Undo restores only service; contact deletion guards all live services", async () => {
     const p = await pay(await service());
     expect(
-      (await write(`/contacts/${person.id}`, { expectedVersion: 1 }, "DELETE"))
+      (await write(`/contacts/${client.id}`, { expectedVersion: 1 }, "DELETE"))
         .statusCode,
     ).toBe(409);
     expect(
@@ -611,11 +611,11 @@ describe("Money owed scoped and atomic lifecycle", () => {
     expect(r.json().received.amount).toBe(0);
     expect(await balance()).toBe(1000);
   });
-  it("service Undo fails after person deletion", async () => {
+  it("service Undo fails after client deletion", async () => {
     const s = await service();
     await write(`/receivables/${s.id}`, { expectedVersion: 1 }, "DELETE");
     expect(
-      (await write(`/contacts/${person.id}`, { expectedVersion: 1 }, "DELETE"))
+      (await write(`/contacts/${client.id}`, { expectedVersion: 1 }, "DELETE"))
         .statusCode,
     ).toBe(204);
     expect(
@@ -623,10 +623,10 @@ describe("Money owed scoped and atomic lifecycle", () => {
         .statusCode,
     ).toBe(404);
   });
-  it("amount lower bound and fixed person after any payment history", async () => {
+  it("amount lower bound and fixed client after any payment history", async () => {
     const p = await pay(await service());
     const body = {
-      contactId: person.id,
+      contactId: client.id,
       description: "Corrected",
       serviceDate: "2026-09-30",
       dueDate: null,
@@ -660,7 +660,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const r = await write(
       "/receivables",
       {
-        contactId: person.id,
+        contactId: client.id,
         description: "Overflow",
         serviceDate: "2026-10-07",
         amount: money(1),
@@ -698,7 +698,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
         .statusCode,
     ).toBe(409);
     expect(
-      (await read(`/contacts/${person.id}/history`)).json().items,
+      (await read(`/contacts/${client.id}/history`)).json().items,
     ).toHaveLength(1);
     expect(
       (await read(`/receivables/${s.id}/payments`)).json().items,
@@ -729,8 +729,8 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const p = await pay(await service());
     for (const endpoint of [
       "/contacts",
-      `/contacts/${person.id}`,
-      `/contacts/${person.id}/history`,
+      `/contacts/${client.id}`,
+      `/contacts/${client.id}/history`,
       "/receivables",
       `/receivables/${p.receivableId}`,
       `/receivables/${p.receivableId}/payments`,
@@ -762,17 +762,17 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const cases: [string, unknown, "POST" | "PATCH" | "DELETE"][] = [
       ["/contacts", { name: "X" }, "POST"],
       [
-        `/contacts/${person.id}`,
+        `/contacts/${client.id}`,
         { name: "X", phone: null, email: null, note: null, expectedVersion: 1 },
         "PATCH",
       ],
-      [`/contacts/${person.id}`, { expectedVersion: 1 }, "DELETE"],
-      [`/contacts/${person.id}/archive`, { expectedVersion: 1 }, "POST"],
-      [`/contacts/${person.id}/unarchive`, { expectedVersion: 1 }, "POST"],
+      [`/contacts/${client.id}`, { expectedVersion: 1 }, "DELETE"],
+      [`/contacts/${client.id}/archive`, { expectedVersion: 1 }, "POST"],
+      [`/contacts/${client.id}/unarchive`, { expectedVersion: 1 }, "POST"],
       [
         "/receivables",
         {
-          contactId: person.id,
+          contactId: client.id,
           description: "X",
           serviceDate: s.serviceDate,
           amount: money(1),
@@ -782,7 +782,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
       [
         `/receivables/${s.id}`,
         {
-          contactId: person.id,
+          contactId: client.id,
           description: "X",
           serviceDate: s.serviceDate,
           dueDate: null,
@@ -869,7 +869,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
         ),
       );
   });
-  it("pagination filters and balances include all service pages and archived people", async () => {
+  it("pagination filters and balances include all service pages and archived clients", async () => {
     for (let i = 0; i < 3; i++) await service(100 + i);
     const a = (await read("/receivables?limit=2")).json(),
       b = (await read(`/receivables?limit=2&cursor=${a.nextCursor}`)).json();
@@ -877,14 +877,14 @@ describe("Money owed scoped and atomic lifecycle", () => {
       new Set([...a.items, ...b.items].map((s: Receivable) => s.id)).size,
     ).toBe(3);
     expect(
-      (await read(`/contacts/${person.id}`)).json().openBalance.amount,
+      (await read(`/contacts/${client.id}`)).json().openBalance.amount,
     ).toBe(303);
     expect(
       (
         await read("/receivables?text=Website&status=unpaid&from=2026-10-07")
       ).json().items,
     ).toHaveLength(3);
-    await write(`/contacts/${person.id}/archive`, { expectedVersion: 1 });
+    await write(`/contacts/${client.id}/archive`, { expectedVersion: 1 });
     expect(
       (await read("/contacts?status=all")).json().items[0].openBalance.amount,
     ).toBe(303);
@@ -921,7 +921,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
       expect(await balance()).toBe(1000);
       expect((await read(`/receivables/${s.id}`)).json().version).toBe(1);
       expect(
-        (await read(`/contacts/${person.id}/history`)).json().items,
+        (await read(`/contacts/${client.id}/history`)).json().items,
       ).toHaveLength(1);
     } finally {
       await db.execute(
@@ -992,15 +992,15 @@ describe("Money owed scoped and atomic lifecycle", () => {
     expect((await write(path(p), versions(p), "DELETE")).statusCode).toBe(409);
     expect((await read(path(p))).statusCode).toBe(200);
   });
-  it("serializes person deletion against service assignment", async () => {
+  it("serializes client deletion against service assignment", async () => {
     const [a, b] = await Promise.all([
       write("/receivables", {
-        contactId: person.id,
+        contactId: client.id,
         description: "Concurrent work",
         serviceDate: "2026-10-07",
         amount: money(1),
       }),
-      write(`/contacts/${person.id}`, { expectedVersion: 1 }, "DELETE"),
+      write(`/contacts/${client.id}`, { expectedVersion: 1 }, "DELETE"),
     ]);
     expect([a.statusCode, b.statusCode]).toSatisfy(
       (v: number[]) =>
@@ -1028,7 +1028,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const description = `${"\u0001".repeat(1998)}💵`,
       note = `${"\u0001".repeat(1998)}💵`;
     const response = await write("/receivables", {
-      contactId: person.id,
+      contactId: client.id,
       description,
       serviceDate: "2026-10-07",
       amount: money(10000),
@@ -1047,11 +1047,11 @@ describe("Money owed scoped and atomic lifecycle", () => {
       "PATCH",
     );
     expect(corrected.statusCode, corrected.body).toBe(200);
-    const history = (await read(`/contacts/${person.id}/history`)).json();
+    const history = (await read(`/contacts/${client.id}/history`)).json();
     expect(history.items[0].before.payment.note).toBe(note);
     expect(history.items[0].after.service.description).toBe(description);
   });
-  it("documents all People endpoints with versioned public security contracts", async () => {
+  it("documents all Clients endpoints with versioned public security contracts", async () => {
     const doc = (
       await app.inject({ url: "/api/v1/openapi.json", headers: { cookie } })
     ).json();

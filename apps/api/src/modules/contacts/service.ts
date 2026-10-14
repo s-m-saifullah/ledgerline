@@ -1,15 +1,15 @@
 import {
+  type ClientListQuery,
   type CreateContact,
   contactSchema,
   type JsonValue,
-  type PeopleListQuery,
   type UpdateContact,
 } from "@ledgerline/shared";
 import type { Database, DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { requireLedgerRead } from "../ledgers/service";
 import {
-  personBalances,
+  clientBalances,
   requireNoReceivables,
 } from "../receivables/balance-service";
 import { runFinancialWrite, type WriteIdentity } from "../writes/service";
@@ -17,16 +17,16 @@ import { nextVersion } from "../writes/version";
 import { type ContactRow, contactRepository } from "./repo";
 
 const required = (r: ContactRow | undefined) => {
-  if (!r) throw new ApiProblem(404, "Not found", "Person not found.");
+  if (!r) throw new ApiProblem(404, "Not found", "Client not found.");
   return r;
 };
 async function dto(
   db: DatabaseConnection,
   ledgerId: string,
   row: ContactRow,
-  balances?: Awaited<ReturnType<typeof personBalances>>,
+  balances?: Awaited<ReturnType<typeof clientBalances>>,
 ) {
-  const balance = (balances ?? (await personBalances(db, ledgerId))).get(
+  const balance = (balances ?? (await clientBalances(db, ledgerId))).get(
     row.id,
   );
   return contactSchema.parse({
@@ -62,13 +62,13 @@ export async function listContacts(
   db: Database,
   actorId: string,
   ledgerId: string,
-  q: PeopleListQuery,
+  q: ClientListQuery,
 ) {
   return db.transaction(
     async (tx) => {
       await requireLedgerRead(tx, actorId, ledgerId);
       const rows = await contactRepository(tx, ledgerId).list(q);
-      const balances = await personBalances(tx, ledgerId);
+      const balances = await clientBalances(tx, ledgerId);
       return {
         items: await Promise.all(
           rows.slice(0, q.limit).map((r) => dto(tx, ledgerId, r, balances)),
@@ -157,7 +157,7 @@ export function contactAction(
         throw new ApiProblem(
           409,
           "Conflict",
-          "This person already has that archive state.",
+          "This client already has that archive state.",
         );
       const row = required(
         await repo.update(id, expectedVersion, {

@@ -9,13 +9,13 @@ Read this at the start of every session and update it when a piece of work lands
 - **Next:** the owner's small bug fixes from daily use, then Phase 3 (reports, tags and receipts, CSV import and export) starts with a design for approval.
 - **Known follow-ups:**
   - Review Dependabot's grouped Actions updates when they appear.
-  - Known gaps: merging a category leaves its budget on the archived source category; Home has no budget summary yet; an account's default bonus category is not repointed when its category is merged or archived; the People history line for a cross-currency payment shows the amount received, not the amount it settled.
+  - Known gaps: merging a category leaves its budget on the archived source category; Home has no budget summary yet; an account's default bonus category is not repointed when its category is merged or archived; the Clients history line for a cross-currency payment shows the amount received, not the amount it settled.
   - Automated off-site backups are Phase 4.
 
 ## Phase checklist
 
 - [x] Phase 0, foundations: monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy
-- [x] Phase 1, core ledger: safe writes, accounts, categories, transactions, quick add, list and editor, transfers, account and category deletion, splits, money owed (People), category merge, Home
+- [x] Phase 1, core ledger: safe writes, accounts, categories, transactions, quick add, list and editor, transfers, account and category deletion, splits, money owed (Clients), category merge, Home
 - [x] Phase 1 gate: daily use (owner accepted it after two days of the seven-day trial)
 - [x] Phase 2: budgets with rollover, currencies with transfer bonus and money owed in other currencies, recurring rules (released as `v0.1.0`)
 - [ ] Phase 2 gate: one full month budgeted and reviewed
@@ -25,6 +25,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 ## Session log
 
+- **2026-10-14:** Internal names follow the Clients rename (ADR 0026): folders, files, components, CSS classes, element ids, the query key, browser specs, the API's route plugin and helper names, error texts, the OpenAPI tag and the infra scripts now say client or clients. Unchanged because they are the API contract: `/contacts` paths, `Contact`, `contactId` and Home's `owed.personCount`. No behaviour or database change.
 - **2026-10-14:** Clearer labels on the payment form: the two pickers are now "Category for the payment" and "Category for the tip" (they were "Income category" and "Tip category"). Wording only.
 - **2026-10-13:** Tips on payments, step 2 of 2, the screens (ADR 0027): typing more than is owed in a payment or receipt settles the balance and saves the extra as a tip with its own category (defaults to the last tip category or an income root named Tips; never created silently). With an account in another currency the tip has its own box. History and the payment list show the tip, Transactions and Home mark tip rows, and the entry editor keeps a tip an unsplit income entry. The old "more than the open balance" error for same-currency payments is replaced by the tip split. Browser specs for single payments, receipts and Undo pass on desktop and phone; checked at 320 px in light and dark.
 - **2026-10-13:** Tips on payments, step 1 of 2, the API (ADR 0027, API 0.1.31, migration 0021): a payment or receipt can carry an optional `tip` (extra money received) that is saved atomically with it as its own income entry in the payment's account, linked by `tip_payment_id`. The payment itself is still capped at what is owed, the tip never changes what is owed, and the tip is deleted, restored and undone with its payment. The drill gains a `tips` check and a `tip_links` invariant (scratch drill and negative tests passed; the compose project was removed). The screens come next.

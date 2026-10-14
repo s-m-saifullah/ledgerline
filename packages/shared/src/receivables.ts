@@ -46,7 +46,7 @@ export const contactActionSchema = z.strictObject({
 export const contactParamsSchema = ledgerParamsSchema.extend({
   contactId: idSchema,
 });
-export const peopleListQuerySchema = z.object({
+export const clientListQuerySchema = z.object({
   cursor: idSchema.optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   status: z.enum(["all", "active", "archived"]).default("all"),
@@ -60,10 +60,10 @@ export const contactSchema = z.object({
   ledgerId: idSchema,
   version: versionSchema,
   archivedAt: z.iso.datetime().nullable(),
-  // What the person owes in the base currency at the newest stored rates (ADR 0022); currencies
+  // What the client owes in the base currency at the newest stored rates (ADR 0022); currencies
   // with no rate are left out of it and named in `unconvertedCurrencies`.
   openBalance: usdMoneySchema,
-  // The open balance in each currency the person owes in (none when nothing is open).
+  // The open balance in each currency the client owes in (none when nothing is open).
   openBalances: z.array(moneySchema).default([]),
   unconvertedCurrencies: z.array(currencySchema).default([]),
   oldestOpenServiceDate: transactionDateSchema.nullable(),
@@ -141,7 +141,7 @@ export const receivableListSchema = z.object({
   nextCursor: idSchema.nullable(),
 });
 // The extra money received on top of what a payment settles (ADR 0027): its own income entry, in
-// the receiving account's currency, in a category the person chose.
+// the receiving account's currency, in a category the client chose.
 export const tipInputSchema = z.strictObject({
   amount: positiveMoneySchema,
   categoryId: idSchema,
@@ -197,7 +197,7 @@ export const paymentSchema = z.object({
   receivableId: idSchema,
   transactionId: idSchema,
   amount: positiveMoneySchema,
-  // Payments created together from one person-level receipt share this ID.
+  // Payments created together from one client-level receipt share this ID.
   receiptId: idSchema.nullable().default(null),
   version: versionSchema,
   ...timestamps,
@@ -258,7 +258,7 @@ export const receivableEventListSchema = z.object({
 export type Contact = z.infer<typeof contactSchema>;
 export type CreateContact = z.infer<typeof createContactSchema>;
 export type UpdateContact = z.infer<typeof updateContactSchema>;
-export type PeopleListQuery = z.infer<typeof peopleListQuerySchema>;
+export type ClientListQuery = z.infer<typeof clientListQuerySchema>;
 export type Receivable = z.infer<typeof receivableSchema>;
 export type CreateReceivable = z.infer<typeof createReceivableSchema>;
 export type UpdateReceivable = z.infer<typeof updateReceivableSchema>;

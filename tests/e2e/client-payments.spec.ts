@@ -3,7 +3,7 @@ import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
 import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
-import { clickAction } from "./people-actions";
+import { clickAction } from "./client-actions";
 import { signIn } from "./sign-in";
 
 const env = parseEnv(readFileSync(".env", "utf8")),
@@ -109,7 +109,7 @@ test.afterEach(async () => {
   }
 });
 test.afterAll(async () => pool.end());
-async function people(page: Page) {
+async function clients(page: Page) {
   await page.goto("/more/clients");
   await expect(
     page.getByRole("heading", { name: "Clients", exact: true }),
@@ -120,7 +120,7 @@ async function balance(page: Page) {
   expect(r.status()).toBe(200);
   return (await r.json()).balance.amount as number;
 }
-async function createPerson(page: Page) {
+async function createClient(page: Page) {
   await page.getByRole("button", { name: "Add client", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Sam");
   await page.getByRole("button", { name: "Save client", exact: true }).click();
@@ -145,7 +145,7 @@ async function createPerson(page: Page) {
     expect(r.status()).toBe(201);
   }
   await page.reload();
-  await page.locator(".person-card").filter({ hasText: "Sam" }).click();
+  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
   await expect(
     page.getByRole("heading", { name: "Sam", exact: true }),
   ).toBeVisible();
@@ -155,13 +155,13 @@ const confirm = async (page: Page, title: string) => {
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
 };
 
-test("one payment from a person pays older services first and can be undone as a whole", async ({
+test("one payment from a client pays older services first and can be undone as a whole", async ({
   page,
 }) => {
   await signIn(page);
-  await people(page);
-  await createPerson(page);
-  await expect(page.locator(".people-detail")).toContainText("$700.00");
+  await clients(page);
+  await createClient(page);
+  await expect(page.locator(".client-detail")).toContainText("$700.00");
   const start = await balance(page);
 
   await clickAction(page, "Record payment from Sam");
@@ -196,7 +196,7 @@ test("one payment from a person pays older services first and can be undone as a
     }),
   ).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);
-  await expect(page.locator(".people-detail")).toContainText("$200.00");
+  await expect(page.locator(".client-detail")).toContainText("$200.00");
   await expect(page.locator(".service-row", { hasText: "Logo" })).toContainText(
     "Paid",
   );
@@ -221,20 +221,20 @@ test("one payment from a person pays older services first and can be undone as a
   await confirm(page, "Delete receipt");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start);
-  await expect(page.locator(".people-detail")).toContainText("$700.00");
+  await expect(page.locator(".client-detail")).toContainText("$700.00");
   await page.getByRole("button", { name: "Undo Client action" }).click();
   await confirm(page, "Undo receipt deletion");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);
-  await expect(page.locator(".people-detail")).toContainText("$200.00");
+  await expect(page.locator(".client-detail")).toContainText("$200.00");
 });
 
 test("receipt details are editable, amounts are not, and privacy hides allocations", async ({
   page,
 }) => {
   await signIn(page);
-  await people(page);
-  await createPerson(page);
+  await clients(page);
+  await createClient(page);
   await clickAction(page, "Record payment from Sam");
   await page.getByRole("button", { name: "Pay full balance" }).click();
   await expect(
@@ -273,5 +273,5 @@ test("receipt details are editable, amounts are not, and privacy hides allocatio
   expect(income.every((row) => row.note === "Corrected note")).toBe(true);
 
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
-  await expect(page.locator(".people-detail")).not.toContainText("$");
+  await expect(page.locator(".client-detail")).not.toContainText("$");
 });

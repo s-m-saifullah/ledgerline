@@ -1,4 +1,5 @@
 import {
+  clientListQuerySchema,
   contactActionSchema,
   contactListSchema,
   contactParamsSchema,
@@ -13,7 +14,6 @@ import {
   paymentListSchema,
   paymentParamsSchema,
   paymentSchema,
-  peopleListQuerySchema,
   problemSchema,
   receivableActionSchema,
   receivableEventListSchema,
@@ -61,7 +61,7 @@ const errors = {
   500: problemSchema,
 };
 const writeHeaders = z.looseObject({ "idempotency-key": idempotencyKeySchema });
-export async function peopleRoutes(
+export async function clientRoutes(
   instance: FastifyInstance,
   { db, config, auth }: { db: Database; config: Config; auth: Auth },
 ) {
@@ -77,11 +77,11 @@ export async function peopleRoutes(
     "/api/v1/ledgers/:ledgerId/contacts",
     {
       schema: {
-        summary: "List people and exact open balances",
-        tags: ["People"],
+        summary: "List clients and exact open balances",
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: ledgerParamsSchema,
-        querystring: peopleListQuerySchema,
+        querystring: clientListQuerySchema,
         response: { 200: contactListSchema, ...errors },
       },
     },
@@ -91,8 +91,8 @@ export async function peopleRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId",
     {
       schema: {
-        summary: "Get a person",
-        tags: ["People"],
+        summary: "Get a client",
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
         response: { 200: contactSchema, ...errors },
@@ -105,8 +105,8 @@ export async function peopleRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/history",
     {
       schema: {
-        summary: "Get person history",
-        tags: ["People"],
+        summary: "Get client history",
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
         querystring: pageQuerySchema,
@@ -127,7 +127,7 @@ export async function peopleRoutes(
     {
       schema: {
         summary: "List services",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: ledgerParamsSchema,
         querystring: receivableListQuerySchema,
@@ -142,7 +142,7 @@ export async function peopleRoutes(
     {
       schema: {
         summary: "Get a service",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         response: { 200: receivableSchema, ...errors },
@@ -161,7 +161,7 @@ export async function peopleRoutes(
     {
       schema: {
         summary: "List received payments",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         querystring: pageQuerySchema,
@@ -182,7 +182,7 @@ export async function peopleRoutes(
     {
       schema: {
         summary: "Get a received payment",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: paymentParamsSchema,
         response: { 200: paymentSchema, ...errors },
@@ -204,7 +204,7 @@ export async function peopleRoutes(
         summary: "Create contact",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: ledgerParamsSchema,
         headers: writeHeaders,
@@ -230,7 +230,7 @@ export async function peopleRoutes(
         summary: "Edit contact",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
         headers: writeHeaders,
@@ -256,7 +256,7 @@ export async function peopleRoutes(
         summary: "Create receivable",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: ledgerParamsSchema,
         headers: writeHeaders,
@@ -282,7 +282,7 @@ export async function peopleRoutes(
         summary: "Edit receivable",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         headers: writeHeaders,
@@ -305,10 +305,10 @@ export async function peopleRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/archive",
     {
       schema: {
-        summary: "archive person",
+        summary: "archive client",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
         headers: writeHeaders,
@@ -332,10 +332,10 @@ export async function peopleRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/unarchive",
     {
       schema: {
-        summary: "unarchive person",
+        summary: "unarchive client",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
         headers: writeHeaders,
@@ -359,10 +359,10 @@ export async function peopleRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId",
     {
       schema: {
-        summary: "delete person",
+        summary: "delete client",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
         headers: writeHeaders,
@@ -389,7 +389,7 @@ export async function peopleRoutes(
         summary: "delete service",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         headers: writeHeaders,
@@ -416,7 +416,7 @@ export async function peopleRoutes(
         summary: "restore service",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         headers: writeHeaders,
@@ -443,7 +443,7 @@ export async function peopleRoutes(
         summary: "write-off service",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         headers: writeHeaders,
@@ -470,7 +470,7 @@ export async function peopleRoutes(
         summary: "reopen service",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         headers: writeHeaders,
@@ -497,7 +497,7 @@ export async function peopleRoutes(
         summary: "create paired payment and income",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: receivableParamsSchema,
         headers: writeHeaders,
@@ -525,7 +525,7 @@ export async function peopleRoutes(
         summary: "edit paired payment and income",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: paymentParamsSchema,
         headers: writeHeaders,
@@ -553,7 +553,7 @@ export async function peopleRoutes(
         summary: "delete paired payment and income",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: paymentParamsSchema,
         headers: writeHeaders,
@@ -581,7 +581,7 @@ export async function peopleRoutes(
         summary: "restore paired payment and income",
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
-        tags: ["People"],
+        tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: paymentParamsSchema,
         headers: writeHeaders,
