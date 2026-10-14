@@ -152,7 +152,7 @@ test("money owed in euros is shown in euros and settled into a dollar account wi
   await expect(dialog.getByLabel("Amount received (USD)")).toBeVisible();
   await dialog.getByLabel("Amount received (USD)").fill("1000");
   await expect(dialog.getByText("1 USD = 0.8 EUR")).toBeVisible();
-  await chooseCategory(page, "Income category", "Services");
+  await chooseCategory(page, "Category for the payment", "Services");
   await dialog.getByRole("button", { name: "Save payment" }).click();
   await expect(
     page.getByText("Payment applied", { exact: false }),

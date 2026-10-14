@@ -1073,7 +1073,7 @@ export function PeopleWorkspace({
       )}
       {creating && tipMinor > 0 && (
         <CategoryPicker
-          label="Tip category"
+          label="Category for the tip"
           categories={categories.data ?? []}
           kind="income"
           value={values.tipCategoryId}
@@ -1084,7 +1084,7 @@ export function PeopleWorkspace({
         />
       )}
       <CategoryPicker
-        label="Income category"
+        label="Category for the payment"
         categories={categories.data ?? []}
         kind="income"
         value={values.categoryId}

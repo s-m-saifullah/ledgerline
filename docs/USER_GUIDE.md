@@ -67,7 +67,7 @@ For rent, salary, subscriptions and regular transfers, open **More, Recurring** 
 
 Open **More, Clients** to add a client, log a service you provided (what, date, amount, optional due date) and record full or partial payments as they arrive. Logging a service does not count as income; a payment creates the income in the account that received it. Write off an amount that will never be paid: it leaves the open total but stays in history. Archiving a client keeps their balances and history. For work paid by the hour, open **Work paid by the hour?** on the Log service form, enter the hours and your hourly rate, and choose **Use this total**: it fills the amount (and a blank description such as "3.5 h at $40.00/h"). Only the total is stored.
 
-If a client pays more than they owe, type what you received: Ledgerline settles what was owed and saves the extra as a **tip**, a separate income entry in the same account (choose a tip category; an income category named Tips is picked for you when it exists). A tip never changes what a client owes. When the account is in another currency, enter the tip in its own box. Deleting or undoing a payment removes its tip too; you can edit or delete a tip on its own from Transactions.
+If a client pays more than they owe, type what you received: Ledgerline settles what was owed and saves the extra as a **tip**, a separate income entry in the same account (choose a category for the tip; an income category named Tips is picked for you when it exists). A tip never changes what a client owes. When the account is in another currency, enter the tip in its own box. Deleting or undoing a payment removes its tip too; you can edit or delete a tip on its own from Transactions.
 
 ## Finding and fixing entries
 

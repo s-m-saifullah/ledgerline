@@ -893,12 +893,12 @@ test("paying more than is owed saves the extra as a separate tip, and Undo remov
     .getByRole("button", { name: "Record payment", exact: true })
     .click();
   await expect(page.getByLabel("Receiving account")).toBeVisible();
-  await expect(page.getByText("Tip category")).toHaveCount(0);
+  await expect(page.getByText("Category for the tip")).toHaveCount(0);
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("120.00");
   await expect(
     page.getByRole("status").filter({ hasText: "tip" }),
   ).toContainText("settles $100.00. The extra $20.00 is saved as a tip");
-  await expect(page.getByText("Tip category")).toBeVisible();
+  await expect(page.getByText("Category for the tip")).toBeVisible();
   await page.setViewportSize({ width: 320, height: 1100 });
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
