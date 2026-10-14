@@ -24,7 +24,7 @@ export function NetWorthCard({ ledgerId }: { ledgerId: string }) {
       </div>
       <p className="muted">
         Everything you own minus everything you owe, across all accounts
-        including archived ones. Money owed to you in People is not included.
+        including archived ones. Money owed to you in Clients is not included.
       </p>
       {data.unconvertedCurrencies.length > 0 && (
         <p className="muted" role="note">

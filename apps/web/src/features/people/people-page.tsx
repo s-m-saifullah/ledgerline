@@ -138,7 +138,7 @@ export function PeoplePage() {
     <>
       <div className="page-heading">
         <p className="eyebrow">MONEY OWED TO YOU</p>
-        <h1>People</h1>
+        <h1>Clients</h1>
         <p className="muted">
           Unpaid services stay separate from income until you receive payment.
         </p>
@@ -152,11 +152,11 @@ export function PeoplePage() {
             className="secondary-button"
             onClick={() => setSelected(null)}
           >
-            All people
+            All clients
           </button>
           {person.isError ? (
             <p role="alert">
-              Could not load this person.{" "}
+              Could not load this client.{" "}
               <button type="button" onClick={() => void person.refetch()}>
                 Try again
               </button>
@@ -229,7 +229,7 @@ export function PeoplePage() {
                     actions={[
                       {
                         key: "edit",
-                        label: "Edit person",
+                        label: "Edit client",
                         icon: Pencil,
                         disabled,
                         onSelect: () => editPerson(person.data),
@@ -237,8 +237,8 @@ export function PeoplePage() {
                       {
                         key: "archive",
                         label: person.data.archivedAt
-                          ? "Unarchive person"
-                          : "Archive person",
+                          ? "Unarchive client"
+                          : "Archive client",
                         icon: person.data.archivedAt ? ArchiveRestore : Archive,
                         disabled,
                         onSelect: () =>
@@ -255,7 +255,7 @@ export function PeoplePage() {
                       },
                       {
                         key: "delete",
-                        label: "Delete person",
+                        label: "Delete client",
                         danger: true,
                         icon: Trash2,
                         disabled,
@@ -290,7 +290,7 @@ export function PeoplePage() {
               <>
                 {!services.data?.pages.some((p) => p.items.length) && (
                   <p className="muted">
-                    No services yet. Log work you have done for this person.
+                    No services yet. Log work you have done for this client.
                   </p>
                 )}
                 <ul className="people-rows" aria-label="Services">
@@ -319,7 +319,7 @@ export function PeoplePage() {
               </>
             )}
           </section>
-          <section aria-label="Person history" className="people-section">
+          <section aria-label="Client history" className="people-section">
             <h2>History</h2>
             {history.isPending ? (
               <p role="status">Loading history…</p>
@@ -332,7 +332,7 @@ export function PeoplePage() {
               </p>
             ) : (
               <>
-                <ul className="people-rows" aria-label="Person history">
+                <ul className="people-rows" aria-label="Client history">
                   {history.data?.pages
                     .flatMap((p) => p.items)
                     .map((e) => (
@@ -415,7 +415,7 @@ export function PeoplePage() {
         <>
           <div className="people-toolbar">
             <label>
-              Search people
+              Search clients
               <input
                 type="search"
                 value={text}
@@ -424,15 +424,15 @@ export function PeoplePage() {
               />
             </label>
             <label htmlFor="people-status">
-              People status
+              Client status
               <NativeSelect
                 id="people-status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                <option value="all">All people</option>
-                <option value="active">Active people</option>
-                <option value="archived">Archived people</option>
+                <option value="all">All clients</option>
+                <option value="active">Active clients</option>
+                <option value="archived">Archived clients</option>
               </NativeSelect>
             </label>
             {writable && (
@@ -445,15 +445,15 @@ export function PeoplePage() {
                   workspace?.open({ kind: "contact" }, "add-person")
                 }
               >
-                Add person
+                Add client
               </button>
             )}
           </div>
           {people.isPending ? (
-            <p role="status">Loading people…</p>
+            <p role="status">Loading clients…</p>
           ) : people.isError ? (
             <p role="alert">
-              Could not load people.{" "}
+              Could not load clients.{" "}
               <button type="button" onClick={() => void people.refetch()}>
                 Try again
               </button>
@@ -463,10 +463,10 @@ export function PeoplePage() {
               {rows.length === 0 && (
                 <section className="settings-card">
                   <h2>
-                    {text ? "No matching people" : "Keep track of unpaid work"}
+                    {text ? "No matching clients" : "Keep track of unpaid work"}
                   </h2>
                   <p>
-                    Add a person, log a service, and record payment when it
+                    Add a client, log a service, and record payment when it
                     arrives.
                   </p>
                 </section>
@@ -500,7 +500,7 @@ export function PeoplePage() {
                   disabled={people.isFetchingNextPage}
                   onClick={() => void people.fetchNextPage()}
                 >
-                  Load more people
+                  Load more clients
                 </button>
               )}
             </>

@@ -288,9 +288,9 @@ test("replays an interrupted committed merge across navigation and blocks compet
     .getByRole("link", { name: "More", exact: true })
     .filter({ visible: true })
     .click();
-  await page.getByRole("link", { name: /^People/ }).click();
+  await page.getByRole("link", { name: /^Clients/ }).click();
   await expect(
-    page.getByRole("button", { name: "Add person", exact: true }),
+    page.getByRole("button", { name: "Add client", exact: true }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Resume category merge" }).click();
   await expect(

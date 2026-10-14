@@ -123,10 +123,10 @@ test("command palette filters pages and actions and runs them from the keyboard"
   const dialog = page.getByRole("dialog");
   const search = dialog.getByLabel("Search pages and actions");
   await expect(search).toBeFocused();
-  await search.fill("peo");
+  await search.fill("clie");
   await expect(
     dialog.getByRole("group", { name: "Results" }).getByRole("button"),
-  ).toHaveText([/People/]);
+  ).toHaveText([/Clients/]);
   // Every More screen is reachable from here, including Currencies.
   await search.fill("currenc");
   await expect(
@@ -154,9 +154,9 @@ test("command palette filters pages and actions and runs them from the keyboard"
   await page.keyboard.press("Enter");
   await expect(page.locator("html")).toHaveAttribute("data-privacy", "false");
   await page.keyboard.press("Control+k");
-  await dialog.getByLabel("Search pages and actions").fill("people");
+  await dialog.getByLabel("Search pages and actions").fill("client");
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("heading", { name: "People", exact: true }),
+    page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();
 });

@@ -25,6 +25,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 ## Session log
 
+- **2026-10-13:** People is now Clients (ADR 0026): the screen, buttons, messages, Home's "From N clients" line, the guide and the plan use the new name, and the web route is `/more/clients` with no redirect. The API paths (`/contacts`, receivables) are unchanged and there is no migration. Hourly work needs no data change: a service stays a labeled amount, and an optional "Hours × rate" helper on the Log service form comes in a later step. Next in this series: the client card layout (Log service primary, Record payment in the menu), the hourly helper, then tips on payments.
 Newest first. One short entry per piece of work.
 
 - **2026-10-13:** Date and time fields: the extra dropdown arrow was gone in Chrome on Android but still showed in Edge on Android. Android Chromium gives those inputs a dropdown-style look (`menulist-button`); the fields now also set `appearance: none`, which removes it in every Chromium-based browser. Style only. Not released.

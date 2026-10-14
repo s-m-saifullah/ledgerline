@@ -241,9 +241,9 @@ export function HomePage() {
                   <span className="muted">Cleared spending in {label}</span>
                 </article>
                 <Link
-                  to="/more/people"
+                  to="/more/clients"
                   className="stat-card home-link-card"
-                  aria-label="Owed to you. Open People"
+                  aria-label="Owed to you. Open Clients"
                 >
                   <p>Owed to you</p>
                   <div className="amount">
@@ -253,8 +253,8 @@ export function HomePage() {
                     {data.owed.personCount === 0
                       ? "Nobody owes you right now"
                       : data.owed.personCount === 1
-                        ? "From 1 person"
-                        : `From ${data.owed.personCount} people`}
+                        ? "From 1 client"
+                        : `From ${data.owed.personCount} clients`}
                   </span>
                   {data.owed.otherCurrencies.length > 0 && (
                     <span className="muted">
