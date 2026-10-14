@@ -70,6 +70,7 @@ const transaction: Transaction = {
   transferId: null,
   relatedTransferId: null,
   feeTransferId: null,
+  tipPaymentId: null,
   receivablePaymentId: null,
   receivableId: null,
   isSplit: false,

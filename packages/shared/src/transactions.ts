@@ -202,6 +202,8 @@ export const transactionSchema = z.object({
   relatedTransferId: idSchema.nullable().default(null),
   // Set on the expense entry a transfer's fee created (ADR 0025).
   feeTransferId: idSchema.nullable().default(null),
+  // The payment this income entry is the tip of, if any (ADR 0027).
+  tipPaymentId: idSchema.nullable().default(null),
   receivablePaymentId: idSchema.nullable().default(null),
   receivableId: idSchema.nullable().default(null),
   isSplit: z.boolean().default(false),

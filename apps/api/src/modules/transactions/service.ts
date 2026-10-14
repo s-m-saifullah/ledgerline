@@ -153,6 +153,105 @@ export async function paymentIncome(
     deletedAt: row.deletedAt?.toISOString() ?? null,
   };
 }
+/** What a payment's tip looks like in responses and history (ADR 0027). */
+export function tipDto(row: TransactionRow | undefined) {
+  return row?.categoryId
+    ? {
+        transactionId: row.id,
+        amount: { amount: row.amount, currency: row.currency },
+        categoryId: row.categoryId,
+        deletedAt: row.deletedAt?.toISOString() ?? null,
+      }
+    : null;
+}
+export function readTip(
+  db: DatabaseConnection,
+  ledgerId: string,
+  paymentId: string,
+) {
+  return transactionRepository(db, ledgerId).tip(paymentId).then(tipDto);
+}
+/**
+ * Save the extra money received with a payment as its own income entry (ADR 0027), inside the
+ * caller's financial write. It lands in the payment's account, in that account's currency, dated
+ * like the payment, and is priced like any entry.
+ */
+export async function createTip(
+  context: WriteContext,
+  input: {
+    paymentId: string;
+    accountId: string;
+    categoryId: string;
+    amount: Money;
+    date: string;
+    time: string | null;
+    payee: string | null;
+  },
+) {
+  const rows = await lockTransactionAccounts(context.tx, context.ledgerId, [
+    input.accountId,
+  ]);
+  const account = accountOf(rows, input.accountId);
+  if (input.amount.currency !== account.currency)
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      `The receiving account uses ${account.currency}. Enter the tip in ${account.currency}.`,
+      [
+        {
+          field: "tip.amount.currency",
+          message: `Use ${account.currency}, the receiving account's currency.`,
+        },
+      ],
+    );
+  await validateTransactionCategory(
+    context.tx,
+    context.ledgerId,
+    input.categoryId,
+    "income",
+    true,
+  );
+  const pricing = await priceEntry(context, {
+    accountCurrency: account.currency,
+    amount: input.amount,
+    date: input.date,
+  });
+  const row = required(
+    await transactionRepository(context.tx, context.ledgerId).createTip(
+      input.paymentId,
+      {
+        accountId: account.id,
+        categoryId: input.categoryId,
+        amount: input.amount.amount,
+        currency: account.currency,
+        date: input.date,
+        time: input.time,
+        payee: input.payee,
+      },
+      pricing,
+    ),
+  );
+  await checkBalances(context, rows);
+  return row;
+}
+/**
+ * Delete a payment's tip with the payment, or restore the tip that went at the same moment
+ * (ADR 0027). Returns nothing when the payment has no such tip.
+ */
+export async function tipLifecycle(
+  context: WriteContext,
+  paymentId: string,
+  change: { deletedAt: Date } | { restoreFrom: Date },
+) {
+  const repo = transactionRepository(context.tx, context.ledgerId);
+  const tip = await repo.tip(paymentId, true);
+  if (!tip) return;
+  const rows = await lockTransactionAccounts(context.tx, context.ledgerId, [
+    tip.accountId,
+  ]);
+  await repo.tipLifecycle(paymentId, change);
+  await checkBalances(context, rows);
+}
 export async function readPaymentIncome(
   db: DatabaseConnection,
   ledgerId: string,
@@ -346,16 +445,18 @@ export function updateTransaction(
       const repo = transactionRepository(context.tx, context.ledgerId);
       const current = required(await repo.find(id, true));
       ordinary(current);
-      // A fee or bonus stays one plain, unsplit entry of its kind (ADRs 0023, 0025).
+      // A fee, bonus or tip stays one plain, unsplit entry of its kind (ADRs 0023, 0025, 0027).
       if (
-        (current.feeTransferId || current.relatedTransferId) &&
+        (current.feeTransferId ||
+          current.relatedTransferId ||
+          current.tipPaymentId) &&
         ((changes.kind !== undefined && changes.kind !== current.kind) ||
           (changes.splits !== undefined && changes.splits !== null))
       )
         throw new ApiProblem(
           409,
           "Conflict",
-          "A transfer's fee or bonus keeps its kind and cannot be split.",
+          "A transfer's fee or bonus, or a payment's tip, keeps its kind and cannot be split.",
         );
       const version = nextVersion(current.version, expectedVersion);
       const previous = await splitRepository(

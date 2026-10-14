@@ -47,6 +47,10 @@ psqlx "UPDATE recurring_runs SET transaction_id='00000000-0000-7000-8000-0000000
 psqlx "UPDATE transactions SET fee_transfer_id='00000000-0000-7000-8000-00000000dead' WHERE id='00000000-0000-7000-8000-0000000000e5'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "fee without its transfer" "Restored fee links failed validation" bash restore-drill.sh "$(latest)"
 psqlx "UPDATE transactions SET fee_transfer_id='00000000-0000-7000-8000-0000000000f1' WHERE id='00000000-0000-7000-8000-0000000000e5'" >/dev/null
+# 9d. a live tip whose payment was deleted
+psqlx "UPDATE transactions SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-0000000000e8'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "tip outliving its payment" "Restored tip links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE transactions SET deleted_at='2026-10-08 00:00:00+00' WHERE id='00000000-0000-7000-8000-0000000000e8'" >/dev/null
 # 10. clean again, then concurrent writes during the backup must not break the drill
 bash backup.sh >/dev/null; bash restore-drill.sh "$(latest)" >/dev/null 2>&1 && echo "PASS  clean data restores after repairs" || echo "FAIL  clean data did not restore"
 ( for i in $(seq 1 150); do psqlx "INSERT INTO transactions (id,ledger_id,account_id,category_id,kind,date,amount,base_amount) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b1','00000000-0000-7000-8000-0000000000c1','expense','2026-10-09',-$i,-$i)" >/dev/null; done ) &
