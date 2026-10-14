@@ -46,19 +46,22 @@ async function valued(
   return { total: safeOwed(total), unconverted: [...unconverted].sort() };
 }
 const byCurrency = (a: Money, b: Money) => a.currency.localeCompare(b.currency);
-export async function personBalances(
+export async function clientBalances(
   db: DatabaseConnection,
   ledgerId: string,
   base = "USD",
 ) {
   const rows = (await receivableRepository(db, ledgerId).summaries()).rows;
-  const people = new Map<string, { amounts: Money[]; oldest: string | null }>();
+  const clients = new Map<
+    string,
+    { amounts: Money[]; oldest: string | null }
+  >();
   for (const r of rows) {
-    const person = people.get(r.contactId) ?? { amounts: [], oldest: null };
-    person.amounts.push({ amount: safeOwed(r.total), currency: r.currency });
-    if (r.oldest && (!person.oldest || r.oldest < person.oldest))
-      person.oldest = r.oldest;
-    people.set(r.contactId, person);
+    const client = clients.get(r.contactId) ?? { amounts: [], oldest: null };
+    client.amounts.push({ amount: safeOwed(r.total), currency: r.currency });
+    if (r.oldest && (!client.oldest || r.oldest < client.oldest))
+      client.oldest = r.oldest;
+    clients.set(r.contactId, client);
   }
   const result = new Map<
     string,
@@ -69,13 +72,13 @@ export async function personBalances(
       oldest: string | null;
     }
   >();
-  for (const [id, person] of people) {
-    const worth = await valued(db, ledgerId, base, person.amounts);
+  for (const [id, client] of clients) {
+    const worth = await valued(db, ledgerId, base, client.amounts);
     result.set(id, {
-      amounts: person.amounts.sort(byCurrency),
+      amounts: client.amounts.sort(byCurrency),
       amount: worth.total,
       unconverted: worth.unconverted,
-      oldest: person.oldest,
+      oldest: client.oldest,
     });
   }
   return result;
@@ -89,7 +92,7 @@ export async function owedTotal(db: DatabaseConnection, ledgerId: string) {
   for (const total of totals.values()) safeOwed(total);
   return totals;
 }
-/** Open owed total (in the base currency at the newest rates) and the people who owe money. */
+/** Open owed total (in the base currency at the newest rates) and the clients who owe money. */
 export async function owedOverview(
   db: DatabaseConnection,
   ledgerId: string,
@@ -118,7 +121,7 @@ export async function checkOwedLimits(
   db: DatabaseConnection,
   ledgerId: string,
 ) {
-  // Each person's and the ledger's open total per currency must stay in the exact range.
+  // Each client's and the ledger's open total per currency must stay in the exact range.
   const rows = (await receivableRepository(db, ledgerId).summaries()).rows;
   for (const r of rows) safeOwed(r.total);
   await owedTotal(db, ledgerId);
@@ -133,6 +136,6 @@ export async function requireNoReceivables(
     throw new ApiProblem(
       409,
       "Conflict",
-      "Delete connected services first, or archive this person to keep their history.",
+      "Delete connected services first, or archive this client to keep their history.",
     );
 }

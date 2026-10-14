@@ -1,6 +1,6 @@
 import type {
+  ClientListQuery,
   CreateContact,
-  PeopleListQuery,
   UpdateContact,
 } from "@ledgerline/shared";
 import { and, asc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
@@ -10,7 +10,7 @@ export type ContactRow = typeof contacts.$inferSelect;
 export function contactRepository(db: DatabaseConnection, ledgerId: string) {
   const scope = eq(contacts.ledgerId, ledgerId);
   return {
-    list: (q: PeopleListQuery) =>
+    list: (q: ClientListQuery) =>
       db
         .select()
         .from(contacts)

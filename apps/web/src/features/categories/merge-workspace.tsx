@@ -167,7 +167,7 @@ export function CategoryMergeWorkspace({
         "transactions",
         "contacts",
         "receivables",
-        "peopleHistory",
+        "clientHistory",
         "accounts",
         "home",
       ])

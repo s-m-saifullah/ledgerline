@@ -21,9 +21,9 @@ import { AccountsPage } from "./features/accounts/accounts-page";
 import { SignIn } from "./features/auth/sign-in";
 import { BudgetsPage } from "./features/budgets/budgets-page";
 import { CategoriesPage } from "./features/categories/categories-page";
+import { ClientsPage } from "./features/clients/clients-page";
 import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
-import { PeoplePage } from "./features/people/people-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import {
   PrivacyContext,
@@ -86,7 +86,7 @@ function Root() {
             client.removeQueries({ queryKey: ["categories"] });
             client.removeQueries({ queryKey: ["transactions"] });
             client.removeQueries({ queryKey: ["home"] });
-            for (const key of ["contacts", "receivables", "peopleHistory"])
+            for (const key of ["contacts", "receivables", "clientHistory"])
               client.removeQueries({ queryKey: [key] });
             await router.navigate({ to: "/" });
           }}
@@ -157,10 +157,10 @@ const recurring = createRoute({
   path: "/more/recurring",
   component: RecurringPage,
 });
-const people = createRoute({
+const clients = createRoute({
   getParentRoute: () => rootRoute,
   path: "/more/clients",
-  component: PeoplePage,
+  component: ClientsPage,
 });
 const router = createRouter({
   routeTree: rootRoute.addChildren([
@@ -173,7 +173,7 @@ const router = createRouter({
     categories,
     currenciesRoute,
     recurring,
-    people,
+    clients,
   ]),
 });
 declare module "@tanstack/react-router" {

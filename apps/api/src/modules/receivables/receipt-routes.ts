@@ -37,7 +37,7 @@ const errors = {
 const writeHeaders = z.looseObject({ "idempotency-key": idempotencyKeySchema });
 const security = [{ sessionCookie: [] }];
 const description =
-  "Versioned ledger-scoped write with an atomic receipt. A person-level payment is applied to the person's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.";
+  "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.";
 
 export async function receiptRoutes(
   instance: FastifyInstance,
@@ -55,10 +55,10 @@ export async function receiptRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/receipt-preview",
     {
       schema: {
-        summary: "Preview how a person-level payment would be applied",
+        summary: "Preview how a client-level payment would be applied",
         description:
           "Read-only. Open services are paid oldest service date first, then by ID. Returns the exact allocation and service versions to send back when saving.",
-        tags: ["People"],
+        tags: ["Clients"],
         security,
         params: receiptContactParamsSchema,
         querystring: receiptPreviewQuerySchema,
@@ -79,9 +79,9 @@ export async function receiptRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/receipts",
     {
       schema: {
-        summary: "Record one payment from a person across their open services",
+        summary: "Record one payment from a client across their open services",
         description,
-        tags: ["People"],
+        tags: ["Clients"],
         security,
         params: receiptContactParamsSchema,
         headers: writeHeaders,
@@ -104,8 +104,8 @@ export async function receiptRoutes(
     "/api/v1/ledgers/:ledgerId/receipts/:receiptId",
     {
       schema: {
-        summary: "Get a person-level receipt and its payments",
-        tags: ["People"],
+        summary: "Get a client-level receipt and its payments",
+        tags: ["Clients"],
         security,
         params: receiptParamsSchema,
         response: { 200: receiptSchema, ...errors },
@@ -120,7 +120,7 @@ export async function receiptRoutes(
       schema: {
         summary: "Correct receipt details",
         description: `${description} Amounts and allocations are fixed; delete and re-enter to change them.`,
-        tags: ["People"],
+        tags: ["Clients"],
         security,
         params: receiptParamsSchema,
         headers: writeHeaders,
@@ -146,7 +146,7 @@ export async function receiptRoutes(
       schema: {
         summary: "Delete a receipt with all its payments and income entries",
         description,
-        tags: ["People"],
+        tags: ["Clients"],
         security,
         params: receiptParamsSchema,
         headers: writeHeaders,
@@ -172,7 +172,7 @@ export async function receiptRoutes(
       schema: {
         summary: "Restore a deleted receipt",
         description,
-        tags: ["People"],
+        tags: ["Clients"],
         security,
         params: receiptParamsSchema,
         headers: writeHeaders,

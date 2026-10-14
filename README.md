@@ -10,7 +10,7 @@ A private, self-hosted personal finance app. Record income, expenses and transfe
 
 ## What it does today
 
-Accounts (bank, cash, card, wallet, loan, savings) with computed balances · income and expense transactions with optional time · paired transfers · split transactions · two-level categories with optional starter sets · money owed to you (people, services, payments, write-offs) · category merge · Home with money in hand, net worth, this month and latest entries · soft deletes with Undo · a command palette (Cmd/Ctrl+K).
+Accounts (bank, cash, card, wallet, loan, savings) with computed balances · income and expense transactions with optional time · paired transfers · split transactions · two-level categories with optional starter sets · money owed to you (clients, services, payments, write-offs) · category merge · Home with money in hand, net worth, this month and latest entries · soft deletes with Undo · a command palette (Cmd/Ctrl+K).
 
 Built so far: accounts, transactions, transfers and splits, money owed, monthly budgets with rollover, other currencies with exchange rates, and recurring entries. Planned: reports, CSV import/export, two-factor sign-in, off-site backups and a native Android app. See [docs/PLAN.md](docs/PLAN.md) and [docs/PROGRESS.md](docs/PROGRESS.md).
 

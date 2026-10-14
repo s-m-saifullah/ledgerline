@@ -231,11 +231,11 @@ export function saveReceivable(
     async (c) => {
       const repo = receivableRepository(c.tx, c.ledgerId);
       if (!id) {
-        const person = required(
+        const client = required(
           (await lockContacts(c.tx, c.ledgerId, [body.contactId]))[0],
         );
-        if (person.archivedAt)
-          throw new ApiProblem(409, "Conflict", "Choose an active person.");
+        if (client.archivedAt)
+          throw new ApiProblem(409, "Conflict", "Choose an active client.");
         await requireItemCurrency(c, body.amount.currency);
         const row = required(await repo.create(body));
         await event(c, row, "created", null);
@@ -250,13 +250,13 @@ export function saveReceivable(
           throw new ApiProblem(
             409,
             "Conflict",
-            "A service with payment history must keep its person.",
+            "A service with payment history must keep its client.",
           );
         if (
           (await contactForAssignment(c.tx, c.ledgerId, body.contactId))
             .archivedAt
         )
-          throw new ApiProblem(409, "Conflict", "Choose an active person.");
+          throw new ApiProblem(409, "Conflict", "Choose an active client.");
       }
       if (body.amount.currency !== current.currency) {
         if (await paymentRepository(c.tx, c.ledgerId, id).hasAny())
@@ -438,7 +438,7 @@ export async function getPayment(
     { isolationLevel: "repeatable read" },
   );
 }
-/** One payment change inside an open financial write; shared with person-level receipts. */
+/** One payment change inside an open financial write; shared with client-level receipts. */
 export async function paymentStep(
   c: WriteContext,
   id: string,
@@ -513,7 +513,7 @@ export async function paymentStep(
         },
       ],
     );
-  const person = await contactForAssignment(
+  const client = await contactForAssignment(
       c.tx,
       c.ledgerId,
       service.contactId,
@@ -537,7 +537,7 @@ export async function paymentStep(
             time: input.time,
             amount: money(amount, service.currency),
             status: "cleared",
-            payee: original?.payee ?? person.name,
+            payee: original?.payee ?? client.name,
             note: input.note,
           },
           receivedAmount: input.receivedAmount,
@@ -572,7 +572,7 @@ export async function paymentStep(
       amount: tipInput.amount,
       date: input.date,
       time: input.time,
-      payee: person.name,
+      payee: client.name,
     });
   else if (action === "delete" && deletedAt)
     await tipLifecycle(c, pid, { deletedAt });

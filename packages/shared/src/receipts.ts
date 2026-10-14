@@ -51,7 +51,7 @@ const allocationSchema = z.object({
 });
 export const receiptPreviewQuerySchema = z.object({
   amount: z.coerce.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
-  // A receipt settles the person's open services in one currency (ADR 0022).
+  // A receipt settles the client's open services in one currency (ADR 0022).
   currency: currencySchema.default("USD"),
 });
 export const receiptPreviewSchema = z.object({

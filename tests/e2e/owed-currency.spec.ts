@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
-import { clickAction } from "./people-actions";
+import { clickAction } from "./client-actions";
 import { signIn } from "./sign-in";
 
 const env = parseEnv(readFileSync(".env", "utf8"));
@@ -38,7 +38,7 @@ test.beforeEach(async ({ page }, testInfo) => {
     [newId(), ledgerId, owner.id],
   );
   // A dollar account, an income category, euros with a rate, and a client who owes EUR 800.00.
-  const person = newId();
+  const client = newId();
   await pool.query(
     "INSERT INTO accounts (id,ledger_id,name,type,opening_balance) VALUES ($1,$2,'Checking','bank',0)",
     [newId(), ledgerId],
@@ -57,11 +57,11 @@ test.beforeEach(async ({ page }, testInfo) => {
   );
   await pool.query(
     "INSERT INTO contacts (id,ledger_id,name) VALUES ($1,$2,'Euro client')",
-    [person, ledgerId],
+    [client, ledgerId],
   );
   await pool.query(
     "INSERT INTO receivables (id,ledger_id,contact_id,description,service_date,amount,currency) VALUES ($1,$2,$3,'Website in euros','2026-10-05',80000,'EUR')",
-    [newId(), ledgerId, person],
+    [newId(), ledgerId, client],
   );
   await page.route("**/api/v1/ledgers", (route) =>
     route.fulfill({

@@ -115,7 +115,7 @@ export function receivableRepository(db: DatabaseConnection, ledgerId: string) {
             ),
           )
       )[0]?.total ?? "0",
-    /** Open balance per person and currency (one row each), with the oldest open service date. */
+    /** Open balance per client and currency (one row each), with the oldest open service date. */
     summaries: () =>
       db.execute<{
         contactId: string;
@@ -220,7 +220,7 @@ export function paymentRepository(
       )[0],
   };
 }
-/** Payments created together by one person-level receipt, across services. */
+/** Payments created together by one client-level receipt, across services. */
 export function receiptPaymentRepository(
   db: DatabaseConnection,
   ledgerId: string,

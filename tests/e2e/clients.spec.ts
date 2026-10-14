@@ -5,7 +5,7 @@ import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
 import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
-import { clickAction } from "./people-actions";
+import { clickAction } from "./client-actions";
 import { signIn } from "./sign-in";
 
 const env = parseEnv(readFileSync(".env", "utf8")),
@@ -129,28 +129,28 @@ async function selectFits(page: Page, label: string) {
   expect(geometry.inset).toBeGreaterThanOrEqual(8);
   expect(geometry.leftInset).toBeGreaterThanOrEqual(8);
 }
-async function people(page: Page) {
+async function clients(page: Page) {
   await page.goto("/more/clients");
   await expect(
     page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();
 }
-async function person(page: Page) {
+async function client(page: Page) {
   await selectFits(page, "Client status");
   await page.getByRole("button", { name: "Add client", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Sam");
   await page.getByLabel("Email", { exact: true }).fill("sam@example.com");
   await page.getByRole("button", { name: "Save client", exact: true }).click();
   await expect(page.getByText("Client saved.", { exact: true })).toBeVisible();
-  await page.locator(".person-card").filter({ hasText: "Sam" }).click();
+  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
   await expect(
     page.getByRole("heading", { name: "Sam", exact: true }),
   ).toBeVisible();
   const actionGap = await page
-    .locator(".people-detail .action-bar")
+    .locator(".client-detail .action-bar")
     .evaluate((actions) => {
       const previous = actions.previousElementSibling;
-      if (!previous) throw new Error("Missing person information");
+      if (!previous) throw new Error("Missing client information");
       return (
         actions.getBoundingClientRect().top -
         previous.getBoundingClientRect().bottom
@@ -201,8 +201,8 @@ async function balance(page: Page) {
 }
 async function setup(page: Page) {
   await signIn(page);
-  await people(page);
-  await person(page);
+  await clients(page);
+  await client(page);
   await log(page);
 }
 async function navigate(page: Page, name: "Transactions" | "More") {
@@ -222,7 +222,7 @@ test("unpaid service and partial/full payments produce exact balances and histor
 }) => {
   await setup(page);
   expect(await balance(page)).toBe(1000);
-  await expect(page.locator(".people-detail")).toContainText("$100.00");
+  await expect(page.locator(".client-detail")).toContainText("$100.00");
   await record(page);
   expect(await balance(page)).toBe(5000);
   await expect(page.locator(".service-row")).toContainText("$60.00");
@@ -232,7 +232,7 @@ test("unpaid service and partial/full payments produce exact balances and histor
   await page
     .getByRole("button", { name: "Show payments", exact: true })
     .click();
-  await expect(page.locator(".people-payments article")).toHaveCount(2);
+  await expect(page.locator(".client-payments article")).toHaveCount(2);
   await expect(
     page.getByRole("heading", { name: "Payment received", exact: true }),
   ).toHaveCount(2);
@@ -294,8 +294,8 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await expect(page.getByText("Payment saved.", { exact: true })).toBeVisible();
   expect(await balance(page)).toBe(4000);
-  await people(page);
-  await page.locator(".person-card").click();
+  await clients(page);
+  await page.locator(".client-card").click();
   await page
     .getByRole("button", { name: "Show payments", exact: true })
     .click();
@@ -329,15 +329,15 @@ test("write-off and reopen retain received income and immutable correction histo
   await confirm(page);
   expect(await balance(page)).toBe(5000);
   await expect(page.locator(".service-row")).toContainText("Written off");
-  await expect(page.locator(".people-detail")).toContainText("$0.00");
+  await expect(page.locator(".client-detail")).toContainText("$0.00");
   await clickAction(page, "Reopen service");
   await confirm(page);
-  await expect(page.locator(".people-detail")).toContainText("$60.00");
+  await expect(page.locator(".client-detail")).toContainText("$60.00");
   await page
     .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await confirm(page);
-  await expect(page.locator(".people-detail")).toContainText("$0.00");
+  await expect(page.locator(".client-detail")).toContainText("$0.00");
   await expect(
     page.locator(".history-row").filter({ hasText: "Uncollectible" }),
   ).toHaveCount(2);
@@ -375,7 +375,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   ).toBeEnabled();
   await navigate(page, "More");
   await page.getByRole("link", { name: /^Clients/ }).click();
-  await page.locator(".person-card").filter({ hasText: "Sam" }).click();
+  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
   let interrupted = false;
   const seen: { key: string | null; body: string | null }[] = [];
   await page.route(
@@ -410,15 +410,15 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   await expect(
     page.getByRole("button", { name: "Undo deletion", exact: true }),
   ).toBeDisabled();
-  const peopleNotice = await page.locator(".people-toast").boundingBox();
+  const clientNotice = await page.locator(".client-toast").boundingBox();
   const historyNotice = await page
     .getByRole("group", { name: "Transaction history notification" })
     .boundingBox();
-  expect(peopleNotice).not.toBeNull();
+  expect(clientNotice).not.toBeNull();
   expect(historyNotice).not.toBeNull();
-  if (!peopleNotice || !historyNotice)
+  if (!clientNotice || !historyNotice)
     throw new Error("Expected both action notifications");
-  expect(peopleNotice.y + peopleNotice.height).toBeLessThanOrEqual(
+  expect(clientNotice.y + clientNotice.height).toBeLessThanOrEqual(
     historyNotice.y - 8,
   );
   await page
@@ -489,7 +489,7 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await navigate(page, "More");
     await page.getByRole("link", { name: "Clients", exact: false }).click();
-    await page.locator(".person-card").click();
+    await page.locator(".client-card").click();
   }
   await page.getByRole("button", { name: "Edit payment", exact: true }).click();
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("30.00");
@@ -529,8 +529,8 @@ for (const [name, size] of [
   }) => {
     await page.setViewportSize(size);
     await signIn(page);
-    await people(page);
-    await person(page);
+    await clients(page);
+    await client(page);
     await clickAction(page, "Delete client");
     await page.getByRole("button", { name: "Confirm", exact: true }).click();
     await expect(
@@ -540,7 +540,7 @@ for (const [name, size] of [
     await expect(
       page.getByRole("button", { name: "All clients", exact: true }),
     ).toHaveCount(0);
-    await expect(page.locator(".person-card")).toHaveCount(0);
+    await expect(page.locator(".client-card")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Add client", exact: true }),
     ).toBeVisible();
@@ -565,7 +565,7 @@ test("client and service actions use one primary plus a menu on phones and inlin
   await expect(
     page.getByRole("button", { name: /^Record payment from/ }),
   ).toHaveCount(0);
-  const cardBar = page.locator(".people-detail .action-bar");
+  const cardBar = page.locator(".client-detail .action-bar");
   const cardButtons = await cardBar.locator("button").all();
   expect(cardButtons).toHaveLength(2);
   const heights = await Promise.all(
@@ -580,7 +580,7 @@ test("client and service actions use one primary plus a menu on phones and inlin
   ] as const) {
     await page.setViewportSize({ width, height: 800 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.locator(".people-detail").screenshot({
+    await page.locator(".client-detail").screenshot({
       path: join(tmpdir(), `ledgerline-client-card-${width}-${theme}.png`),
     });
   }
@@ -684,7 +684,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     .getByRole("button", { name: "Close Client editor", exact: true })
     .click();
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
-  await expect(page.locator(".people-detail")).not.toContainText("$");
+  await expect(page.locator(".client-detail")).not.toContainText("$");
   await expect(
     page.getByRole("region", { name: "Client history", exact: true }),
   ).not.toContainText("$");
@@ -697,7 +697,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     if (info.project.name === "desktop") {
       await page.setViewportSize({ width: 1440, height: 1000 });
       await page.screenshot({
-        path: join(tmpdir(), `ledgerline-people-wide-${theme}.png`),
+        path: join(tmpdir(), `ledgerline-client-wide-${theme}.png`),
       });
     }
     await page.setViewportSize({ width: 320, height: 740 });
@@ -708,7 +708,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     await page.screenshot({
       path: join(
         tmpdir(),
-        `ledgerline-people-${info.project.name}-${theme}.png`,
+        `ledgerline-client-${info.project.name}-${theme}.png`,
       ),
     });
   }
@@ -729,15 +729,15 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     },
   });
   expect(renamed.status()).toBe(200);
-  await people(page);
-  await expect(page.locator(".person-card")).toContainText("A".repeat(100));
+  await clients(page);
+  await expect(page.locator(".client-card")).toContainText("A".repeat(100));
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320);
   await page.screenshot({
     path: join(
       tmpdir(),
-      `ledgerline-people-long-name-${info.project.name}.png`,
+      `ledgerline-client-long-name-${info.project.name}.png`,
     ),
   });
   await pool.query(
@@ -761,7 +761,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     }),
   );
   await page.reload();
-  await page.locator(".person-card").click();
+  await page.locator(".client-card").click();
   await expect(
     page.getByRole("button", { name: "Log service", exact: true }),
   ).toHaveCount(0);
@@ -793,7 +793,7 @@ test("service deletion Undo and client archive preserve open history; removed ac
   await record(page);
   await clickAction(page, "Archive client");
   await confirm(page);
-  await expect(page.locator(".people-detail")).toContainText("$60.00");
+  await expect(page.locator(".client-detail")).toContainText("$60.00");
   await page
     .getByRole("button", { name: "Show payments", exact: true })
     .click();
@@ -826,8 +826,8 @@ test("hourly work: hours at a rate fills the amount and a blank description", as
   page,
 }) => {
   await signIn(page);
-  await people(page);
-  await person(page);
+  await clients(page);
+  await client(page);
   await page.getByRole("button", { name: "Log service", exact: true }).click();
   await page
     .locator("summary")
@@ -886,8 +886,8 @@ test("paying more than is owed saves the extra as a separate tip, and Undo remov
 }) => {
   await addTipCategory();
   await signIn(page);
-  await people(page);
-  await person(page);
+  await clients(page);
+  await client(page);
   await log(page);
   await page
     .getByRole("button", { name: "Record payment", exact: true })
@@ -914,8 +914,8 @@ test("paying more than is owed saves the extra as a separate tip, and Undo remov
   await page
     .getByRole("button", { name: "Show payments", exact: true })
     .click();
-  await expect(page.locator(".people-payments")).toContainText("Tip $20.00");
-  await expect(page.locator(".people-detail")).toContainText("$0.00");
+  await expect(page.locator(".client-payments")).toContainText("Tip $20.00");
+  await expect(page.locator(".client-detail")).toContainText("$0.00");
   await page
     .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
@@ -927,8 +927,8 @@ test("one receipt above the open balance saves a single tip", async ({
 }) => {
   await addTipCategory();
   await signIn(page);
-  await people(page);
-  await person(page);
+  await clients(page);
+  await client(page);
   await log(page);
   await clickAction(page, "Record payment from Sam");
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("130.00");

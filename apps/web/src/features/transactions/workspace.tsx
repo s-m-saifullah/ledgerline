@@ -13,7 +13,7 @@ import { Toast } from "../../components/toast";
 import { ApiError } from "../../lib/api";
 import { getCategories } from "../categories/api";
 import { CategoryMergeWorkspace } from "../categories/merge-workspace";
-import { PeopleWorkspace } from "../people/workspace";
+import { ClientsWorkspace } from "../clients/workspace";
 import {
   getAllAccounts,
   getTransaction,
@@ -47,7 +47,7 @@ export function TransactionWorkspace({
   const [selectionSequence, setSelectionSequence] = useState(0);
   const [selected, setSelected] = useState<Transaction | null>(null);
   const [open, setOpen] = useState(false);
-  const [peopleLocked, setPeopleLocked] = useState(false);
+  const [clientsLocked, setClientsLocked] = useState(false);
   const [mergeLocked, setMergeLocked] = useState(false);
   const [editorLocked, setEditorLocked] = useState(false);
   const [quickAddLocked, setQuickAddLocked] = useState(false);
@@ -108,7 +108,7 @@ export function TransactionWorkspace({
       !writable ||
       inFlight.current ||
       quickAddLocked ||
-      peopleLocked ||
+      clientsLocked ||
       mergeLocked ||
       editorLocked
     )
@@ -144,7 +144,7 @@ export function TransactionWorkspace({
   const transactionBlocked =
     editorLocked || quickAddLocked || undoBusy || undoUncertain;
   const otherBlocked = transactionBlocked || mergeLocked;
-  const blocked = otherBlocked || peopleLocked;
+  const blocked = otherBlocked || clientsLocked;
   const dismiss = () => {
     setOpen(false);
     if (!editorLocked) setSelected(null);
@@ -157,15 +157,15 @@ export function TransactionWorkspace({
     <CategoryMergeWorkspace
       ledgerId={ledgerId}
       writable={writable}
-      blocked={transactionBlocked || peopleLocked || open}
+      blocked={transactionBlocked || clientsLocked || open}
       onLock={setMergeLocked}
     >
-      <PeopleWorkspace
+      <ClientsWorkspace
         ledgerId={ledgerId}
         actorId={actorId}
         writable={writable}
         blocked={otherBlocked || (open && !selected?.receivableId)}
-        onLock={setPeopleLocked}
+        onLock={setClientsLocked}
         linkedTransaction={selected?.receivableId ? selected : null}
         onLinkedOpened={linkedOpened}
       >
@@ -177,7 +177,7 @@ export function TransactionWorkspace({
               undoBusy ||
               undoUncertain ||
               open ||
-              peopleLocked ||
+              clientsLocked ||
               mergeLocked,
             setQuickAddLocked,
             openTransaction: (row) => {
@@ -318,7 +318,7 @@ export function TransactionWorkspace({
                 undoBusy ||
                 quickAddLocked ||
                 editorLocked ||
-                peopleLocked ||
+                clientsLocked ||
                 mergeLocked ||
                 !writable
               }
@@ -362,7 +362,7 @@ export function TransactionWorkspace({
                     undoBusy ||
                     quickAddLocked ||
                     editorLocked ||
-                    peopleLocked ||
+                    clientsLocked ||
                     mergeLocked ||
                     !writable
                   }
@@ -391,7 +391,7 @@ export function TransactionWorkspace({
             </Toast>
           )}
         </TransactionContext>
-      </PeopleWorkspace>
+      </ClientsWorkspace>
     </CategoryMergeWorkspace>
   );
 }

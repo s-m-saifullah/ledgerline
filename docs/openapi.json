@@ -5240,9 +5240,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts": {
       "get": {
-        "summary": "List people and exact open balances",
+        "summary": "List clients and exact open balances",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -5831,7 +5831,7 @@
       "post": {
         "summary": "Create contact",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -6419,9 +6419,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}": {
       "get": {
-        "summary": "Get a person",
+        "summary": "Get a client",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -6950,7 +6950,7 @@
       "patch": {
         "summary": "Edit contact",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -7552,9 +7552,9 @@
         }
       },
       "delete": {
-        "summary": "delete person",
+        "summary": "delete client",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -7947,9 +7947,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/history": {
       "get": {
-        "summary": "Get person history",
+        "summary": "Get client history",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -9792,7 +9792,7 @@
       "get": {
         "summary": "List services",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -10473,7 +10473,7 @@
       "post": {
         "summary": "Create receivable",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -11144,7 +11144,7 @@
       "get": {
         "summary": "Get a service",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -11735,7 +11735,7 @@
       "patch": {
         "summary": "Edit receivable",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -12420,7 +12420,7 @@
       "delete": {
         "summary": "delete service",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -12815,7 +12815,7 @@
       "get": {
         "summary": "List received payments",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -13930,7 +13930,7 @@
       "post": {
         "summary": "create paired payment and income",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -15150,7 +15150,7 @@
       "get": {
         "summary": "Get a received payment",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -16229,7 +16229,7 @@
       "patch": {
         "summary": "edit paired payment and income",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -17430,7 +17430,7 @@
       "delete": {
         "summary": "delete paired payment and income",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -17839,9 +17839,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/archive": {
       "post": {
-        "summary": "archive person",
+        "summary": "archive client",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -18401,9 +18401,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/unarchive": {
       "post": {
-        "summary": "unarchive person",
+        "summary": "unarchive client",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -18965,7 +18965,7 @@
       "post": {
         "summary": "restore service",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -19589,7 +19589,7 @@
       "post": {
         "summary": "write-off service",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -20225,7 +20225,7 @@
       "post": {
         "summary": "reopen service",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -20849,7 +20849,7 @@
       "post": {
         "summary": "restore paired payment and income",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         "requestBody": {
@@ -21965,9 +21965,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipt-preview": {
       "get": {
-        "summary": "Preview how a person-level payment would be applied",
+        "summary": "Preview how a client-level payment would be applied",
         "tags": [
-          "People"
+          "Clients"
         ],
         "description": "Read-only. Open services are paid oldest service date first, then by ID. Returns the exact allocation and service versions to send back when saving.",
         "parameters": [
@@ -22510,11 +22510,11 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipts": {
       "post": {
-        "summary": "Record one payment from a person across their open services",
+        "summary": "Record one payment from a client across their open services",
         "tags": [
-          "People"
+          "Clients"
         ],
-        "description": "Versioned ledger-scoped write with an atomic receipt. A person-level payment is applied to the person's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.",
+        "description": "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.",
         "requestBody": {
           "required": true,
           "content": {
@@ -23801,9 +23801,9 @@
     },
     "/api/v1/ledgers/{ledgerId}/receipts/{receiptId}": {
       "get": {
-        "summary": "Get a person-level receipt and its payments",
+        "summary": "Get a client-level receipt and its payments",
         "tags": [
-          "People"
+          "Clients"
         ],
         "parameters": [
           {
@@ -24917,9 +24917,9 @@
       "patch": {
         "summary": "Correct receipt details",
         "tags": [
-          "People"
+          "Clients"
         ],
-        "description": "Versioned ledger-scoped write with an atomic receipt. A person-level payment is applied to the person's open services oldest service date first; each service gets its own linked income entry and all commit or fail together. Amounts and allocations are fixed; delete and re-enter to change them.",
+        "description": "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together. Amounts and allocations are fixed; delete and re-enter to change them.",
         "requestBody": {
           "required": true,
           "content": {
@@ -26154,9 +26154,9 @@
       "delete": {
         "summary": "Delete a receipt with all its payments and income entries",
         "tags": [
-          "People"
+          "Clients"
         ],
-        "description": "Versioned ledger-scoped write with an atomic receipt. A person-level payment is applied to the person's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.",
+        "description": "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.",
         "requestBody": {
           "required": true,
           "content": {
@@ -26575,9 +26575,9 @@
       "post": {
         "summary": "Restore a deleted receipt",
         "tags": [
-          "People"
+          "Clients"
         ],
-        "description": "Versioned ledger-scoped write with an atomic receipt. A person-level payment is applied to the person's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.",
+        "description": "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.",
         "requestBody": {
           "required": true,
           "content": {

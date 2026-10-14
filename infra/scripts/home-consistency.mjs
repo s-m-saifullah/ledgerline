@@ -1,4 +1,4 @@
-// Compare the Home summary with what the Accounts, People and Transactions
+// Compare the Home summary with what the Accounts, Clients and Transactions
 // endpoints say. Pure and read-only: callers fetch the data; mismatches name the
 // figure that differs, never an amount, payee or label.
 
@@ -48,13 +48,13 @@ function valueInBase(money, baseCurrency, rates) {
 
 /** Read the newest stored rates, including currencies that have since been unpinned. */
 export async function readHomeRates(
-  { accounts, people, baseCurrency },
+  { accounts, clients, baseCurrency },
   readAll,
 ) {
   const codes = new Set([
     ...accounts.map((account) => account.balance.currency),
-    ...people.flatMap((person) =>
-      person.openBalances.map((money) => money.currency),
+    ...clients.flatMap((client) =>
+      client.openBalances.map((money) => money.currency),
     ),
   ]);
   codes.delete(baseCurrency);
@@ -69,7 +69,7 @@ export async function readHomeRates(
 }
 
 /**
- * @param {{ baseCurrency: string, rates: Map<string, string | null>, monthStart: string, monthEnd: string, home: any, accounts: any[], people: any[], transactions: any[] }} input
+ * @param {{ baseCurrency: string, rates: Map<string, string | null>, monthStart: string, monthEnd: string, home: any, accounts: any[], clients: any[], transactions: any[] }} input
  * `transactions` is every non-deleted entry in list order (date desc, id desc).
  * @returns {string[]} names of figures that do not agree (empty when consistent)
  */
@@ -80,7 +80,7 @@ export function compareHome({
   monthEnd,
   home,
   accounts,
-  people,
+  clients,
   transactions,
 }) {
   const problems = [];
@@ -160,10 +160,10 @@ export function compareHome({
     home.otherActive.balance.amount,
     sum(otherActive.map(balance)),
   );
-  // Home rounds once per currency across all people, not once per person.
+  // Home rounds once per currency across all clients, not once per client.
   const owedByCurrency = new Map();
-  for (const person of people) {
-    for (const money of person.openBalances) {
+  for (const client of clients) {
+    for (const money of client.openBalances) {
       owedByCurrency.set(
         money.currency,
         (owedByCurrency.get(money.currency) ?? 0n) + BigInt(money.amount),
@@ -192,9 +192,9 @@ export function compareHome({
     sum(owed.map((row) => row.base ?? 0)),
   );
   check(
-    "people owing",
+    "clients owing",
     home.owed.personCount,
-    people.filter((p) => p.openBalances.some((money) => money.amount > 0))
+    clients.filter((p) => p.openBalances.some((money) => money.amount > 0))
       .length,
   );
   const inMonth = transactions.filter(

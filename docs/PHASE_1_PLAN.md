@@ -10,7 +10,7 @@ The phase gate is **seven consecutive days of logging every expense** (ADR 0013)
 
 ## Delivered in small steps
 
-Safe write foundation (idempotency, versions, role guards) · Accounts API and screens · Categories API and screens · Transactions API · Quick add with optional time · Transaction list and editor with Undo · Paired transfers · Account and category deletion · Splits · Money owed to you (People) · Category merge · Home.
+Safe write foundation (idempotency, versions, role guards) · Accounts API and screens · Categories API and screens · Transactions API · Quick add with optional time · Transaction list and editor with Undo · Paired transfers · Account and category deletion · Splits · Money owed to you (Clients) · Category merge · Home.
 
 ## Money and lifecycle rules
 

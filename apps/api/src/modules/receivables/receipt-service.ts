@@ -191,7 +191,7 @@ export function createReceipt(
         throw new ApiProblem(
           409,
           "Conflict",
-          "Payment exceeds the person's open balance.",
+          "Payment exceeds the client's open balance.",
           [
             {
               field: "amount",
