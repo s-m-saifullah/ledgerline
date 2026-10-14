@@ -841,11 +841,9 @@ test("hourly work: hours at a rate fills the amount and a blank description", as
   await page.setViewportSize({ width: 320, height: 900 });
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
-    await page
-      .getByRole("dialog")
-      .screenshot({
-        path: join(tmpdir(), `ledgerline-hourly-320-${theme}.png`),
-      });
+    await page.getByRole("dialog").screenshot({
+      path: join(tmpdir(), `ledgerline-hourly-320-${theme}.png`),
+    });
   }
   await page
     .getByRole("button", { name: "Use this total", exact: true })
