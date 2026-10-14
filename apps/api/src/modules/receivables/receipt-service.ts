@@ -245,7 +245,7 @@ export function createReceipt(
             expectedReceivableVersion: a.version,
           },
           "create",
-          { receiptId },
+          { receiptId, ...(index === 0 && body.tip ? { tip: body.tip } : {}) },
         );
       return {
         status: 201,

@@ -11,6 +11,7 @@ import {
   type ReceivableListQuery,
   receivableEventSchema,
   receivableSchema,
+  type TipInput,
   type UpdatePayment,
   type UpdateReceivable,
 } from "@ledgerline/shared";
@@ -21,7 +22,13 @@ import { contactForAssignment, lockContacts } from "../contacts/service";
 import { requireUsableCurrency } from "../currencies/service";
 import { ledgerBaseCurrency, requireLedgerRead } from "../ledgers/service";
 import { mergePaymentCategory } from "../transactions/category-merge-service";
-import { paymentIncome, readPaymentIncome } from "../transactions/service";
+import {
+  createTip,
+  paymentIncome,
+  readPaymentIncome,
+  readTip,
+  tipLifecycle,
+} from "../transactions/service";
 import {
   runFinancialWrite,
   type WriteContext,
@@ -82,6 +89,7 @@ async function snapshot(
   c: WriteContext,
   row: ReceivableRow,
   payment: EventSnapshot["payment"] = null,
+  tip: EventSnapshot["tip"] = null,
 ): Promise<EventSnapshot> {
   return {
     service: {
@@ -89,6 +97,7 @@ async function snapshot(
       deletedAt: row.deletedAt?.toISOString() ?? null,
     },
     payment,
+    tip,
   };
 }
 async function event(
@@ -98,6 +107,7 @@ async function event(
   before: EventSnapshot | null,
   payment: PaymentRow | null = null,
   income: EventSnapshot["payment"] = null,
+  tip: EventSnapshot["tip"] = null,
 ) {
   await eventRepository(c.tx, c.ledgerId).add({
     contactId: row.contactId,
@@ -108,7 +118,7 @@ async function event(
     receivableVersion: row.version,
     action,
     before,
-    after: await snapshot(c, row, income),
+    after: await snapshot(c, row, income, tip),
   });
 }
 export function write(
@@ -375,6 +385,7 @@ export async function paymentDto(
   return paymentSchema.parse({
     ...row,
     amount: money(row.amount, row.currency),
+    tip: await readTip(db, ledgerId, row.id),
     transaction: await readPaymentIncome(db, ledgerId, row.transactionId),
     receivable: await dto(db, ledgerId, service),
     createdAt: row.createdAt.toISOString(),
@@ -434,7 +445,8 @@ export async function paymentStep(
   paymentId: string | null,
   body: CreatePayment | UpdatePayment | PaymentAction,
   action: "create" | "edit" | "delete" | "restore",
-  options: { receiptId?: string; viaReceipt?: boolean } = {},
+  // `tip` is the receipt's one tip, saved with its first payment (ADR 0027).
+  options: { receiptId?: string; viaReceipt?: boolean; tip?: TipInput } = {},
 ) {
   const service = await parent(c, id);
   open(service);
@@ -457,7 +469,12 @@ export async function paymentStep(
   const original = current
     ? await readPaymentIncome(c.tx, c.ledgerId, current.transactionId)
     : null;
-  const before = await snapshot(c, service, original),
+  const before = await snapshot(
+      c,
+      service,
+      original,
+      current ? await readTip(c.tx, c.ledgerId, current.id) : null,
+    ),
     input = body as CreatePayment,
     entering = action === "create" || action === "edit";
   // A payment settles the item in the item's own currency.
@@ -545,6 +562,22 @@ export async function paymentStep(
           ...(options.receiptId ? { receiptId: options.receiptId } : {}),
         }),
   );
+  // The tip is its own income entry that comes, goes and returns with its payment (ADR 0027).
+  const tipInput = options.tip ?? (action === "create" ? input.tip : undefined);
+  if (action === "create" && tipInput)
+    await createTip(c, {
+      paymentId: pid,
+      accountId: input.accountId,
+      categoryId: tipInput.categoryId,
+      amount: tipInput.amount,
+      date: input.date,
+      time: input.time,
+      payee: person.name,
+    });
+  else if (action === "delete" && deletedAt)
+    await tipLifecycle(c, pid, { deletedAt });
+  else if (action === "restore" && current?.deletedAt)
+    await tipLifecycle(c, pid, { restoreFrom: current.deletedAt });
   const updated = required(
     await receivableRepository(c.tx, c.ledgerId).update(id, service.version, {
       version,
@@ -563,6 +596,7 @@ export async function paymentStep(
     before,
     payment,
     income,
+    await readTip(c.tx, c.ledgerId, pid),
   );
   return action === "delete"
     ? { status: 204, body: null }

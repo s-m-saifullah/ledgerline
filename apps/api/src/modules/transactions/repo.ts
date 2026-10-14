@@ -160,6 +160,77 @@ export function transactionRepository(
         );
       return (await (lock ? query.for("update") : query))[0];
     },
+    /** The tip income entry saved with a payment, deleted or not (ADR 0027). */
+    tip: async (paymentId: string, lock = false) => {
+      const query = db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.ledgerId, ledgerId),
+            eq(transactions.tipPaymentId, paymentId),
+          ),
+        );
+      return (await (lock ? query.for("update") : query))[0];
+    },
+    createTip: async (
+      paymentId: string,
+      input: {
+        accountId: string;
+        categoryId: string;
+        amount: number;
+        currency: string;
+        date: string;
+        time: string | null;
+        payee: string | null;
+      },
+      pricing: EntryPricing,
+    ) =>
+      (
+        await db
+          .insert(transactions)
+          .values({
+            ledgerId,
+            kind: "income",
+            tipPaymentId: paymentId,
+            accountId: input.accountId,
+            categoryId: input.categoryId,
+            amount: input.amount,
+            currency: input.currency,
+            fxRate: pricing.fxRate,
+            baseAmount: pricing.baseAmount,
+            date: input.date,
+            time: input.time,
+            payee: input.payee,
+            status: "cleared",
+          })
+          .returning()
+      )[0],
+    /**
+     * Delete a payment's tip with it, or bring it back with it. A restore only brings back a tip
+     * that was deleted at the same moment, never one deleted on its own.
+     */
+    tipLifecycle: async (
+      paymentId: string,
+      change: { deletedAt: Date } | { restoreFrom: Date },
+    ) =>
+      db
+        .update(transactions)
+        .set({
+          deletedAt: "deletedAt" in change ? change.deletedAt : null,
+          version: sql`${transactions.version} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(transactions.ledgerId, ledgerId),
+            eq(transactions.tipPaymentId, paymentId),
+            "deletedAt" in change
+              ? isNull(transactions.deletedAt)
+              : eq(transactions.deletedAt, change.restoreFrom),
+          ),
+        )
+        .returning(),
     create: async (body: CreateTransaction, pricing: EntryPricing) =>
       (
         await db

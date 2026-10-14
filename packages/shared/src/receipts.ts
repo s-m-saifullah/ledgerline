@@ -11,6 +11,7 @@ import {
   contactParamsSchema,
   paymentSchema,
   positiveMoneySchema,
+  tipInputSchema,
 } from "./receivables";
 import { transactionDateSchema, transactionTimeSchema } from "./transactions";
 
@@ -84,6 +85,8 @@ export const createReceiptSchema = z.strictObject({
   amount: positiveMoneySchema,
   ...receivedFields,
   ...receiptFields,
+  // One tip for the whole receipt, saved with its first payment (ADR 0027).
+  tip: tipInputSchema.optional(),
   expectedAllocations: z
     .array(expectedAllocationSchema)
     .min(1)

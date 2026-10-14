@@ -56,6 +56,7 @@ export function transferLeg(row: Transfer) {
     transferId: row.id,
     relatedTransferId: null,
     feeTransferId: null,
+    tipPaymentId: null,
     receivablePaymentId: null,
     receivableId: null,
     isSplit: false,

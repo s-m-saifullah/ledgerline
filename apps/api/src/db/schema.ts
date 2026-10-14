@@ -318,6 +318,8 @@ export const transactions = pgTable(
     relatedTransferId: uuid("related_transfer_id"),
     // The expense entry a transfer's fee created points back at that transfer (ADR 0025).
     feeTransferId: uuid("fee_transfer_id"),
+    // The income entry a payment's tip created points back at that payment (ADR 0027).
+    tipPaymentId: uuid("tip_payment_id"),
     receivablePaymentId: uuid("receivable_payment_id"),
     receivableId: uuid("receivable_id"),
     status: text("status")
@@ -383,6 +385,19 @@ export const transactions = pgTable(
     check(
       "transactions_fee_transfer_check",
       sql`${table.feeTransferId} IS NULL OR (${table.kind} = 'expense' AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL AND ${table.relatedTransferId} IS NULL)`,
+    ),
+    // A payment has at most one tip entry, and only a plain income entry can be one.
+    foreignKey({
+      name: "transactions_scoped_tip_payment_fk",
+      columns: [table.ledgerId, table.tipPaymentId],
+      foreignColumns: paymentKey(),
+    }),
+    uniqueIndex("transactions_tip_payment_idx")
+      .on(table.ledgerId, table.tipPaymentId)
+      .where(sql`${table.tipPaymentId} IS NOT NULL`),
+    check(
+      "transactions_tip_payment_check",
+      sql`${table.tipPaymentId} IS NULL OR (${table.kind} = 'income' AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL AND ${table.relatedTransferId} IS NULL AND ${table.feeTransferId} IS NULL)`,
     ),
     index("transactions_ledger_date_id_idx").on(
       table.ledgerId,

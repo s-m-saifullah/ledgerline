@@ -1,0 +1,5 @@
+-- Tips on payments (ADR 0027): a link from the tip income entry to the payment it came with.
+ALTER TABLE "transactions" ADD COLUMN "tip_payment_id" uuid;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_scoped_tip_payment_fk" FOREIGN KEY ("ledger_id","tip_payment_id") REFERENCES "public"."receivable_payments"("ledger_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "transactions_tip_payment_idx" ON "transactions" USING btree ("ledger_id","tip_payment_id") WHERE "transactions"."tip_payment_id" IS NOT NULL;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_tip_payment_check" CHECK ("transactions"."tip_payment_id" IS NULL OR ("transactions"."kind" = 'income' AND "transactions"."transfer_id" IS NULL AND NOT "transactions"."is_split" AND "transactions"."receivable_payment_id" IS NULL AND "transactions"."related_transfer_id" IS NULL AND "transactions"."fee_transfer_id" IS NULL));

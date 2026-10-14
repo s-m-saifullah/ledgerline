@@ -140,6 +140,19 @@ export const receivableListSchema = z.object({
   items: z.array(receivableSchema),
   nextCursor: idSchema.nullable(),
 });
+// The extra money received on top of what a payment settles (ADR 0027): its own income entry, in
+// the receiving account's currency, in a category the person chose.
+export const tipInputSchema = z.strictObject({
+  amount: positiveMoneySchema,
+  categoryId: idSchema,
+});
+export const tipSchema = z.object({
+  transactionId: idSchema,
+  amount: moneySchema,
+  categoryId: idSchema,
+  deletedAt: z.iso.datetime().nullable(),
+});
+export type TipInput = z.infer<typeof tipInputSchema>;
 const paymentFields = {
   // What the payment settles, in the item's currency.
   amount: positiveMoneySchema,
@@ -157,6 +170,7 @@ const paymentFields = {
 };
 export const createPaymentSchema = z.strictObject({
   ...paymentFields,
+  tip: tipInputSchema.optional(),
   time: paymentFields.time.default(null),
   note: paymentFields.note.default(null),
   expectedReceivableVersion: versionSchema,
@@ -187,6 +201,8 @@ export const paymentSchema = z.object({
   receiptId: idSchema.nullable().default(null),
   version: versionSchema,
   ...timestamps,
+  // The tip saved with this payment, if any (ADR 0027).
+  tip: tipSchema.nullable().default(null),
   transaction: transactionSchema,
   receivable: receivableSchema,
 });
@@ -218,6 +234,8 @@ export const paymentSnapshotSchema = transactionSchema.extend({
 export const eventSnapshotSchema = z.object({
   service: receivableSnapshotSchema,
   payment: paymentSnapshotSchema.nullable(),
+  // History written before tips (ADR 0027) has none.
+  tip: tipSchema.nullable().default(null),
 });
 export const receivableEventSchema = z.object({
   id: idSchema,
