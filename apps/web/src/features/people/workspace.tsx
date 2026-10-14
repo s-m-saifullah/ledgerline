@@ -54,7 +54,7 @@ import {
   getService,
   preparePeopleWrite,
 } from "./api";
-import { paymentDefault, positiveMoney } from "./form";
+import { paymentDefault, positiveMoney, splitExtra, tipDefault } from "./form";
 import { HourlyHelper } from "./hourly-helper";
 export type PeopleOperation =
   | { kind: "contact"; person?: Contact }
@@ -109,6 +109,9 @@ type Fields = {
   currency: string;
   receiptCurrency: string;
   receivedAmount: string;
+  // Extra money received on top of what is owed (ADR 0027).
+  tipAmount: string;
+  tipCategoryId: string;
   fxRate: string;
   accountId: string;
   categoryId: string;
@@ -130,6 +133,8 @@ const empty = (): Fields => ({
   currency: "USD",
   receiptCurrency: "USD",
   receivedAmount: "",
+  tipAmount: "",
+  tipCategoryId: "",
   fxRate: "",
   accountId: "",
   categoryId: "",
@@ -337,8 +342,29 @@ export function PeopleWorkspace({
     accountCurrency !== "USD" &&
     itemCurrency !== "USD";
   const receiptCreate = op?.kind === "receipt" && !op.receipt ? op : null;
+  // Money received above what is owed settles the balance and the rest is a tip (ADR 0027).
+  const creatingPayment =
+    (op?.kind === "payment" && !op.payment) || !!receiptCreate;
+  const outstanding =
+    op?.kind === "payment"
+      ? op.service.outstanding.amount
+      : receiptCreate
+        ? owedInCurrency(receiptCreate.person, values.receiptCurrency)
+        : 0;
+  const extra =
+    creatingPayment && !needsReceived
+      ? splitExtra(values.amount, itemCurrency, outstanding)
+      : null;
+  const tipMinor = !creatingPayment
+    ? 0
+    : needsReceived
+      ? accountCurrency
+        ? (amountMinor(values.tipAmount, accountCurrency) ?? 0)
+        : 0
+      : (extra?.tip ?? 0);
   const previewCents = (() => {
     if (!receiptCreate) return null;
+    if (extra) return extra.settle;
     try {
       return positiveMoney(values.amount, values.receiptCurrency).amount;
     } catch {
@@ -367,6 +393,7 @@ export function PeopleWorkspace({
     retry: false,
   });
   const preference = `ledgerline:payment-category:${actorId}:${ledgerId}`;
+  const tipPreference = `ledgerline:tip-category:${actorId}:${ledgerId}`;
   const invalidate = () => {
     for (const key of [
       "contacts",
@@ -492,6 +519,10 @@ export function PeopleWorkspace({
             freshCategories,
             localStorage.getItem(preference),
           );
+          fields.tipCategoryId = tipDefault(
+            freshCategories,
+            localStorage.getItem(tipPreference),
+          );
         }
       }
       if (loadSequence.current === sequence) {
@@ -588,6 +619,26 @@ export function PeopleWorkspace({
       ...(rateSettable && values.fxRate ? { fxRate: values.fxRate } : {}),
     };
   }
+  /** The tip saved with a new payment, in the receiving account's currency (ADR 0027). */
+  function tipField() {
+    if (!creatingPayment) return {};
+    const currency = accountCurrency ?? itemCurrency;
+    const amount =
+      needsReceived && accountCurrency
+        ? values.tipAmount.trim()
+          ? positiveMoney(values.tipAmount, accountCurrency).amount
+          : 0
+        : (extra?.tip ?? 0);
+    if (!amount) return {};
+    if (!values.tipCategoryId)
+      throw new Error("Choose a category for the tip.");
+    return {
+      tip: {
+        amount: { amount, currency },
+        categoryId: values.tipCategoryId,
+      },
+    };
+  }
   function prepare(operation: PeopleOperation): () => Promise<void> {
     if (!ledgerId) throw new Error("Choose a ledger.");
     const l = ledgerId;
@@ -655,8 +706,14 @@ export function PeopleWorkspace({
     }
     if (operation.kind === "payment") {
       const body = createPaymentSchema.parse({
-        amount: positiveMoney(values.amount, operation.service.amount.currency),
+        amount: extra
+          ? {
+              amount: extra.settle,
+              currency: operation.service.amount.currency,
+            }
+          : positiveMoney(values.amount, operation.service.amount.currency),
         ...received(),
+        ...tipField(),
         accountId: values.accountId,
         categoryId: values.categoryId,
         date: values.date,
@@ -683,6 +740,7 @@ export function PeopleWorkspace({
       return async () => {
         const p = paymentSchema.parse(await run());
         localStorage.setItem(preference, p.transaction.categoryId ?? "");
+        if (p.tip) localStorage.setItem(tipPreference, p.tip.categoryId);
         completed(
           "Payment saved.",
           operation.payment
@@ -725,7 +783,9 @@ export function PeopleWorkspace({
           completed("Receipt saved.");
         };
       }
-      const amount = positiveMoney(values.amount, values.receiptCurrency),
+      const amount = extra
+          ? { amount: extra.settle, currency: values.receiptCurrency }
+          : positiveMoney(values.amount, values.receiptCurrency),
         shown = preview.data;
       if (
         !shown ||
@@ -743,6 +803,7 @@ export function PeopleWorkspace({
             createReceiptSchema.parse({
               ...fields,
               amount,
+              ...tipField(),
               expectedAllocations: shown.allocations.map((a) => ({
                 receivableId: a.receivableId,
                 expectedVersion: a.version,
@@ -755,6 +816,8 @@ export function PeopleWorkspace({
       return async () => {
         const r = receiptSchema.parse(await run());
         localStorage.setItem(preference, values.categoryId);
+        if (r.payments.some((p) => p.tip))
+          localStorage.setItem(tipPreference, values.tipCategoryId);
         completed("Payment applied to the client's services.", {
           kind: "action",
           action: "deleteReceipt",
@@ -988,6 +1051,38 @@ export function PeopleWorkspace({
           onManualRate={(rate) => setValues((v) => ({ ...v, fxRate: rate }))}
         />
       )}
+      {creating && needsReceived && accountCurrency && (
+        <>
+          {input(
+            "tipAmount",
+            `Tip (${accountCurrency}, optional)`,
+            privateMode ? "password" : "text",
+          )}
+          <p className="form-help">
+            Extra money received beyond what is owed. It is saved as its own
+            income entry and does not change the balance owed.
+          </p>
+        </>
+      )}
+      {creating && !needsReceived && extra && extra.tip > 0 && (
+        <p role="status" className="tip-note">
+          {privateMode
+            ? "••••"
+            : `This settles ${formatMoney(extra.settle, itemCurrency)}. The extra ${formatMoney(extra.tip, itemCurrency)} is saved as a tip: separate income that does not change what is owed.`}
+        </p>
+      )}
+      {creating && tipMinor > 0 && (
+        <CategoryPicker
+          label="Tip category"
+          categories={categories.data ?? []}
+          kind="income"
+          value={values.tipCategoryId}
+          onChange={(id) =>
+            setValues((v) => ({ ...v, tipCategoryId: id ?? "" }))
+          }
+          disabled={frozen || !allowWrite}
+        />
+      )}
       <CategoryPicker
         label="Income category"
         categories={categories.data ?? []}
@@ -1205,6 +1300,12 @@ export function PeopleWorkspace({
                       privateMode ? "password" : "text",
                       true,
                     )}
+                    {op.payment?.tip && !op.payment.tip.deletedAt && (
+                      <p className="muted">
+                        This payment came with a tip. Change the tip from
+                        Transactions.
+                      </p>
+                    )}
                     {paymentFields(
                       op.payment?.transaction.accountId,
                       !op.payment,
@@ -1302,6 +1403,14 @@ export function PeopleWorkspace({
                         />
                       </>
                     )}
+                    {op.receipt?.payments.some(
+                      (p) => p.tip && !p.tip.deletedAt,
+                    ) && (
+                      <p className="muted">
+                        This receipt came with a tip. Change the tip from
+                        Transactions.
+                      </p>
+                    )}
                     {paymentFields(
                       op.receipt?.payments[0]?.transaction.accountId,
                       !op.receipt,
@@ -1312,11 +1421,11 @@ export function PeopleWorkspace({
                   <>
                     <p>
                       {op.action === "deleteReceipt"
-                        ? "Delete this receipt: every payment it created and its linked income entries are removed together."
+                        ? "Delete this receipt: every payment it created, its linked income entries and any tip that came with it are removed together."
                         : op.action === "restoreReceipt"
-                          ? "Restore the whole receipt with the same payments and income entries."
+                          ? "Restore the whole receipt with the same payments, income entries and tip."
                           : op.action === "deletePayment"
-                            ? "Delete the payment and its linked income together."
+                            ? "Delete the payment, its linked income and any tip that came with it together."
                             : op.action === "writeOff"
                               ? "Waive only the unpaid remainder. Received income stays in place."
                               : op.action === "reopen"

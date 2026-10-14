@@ -1,6 +1,12 @@
 import { categorySchema, newId } from "@ledgerline/shared";
 import { describe, expect, it } from "vitest";
-import { paymentDefault, positiveCents, positiveMoney } from "./form";
+import {
+  paymentDefault,
+  positiveCents,
+  positiveMoney,
+  splitExtra,
+  tipDefault,
+} from "./form";
 
 const category = (
   name: string,
@@ -58,5 +64,38 @@ describe("amounts in the item's own currency", () => {
       ["", "BDT"],
     ] as const)
       expect(() => positiveMoney(text, code)).toThrow();
+  });
+});
+
+describe("tips on payments", () => {
+  it("splits an amount above the balance into the settled part and a tip", () => {
+    expect(splitExtra("120", "USD", 10000)).toEqual({
+      settle: 10000,
+      tip: 2000,
+    });
+    expect(splitExtra("100.00", "USD", 10000)).toEqual({
+      settle: 10000,
+      tip: 0,
+    });
+    expect(splitExtra("40", "USD", 10000)).toEqual({ settle: 4000, tip: 0 });
+    expect(splitExtra("1050", "JPY", 1000)).toEqual({ settle: 1000, tip: 50 });
+  });
+  it("gives no split for an invalid amount", () => {
+    expect(splitExtra("", "USD", 10000)).toBeNull();
+    expect(splitExtra("abc", "USD", 10000)).toBeNull();
+    expect(splitExtra("0", "USD", 10000)).toBeNull();
+  });
+  it("defaults the tip category to the remembered one or an active root named Tips", () => {
+    const tips = category("Tips");
+    const other = category("Gifts");
+    expect(tipDefault([other, tips], null)).toBe(tips.id);
+    expect(tipDefault([other, tips], other.id)).toBe(other.id);
+    expect(
+      tipDefault(
+        [category("Tips", "income", "2026-01-01T00:00:00.000Z")],
+        null,
+      ),
+    ).toBe("");
+    expect(tipDefault([category("Tips", "expense")], null)).toBe("");
   });
 });

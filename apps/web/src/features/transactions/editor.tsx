@@ -73,9 +73,11 @@ export function TransactionEditor({
   } = form;
   const kind = watch("kind");
   const canWrite = writable && !baseline.transferId;
-  // A transfer's fee or bonus keeps its kind and is never split (ADRs 0023, 0025).
+  // A transfer's fee or bonus, or a payment's tip, keeps its kind and is never split (ADRs 0023, 0025, 0027).
   const linkedToTransfer =
-    !!baseline.feeTransferId || !!baseline.relatedTransferId;
+    !!baseline.feeTransferId ||
+    !!baseline.relatedTransferId ||
+    !!baseline.tipPaymentId;
   useEffect(() => {
     onLock(busy || uncertain);
   }, [busy, uncertain, onLock]);
@@ -178,6 +180,13 @@ export function TransactionEditor({
     >
       {baseline.transferId && (
         <p className="form-help">Transfer entries must be changed together.</p>
+      )}
+      {baseline.tipPaymentId && (
+        <p className="form-help">
+          This is the tip that came with a payment. You can change its amount,
+          category and date, but it stays one income entry. Deleting the payment
+          deletes it too.
+        </p>
       )}
       {baseline.feeTransferId && (
         <p className="form-help">
