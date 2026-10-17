@@ -1,6 +1,11 @@
 import { createContext, useEffect, useState } from "react";
 
 export const PrivacyContext = createContext(false);
+/** Privacy mode with its setter, for the Settings page (the header eye button changes it too). */
+export const PrivacyControlContext = createContext<{
+  privateMode: boolean;
+  setPrivateMode: (on: boolean) => void;
+}>({ privateMode: false, setPrivateMode: () => {} });
 /** Whether amounts are typed from the cents (digits fill in from the right), and how to change it. */
 export const AmountEntryContext = createContext<{
   centsFirst: boolean;

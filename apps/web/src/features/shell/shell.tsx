@@ -23,21 +23,30 @@ import {
   Plus,
   Repeat,
   Search,
+  Settings,
   Shapes,
   Sun,
   Wallet,
   X,
 } from "lucide-react";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, getLedgers, type Session } from "../../lib/api";
-import { TimeZoneCard } from "../ledger/time-zone-card";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
-import {
-  AmountEntryContext,
-  type Preferences,
-  ThemeContext,
-} from "./preferences";
+import type { Preferences } from "./preferences";
+
+/** Pages reached from More: the More tab stays highlighted on them. */
+const moreArea = [
+  "/more",
+  "/accounts",
+  "/categories",
+  "/currencies",
+  "/recurring",
+  "/clients",
+  "/settings",
+];
+const isActiveDestination = (to: string, pathname: string) =>
+  to === "/more" ? moreArea.includes(pathname) : pathname === to;
 
 const destinations = [
   { to: "/", label: "Home", icon: Home },
@@ -61,18 +70,20 @@ export function Shell({
     select: (state) => state.location.pathname,
   });
   const currentPage =
-    pathname === "/more/accounts"
+    pathname === "/accounts"
       ? "Accounts"
-      : pathname === "/more/categories"
+      : pathname === "/categories"
         ? "Categories"
-        : pathname === "/more/clients"
+        : pathname === "/clients"
           ? "Clients"
-          : pathname === "/more/currencies"
+          : pathname === "/currencies"
             ? "Currencies"
-            : pathname === "/more/recurring"
+            : pathname === "/recurring"
               ? "Recurring"
-              : (destinations.find(({ to }) => to === pathname)?.label ??
-                "Home");
+              : pathname === "/settings"
+                ? "Settings"
+                : (destinations.find(({ to }) => to === pathname)?.label ??
+                  "Home");
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -135,8 +146,9 @@ export function Shell({
             <Link
               key={to}
               to={to}
-              activeOptions={{ exact: to !== "/more" }}
-              activeProps={{ className: "active", "aria-current": "page" }}
+              {...(isActiveDestination(to, pathname)
+                ? { className: "active", "aria-current": "page" as const }
+                : {})}
             >
               <Icon size={20} />
               {label}
@@ -260,8 +272,9 @@ export function Shell({
           <Link
             key={to}
             to={to}
-            activeOptions={{ exact: to !== "/more" }}
-            activeProps={{ className: "active", "aria-current": "page" }}
+            {...(isActiveDestination(to, pathname)
+              ? { className: "active", "aria-current": "page" as const }
+              : {})}
           >
             <Icon size={20} />
             <span>{label}</span>
@@ -326,29 +339,34 @@ export function Shell({
                 ...[
                   ...destinations,
                   {
-                    to: "/more/accounts",
+                    to: "/accounts",
                     label: "Accounts",
                     icon: Wallet,
                   } as const,
                   {
-                    to: "/more/categories",
+                    to: "/categories",
                     label: "Categories",
                     icon: Shapes,
                   } as const,
                   {
-                    to: "/more/currencies",
+                    to: "/currencies",
                     label: "Currencies",
                     icon: Coins,
                   } as const,
                   {
-                    to: "/more/recurring",
+                    to: "/recurring",
                     label: "Recurring",
                     icon: Repeat,
                   } as const,
                   {
-                    to: "/more/clients",
+                    to: "/clients",
                     label: "Clients",
                     icon: Wallet,
+                  } as const,
+                  {
+                    to: "/settings",
+                    label: "Settings",
+                    icon: Settings,
                   } as const,
                 ].map(({ to, label, icon }) => ({
                   key: to,
@@ -536,19 +554,17 @@ export function AppVersion({ phoneOnly = false }: { phoneOnly?: boolean }) {
 }
 
 export function MorePage() {
-  const { theme, setTheme } = useContext(ThemeContext);
-  const { centsFirst, setCentsFirst } = useContext(AmountEntryContext);
   return (
     <>
       <div className="page-heading">
         <p className="eyebrow">MAKE IT YOURS</p>
         <h1>Your space.</h1>
         <p className="muted">
-          The little details that make your ledger feel like home.
+          Your accounts, categories and clients, and the settings behind them.
         </p>
       </div>
       <section className="settings-card">
-        <Link to="/more/accounts" className="settings-link">
+        <Link to="/accounts" className="settings-link">
           <span className="account-icon">
             <Wallet size={22} />
           </span>
@@ -560,7 +576,7 @@ export function MorePage() {
         </Link>
       </section>
       <section className="settings-card">
-        <Link to="/more/categories" className="settings-link">
+        <Link to="/categories" className="settings-link">
           <span className="account-icon">
             <Shapes size={22} />
           </span>
@@ -574,7 +590,7 @@ export function MorePage() {
         </Link>
       </section>
       <section className="settings-card">
-        <Link to="/more/currencies" className="settings-link">
+        <Link to="/currencies" className="settings-link">
           <span className="account-icon">
             <Coins size={22} />
           </span>
@@ -586,7 +602,7 @@ export function MorePage() {
         </Link>
       </section>
       <section className="settings-card">
-        <Link to="/more/recurring" className="settings-link">
+        <Link to="/recurring" className="settings-link">
           <span className="account-icon">
             <Repeat size={22} />
           </span>
@@ -598,7 +614,7 @@ export function MorePage() {
         </Link>
       </section>
       <section className="settings-card">
-        <Link to="/more/clients" className="settings-link">
+        <Link to="/clients" className="settings-link">
           <span className="account-icon">
             <Wallet size={22} />
           </span>
@@ -610,47 +626,17 @@ export function MorePage() {
         </Link>
       </section>
       <section className="settings-card">
-        <h2>Appearance & privacy</h2>
-        <fieldset className="theme-choice">
-          <legend>Theme</legend>
-          {(
-            [
-              ["light", "Light"],
-              ["dark", "Dark"],
-              ["system", "System"],
-            ] as const
-          ).map(([value, label]) => (
-            <label key={value} className="theme-option">
-              <input
-                type="radio"
-                name="theme"
-                value={value}
-                checked={theme === value}
-                onChange={() => setTheme(value)}
-              />
-              <span>{label}</span>
-            </label>
-          ))}
-        </fieldset>
-        <p className="muted">
-          System follows your device. The sun or moon button in the header
-          switches quickly between light and dark. The eye button hides amounts
-          throughout your ledger.
-        </p>
-        <label className="budget-rollover amount-entry-toggle">
-          <input
-            type="checkbox"
-            checked={centsFirst}
-            onChange={(event) => setCentsFirst(event.target.checked)}
-          />
-          <span className="check-text">Type amounts from the cents</span>
-        </label>
-        <p className="muted">
-          On: type digits only and the decimal point stays in place, so 1, 2, 3
-          reads 1.23. Off: type amounts the usual way. Saved on this device.
-        </p>
+        <Link to="/settings" className="settings-link">
+          <span className="account-icon">
+            <Settings size={22} />
+          </span>
+          <div>
+            <h2>Settings</h2>
+            <p>Theme, privacy, how amounts are typed and your time zone.</p>
+          </div>
+          <ChevronRight size={20} aria-hidden="true" />
+        </Link>
       </section>
-      <TimeZoneCard />
       <AppVersion phoneOnly />
     </>
   );

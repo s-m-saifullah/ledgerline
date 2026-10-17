@@ -134,7 +134,7 @@ const entry = (page: Page, categoryId: string) =>
     note: "Synthetic expense",
   });
 async function categories(page: Page) {
-  await page.goto("/more/categories");
+  await page.goto("/categories");
   await expect(
     page.getByRole("heading", { name: "Categories", exact: true }),
   ).toBeVisible();

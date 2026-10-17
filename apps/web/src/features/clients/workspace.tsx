@@ -1107,12 +1107,12 @@ export function ClientsWorkspace({
         !categories.data.some((c) => c.kind === "income" && !c.archivedAt) && (
           <p className="muted">
             There are no income categories yet.{" "}
-            <Link to="/more/categories">Add income categories</Link> first.
+            <Link to="/categories">Add income categories</Link> first.
           </p>
         )}
       {accounts.data &&
         !accounts.data.some((a) => !a.archivedAt) &&
-        creating && <Link to="/more/accounts">Set up a receiving account</Link>}
+        creating && <Link to="/accounts">Set up a receiving account</Link>}
       <details className="more-details" open={!creating}>
         <summary>More details: date, time and note</summary>
         {input("date", "Payment date", "date", true)}

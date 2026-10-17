@@ -130,7 +130,7 @@ async function selectFits(page: Page, label: string) {
   expect(geometry.leftInset).toBeGreaterThanOrEqual(8);
 }
 async function clients(page: Page) {
-  await page.goto("/more/clients");
+  await page.goto("/clients");
   await expect(
     page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();

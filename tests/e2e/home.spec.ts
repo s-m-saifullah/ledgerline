@@ -197,7 +197,7 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
     ),
   ).toBe(135785);
   // Net worth moved to More > Accounts, with the amount owed on cards and loans.
-  await page.goto("/more/accounts");
+  await page.goto("/accounts");
   const netWorth = page.locator(".net-worth-card");
   await expect(netWorth).toContainText("Net worth");
   await expect(netWorth.locator(".amount")).toHaveText("$1,357.85");

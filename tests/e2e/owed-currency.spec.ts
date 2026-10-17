@@ -132,7 +132,7 @@ test("money owed in euros is shown in euros and settled into a dollar account wi
   page,
 }) => {
   await signIn(page);
-  await page.goto("/more/clients");
+  await page.goto("/clients");
   await page.getByRole("button", { name: /Euro client/ }).click();
 
   // 1. The balance is in euros, with its dollar value at today's rate (1 EUR = 0.80 USD).

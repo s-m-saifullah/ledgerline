@@ -104,7 +104,7 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/more/recurring");
+  await page.goto("/recurring");
   await expect(
     page.getByRole("heading", { name: "Recurring", exact: true }),
   ).toBeVisible();
@@ -141,7 +141,7 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   await expect(page.locator(".transaction-row")).toHaveCount(2);
 
   // Its history lists both, then it can be paused and deleted; the entries stay.
-  await page.goto("/more/recurring");
+  await page.goto("/recurring");
   await page.getByRole("button", { name: /Rent/ }).click();
   await expect(page.getByText("What it has done")).toBeVisible();
   const history = page.getByRole("dialog").locator(".recurring-runs li");

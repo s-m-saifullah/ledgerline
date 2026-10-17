@@ -2798,3 +2798,8 @@ button.budget-line:hover {
     gap: 6px;
   }
 }
+.settings-card .scope-label {
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
