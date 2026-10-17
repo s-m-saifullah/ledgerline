@@ -1,6 +1,11 @@
 import { createContext, useEffect, useState } from "react";
 
 export const PrivacyContext = createContext(false);
+/** Whether amounts are typed from the cents (digits fill in from the right), and how to change it. */
+export const AmountEntryContext = createContext<{
+  centsFirst: boolean;
+  setCentsFirst: (on: boolean) => void;
+}>({ centsFirst: false, setCentsFirst: () => {} });
 
 export type Theme = "light" | "dark" | "system";
 /** The saved theme choice, including "system", for the Appearance setting. */
@@ -16,6 +21,9 @@ export function usePreferences() {
   });
   const [privateMode, setPrivateMode] = useState(
     () => localStorage.getItem("ledgerline.privacy") === "true",
+  );
+  const [centsFirst, setCentsFirst] = useState(
+    () => localStorage.getItem("ledgerline.centsFirst") === "true",
   );
   const [systemDark, setSystemDark] = useState(
     () => matchMedia("(prefers-color-scheme: dark)").matches,
@@ -37,5 +45,16 @@ export function usePreferences() {
     document.documentElement.dataset.privacy = String(privateMode);
     localStorage.setItem("ledgerline.privacy", String(privateMode));
   }, [privateMode]);
-  return { theme, resolvedTheme, setTheme, privateMode, setPrivateMode };
+  useEffect(() => {
+    localStorage.setItem("ledgerline.centsFirst", String(centsFirst));
+  }, [centsFirst]);
+  return {
+    theme,
+    resolvedTheme,
+    setTheme,
+    privateMode,
+    setPrivateMode,
+    centsFirst,
+    setCentsFirst,
+  };
 }

@@ -225,10 +225,9 @@ it("offers added currencies for a new account and reads the balance in that curr
   // The untouched balance restarts in the new currency's units, and the label follows.
   expect(screen.getByLabelText("Opening balance (JPY)")).toHaveValue("0");
   await userEvent.clear(screen.getByLabelText("Opening balance (JPY)"));
+  // A currency without decimals takes no decimal point; the box refuses it as you type.
   await userEvent.type(screen.getByLabelText("Opening balance (JPY)"), "15.5");
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
-  expect(await screen.findByText(/Enter a whole amount/)).toBeInTheDocument();
-  expect(fetchMock).not.toHaveBeenCalled();
+  expect(screen.getByLabelText("Opening balance (JPY)")).toHaveValue("155");
   await userEvent.clear(screen.getByLabelText("Opening balance (JPY)"));
   await userEvent.type(screen.getByLabelText("Opening balance (JPY)"), "1500");
   await userEvent.click(screen.getByRole("button", { name: "Add account" }));

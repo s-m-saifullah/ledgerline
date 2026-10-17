@@ -8,6 +8,7 @@ import { Button } from "@ledgerline/ui";
 import { ChevronDown } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { AmountInput } from "../../components/amount-input";
 import { ApiError } from "../../lib/api";
 import { CategoryPicker } from "../categories/picker";
 import { PrivacyContext } from "../shell/preferences";
@@ -251,7 +252,8 @@ export function AccountEditor({
             )
           )}
           <label htmlFor="account-amount">Opening balance ({currency})</label>
-          <input
+          <AmountInput
+            currency={currency}
             id="account-amount"
             type={privateMode ? "password" : "text"}
             inputMode="decimal"

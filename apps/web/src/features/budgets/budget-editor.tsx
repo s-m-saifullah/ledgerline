@@ -1,6 +1,7 @@
 import { type BudgetLine, parseMinorUnits } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
+import { AmountInput } from "../../components/amount-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
 import { cleanAmountText, decimalFromCents } from "../accounts/money";
@@ -123,7 +124,8 @@ export function BudgetEditor({
       >
         <fieldset disabled={busy || conflict} className="account-fields">
           <label htmlFor="budget-amount">Budget for the month (USD)</label>
-          <input
+          <AmountInput
+            currency={"USD"}
             id="budget-amount"
             inputMode="decimal"
             autoComplete="off"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AmountInput } from "../../components/amount-input";
 import { formatMoney } from "../accounts/money";
 import { hourlyResult, totalText } from "./hourly";
 
@@ -38,7 +39,8 @@ export function HourlyHelper({
       </label>
       <label className="form-field" htmlFor="client-hourly-rate">
         Hourly rate ({currency})
-        <input
+        <AmountInput
+          currency={currency}
           id="client-hourly-rate"
           type={secret ? "password" : "text"}
           inputMode="decimal"

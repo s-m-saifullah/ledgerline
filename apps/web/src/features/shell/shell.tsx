@@ -33,7 +33,11 @@ import { api, getLedgers, type Session } from "../../lib/api";
 import { TimeZoneCard } from "../ledger/time-zone-card";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
-import { type Preferences, ThemeContext } from "./preferences";
+import {
+  AmountEntryContext,
+  type Preferences,
+  ThemeContext,
+} from "./preferences";
 
 const destinations = [
   { to: "/", label: "Home", icon: Home },
@@ -533,6 +537,7 @@ export function AppVersion({ phoneOnly = false }: { phoneOnly?: boolean }) {
 
 export function MorePage() {
   const { theme, setTheme } = useContext(ThemeContext);
+  const { centsFirst, setCentsFirst } = useContext(AmountEntryContext);
   return (
     <>
       <div className="page-heading">
@@ -631,6 +636,18 @@ export function MorePage() {
           System follows your device. The sun or moon button in the header
           switches quickly between light and dark. The eye button hides amounts
           throughout your ledger.
+        </p>
+        <label className="budget-rollover amount-entry-toggle">
+          <input
+            type="checkbox"
+            checked={centsFirst}
+            onChange={(event) => setCentsFirst(event.target.checked)}
+          />
+          <span className="check-text">Type amounts from the cents</span>
+        </label>
+        <p className="muted">
+          On: type digits only and the decimal point stays in place, so 1, 2, 3
+          reads 1.23. Off: type amounts the usual way. Saved on this device.
         </p>
       </section>
       <TimeZoneCard />

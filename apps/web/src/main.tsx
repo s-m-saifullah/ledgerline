@@ -26,6 +26,7 @@ import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import {
+  AmountEntryContext,
   PrivacyContext,
   ThemeContext,
   usePreferences,
@@ -71,27 +72,34 @@ function Root() {
     );
   return (
     <PrivacyContext value={preferences.privateMode}>
-      <ThemeContext
-        value={{ theme: preferences.theme, setTheme: preferences.setTheme }}
+      <AmountEntryContext
+        value={{
+          centsFirst: preferences.centsFirst,
+          setCentsFirst: preferences.setCentsFirst,
+        }}
       >
-        <Shell
-          key={session.data.user.id}
-          preferences={preferences}
-          session={session.data}
-          onSignOut={async () => {
-            await client.cancelQueries();
-            client.setQueryData(["session"], null);
-            client.removeQueries({ queryKey: ["ledgers"] });
-            client.removeQueries({ queryKey: ["accounts"] });
-            client.removeQueries({ queryKey: ["categories"] });
-            client.removeQueries({ queryKey: ["transactions"] });
-            client.removeQueries({ queryKey: ["home"] });
-            for (const key of ["contacts", "receivables", "clientHistory"])
-              client.removeQueries({ queryKey: [key] });
-            await router.navigate({ to: "/" });
-          }}
-        />
-      </ThemeContext>
+        <ThemeContext
+          value={{ theme: preferences.theme, setTheme: preferences.setTheme }}
+        >
+          <Shell
+            key={session.data.user.id}
+            preferences={preferences}
+            session={session.data}
+            onSignOut={async () => {
+              await client.cancelQueries();
+              client.setQueryData(["session"], null);
+              client.removeQueries({ queryKey: ["ledgers"] });
+              client.removeQueries({ queryKey: ["accounts"] });
+              client.removeQueries({ queryKey: ["categories"] });
+              client.removeQueries({ queryKey: ["transactions"] });
+              client.removeQueries({ queryKey: ["home"] });
+              for (const key of ["contacts", "receivables", "clientHistory"])
+                client.removeQueries({ queryKey: [key] });
+              await router.navigate({ to: "/" });
+            }}
+          />
+        </ThemeContext>
+      </AmountEntryContext>
     </PrivacyContext>
   );
 }
