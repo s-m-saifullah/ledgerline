@@ -32,9 +32,9 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { api, getLedgers, type Session } from "../../lib/api";
+import type { Preferences } from "../../lib/preferences";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
-import type { Preferences } from "./preferences";
 
 /** Pages reached from More: the More tab stays highlighted on them. */
 const moreArea = [

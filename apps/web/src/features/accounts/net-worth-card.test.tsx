@@ -2,8 +2,8 @@ import { type HomeSummary, newId } from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import { currentMonth } from "../home/month";
-import { PrivacyContext } from "../shell/preferences";
+import { currentMonth } from "../../lib/month";
+import { PrivacyContext } from "../../lib/preferences";
 import { NetWorthCard } from "./net-worth-card";
 
 const usd = (amount: number) => ({ amount, currency: "USD" as const });

@@ -2,13 +2,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { CategoryEditor } from "./editor";
 import {
   category,
   chooseCategory,
   json,
   ledgerId,
-} from "./fixtures.test-helper";
+} from "../../test-support/category-fixtures";
+import { CategoryEditor } from "./editor";
 
 const root = category("Food");
 afterEach(() => {

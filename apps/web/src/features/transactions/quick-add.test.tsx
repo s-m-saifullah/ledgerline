@@ -4,13 +4,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode, useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { PrivacyContext } from "../../lib/preferences";
 import {
   category,
   chooseCategory,
   json,
   ledgerId,
-} from "../categories/fixtures.test-helper";
-import { PrivacyContext } from "../shell/preferences";
+} from "../../test-support/category-fixtures";
 import { rememberAccount } from "./form";
 import { QuickAdd, QuickAddForm } from "./quick-add";
 

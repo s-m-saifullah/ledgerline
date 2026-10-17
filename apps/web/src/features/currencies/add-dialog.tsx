@@ -2,8 +2,8 @@ import { Button } from "@ledgerline/ui";
 import { useMemo, useRef, useState } from "react";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
+import { addableCurrencies } from "../../lib/rate-format";
 import { prepareCurrencyPin, prepareRatesRefresh } from "./api";
-import { addableCurrencies } from "./format";
 
 export function AddCurrencyDialog({
   ledgerId,

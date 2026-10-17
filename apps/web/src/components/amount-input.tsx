@@ -8,7 +8,7 @@ import {
   useContext,
   useRef,
 } from "react";
-import { AmountEntryContext } from "../features/shell/preferences";
+import { AmountEntryContext } from "../lib/preferences";
 import {
   amountPlaceholder,
   centsFirstValue,

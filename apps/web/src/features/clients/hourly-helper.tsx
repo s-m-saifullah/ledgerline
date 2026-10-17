@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AmountInput } from "../../components/amount-input";
-import { formatMoney } from "../accounts/money";
+import { formatMoney } from "../../lib/money";
 import { hourlyResult, totalText } from "./hourly";
 
 /**

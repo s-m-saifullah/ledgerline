@@ -17,11 +17,11 @@ import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { Toast } from "../../components/toast";
 import { ApiError } from "../../lib/api";
+import { PrivacyContext } from "../../lib/preferences";
 import { getCategories, prepareCategorySave } from "../categories/api";
 import { CategoryPicker } from "../categories/picker";
 import { categoryOptions } from "../categories/tree";
 import { EntryRate } from "../currencies/entry-rate";
-import { PrivacyContext } from "../shell/preferences";
 import {
   getActiveAccounts,
   prepareTransactionCreate,

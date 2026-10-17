@@ -12,7 +12,7 @@ import {
   transactionTimeSchema,
 } from "@ledgerline/shared";
 import { z } from "zod";
-import { cleanAmountText, decimalFromCents } from "../accounts/money";
+import { cleanAmountText, decimalFromCents } from "../../lib/money";
 export function localToday(now = new Date()) {
   return `${String(now.getFullYear()).padStart(4, "0")}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }

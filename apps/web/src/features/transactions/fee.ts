@@ -4,7 +4,7 @@ import {
   cleanAmountText,
   decimalFromCents,
   percentToBps,
-} from "../accounts/money";
+} from "../../lib/money";
 import { amountMinor, isPositiveAmount } from "./form";
 
 /** What the one Fee box holds (ADR 0025): nothing, a fixed amount, a percentage, or a mistake. */

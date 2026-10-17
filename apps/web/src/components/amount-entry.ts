@@ -1,5 +1,5 @@
 import { parseMinorUnits } from "@ledgerline/shared";
-import { cleanAmountText, decimalFromCents } from "../features/accounts/money";
+import { cleanAmountText, decimalFromCents } from "../lib/money";
 
 /**
  * Cents-first entry: digits fill in from the right and the decimal point stays put, so 1, 2, 3

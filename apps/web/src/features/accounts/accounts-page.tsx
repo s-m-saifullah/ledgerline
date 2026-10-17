@@ -17,18 +17,18 @@ import {
 } from "lucide-react";
 import { useContext, useState } from "react";
 import type { z } from "zod";
+import { Amount } from "../../components/amount-text";
 import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
+import { formatMoney } from "../../lib/money";
+import { PrivacyContext } from "../../lib/preferences";
 import { randomUuid } from "../../lib/random-uuid";
 import { getCategories } from "../categories/api";
 import { useBaseValues } from "../currencies/base-value";
-import { Amount } from "../home/amount";
-import { PrivacyContext } from "../shell/preferences";
 import { getAccounts } from "./api";
 import { ArchiveAccountDialog } from "./archive";
 import { AccountEditor } from "./editor";
 import { accountTypes, isLiability } from "./form";
-import { formatMoney } from "./money";
 import { NetWorthCard } from "./net-worth-card";
 
 const icons = {

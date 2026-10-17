@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import { AmountInput } from "../../components/amount-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
-import { cleanAmountText, decimalFromCents } from "../accounts/money";
-import { monthLabel } from "../home/month";
+import { cleanAmountText, decimalFromCents } from "../../lib/money";
+import { monthLabel } from "../../lib/month";
 import { prepareBudgetRemove, prepareBudgetSave } from "./api";
 
 /** Parse a typed budget amount into whole cents, or explain what is wrong. */

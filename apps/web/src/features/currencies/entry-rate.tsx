@@ -1,10 +1,10 @@
 import { convertMinor, invertRate, rateFromInverse } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
-import { Amount } from "../home/amount";
+import { Amount } from "../../components/amount-text";
+import { rateSentence } from "../../lib/rate-format";
 import { getRateLookup } from "./api";
 import { useBaseValues } from "./base-value";
-import { rateSentence } from "./format";
 
 /**
  * Under an amount in another currency: what it is worth in the base currency, which rate that

@@ -6,7 +6,7 @@ import {
   type RecurringFrequency,
   type RecurringRule,
 } from "@ledgerline/shared";
-import { bpsToPercent, decimalFromCents } from "../accounts/money";
+import { bpsToPercent, decimalFromCents } from "../../lib/money";
 import { feeMinor, parseFee } from "../transactions/fee";
 import { amountMessage, amountMinor } from "../transactions/form";
 

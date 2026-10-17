@@ -9,9 +9,9 @@ import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
+import { PrivacyContext } from "../../lib/preferences";
 import { CategoryPicker } from "../categories/picker";
 import { EntryRate } from "../currencies/entry-rate";
-import { PrivacyContext } from "../shell/preferences";
 import {
   getTransaction,
   prepareTransactionEdit,

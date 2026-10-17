@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { formatMoney } from "../accounts/money";
-import { PrivacyContext } from "../shell/preferences";
+import { formatMoney } from "../lib/money";
+import { PrivacyContext } from "../lib/preferences";
 
 /** Privacy mode removes the digits from the page, not just from view. */
 export function Amount({

@@ -1,8 +1,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
+import { category } from "../../test-support/category-fixtures";
 import { CategoryMark } from "./appearance";
-import { category } from "./fixtures.test-helper";
 import { CategoryPicker } from "./picker";
 
 const root = category("Food");

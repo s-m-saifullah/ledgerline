@@ -9,7 +9,7 @@ import {
   chooseCategory,
   json,
   ledgerId,
-} from "../categories/fixtures.test-helper";
+} from "../../test-support/category-fixtures";
 import { QuickAddForm } from "./quick-add";
 
 vi.mock("@tanstack/react-router", () => ({

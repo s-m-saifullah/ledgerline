@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Amount } from "../home/amount";
+import { Amount } from "../../components/amount-text";
+import { useCurrentMonth } from "../../lib/month";
 import { getHome } from "../home/api";
-import { useCurrentMonth } from "../home/month";
 
 /** Net worth lives here, on purpose, not on Home: Home shows money in hand. */
 export function NetWorthCard({ ledgerId }: { ledgerId: string }) {

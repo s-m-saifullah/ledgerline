@@ -10,8 +10,9 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
 import { ApiError } from "../../lib/api";
+import { decimalFromCents } from "../../lib/money";
+import { PrivacyContext } from "../../lib/preferences";
 import { CategoryPicker } from "../categories/picker";
-import { PrivacyContext } from "../shell/preferences";
 import { feeHint } from "../transactions/fee";
 import { getAccount, prepareAccountSave } from "./api";
 import { AccountDialog } from "./dialog";
@@ -23,7 +24,6 @@ import {
   formDefaults,
   isLiability,
 } from "./form";
-import { decimalFromCents } from "./money";
 
 export function AccountEditor({
   ledgerId,

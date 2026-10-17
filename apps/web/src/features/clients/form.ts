@@ -3,7 +3,7 @@ import {
   currencyDigits,
   parseMinorUnits,
 } from "@ledgerline/shared";
-import { cleanAmountText } from "../accounts/money";
+import { cleanAmountText } from "../../lib/money";
 
 /** The last confirmed active income category, otherwise an active income root with this name. */
 function incomeDefault(
