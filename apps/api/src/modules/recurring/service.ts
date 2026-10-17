@@ -2,6 +2,7 @@ import {
   type CreateRecurringRule,
   feeFromBps,
   firstOccurrenceOnOrAfter,
+  localDate,
   type RecurringRule,
   type RecurringRun,
   recurringRuleSchema,
@@ -9,7 +10,6 @@ import {
   type UpdateRecurringRule,
 } from "@ledgerline/shared";
 import type { Database, DatabaseConnection } from "../../db/client";
-import { localDate } from "../../jobs/local-date";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionAccounts } from "../accounts/service";
 import { validateTransactionCategory } from "../categories/service";

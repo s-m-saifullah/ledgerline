@@ -13,9 +13,7 @@ import {
 } from "@ledgerline/shared";
 import { z } from "zod";
 import { cleanAmountText, decimalFromCents } from "../../lib/money";
-export function localToday(now = new Date()) {
-  return `${String(now.getFullYear()).padStart(4, "0")}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
+import { localToday } from "../../lib/time";
 /** Is `text` (already cleaned) a positive amount that fits the currency's minor units? */
 export function isPositiveAmount(text: string, currency: string) {
   const digits = currencyDigits(currency);

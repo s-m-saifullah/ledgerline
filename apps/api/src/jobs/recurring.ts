@@ -1,6 +1,7 @@
 import {
   createTransactionSchema,
   createTransferSchema,
+  localDate,
   occurrenceAfter,
   occurrencesBetween,
 } from "@ledgerline/shared";
@@ -17,7 +18,6 @@ import {
 } from "../modules/recurring/repo";
 import { createTransaction } from "../modules/transactions/service";
 import { createTransfer } from "../modules/transactions/transfer-service";
-import { localDate } from "./local-date";
 import type { JobLog } from "./runner";
 
 /** At most this many occurrences per rule per tick; a mistaken start date cannot flood a ledger. */

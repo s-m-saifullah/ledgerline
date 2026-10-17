@@ -1,4 +1,4 @@
-import { newId } from "@ledgerline/shared";
+import { localDate, newId } from "@ledgerline/shared";
 import { inArray, sql } from "drizzle-orm";
 import {
   afterAll,
@@ -20,7 +20,6 @@ import {
   writeReceipts,
 } from "../db/schema";
 import type { RateFetcher } from "../modules/currencies/provider";
-import { localDate } from "./local-date";
 import { refreshLedgerRates } from "./rates";
 import { startJobRunner } from "./runner";
 
