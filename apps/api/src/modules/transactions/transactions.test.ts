@@ -7,7 +7,6 @@ import {
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app";
-import { readConfig } from "../../config";
 import { createDatabase } from "../../db/client";
 import { applyMigrations } from "../../db/migrate";
 import {
@@ -22,23 +21,16 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
-import { hashPassword } from "../auth/password";
+import {
+  requireTestDatabase,
+  seedUser,
+  signInCookie,
+  testConfig,
+} from "../../test-support/harness";
 import { postedBalance, postedCategoryTotals } from "./balance-service";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error(
-    "Transactions tests require the dedicated ledgerline_test database.",
-  );
-const config = readConfig({
-  NODE_ENV: "test",
-  DATABASE_URL: url,
-  APP_URL: "http://localhost:5173",
-  BETTER_AUTH_SECRET: "transactions-test-secret-only-00000000000000000",
-  OWNER_EMAIL: "transactions-owner@example.com",
-  OWNER_PASSWORD: "Transactions-test-password-000",
-  OWNER_NAME: "Transactions owner",
-});
+const url = requireTestDatabase("Transactions tests");
+const config = testConfig(url, "transactions");
 const { db, pool } = createDatabase(url);
 const app = await buildApp(db, config);
 let ledgerId = "",
@@ -129,17 +121,7 @@ async function balance(id = accountId) {
   return response.json().balance.amount as number;
 }
 async function signIn(email: string) {
-  const response = await app.inject({
-    method: "POST",
-    url: "/api/v1/auth/sign-in/email",
-    headers: { origin: config.APP_URL },
-    payload: { email, password: config.OWNER_PASSWORD },
-  });
-  expect(response.statusCode).toBe(200);
-  const cookie = response.headers["set-cookie"];
-  return (Array.isArray(cookie) ? cookie : [cookie ?? ""])
-    .map((value) => value.split(";")[0])
-    .join("; ");
+  return signInCookie(app, config, email);
 }
 
 const fixtureUsers = [newId(), newId(), newId()];
@@ -154,21 +136,14 @@ beforeAll(async () => {
       name: "Synthetic transactions test ledger",
     })),
   );
-  const password = await hashPassword(config.OWNER_PASSWORD);
+
   for (const [index, role] of (
     ["owner", "editor", "viewer"] as const
   ).entries()) {
     const id = fixtureUsers[index];
     if (!id) throw new Error("Missing fixture ID");
     const email = `transactions-${role}-${id}@example.com`;
-    await db.insert(user).values({ id, name: role, email });
-    await db.insert(credentials).values({
-      userId: id,
-      accountId: id,
-      providerId: "credential",
-      password,
-    });
-    await db.insert(ledgerMembers).values({ userId: id, ledgerId, role });
+    await seedUser(db, config, { id, email, name: role, ledgerId, role });
   }
   await db
     .insert(ledgerMembers)

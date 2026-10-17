@@ -8,7 +8,6 @@ import {
 import { inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app";
-import { readConfig } from "../../config";
 import { createDatabase } from "../../db/client";
 import { applyMigrations } from "../../db/migrate";
 import {
@@ -24,22 +23,15 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import {
+  requireTestDatabase,
+  signInCookie,
+  testConfig,
+} from "../../test-support/harness";
 import { hashPassword } from "../auth/password";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error(
-    "Budget tests require the dedicated ledgerline_test database.",
-  );
-const config = readConfig({
-  NODE_ENV: "test",
-  DATABASE_URL: url,
-  APP_URL: "http://localhost:5173",
-  BETTER_AUTH_SECRET: "budgets-test-secret-only-0000000000000000000",
-  OWNER_EMAIL: "budgets-owner@example.com",
-  OWNER_PASSWORD: "Budgets-test-password-000",
-  OWNER_NAME: "Budgets owner",
-});
+const url = requireTestDatabase("Budget tests");
+const config = testConfig(url, "budgets");
 const { db, pool } = createDatabase(url);
 const app = await buildApp(db, config);
 const ledgerId = newId();
@@ -128,17 +120,7 @@ async function spend(
   return id;
 }
 async function signIn(email: string) {
-  const response = await app.inject({
-    method: "POST",
-    url: "/api/v1/auth/sign-in/email",
-    headers: { origin: config.APP_URL },
-    payload: { email, password: config.OWNER_PASSWORD },
-  });
-  expect(response.statusCode).toBe(200);
-  const cookie = response.headers["set-cookie"];
-  return (Array.isArray(cookie) ? cookie : [cookie ?? ""])
-    .map((value) => value.split(";")[0])
-    .join("; ");
+  return signInCookie(app, config, email);
 }
 async function clearRows() {
   // The split integrity check is deferred, so lines and parents go in one transaction.

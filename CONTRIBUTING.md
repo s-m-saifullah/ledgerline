@@ -32,6 +32,12 @@ pnpm e2e        # run alone; browser tests use a shared local database
 
 Check that `pnpm lint` really passes (read its output), and test new UI at 320 px, 390 px and desktop in light and dark.
 
+## Testing conventions
+
+- **API integration tests** use the shared helpers in `apps/api/src/test-support/harness.ts`: `requireTestDatabase` (refuses anything but `ledgerline_test`), `testConfig`, `signInCookie` and `seedUser`. Do not copy the database guard, config block, sign-in or user-seeding code into a new test file; import the helpers. If a new test needs setup that two or more files would share, add it to the harness instead of repeating it.
+- Each endpoint still needs its own cross-ledger test (see the ledger scoping rule above).
+- Code in one API module calls another module's **service**, never its repository or tables.
+
 ## Pull requests
 
 - Branch from `main`, keep commits small and focused with clear messages, and open a pull request to `main`. Nobody pushes directly to `main`.

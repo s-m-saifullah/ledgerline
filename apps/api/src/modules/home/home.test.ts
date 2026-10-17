@@ -2,7 +2,6 @@ import { homeSummarySchema, monthRange, newId } from "@ledgerline/shared";
 import { inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app";
-import { readConfig } from "../../config";
 import { createDatabase } from "../../db/client";
 import { applyMigrations } from "../../db/migrate";
 import {
@@ -21,20 +20,15 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import {
+  requireTestDatabase,
+  signInCookie,
+  testConfig,
+} from "../../test-support/harness";
 import { hashPassword } from "../auth/password";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error("Home tests require dedicated ledgerline_test.");
-const config = readConfig({
-  NODE_ENV: "test",
-  DATABASE_URL: url,
-  APP_URL: "http://localhost:5173",
-  BETTER_AUTH_SECRET: "home-test-secret-only-0000000000000000000",
-  OWNER_EMAIL: "home@example.com",
-  OWNER_PASSWORD: "Home-test-password-00000",
-  OWNER_NAME: "Test owner",
-});
+const url = requireTestDatabase("Home tests");
+const config = testConfig(url, "home");
 const { db, pool } = createDatabase(url);
 const app = await buildApp(db, config);
 const ledgerId = newId();
@@ -253,19 +247,8 @@ beforeAll(async () => {
   await app.ready();
   cookies = [];
   for (const [i, role] of roles.entries()) {
-    const r = await app.inject({
-      method: "POST",
-      url: "/api/v1/auth/sign-in/email",
-      headers: { origin: config.APP_URL },
-      payload: {
-        email: `home-${role}-${users[i]}@example.com`,
-        password: config.OWNER_PASSWORD,
-      },
-    });
-    expect(r.statusCode).toBe(200);
-    const c = r.headers["set-cookie"];
     cookies.push(
-      (Array.isArray(c) ? c : [c ?? ""]).map((v) => v.split(";")[0]).join("; "),
+      await signInCookie(app, config, `home-${role}-${users[i]}@example.com`),
     );
   }
 });
