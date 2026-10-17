@@ -363,3 +363,51 @@ export function deleteAccount(
     },
   );
 }
+
+export type { AccountRow };
+
+/** The balance accounts of one client, by currency (ADR 0030). */
+export function accountsForContact(
+  db: DatabaseConnection,
+  ledgerId: string,
+  contactId: string,
+  lock = false,
+) {
+  return accountRepository(db, ledgerId).forContact(contactId, lock);
+}
+export function createContactAccount(
+  db: DatabaseConnection,
+  ledgerId: string,
+  input: {
+    contactId: string;
+    name: string;
+    currency: string;
+    openingBalance: number;
+  },
+) {
+  return accountRepository(db, ledgerId).createForContact(input);
+}
+/** Changes the starting balance of a client's balance account. */
+export function setContactAccountOpening(
+  db: DatabaseConnection,
+  ledgerId: string,
+  id: string,
+  expectedVersion: number,
+  openingBalance: NonNullable<UpdateAccount["openingBalance"]>,
+  version: number,
+) {
+  return accountRepository(db, ledgerId).update(
+    id,
+    { expectedVersion, openingBalance },
+    version,
+  );
+}
+/** A client's balance accounts carry the client's name. */
+export function renameContactAccounts(
+  db: DatabaseConnection,
+  ledgerId: string,
+  contactId: string,
+  name: string,
+) {
+  return accountRepository(db, ledgerId).renameForContact(contactId, name);
+}

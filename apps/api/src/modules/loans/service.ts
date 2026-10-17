@@ -9,13 +9,20 @@ import {
   loanResultSchema,
   type WaiveLoan,
 } from "@ledgerline/shared";
-import { and, asc, gt, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Database, DatabaseConnection } from "../../db/client";
-import { contacts } from "../../db/schema";
 import { ApiProblem } from "../../lib/problem";
-import { accountRepository } from "../accounts/repo";
-import { lockTransactionAccounts } from "../accounts/service";
-import { contactForAssignment, lockContacts } from "../contacts/service";
+import {
+  type AccountRow,
+  accountsForContact,
+  createContactAccount,
+  lockTransactionAccounts,
+  setContactAccountOpening,
+} from "../accounts/service";
+import {
+  contactForAssignment,
+  loanPeopleRows,
+  lockContacts,
+} from "../contacts/service";
 import { requireUsableCurrency } from "../currencies/service";
 import { ledgerBaseCurrency, requireLedgerRead } from "../ledgers/service";
 import {
@@ -31,9 +38,7 @@ import {
 } from "../writes/service";
 import { nextVersion, requireVersionUpdate } from "../writes/version";
 
-type Row = Awaited<
-  ReturnType<ReturnType<typeof accountRepository>["forContact"]>
->[number];
+type Row = AccountRow;
 
 async function balanceDto(db: DatabaseConnection, ledgerId: string, row: Row) {
   const totals = await postedTransactionTotals(db, ledgerId, [row.id]);
@@ -67,32 +72,11 @@ export async function listLoanPeople(
   return db.transaction(
     async (tx) => {
       await requireLedgerRead(tx, actorId, ledgerId);
-      const rows = await tx
-        .select()
-        .from(contacts)
-        .where(
-          and(
-            sql`${contacts.ledgerId} = ${ledgerId}`,
-            isNull(contacts.deletedAt),
-            query.cursor ? gt(contacts.id, query.cursor) : undefined,
-            query.status === "active"
-              ? isNull(contacts.archivedAt)
-              : query.status === "archived"
-                ? isNotNull(contacts.archivedAt)
-                : undefined,
-            query.text
-              ? sql`strpos(lower(${contacts.name}),lower(${query.text})) > 0`
-              : undefined,
-            sql`(${contacts.origin} = 'loan' OR EXISTS (SELECT 1 FROM accounts a WHERE a.ledger_id = ${contacts.ledgerId} AND a.contact_id = ${contacts.id} AND a.deleted_at IS NULL))`,
-          ),
-        )
-        .orderBy(asc(contacts.id))
-        .limit(query.limit + 1);
+      const rows = await loanPeopleRows(tx, ledgerId, query);
       const page = rows.slice(0, query.limit);
-      const repo = accountRepository(tx, ledgerId);
       const items = [];
       for (const row of page) {
-        const accounts = await repo.forContact(row.id);
+        const accounts = await accountsForContact(tx, ledgerId, row.id);
         items.push({
           id: row.id,
           name: row.name,
@@ -123,7 +107,9 @@ export async function listLoans(
     async (tx) => {
       await requireLedgerRead(tx, actorId, ledgerId);
       await contactForAssignment(tx, ledgerId, contactId);
-      const rows = await accountRepository(tx, ledgerId).forContact(
+      const rows = await accountsForContact(
+        tx,
+        ledgerId,
         contactId.toLowerCase(),
       );
       return loanListSchema.parse({
@@ -152,11 +138,10 @@ async function open(
     currency,
     { field: "amount.currency", use: "for a loan" },
   );
-  const repo = accountRepository(context.tx, context.ledgerId);
-  const account = (await repo.forContact(contact.id, true)).find(
-    (row) => row.currency === currency,
-  );
-  return { contact, repo, account };
+  const account = (
+    await accountsForContact(context.tx, context.ledgerId, contact.id, true)
+  ).find((row) => row.currency === currency);
+  return { contact, account };
 }
 async function ensureAccount(
   context: WriteContext,
@@ -167,7 +152,7 @@ async function ensureAccount(
   const opened = await open(context, contactId, currency);
   const account =
     opened.account ??
-    (await opened.repo.createForContact({
+    (await createContactAccount(context.tx, context.ledgerId, {
       contactId: opened.contact.id,
       name: opened.contact.name,
       currency,
@@ -247,7 +232,9 @@ export function moveLoan(
         note: body.note,
       });
       const fresh = (
-        await accountRepository(context.tx, context.ledgerId).forContact(
+        await accountsForContact(
+          context.tx,
+          context.ledgerId,
           account.contactId as string,
         )
       ).find((row) => row.id === account.id) as Row;
@@ -329,7 +316,7 @@ export function setLoanOpening(
       if (!opened.account) {
         if (body.expectedVersion !== undefined)
           throw new ApiProblem(404, "Not found", "Loan not found.");
-        account = await opened.repo.createForContact({
+        account = await createContactAccount(context.tx, context.ledgerId, {
           contactId: opened.contact.id,
           name: opened.contact.name,
           currency,
@@ -346,12 +333,12 @@ export function setLoanOpening(
           body.expectedVersion,
         );
         account = requireVersionUpdate(
-          await opened.repo.update(
+          await setContactAccountOpening(
+            context.tx,
+            context.ledgerId,
             opened.account.id,
-            {
-              expectedVersion: body.expectedVersion,
-              openingBalance: body.amount,
-            },
+            body.expectedVersion,
+            body.amount,
             version,
           ),
         );

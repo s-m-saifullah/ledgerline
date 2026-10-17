@@ -1,6 +1,7 @@
 import type {
   ClientListQuery,
   CreateContact,
+  LoanPeopleQuery,
   UpdateContact,
 } from "@ledgerline/shared";
 import { and, asc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
@@ -10,6 +11,28 @@ export type ContactRow = typeof contacts.$inferSelect;
 export function contactRepository(db: DatabaseConnection, ledgerId: string) {
   const scope = eq(contacts.ledgerId, ledgerId);
   return {
+    loanPeople: (query: LoanPeopleQuery) =>
+      db
+        .select()
+        .from(contacts)
+        .where(
+          and(
+            scope,
+            isNull(contacts.deletedAt),
+            query.cursor ? gt(contacts.id, query.cursor) : undefined,
+            query.status === "active"
+              ? isNull(contacts.archivedAt)
+              : query.status === "archived"
+                ? isNotNull(contacts.archivedAt)
+                : undefined,
+            query.text
+              ? sql`strpos(lower(${contacts.name}),lower(${query.text})) > 0`
+              : undefined,
+            sql`(${contacts.origin} = 'loan' OR EXISTS (SELECT 1 FROM accounts a WHERE a.ledger_id = ${contacts.ledgerId} AND a.contact_id = ${contacts.id} AND a.deleted_at IS NULL))`,
+          ),
+        )
+        .orderBy(asc(contacts.id))
+        .limit(query.limit + 1),
     list: (q: ClientListQuery) =>
       db
         .select()
