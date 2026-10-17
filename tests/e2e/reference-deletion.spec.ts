@@ -1,24 +1,16 @@
-import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
-import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
 import { clickCategoryAction } from "./category-actions";
+import {
+  connectLocalDatabase,
+  createOwnerLedger,
+  prepareBrowser,
+} from "./ledger-setup";
 import { signIn } from "./sign-in";
 
-const env = parseEnv(readFileSync(".env", "utf8"));
-const databaseUrl = env.DATABASE_URL;
-if (
-  !databaseUrl ||
-  !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
-  !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
-)
-  throw new Error(
-    "Reference deletion browser tests require the local development database.",
-  );
-const { pool } = createDatabase(databaseUrl);
+const { env, pool } = connectLocalDatabase("Reference deletion browser tests");
 let ledgerId = "",
   bankId = "",
   cashId = "",
@@ -32,20 +24,11 @@ test.beforeEach(async ({ page }, testInfo) => {
   expenseId = newId();
   incomeId = newId();
   fixtures.push(ledgerId);
-  const owner = (
-    await pool.query(
-      "SELECT id FROM users WHERE email = $1 AND deleted_at IS NULL",
-      [env.OWNER_EMAIL],
-    )
-  ).rows[0];
-  if (!owner) throw new Error("Missing browser test owner");
-  await pool.query("INSERT INTO ledgers (id,name) VALUES ($1,$2)", [
+  await createOwnerLedger(
+    pool,
+    env,
     ledgerId,
     `E2E deletion ledger ${testInfo.project.name}`,
-  ]);
-  await pool.query(
-    "INSERT INTO ledger_members (id,ledger_id,user_id,role) VALUES ($1,$2,$3,'owner')",
-    [newId(), ledgerId, owner.id],
   );
   for (const [id, name, amount, archived] of [
     [bankId, "Checking", 10000, false],
@@ -65,26 +48,11 @@ test.beforeEach(async ({ page }, testInfo) => {
       "INSERT INTO categories (id,ledger_id,name,kind,archived_at) VALUES ($1,$2,$3,$4,$5)",
       [id, ledgerId, name, kind, archived ? new Date() : null],
     );
-  await page.route("**/api/v1/ledgers", (route) =>
-    route.fulfill({
-      json: {
-        items: [
-          {
-            id: ledgerId,
-            name: "Synthetic deletion ledger",
-            timeZone: null,
-            version: 1,
-            baseCurrency: "USD",
-            role: "owner",
-          },
-        ],
-      },
-    }),
-  );
-  await page.setExtraHTTPHeaders({
-    "x-forwarded-for": `203.0.113.${180 + (testInfo.workerIndex % 160)}`,
+  await prepareBrowser(page, testInfo, {
+    ledgerId,
+    name: "Synthetic deletion ledger",
+    forwarded: [180, 160],
   });
-  await page.emulateMedia({ colorScheme: "light" });
 });
 test.afterEach(async () => {
   for (const id of fixtures) {
