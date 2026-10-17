@@ -11,7 +11,6 @@ import {
   ArrowUpRight,
   Banknote,
   CircleSlash,
-  History,
   Pencil,
   type Plus,
 } from "lucide-react";
@@ -179,7 +178,7 @@ export function LoansPage() {
                           : {
                               ...action(
                                 "lend",
-                                `Lend money to ${detail.name}`,
+                                "Lend money",
                                 "Lend",
                                 ArrowUpRight,
                                 () =>
@@ -193,7 +192,7 @@ export function LoansPage() {
                           ? [
                               action(
                                 "lend",
-                                `Lend money to ${detail.name}`,
+                                "Lend money",
                                 "Lend",
                                 ArrowUpRight,
                                 () =>
@@ -203,7 +202,7 @@ export function LoansPage() {
                           : []),
                         action(
                           "borrow",
-                          `Borrow money from ${detail.name}`,
+                          "Borrow money",
                           "Borrow",
                           ArrowDownLeft,
                           () => setDialog({ mode: "borrow", adding: false }),
@@ -211,22 +210,15 @@ export function LoansPage() {
                         ...(hasOpen
                           ? [
                               action(
-                                "forgive",
-                                "Forgive what is left",
-                                "Forgive",
+                                "waive",
+                                "Waive what is left",
+                                "Waive",
                                 CircleSlash,
                                 () =>
-                                  setDialog({ mode: "forgive", adding: false }),
+                                  setDialog({ mode: "waive", adding: false }),
                               ),
                             ]
                           : []),
-                        action(
-                          "opening",
-                          "Add an existing loan",
-                          "Existing loan",
-                          History,
-                          () => setDialog({ mode: "opening", adding: false }),
-                        ),
                         action(
                           "rename",
                           "Rename",

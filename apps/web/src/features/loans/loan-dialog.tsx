@@ -35,7 +35,7 @@ const hints = (
   repay: owedToYou
     ? `${name} pays you back into the account you choose.`
     : `You pay ${name} back from the account you choose.`,
-  forgive: owedToYou
+  waive: owedToYou
     ? `You give up what ${name} owes you. It is recorded as an expense in the category you choose.`
     : `${name} gives up what you owe. It is recorded as income in the category you choose.`,
   opening:
@@ -45,12 +45,12 @@ const titles = (name: string): Record<LoanAction, string> => ({
   lend: name ? `Lend money to ${name}` : "Lend money",
   borrow: name ? `Borrow money from ${name}` : "Borrow money",
   repay: "Record a repayment",
-  forgive: "Forgive what is left",
+  waive: "Waive what is left",
   opening: "Add an existing loan",
 });
 
 /**
- * Lend, borrow, repay, forgive or add an existing loan (ADR 0030): one form. Opened for one
+ * Lend, borrow, repay, waive or add an existing loan (ADR 0030): one form. Opened for one
  * person it is that person's action; opened without one ("Add loan") it first asks who, and
  * whether it is a loan, a borrowing or one you already had.
  */
@@ -85,7 +85,7 @@ export function LoanDialog({
   const loans = adding ? (picked?.balances ?? []) : personLoans;
   const open = loans.filter((loan) => loan.balance.amount !== 0);
   const [currency, setCurrency] = useState(
-    mode === "repay" || mode === "forgive"
+    mode === "repay" || mode === "waive"
       ? (open[0]?.currency ?? values.baseCurrency)
       : values.baseCurrency,
   );
@@ -99,9 +99,9 @@ export function LoanDialog({
     enabled: moves,
   });
   const categories = useQuery({
-    queryKey: ["categories", ledgerId, "loan-forgive"],
+    queryKey: ["categories", ledgerId, "loan-waive"],
     queryFn: ({ signal }) => getCategories(ledgerId, signal),
-    enabled: kind === "forgive",
+    enabled: kind === "waive",
   });
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -140,7 +140,7 @@ export function LoanDialog({
     if (adding && chosen === NEW && !newName.trim())
       return fail("Enter the person's name.");
     let minor = 0;
-    if (kind !== "forgive") {
+    if (kind !== "waive") {
       try {
         minor = parseMinorUnits(amount, digits);
       } catch {
@@ -152,9 +152,9 @@ export function LoanDialog({
     if (moves && !account) return fail("Choose one of your accounts.");
     if (kind === "repay" && minor > Math.abs(balance))
       return fail("That is more than what is open.");
-    if (kind === "forgive" && !categoryId) return fail("Choose a category.");
+    if (kind === "waive" && !categoryId) return fail("Choose a category.");
     const body =
-      kind === "forgive"
+      kind === "waive"
         ? {
             currency,
             categoryId: categoryId as string,
@@ -209,7 +209,7 @@ export function LoanDialog({
   const currencyChoices =
     kind === "opening"
       ? values.currencies
-      : kind === "repay" || kind === "forgive"
+      : kind === "repay" || kind === "waive"
         ? open.map((row) => row.currency)
         : [];
   const title = adding ? "Add a loan" : titles(name)[kind];
@@ -229,7 +229,7 @@ export function LoanDialog({
       initialFocusId={
         adding
           ? "loan-person"
-          : kind === "forgive"
+          : kind === "waive"
             ? "loan-category"
             : "loan-amount"
       }
@@ -316,7 +316,7 @@ export function LoanDialog({
               </NativeSelect>
             </label>
           )}
-          {(kind === "repay" || kind === "forgive") && loan && (
+          {(kind === "repay" || kind === "waive") && loan && (
             <p>
               {owedToYou ? `${name} owes you ` : `You owe ${name} `}
               <Amount
@@ -372,7 +372,7 @@ export function LoanDialog({
               </NativeSelect>
             </label>
           )}
-          {kind !== "forgive" && (
+          {kind !== "waive" && (
             <label className="form-field" htmlFor="loan-amount">
               Amount ({effectiveCurrency})
               <AmountInput
@@ -385,7 +385,7 @@ export function LoanDialog({
               />
             </label>
           )}
-          {kind === "forgive" && (
+          {kind === "waive" && (
             <div className="form-field">
               {categories.isError ? (
                 <p role="alert">Could not load categories.</p>
@@ -450,8 +450,8 @@ export function LoanDialog({
                   ? "Borrow"
                   : kind === "repay"
                     ? "Record repayment"
-                    : kind === "forgive"
-                      ? "Forgive"
+                    : kind === "waive"
+                      ? "Waive"
                       : "Save existing loan"}
           </button>
         </div>

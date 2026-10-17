@@ -1,18 +1,18 @@
 import {
   contactSchema,
-  type ForgiveLoan,
   type JsonValue,
   type LoanMove,
   type LoanOpening,
   loanListSchema,
   loanPeopleSchema,
   loanResultSchema,
+  type WaiveLoan,
 } from "@ledgerline/shared";
 import { api, prepareFinancialWrite } from "../../lib/api";
 
 const clientPath = (ledgerId: string) => `/ledgers/${ledgerId}`;
 
-export type LoanAction = "lend" | "borrow" | "repay" | "forgive" | "opening";
+export type LoanAction = "lend" | "borrow" | "repay" | "waive" | "opening";
 
 export async function getLoans(
   ledgerId: string,
@@ -30,7 +30,7 @@ export function prepareLoanWrite(
   ledgerId: string,
   contactId: string,
   action: LoanAction,
-  body: LoanMove | ForgiveLoan | LoanOpening,
+  body: LoanMove | WaiveLoan | LoanOpening,
 ) {
   const run = prepareFinancialWrite<unknown>(
     `${clientPath(ledgerId)}/contacts/${contactId}/loans/${action}`,

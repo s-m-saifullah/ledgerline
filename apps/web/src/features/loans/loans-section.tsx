@@ -122,8 +122,8 @@ export function PersonLoans({
                       ? "You paid out"
                       : "You received"
                     : entry.kind === "expense"
-                      ? "Forgiven by you"
-                      : "Forgiven to you"}
+                      ? "You waived"
+                      : "They waived"}
                 </span>
                 <Amount
                   value={Math.abs(entry.amount.amount)}

@@ -1,5 +1,4 @@
 import {
-  forgiveLoanSchema,
   idempotencyKeySchema,
   ledgerParamsSchema,
   loanActionParamsSchema,
@@ -11,6 +10,7 @@ import {
   loanPeopleSchema,
   loanResultSchema,
   problemSchema,
+  waiveLoanSchema,
 } from "@ledgerline/shared";
 import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance, FastifyRequest } from "fastify";
@@ -22,11 +22,11 @@ import { ApiProblem } from "../../lib/problem";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import {
-  forgiveLoan,
   listLoanPeople,
   listLoans,
   moveLoan,
   setLoanOpening,
+  waiveLoan,
 } from "./service";
 
 const errors = {
@@ -42,14 +42,14 @@ const bodies = {
   lend: loanMoveSchema,
   borrow: loanMoveSchema,
   repay: loanMoveSchema,
-  forgive: forgiveLoanSchema,
+  waive: waiveLoanSchema,
   opening: loanOpeningSchema,
 };
 const summaries = {
   lend: "Lend money to a client",
   borrow: "Borrow money from a client",
   repay: "Record a repayment",
-  forgive: "Forgive what is left",
+  waive: "Waive what is left",
   opening: "Add an existing loan",
 };
 
@@ -102,14 +102,14 @@ export async function loanRoutes(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/loans/:action",
     {
       schema: {
-        summary: "Lend, borrow, repay, forgive or add an existing loan",
+        summary: "Lend, borrow, repay, waive or add an existing loan",
         description:
-          "Action is lend, borrow, repay, forgive or opening. Lend, borrow and repay save an ordinary transfer between one of your accounts and the client's balance account. Forgive writes off the whole open balance as an expense or income entry. Opening sets the balance before Ledgerline without moving money. Idempotency-Key required.",
+          "Action is lend, borrow, repay, waive or opening. Lend, borrow and repay save an ordinary transfer between one of your accounts and the client's balance account. Waive writes off the whole open balance as an expense or income entry. Opening sets the balance before Ledgerline without moving money. Idempotency-Key required.",
         tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: loanActionParamsSchema,
         headers: writeHeaders,
-        body: z.union([loanMoveSchema, forgiveLoanSchema, loanOpeningSchema]),
+        body: z.union([loanMoveSchema, waiveLoanSchema, loanOpeningSchema]),
         response: { 200: loanResultSchema, 201: loanResultSchema, ...errors },
       },
     },
@@ -128,12 +128,12 @@ export async function loanRoutes(
           })),
         );
       const result =
-        action === "forgive"
-          ? await forgiveLoan(
+        action === "waive"
+          ? await waiveLoan(
               db,
               identity,
               contactId,
-              forgiveLoanSchema.parse(parsed.data),
+              waiveLoanSchema.parse(parsed.data),
             )
           : action === "opening"
             ? await setLoanOpening(

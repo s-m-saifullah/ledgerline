@@ -179,4 +179,28 @@ describe("LoanDialog", () => {
     );
     expect(writes).toHaveLength(0);
   });
+  it("changes the balance from before Ledgerline for a person you already track", async () => {
+    const sam: LoanPerson = {
+      id: client.id,
+      name: "Sam",
+      origin: "loan",
+      archivedAt: null,
+      version: 1,
+      balances: [loan(5000)],
+    };
+    const { writes, saved } = mount("opening", [], { people: [sam] });
+    await userEvent.selectOptions(screen.getByLabelText(/^Who(?! owes)/), [
+      sam.id,
+    ]);
+    await userEvent.type(screen.getByLabelText(/Amount/), "75");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save existing loan" }),
+    );
+    await waitFor(() => expect(saved).toHaveBeenCalledWith(client.id));
+    expect(writes[0]?.url).toContain(`/contacts/${client.id}/loans/opening`);
+    expect(writes[0]?.body).toMatchObject({
+      amount: { amount: 7500, currency: "USD" },
+      expectedVersion: 3,
+    });
+  });
 });
