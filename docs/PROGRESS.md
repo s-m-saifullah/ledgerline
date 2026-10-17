@@ -9,7 +9,7 @@ Read this at the start of every session and update it when a piece of work lands
 - **Next:** the owner's small bug fixes from daily use, then Phase 3 (reports, tags and receipts, CSV import and export) starts with a design for approval.
 - **Known follow-ups:**
   - Dependabot's grouped npm and GitHub Actions updates were reviewed and merged on 2026-10-16 and shipped in `v0.1.4`; review the next ones when they appear.
-  - pnpm 12.14.0 is on `main` but not yet released: the arm64 image build runs only on a release tag, so the next release is its first real test. The read-only production smoke check has not been run for `v0.1.3` or `v0.1.4`.
+  - pnpm 12.14.0 is on `main` but not yet released: the arm64 image build runs only on a release tag, so the next release is its first real test. The read-only production smoke check passed for `v0.1.4` (2026-10-17).
   - Known gaps: merging a category leaves its budget on the archived source category; Home has no budget summary yet; an account's default bonus category is not repointed when its category is merged or archived; the Clients history line for a cross-currency payment shows the amount received, not the amount it settled.
   - Automated off-site backups are Phase 4.
 
@@ -26,6 +26,7 @@ Read this at the start of every session and update it when a piece of work lands
 
 ## Session log
 
+- **2026-10-17:** Read-only production smoke check of `v0.1.4` (API 0.1.31) passed: HTTPS login, secure httpOnly session, Home matching Accounts, Clients and Transactions, logout and anonymous denial. It first failed locally only because the Playwright browser build needed by the updated dependencies was not installed (`playwright install chromium` fixed it).
 - **2026-10-17:** pnpm moves from 10.33.2 to 12.14.0 (`package.json` `packageManager` and `engines`, both Dockerfiles). pnpm 12 replaces `onlyBuiltDependencies` with `allowBuilds` in `pnpm-workspace.yaml` and records pnpm itself in the lockfile (added lines only). Tried first in a separate worktree: install with the frozen lockfile, lint, typecheck, build, OpenAPI, shared 82, web 220 and API 400 tests all pass; the production API bundle has the same dependencies as with pnpm 10 (pnpm 12 drops one unused copy of a types package); both images build and the API image starts to the same configuration error as the old one, at the same size. No application code changes.
 - **2026-10-17:** `v0.1.4` is released (run 39001240886: checks, arm64 images with the updated Docker actions, deploy). No migration. Read-only production smoke check not run.
 - **2026-10-14:** `v0.1.3` is released (migration 0021, API 0.1.31): Clients rename, client card layout, hours-at-a-rate helper and tips on payments. Upgrade check on a scratch database (0020 to 0021) and drills passed beforehand. Read-only production smoke check not run.
