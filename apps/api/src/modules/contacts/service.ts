@@ -3,11 +3,12 @@ import {
   type CreateContact,
   contactSchema,
   type JsonValue,
+  type LoanPeopleQuery,
   type UpdateContact,
 } from "@ledgerline/shared";
 import type { Database, DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
-import { accountRepository } from "../accounts/repo";
+import { accountsForContact, renameContactAccounts } from "../accounts/service";
 import { requireLedgerRead } from "../ledgers/service";
 import {
   clientBalances,
@@ -41,6 +42,14 @@ async function dto(
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   });
+}
+/** People added for loans or already holding a balance account (ADR 0030). */
+export function loanPeopleRows(
+  db: DatabaseConnection,
+  ledgerId: string,
+  query: LoanPeopleQuery,
+) {
+  return contactRepository(db, ledgerId).loanPeople(query);
 }
 export async function lockContacts(
   db: DatabaseConnection,
@@ -124,10 +133,7 @@ export function saveContact(
       const version = nextVersion(current.version, expectedVersion);
       // A client's balance accounts carry its name (ADR 0030).
       if (fields.name !== undefined && fields.name !== current.name)
-        await accountRepository(c.tx, c.ledgerId).renameForContact(
-          current.id,
-          fields.name,
-        );
+        await renameContactAccounts(c.tx, c.ledgerId, current.id, fields.name);
       return {
         status: 200,
         body: await dto(
@@ -163,11 +169,8 @@ export function contactAction(
         await requireNoReceivables(c.tx, c.ledgerId, id);
         // Money lent or borrowed keeps its balance account, so the client stays (ADR 0030).
         if (
-          (
-            await accountRepository(c.tx, c.ledgerId).forContact(
-              id.toLowerCase(),
-            )
-          ).length > 0
+          (await accountsForContact(c.tx, c.ledgerId, id.toLowerCase()))
+            .length > 0
         )
           throw new ApiProblem(
             409,

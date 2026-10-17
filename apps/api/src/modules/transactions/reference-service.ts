@@ -1,6 +1,6 @@
 import type { DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
-import { recurringRepository } from "../recurring/repo";
+import { hasActiveRuleReference } from "../recurring/references";
 import { transactionRepository } from "./repo";
 import { splitRepository } from "./split-repo";
 /** Caller must hold the account assignment lock or category ledger lock. */
@@ -28,7 +28,7 @@ export async function requireNoActiveRules(
   field: "accountId" | "categoryId",
   id: string,
 ) {
-  if (await recurringRepository(db, ledgerId).hasActiveReference(field, id))
+  if (await hasActiveRuleReference(db, ledgerId, field, id))
     throw new ApiProblem(
       409,
       "Conflict",
