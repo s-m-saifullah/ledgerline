@@ -20,6 +20,7 @@ export async function accountBalanceOverview(
     id: row.id,
     name: row.name,
     type: row.type,
+    contactId: row.contactId,
     archived: row.archivedAt !== null,
     currency: row.currency,
     balance: postedBalance(row.openingBalance, totals.get(row.id)),

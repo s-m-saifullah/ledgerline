@@ -114,12 +114,26 @@ export function compareHome({
     home.inHand.amount,
     sum(activeAssets.map((a) => Math.max(balance(a), 0))),
   );
+  // A client's balance account is money lent or borrowed, not a card or loan debt (ADR 0030).
+  const clientLoans = accounts.filter((a) => a.contactId);
   check(
     "owed on cards and loans",
     home.liabilitiesOwed.amount,
     -sum(
-      accounts.filter((a) => !isAsset(a)).map((a) => Math.min(balance(a), 0)),
+      accounts
+        .filter((a) => !isAsset(a) && !a.contactId)
+        .map((a) => Math.min(balance(a), 0)),
     ),
+  );
+  check(
+    "lent to clients",
+    home.loans?.lent.amount ?? 0,
+    sum(clientLoans.map((a) => Math.max(balance(a), 0))),
+  );
+  check(
+    "borrowed from clients",
+    home.loans?.borrowed.amount ?? 0,
+    -sum(clientLoans.map((a) => Math.min(balance(a), 0))),
   );
   for (const line of home.accounts) {
     const account = accounts.find((a) => a.id === line.id);

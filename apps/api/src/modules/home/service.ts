@@ -90,7 +90,11 @@ export async function getHomeSummary(
       const names = new Map(accounts.map((row) => [row.id, row.name]));
       const assets = accounts.filter((row) => isAssetAccountType(row.type));
       const activeAssets = assets.filter((row) => !row.archived);
-      const debts = accounts.filter((row) => !isAssetAccountType(row.type));
+      // Money lent to or borrowed from clients is its own pair of figures (ADR 0030), not a card or loan debt.
+      const clientLoans = accounts.filter((row) => row.contactId !== null);
+      const debts = accounts.filter(
+        (row) => !isAssetAccountType(row.type) && row.contactId === null,
+      );
       const valued = (row: { baseBalance: number | null }) =>
         BigInt(row.baseBalance ?? 0);
       return {
@@ -110,6 +114,20 @@ export async function getHomeSummary(
             0n,
           ),
         ),
+        loans: {
+          lent: usd(
+            clientLoans.reduce(
+              (sum, row) => (valued(row) > 0n ? sum + valued(row) : sum),
+              0n,
+            ),
+          ),
+          borrowed: usd(
+            clientLoans.reduce(
+              (sum, row) => (valued(row) < 0n ? sum - valued(row) : sum),
+              0n,
+            ),
+          ),
+        },
         accounts: activeAssets.slice(0, SHOWN_ACCOUNTS).map((row) => ({
           id: row.id,
           name: row.name,

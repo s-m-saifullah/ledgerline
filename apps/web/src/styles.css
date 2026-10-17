@@ -2798,6 +2798,23 @@ button.budget-line:hover {
     gap: 6px;
   }
 }
+.loan-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0;
+}
+.client-section .loan-row > .amount {
+  font-size: 15px;
+}
+.client-section .loan-note .amount {
+  display: inline;
+  font-size: inherit;
+}
+.client-section .loan-row > strong .amount {
+  font-size: 18px;
+}
 .settings-card .scope-label {
   font-size: 12px;
   line-height: 1.4;

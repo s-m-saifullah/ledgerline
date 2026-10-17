@@ -69,6 +69,17 @@ Open **More, Clients** to add a client, log a service you provided (what, date, 
 
 If a client pays more than they owe, type what you received: Ledgerline settles what was owed and saves the extra as a **tip**, a separate income entry in the same account (choose a category for the tip; an income category named Tips is picked for you when it exists). A tip never changes what a client owes. When the account is in another currency, enter the tip in its own box. Deleting or undoing a payment removes its tip too; you can edit or delete a tip on its own from Transactions.
 
+## Lending and borrowing
+
+Open **More, Clients** and choose a client. The **Lent and borrowed** section keeps one running balance per currency: when it is positive the client owes you, when it is negative you owe the client.
+
+- **Lend money** takes the amount out of one of your accounts and adds it to what the client owes. **Borrow money** does the opposite: the money arrives in one of your accounts and you owe the client.
+- **Record repayment** follows the balance. When they owe you, the money comes back into an account you choose; when you owe them, it leaves one. You cannot repay more than what is open (lend or borrow instead).
+- **Forgive what is left** writes the open balance off. If you forgive them, it is an expense in a category you choose; if they forgive you, it is income in one. You can undo it from Transactions.
+- **Add an existing loan** records money that was lent or borrowed before you used Ledgerline. It sets the balance you start from and moves no money in any of your accounts. Choose it again later to change that starting balance.
+
+Lending, borrowing and repaying are transfers, so they never count as income, spending or budgets. Home shows **Lent out** and **You owe clients** when they are not zero, and **Net worth** (on Accounts) includes them. The client's balance account is kept for you and does not appear in your account lists. You can also see each move under Transactions. A client with a loan record cannot be deleted; archive it instead.
+
 ## Finding and fixing entries
 
 The Transactions screen groups entries by day, with filters that stay in the address bar. Edit or delete an entry from its details; a deleted entry can be restored with Undo. Deleting an account or category first requires deleting its connected transactions. Merging two categories moves everything from one to the other.

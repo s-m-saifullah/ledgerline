@@ -62,7 +62,14 @@ export const homeSummarySchema = z.object({
   // Signed sum of every non-deleted account (archived included). Not shown on Home; Accounts shows it.
   netWorth: usdMoneySchema,
   // Amount owed on cards and loans (negative balances only, archived included), as a non-negative amount.
+  // Balances owed to a client are counted under `loans.borrowed` instead.
   liabilitiesOwed: usdMoneySchema,
+  // Money lent to clients (positive client balances) and money borrowed from them (negative ones, as a
+  // non-negative amount), valued like accounts; both leave out currencies with no rate (ADR 0030).
+  loans: z.object({ lent: usdMoneySchema, borrowed: usdMoneySchema }).default({
+    lent: { amount: 0, currency: "USD" },
+    borrowed: { amount: 0, currency: "USD" },
+  }),
   // Active bank, cash, wallet and savings accounts only; cards and loans never appear here.
   accounts: z.array(homeAccountSchema),
   otherActive: balanceGroupSchema,

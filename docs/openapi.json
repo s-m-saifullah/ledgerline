@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.32"
+    "version": "0.1.33"
   },
   "components": {
     "schemas": {
@@ -55072,6 +55072,68 @@
                       ],
                       "additionalProperties": false
                     },
+                    "loans": {
+                      "default": {
+                        "lent": {
+                          "amount": 0,
+                          "currency": "USD"
+                        },
+                        "borrowed": {
+                          "amount": 0,
+                          "currency": "USD"
+                        }
+                      },
+                      "type": "object",
+                      "properties": {
+                        "lent": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "borrowed": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "lent",
+                        "borrowed"
+                      ],
+                      "additionalProperties": false
+                    },
                     "accounts": {
                       "type": "array",
                       "items": {
@@ -55721,6 +55783,7 @@
                     "inHand",
                     "netWorth",
                     "liabilitiesOwed",
+                    "loans",
                     "accounts",
                     "otherActive",
                     "archived",

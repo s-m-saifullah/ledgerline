@@ -265,6 +265,32 @@ export function HomePage() {
                     </span>
                   )}
                 </Link>
+                {data.loans.lent.amount > 0 && (
+                  <Link
+                    to="/clients"
+                    className="stat-card home-link-card"
+                    aria-label="Lent out. Open Clients"
+                  >
+                    <p>Lent out</p>
+                    <div className="amount">
+                      <Amount cents={data.loans.lent.amount} />
+                    </div>
+                    <span className="muted">Money clients owe you back</span>
+                  </Link>
+                )}
+                {data.loans.borrowed.amount > 0 && (
+                  <Link
+                    to="/clients"
+                    className="stat-card home-link-card"
+                    aria-label="You owe clients. Open Clients"
+                  >
+                    <p>You owe clients</p>
+                    <div className="amount">
+                      <Amount cents={data.loans.borrowed.amount} />
+                    </div>
+                    <span className="muted">Money you borrowed</span>
+                  </Link>
+                )}
               </section>
               <section className="activity-card">
                 <div className="section-heading">

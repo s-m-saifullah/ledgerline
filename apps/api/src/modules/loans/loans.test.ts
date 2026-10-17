@@ -282,6 +282,23 @@ describe("lending and borrowing", () => {
     await move("repay", 500);
     expect(await owed()).toBe(-2000);
   });
+  it("shows lent and borrowed money on Home without calling it a card or loan debt", async () => {
+    await move("lend", 300);
+    const other = (
+      await write("/contacts", { name: "Alex" })
+    ).json() as Contact;
+    await move("borrow", 120, {}, other);
+    const home = (await read("/home?month=2026-10")).json();
+    expect(home.loans.lent.amount).toBe(300);
+    expect(home.loans.borrowed.amount).toBe(120);
+    // Net worth counts both (1000 - 300 + 120 in the bank, +300 owed to you, -120 owed by you).
+    expect(home.netWorth.amount).toBe(1000);
+    expect(home.liabilitiesOwed.amount).toBe(0);
+    expect(home.inHand.amount).toBe(820);
+    expect(home.accounts.map((a: { name: string }) => a.name)).toEqual([
+      "Everyday",
+    ]);
+  });
   it("replays a retried write without moving money twice", async () => {
     const key = newId();
     const first = await write(

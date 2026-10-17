@@ -19,7 +19,8 @@ export async function getActiveAccounts(
   let cursor: string | null = null;
   do {
     const page = await getAccounts(ledgerId, "active", cursor, signal);
-    items.push(...page.items);
+    // A client's balance account (ADR 0030) is managed from Clients, never picked by hand.
+    items.push(...page.items.filter((account) => !account.contactId));
     cursor = page.nextCursor;
     if (cursor && visited.has(cursor))
       throw new Error("Account pagination did not advance");
