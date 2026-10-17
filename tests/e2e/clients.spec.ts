@@ -778,6 +778,27 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     page.getByRole("button", { name: "Save payment", exact: true }),
   ).toHaveCount(0);
 });
+test("the Undo left in the corner can be dismissed with its cross", async ({
+  page,
+}) => {
+  await setup(page);
+  await clickAction(page, "Delete service");
+  await confirm(page);
+  // After the notification closes, Undo waits in the corner with a cross beside it.
+  const dismiss = page.getByRole("button", {
+    name: "Dismiss undo",
+    exact: true,
+  });
+  await expect(dismiss).toBeVisible({ timeout: 10_000 });
+  const box = await dismiss.boundingBox();
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  await dismiss.click();
+  await expect(dismiss).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Undo Client action", exact: true }),
+  ).toHaveCount(0);
+});
 test("service deletion Undo and client archive preserve open history; removed account blocks payment Undo", async ({
   page,
 }) => {
