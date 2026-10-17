@@ -4,9 +4,9 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PrivacyContext } from "../shell/preferences";
+import { currentMonth, monthLabel } from "../../lib/month";
+import { PrivacyContext } from "../../lib/preferences";
 import { HomePage } from "./home-page";
-import { currentMonth, monthLabel } from "./month";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({

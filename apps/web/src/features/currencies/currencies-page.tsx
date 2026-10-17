@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
+import { currencyName, rateSentence } from "../../lib/rate-format";
 import { AddCurrencyDialog } from "./add-dialog";
 import { getCurrencies, prepareRatesRefresh } from "./api";
-import { currencyName, rateSentence } from "./format";
 import { RateEditor } from "./rate-editor";
 
 export function CurrenciesPage() {

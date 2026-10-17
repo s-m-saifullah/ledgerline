@@ -3,7 +3,7 @@ import {
   hourlyTotal,
   hoursToHundredths,
 } from "@ledgerline/shared";
-import { decimalFromCents, formatMoney } from "../accounts/money";
+import { decimalFromCents, formatMoney } from "../../lib/money";
 import { positiveMoney } from "./form";
 
 /** "3.5" for 350 hundredths, "0.25" for 25: no trailing zeros. */

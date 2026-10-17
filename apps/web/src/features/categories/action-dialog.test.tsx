@@ -2,8 +2,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { category, json, ledgerId } from "../../test-support/category-fixtures";
 import { type CategoryAction, CategoryActionDialog } from "./action-dialog";
-import { category, json, ledgerId } from "./fixtures.test-helper";
 
 const root = category("Food");
 const actions: CategoryAction[] = [

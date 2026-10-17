@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import { AmountEntryContext } from "../features/shell/preferences";
+import { AmountEntryContext } from "../lib/preferences";
 import { AmountInput } from "./amount-input";
 
 function Box({

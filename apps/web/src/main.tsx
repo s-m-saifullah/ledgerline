@@ -27,17 +27,17 @@ import { HomePage } from "./features/home/home-page";
 import { LoansPage } from "./features/loans/loans-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import { SettingsPage } from "./features/settings/settings-page";
+import { EmptyPage, MorePage, Shell } from "./features/shell/shell";
+import { transactionSearchSchema } from "./features/transactions/filters";
+import { TransactionsPage } from "./features/transactions/transactions-page";
+import { getSession } from "./lib/api";
 import {
   AmountEntryContext,
   PrivacyContext,
   PrivacyControlContext,
   ThemeContext,
   usePreferences,
-} from "./features/shell/preferences";
-import { EmptyPage, MorePage, Shell } from "./features/shell/shell";
-import { transactionSearchSchema } from "./features/transactions/filters";
-import { TransactionsPage } from "./features/transactions/transactions-page";
-import { getSession } from "./lib/api";
+} from "./lib/preferences";
 
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false, staleTime: 30_000 } },

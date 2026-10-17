@@ -8,7 +8,7 @@ import {
   chooseCategory,
   json,
   ledgerId,
-} from "../categories/fixtures.test-helper";
+} from "../../test-support/category-fixtures";
 import { TransferForm } from "./transfer-form";
 
 const fees = category("Fees"),

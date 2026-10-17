@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { PrivacyContext } from "../shell/preferences";
+import { PrivacyContext } from "../../lib/preferences";
 import { AccountEditor } from "./editor";
 
 const ledgerId = newId();

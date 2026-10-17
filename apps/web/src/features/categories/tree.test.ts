@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { category } from "./fixtures.test-helper";
+import { category } from "../../test-support/category-fixtures";
 import { moveCategory } from "./tree";
 
 it("moves in persisted sibling order with every expected version and no archived/foreign-group rows", () => {

@@ -9,8 +9,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { addableCurrencies, rateSentence, today } from "../../lib/rate-format";
 import { CurrenciesPage } from "./currencies-page";
-import { addableCurrencies, rateSentence, today } from "./format";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({

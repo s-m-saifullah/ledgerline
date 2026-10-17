@@ -17,12 +17,12 @@ import {
 import { useState } from "react";
 import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { Amount } from "../../components/amount";
+import { Amount as HomeAmount } from "../../components/amount-text";
 import { BackToMore } from "../../components/back-to-more";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
-import { Amount as HomeAmount } from "../home/amount";
+import { useCurrentMonth } from "../../lib/month";
 import { getHome } from "../home/api";
-import { useCurrentMonth } from "../home/month";
 import { LoanDialog } from "./loan-dialog";
 import { getLoanPeople, getPerson, type LoanAction } from "./loans-api";
 import { PersonLoans, useLoans } from "./loans-section";

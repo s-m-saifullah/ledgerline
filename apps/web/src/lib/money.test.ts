@@ -1,6 +1,11 @@
 import type { Account } from "@ledgerline/shared";
 import { describe, expect, it } from "vitest";
-import { accountBody, bpsToPercent, formDefaults, percentToBps } from "./form";
+import {
+  accountBody,
+  bpsToPercent,
+  formDefaults,
+  percentToBps,
+} from "../features/accounts/form";
 import {
   cleanAmountText,
   decimalFromCents,

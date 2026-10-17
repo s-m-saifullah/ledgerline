@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { json, ledgerId } from "../categories/fixtures.test-helper";
+import { json, ledgerId } from "../../test-support/category-fixtures";
 import { TransferForm } from "./transfer-form";
 
 const stamp = "2026-10-07T00:00:00.000Z";

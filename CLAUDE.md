@@ -46,6 +46,7 @@ Code is grouped by feature:
 - API: `apps/api/src/modules/<feature>/{routes,service,repo,schema}.ts` plus tests.
 - Web: `apps/web/src/features/<feature>/` (routes, components, hooks, API calls).
 - A feature may call another feature's **service**, never its tables or internal files.
+- Web helpers shared by several features go in `apps/web/src/lib/` or `components/`, not in one feature's folder (see `CONTRIBUTING.md`).
 - Tests: API integration tests import the shared helpers in `apps/api/src/test-support/harness.ts` (database guard, config, sign-in, user seeding) instead of copying that setup, and browser specs use `tests/e2e/ledger-setup.ts`; see `CONTRIBUTING.md`.
 
 ## Non-negotiable rules

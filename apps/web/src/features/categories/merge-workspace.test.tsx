@@ -9,7 +9,7 @@ import {
   chooseCategory,
   json,
   ledgerId,
-} from "./fixtures.test-helper";
+} from "../../test-support/category-fixtures";
 import {
   CategoryMergeWorkspace,
   useCategoryMergeWorkspace,

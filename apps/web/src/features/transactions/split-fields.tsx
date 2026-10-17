@@ -2,8 +2,8 @@ import type { Category } from "@ledgerline/shared";
 import { useContext } from "react";
 import { type UseFormReturn, useFieldArray } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
+import { PrivacyContext } from "../../lib/preferences";
 import { CategoryPicker } from "../categories/picker";
-import { PrivacyContext } from "../shell/preferences";
 import type { TransactionFormValues } from "./form";
 export function SplitFields({
   form,

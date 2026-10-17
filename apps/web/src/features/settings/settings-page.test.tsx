@@ -7,7 +7,7 @@ import {
   AmountEntryContext,
   PrivacyControlContext,
   ThemeContext,
-} from "../shell/preferences";
+} from "../../lib/preferences";
 import { SettingsPage } from "./settings-page";
 
 vi.mock("@tanstack/react-router", () => ({

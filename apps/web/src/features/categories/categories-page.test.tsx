@@ -9,8 +9,8 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { category, json, ledgerId } from "../../test-support/category-fixtures";
 import { CategoriesPage } from "./categories-page";
-import { category, json, ledgerId } from "./fixtures.test-helper";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({

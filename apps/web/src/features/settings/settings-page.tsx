@@ -1,11 +1,11 @@
 import { useContext } from "react";
 import { BackToMore } from "../../components/back-to-more";
-import { TimeZoneCard } from "../ledger/time-zone-card";
 import {
   AmountEntryContext,
   PrivacyControlContext,
   ThemeContext,
-} from "../shell/preferences";
+} from "../../lib/preferences";
+import { TimeZoneCard } from "../ledger/time-zone-card";
 
 export function SettingsPage() {
   const { theme, setTheme } = useContext(ThemeContext);

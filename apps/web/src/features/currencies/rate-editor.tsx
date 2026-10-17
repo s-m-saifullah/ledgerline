@@ -7,8 +7,8 @@ import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
+import { currencyName, rateSentence, today } from "../../lib/rate-format";
 import { prepareCurrencyRemove, prepareRateSet } from "./api";
-import { currencyName, rateSentence, today } from "./format";
 
 export function RateEditor({
   ledgerId,

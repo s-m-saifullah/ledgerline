@@ -1,4 +1,4 @@
-import { Amount } from "../home/amount";
+import { Amount } from "../../components/amount-text";
 
 /** What the fee comes to, and what leaves the sending account in all. */
 export function FeePreview({
