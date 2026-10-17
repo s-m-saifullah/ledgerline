@@ -26,7 +26,6 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@ledgerline/config": "workspace:*",
     "@types/pg": "^8.15.0",
     "drizzle-kit": "^0.31.0",
     "tsup": "^8.5.0",

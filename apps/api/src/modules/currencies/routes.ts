@@ -6,11 +6,9 @@ import {
   exchangeRateListSchema,
   exchangeRateParamsSchema,
   exchangeRateSchema,
-  idempotencyKeySchema,
   ledgerParamsSchema,
   pinCurrencySchema,
   pinnedCurrencySchema,
-  problemSchema,
   rateLookupQuerySchema,
   rateLookupSchema,
   refreshRatesResultSchema,
@@ -18,13 +16,12 @@ import {
   setExchangeRateSchema,
   unpinCurrencySchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
+import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import type { RateFetcher } from "./provider";
@@ -39,16 +36,7 @@ import {
   unpinCurrency,
 } from "./service";
 
-const errors = {
-  400: problemSchema,
-  401: problemSchema,
-  403: problemSchema,
-  404: problemSchema,
-  409: problemSchema,
-  500: problemSchema,
-};
 const security = [{ sessionCookie: [] }];
-const writeHeaders = z.looseObject({ "idempotency-key": idempotencyKeySchema });
 
 export async function currencyRoutes(
   instance: FastifyInstance,
@@ -60,14 +48,7 @@ export async function currencyRoutes(
   }: { db: Database; config: Config; auth: Auth; fetchRate: RateFetcher },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
-  async function actor(request: FastifyRequest) {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
-    if (!session)
-      throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    return session.user.id;
-  }
+  const actor = createActor(auth);
   app.get(
     "/api/v1/ledgers/:ledgerId/currencies",
     {

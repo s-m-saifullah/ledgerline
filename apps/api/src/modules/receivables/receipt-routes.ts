@@ -1,7 +1,5 @@
 import {
   createReceiptSchema,
-  idempotencyKeySchema,
-  problemSchema,
   receiptActionSchema,
   receiptContactParamsSchema,
   receiptParamsSchema,
@@ -10,13 +8,12 @@ import {
   receiptSchema,
   updateReceiptSchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
+import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import {
@@ -26,15 +23,6 @@ import {
   previewReceipt,
 } from "./receipt-service";
 
-const errors = {
-  400: problemSchema,
-  401: problemSchema,
-  403: problemSchema,
-  404: problemSchema,
-  409: problemSchema,
-  500: problemSchema,
-};
-const writeHeaders = z.looseObject({ "idempotency-key": idempotencyKeySchema });
 const security = [{ sessionCookie: [] }];
 const description =
   "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.";
@@ -44,13 +32,7 @@ export async function receiptRoutes(
   { db, config, auth }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
-  async function actor(request: FastifyRequest) {
-    const s = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
-    if (!s) throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    return s.user.id;
-  }
+  const actor = createActor(auth);
   app.get(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/receipt-preview",
     {

@@ -8,7 +8,7 @@ import {
 import { amountMinor, isPositiveAmount } from "./form";
 
 /** What the one Fee box holds (ADR 0025): nothing, a fixed amount, a percentage, or a mistake. */
-export type FeeInput =
+type FeeInput =
   | { kind: "none" }
   | { kind: "fixed"; minor: number }
   | { kind: "percent"; bps: number }

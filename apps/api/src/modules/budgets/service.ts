@@ -26,7 +26,7 @@ const usd = (amount: number | bigint) => ({
   amount: Number(amount),
   currency: "USD" as const,
 });
-export function budgetDto(row: BudgetRow): Budget {
+function budgetDto(row: BudgetRow): Budget {
   return budgetSchema.parse({
     id: row.id,
     ledgerId: row.ledgerId,

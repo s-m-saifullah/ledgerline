@@ -34,7 +34,7 @@ const RUN_LIST_LIMIT = 100;
 function conflict(field: string, message: string): never {
   throw new ApiProblem(409, "Conflict", message, [{ field, message }]);
 }
-export function ruleDto(row: RuleRow, needsAttention: number): RecurringRule {
+function ruleDto(row: RuleRow, needsAttention: number): RecurringRule {
   return recurringRuleSchema.parse({
     id: row.id,
     ledgerId: row.ledgerId,
@@ -81,7 +81,7 @@ export function ruleDto(row: RuleRow, needsAttention: number): RecurringRule {
     updatedAt: row.updatedAt.toISOString(),
   });
 }
-export function runDto(row: RunRow): RecurringRun {
+function runDto(row: RunRow): RecurringRun {
   return recurringRunSchema.parse({
     id: row.id,
     ruleId: row.ruleId,

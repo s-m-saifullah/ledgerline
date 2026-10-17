@@ -12,20 +12,17 @@ import {
   createCategorySchema,
   createCategoryStarterSetSchema,
   deleteCategorySchema,
-  idempotencyKeySchema,
   ledgerParamsSchema,
-  problemSchema,
   reorderCategoriesSchema,
   unarchiveCategorySchema,
   updateCategorySchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
+import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import { mergeCategories, previewCategoryMerge } from "./merge-service";
@@ -41,31 +38,15 @@ import {
   updateCategory,
 } from "./service";
 
-const errors = {
-  400: problemSchema,
-  401: problemSchema,
-  403: problemSchema,
-  404: problemSchema,
-  409: problemSchema,
-  500: problemSchema,
-};
 const security = [{ sessionCookie: [] }];
 // Preserve cookies/origin while validating and documenting the write key.
-const writeHeaders = z.looseObject({ "idempotency-key": idempotencyKeySchema });
 
 export async function categoryRoutes(
   instance: FastifyInstance,
   { db, config, auth }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
-  async function actor(request: FastifyRequest) {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
-    if (!session)
-      throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    return session.user.id;
-  }
+  const actor = createActor(auth);
   app.get(
     "/api/v1/ledgers/:ledgerId/categories/:categoryId/merge-preview",
     {

@@ -59,7 +59,8 @@ import {
 } from "./api";
 import { paymentDefault, positiveMoney, splitExtra, tipDefault } from "./form";
 import { HourlyHelper } from "./hourly-helper";
-export type ClientOperation =
+
+type ClientOperation =
   | { kind: "contact"; client?: Contact }
   | { kind: "service"; client: Contact; service?: Receivable }
   | {

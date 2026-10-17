@@ -84,7 +84,7 @@ export async function clientBalances(
   return result;
 }
 /** Call under the category ledger lock for writes. */
-export async function owedTotal(db: DatabaseConnection, ledgerId: string) {
+async function owedTotal(db: DatabaseConnection, ledgerId: string) {
   const rows = (await receivableRepository(db, ledgerId).summaries()).rows;
   const totals = new Map<string, bigint>();
   for (const r of rows)

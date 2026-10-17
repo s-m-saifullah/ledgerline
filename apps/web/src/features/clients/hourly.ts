@@ -7,11 +7,11 @@ import { decimalFromCents, formatMoney } from "../accounts/money";
 import { positiveMoney } from "./form";
 
 /** "3.5" for 350 hundredths, "0.25" for 25: no trailing zeros. */
-export function hoursText(hundredths: number) {
+function hoursText(hundredths: number) {
   return String(hundredths / 100);
 }
 
-export type HourlyResult =
+type HourlyResult =
   | { ok: true; total: number; hours: string; rate: string }
   | { ok: false; message: string };
 

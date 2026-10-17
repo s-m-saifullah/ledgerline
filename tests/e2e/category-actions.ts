@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-export type CategoryVerb =
+type CategoryVerb =
   | "up"
   | "down"
   | "merge"

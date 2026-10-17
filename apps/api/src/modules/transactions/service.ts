@@ -154,7 +154,7 @@ export async function paymentIncome(
   };
 }
 /** What a payment's tip looks like in responses and history (ADR 0027). */
-export function tipDto(row: TransactionRow | undefined) {
+function tipDto(row: TransactionRow | undefined) {
   return row?.categoryId
     ? {
         transactionId: row.id,

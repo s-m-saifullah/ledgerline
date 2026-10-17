@@ -18,13 +18,7 @@ export function useLoans(
   });
 }
 /** What one person owes you or you owe them, per currency (positive: they owe you). */
-export function BalanceLines({
-  name,
-  loans,
-}: {
-  name: string;
-  loans: LoanBalance[];
-}) {
+function BalanceLines({ name, loans }: { name: string; loans: LoanBalance[] }) {
   return (
     <ul className="client-rows" aria-label="Loan balances">
       {loans.map((loan) => {

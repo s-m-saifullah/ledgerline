@@ -4,7 +4,7 @@ export type JobLog = {
   info: (fields: Record<string, unknown>, message: string) => void;
   error: (fields: Record<string, unknown>, message: string) => void;
 };
-export const TICK_QUEUE = "tick";
+const TICK_QUEUE = "tick";
 
 /**
  * pg-boss only wakes the work up (ADR 0021 and 0024): once an hour and once at start. What is due

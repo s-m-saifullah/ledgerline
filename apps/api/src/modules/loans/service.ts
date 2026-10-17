@@ -1,6 +1,5 @@
 import {
   type JsonValue,
-  type LoanBalance,
   type LoanMove,
   type LoanOpening,
   type LoanPeopleQuery,
@@ -371,4 +370,3 @@ export function setLoanOpening(
     },
   );
 }
-export type { LoanBalance };

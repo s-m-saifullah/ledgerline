@@ -27,7 +27,7 @@ import {
   rateRepository,
 } from "./repo";
 
-export function rateDto(row: RateRow): ExchangeRate {
+function rateDto(row: RateRow): ExchangeRate {
   return exchangeRateSchema.parse({
     id: row.id,
     ledgerId: row.ledgerId,

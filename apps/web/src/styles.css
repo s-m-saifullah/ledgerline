@@ -246,14 +246,6 @@ select {
   display: flex;
   flex-direction: column;
 }
-.status-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: var(--accent);
-  border-radius: 50%;
-  flex-shrink: 0;
-}
 .add-button {
   width: 100%;
   margin-top: 28px;
@@ -490,16 +482,6 @@ kbd {
   border-style: dashed;
   opacity: 0.5;
 }
-.welcome-detail {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  font-size: 10px;
-  color: var(--muted);
-  margin-top: 28px;
-}
 .activity-card,
 .settings-card {
   background: var(--surface);
@@ -540,15 +522,6 @@ kbd {
   color: var(--muted);
   line-height: 1.8;
   margin-top: 12px;
-}
-.page-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 10px;
-  margin-top: 32px;
 }
 .bottom-nav,
 .mobile-signout {
@@ -747,10 +720,6 @@ kbd {
   }
   .welcome-card h2 {
     font-size: 24px;
-  }
-  .welcome-detail {
-    font-size: 10px;
-    gap: 6px;
   }
   .section-heading > span {
     display: none;

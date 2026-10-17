@@ -12,7 +12,7 @@ export const AmountEntryContext = createContext<{
   setCentsFirst: (on: boolean) => void;
 }>({ centsFirst: false, setCentsFirst: () => {} });
 
-export type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark" | "system";
 /** The saved theme choice, including "system", for the Appearance setting. */
 export const ThemeContext = createContext<{
   theme: Theme;
