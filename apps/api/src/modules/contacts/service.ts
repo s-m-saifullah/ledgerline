@@ -7,6 +7,7 @@ import {
 } from "@ledgerline/shared";
 import type { Database, DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
+import { accountRepository } from "../accounts/repo";
 import { requireLedgerRead } from "../ledgers/service";
 import {
   clientBalances,
@@ -121,6 +122,12 @@ export function saveContact(
       const current = required(await repo.find(id, true));
       const { expectedVersion, ...fields } = body as UpdateContact;
       const version = nextVersion(current.version, expectedVersion);
+      // A client's balance accounts carry its name (ADR 0030).
+      if (fields.name !== undefined && fields.name !== current.name)
+        await accountRepository(c.tx, c.ledgerId).renameForContact(
+          current.id,
+          fields.name,
+        );
       return {
         status: 200,
         body: await dto(
@@ -152,8 +159,22 @@ export function contactAction(
       const repo = contactRepository(c.tx, c.ledgerId),
         current = required(await repo.find(id, true));
       const version = nextVersion(current.version, expectedVersion);
-      if (action === "delete") await requireNoReceivables(c.tx, c.ledgerId, id);
-      else if (!!current.archivedAt === (action === "archive"))
+      if (action === "delete") {
+        await requireNoReceivables(c.tx, c.ledgerId, id);
+        // Money lent or borrowed keeps its balance account, so the client stays (ADR 0030).
+        if (
+          (
+            await accountRepository(c.tx, c.ledgerId).forContact(
+              id.toLowerCase(),
+            )
+          ).length > 0
+        )
+          throw new ApiProblem(
+            409,
+            "Conflict",
+            "This client has a loan record. Archive the client instead.",
+          );
+      } else if (!!current.archivedAt === (action === "archive"))
         throw new ApiProblem(
           409,
           "Conflict",

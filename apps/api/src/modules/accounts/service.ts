@@ -48,6 +48,7 @@ function accountDto(row: AccountRow, total = 0n) {
         : row.defaultFeeBps !== null
           ? { basisPoints: row.defaultFeeBps }
           : null,
+    contactId: row.contactId,
     balance: {
       amount: postedBalance(row.openingBalance, total),
       currency: row.currency,
@@ -60,6 +61,16 @@ function accountDto(row: AccountRow, total = 0n) {
 }
 function requireAccount(row: AccountRow | undefined) {
   if (!row) throw new ApiProblem(404, "Not found", "Account not found.");
+  return row;
+}
+/** A client's balance account (ADR 0030) is kept by the lending actions, not edited by hand. */
+function requireOwnAccount(row: AccountRow) {
+  if (row.contactId)
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      "This account tracks money lent to or borrowed from a client. Manage it from Clients.",
+    );
   return row;
 }
 
@@ -214,7 +225,7 @@ export function updateAccount(
     },
     async ({ tx, ledgerId }) => {
       const repo = accountRepository(tx, ledgerId);
-      const current = requireAccount(await repo.find(id));
+      const current = requireOwnAccount(requireAccount(await repo.find(id)));
       const version = nextVersion(current.version, body.expectedVersion);
       if (
         body.openingBalance &&
@@ -255,7 +266,7 @@ export function archiveAccount(
     { ...identity, operation: `POST accounts/${id}/archive`, request: body },
     async ({ tx, ledgerId }) => {
       const repo = accountRepository(tx, ledgerId);
-      const current = requireAccount(await repo.find(id));
+      const current = requireOwnAccount(requireAccount(await repo.find(id)));
       const version = nextVersion(current.version, body.expectedVersion);
       if (current.archivedAt)
         throw new ApiProblem(
@@ -285,7 +296,7 @@ export function unarchiveAccount(
     { ...identity, operation: `POST accounts/${id}/unarchive`, request: body },
     async ({ tx, ledgerId }) => {
       const repo = accountRepository(tx, ledgerId);
-      const current = requireAccount(await repo.find(id));
+      const current = requireOwnAccount(requireAccount(await repo.find(id)));
       const version = nextVersion(current.version, body.expectedVersion);
       if (!current.archivedAt)
         throw new ApiProblem(409, "Conflict", "This account is not archived.");
@@ -339,7 +350,9 @@ export function deleteAccount(
     },
     async ({ tx, ledgerId }) => {
       const repo = accountRepository(tx, ledgerId);
-      const current = requireAccount(await repo.lockForAssignment(id));
+      const current = requireOwnAccount(
+        requireAccount(await repo.lockForAssignment(id)),
+      );
       const version = nextVersion(current.version, body.expectedVersion);
       await requireNoActiveTransactions(tx, ledgerId, "accountId", id);
       await requireNoActiveRules(tx, ledgerId, "accountId", id);

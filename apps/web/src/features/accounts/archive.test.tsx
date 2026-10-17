@@ -16,6 +16,7 @@ const account: Account = {
   bonusCategoryId: null,
   feeCategoryId: null,
   defaultFee: null,
+  contactId: null,
   balance: { amount: -98765, currency: "USD" },
   archivedAt: null,
   version: 1,

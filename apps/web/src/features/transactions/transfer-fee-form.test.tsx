@@ -25,6 +25,7 @@ const account = (name: string, extra: Partial<Account> = {}) =>
     bonusCategoryId: null,
     feeCategoryId: null,
     defaultFee: null,
+    contactId: null,
     ...extra,
   }) as Account;
 const bank = account("Bank"),

@@ -32,6 +32,7 @@ const bank: Account = {
   bonusCategoryId: null,
   feeCategoryId: null,
   defaultFee: null,
+  contactId: null,
   balance: { amount: 0, currency: "USD" },
   archivedAt: null,
   version: 1,

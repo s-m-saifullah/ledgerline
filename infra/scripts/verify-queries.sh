@@ -5,9 +5,9 @@
 # copy, so expectations always come from the same snapshot as the dump.
 
 # Checks that become manifest lines (check|name|value).
-VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips)
+VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links)
 
 verify_requires() {
   case "$1" in
@@ -18,6 +18,7 @@ verify_requires() {
     receipts|receipt_contacts) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='receivable_payments' AND column_name='receipt_id')" ;;
     fees|fee_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='fee_transfer_id')" ;;
     tips|tip_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='tip_payment_id')" ;;
+    loans|loan_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts' AND column_name='contact_id')" ;;
     recurring|recurring_links) echo "SELECT to_regclass('public.recurring_rules') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL" ;;
     *) echo "SELECT false" ;;
   esac
@@ -57,6 +58,10 @@ verify_sql() {
     fee_links) echo "SELECT count(*) FROM transactions f WHERE f.fee_transfer_id IS NOT NULL AND (f.kind <> 'expense' OR (SELECT count(*) FROM transactions l WHERE l.ledger_id=f.ledger_id AND l.transfer_id=f.fee_transfer_id) <> 2)" ;;
     # Payment tips (ADR 0027): live and tombstoned entries, and the live total.
     tips) echo "SELECT count(*) FILTER (WHERE deleted_at IS NULL) || '|' || count(*) FILTER (WHERE deleted_at IS NOT NULL) || '|' || coalesce(sum(amount) FILTER (WHERE deleted_at IS NULL), 0) FROM transactions WHERE tip_payment_id IS NOT NULL" ;;
+    # Client loan accounts (ADR 0030): how many, and the total of their balances (money lent minus money borrowed).
+    loans) echo "SELECT count(*) || '|' || coalesce(sum(a.opening_balance::numeric + $posted), 0)::text FROM accounts a WHERE a.deleted_at IS NULL AND a.contact_id IS NOT NULL" ;;
+    # Every live client loan account belongs to a live client of the same ledger; there is one per client and currency.
+    loan_links) echo "SELECT (SELECT count(*) FROM accounts a WHERE a.deleted_at IS NULL AND a.contact_id IS NOT NULL AND (a.type <> 'loan' OR NOT EXISTS (SELECT 1 FROM contacts c WHERE c.ledger_id=a.ledger_id AND c.id=a.contact_id AND c.deleted_at IS NULL))) + (SELECT count(*) FROM (SELECT 1 FROM accounts a WHERE a.deleted_at IS NULL AND a.contact_id IS NOT NULL GROUP BY a.ledger_id, a.contact_id, a.currency HAVING count(*) > 1) x)" ;;
     # Every tip is an income entry whose payment exists in the same ledger and, when that payment is deleted, is deleted too; a receipt has at most one tip.
     tip_links) echo "SELECT (SELECT count(*) FROM transactions t WHERE t.tip_payment_id IS NOT NULL AND (t.kind <> 'income' OR NOT EXISTS (SELECT 1 FROM receivable_payments p WHERE p.ledger_id=t.ledger_id AND p.id=t.tip_payment_id AND (p.deleted_at IS NULL OR t.deleted_at IS NOT NULL)))) + (SELECT count(*) FROM (SELECT p.ledger_id, p.receipt_id FROM transactions t JOIN receivable_payments p ON p.ledger_id=t.ledger_id AND p.id=t.tip_payment_id WHERE p.receipt_id IS NOT NULL GROUP BY 1, 2 HAVING count(*) > 1) x)" ;;
     *) return 1 ;;

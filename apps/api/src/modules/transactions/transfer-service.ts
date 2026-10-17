@@ -164,118 +164,114 @@ export async function getTransfer(
   const repo = transferRepository(db, ledgerId);
   return dto(await repo.find(id), await repo.bonus(id), await repo.fee(id));
 }
+/** Saves a transfer (and its optional bonus and fee) inside a write that is already open. */
+export async function createTransferInContext(
+  context: WriteContext,
+  body: CreateTransfer,
+) {
+  const rows = await references(context, body);
+  const pricing = await priceTransfer(context, {
+    from: accountOf(rows, body.fromAccountId),
+    to: accountOf(rows, body.toAccountId),
+    amount: body.amount,
+    receivedAmount: body.receivedAmount,
+    date: body.date,
+    manualRate: body.fxRate,
+  });
+  const repo = transferRepository(context.tx, context.ledgerId);
+  const saved = await repo.create(body, pricing);
+  let bonus: TransactionRow | undefined;
+  if (body.bonus) {
+    const to = accountOf(rows, body.toAccountId);
+    const categoryId = body.bonus.categoryId ?? to.bonusCategoryId;
+    if (!categoryId)
+      throw new ApiProblem(
+        409,
+        "Conflict",
+        "Choose a category for the bonus.",
+        [
+          {
+            field: "bonus.categoryId",
+            message: "Choose an income category for the bonus.",
+          },
+        ],
+      );
+    await lockTransactionCategories(context.tx, context.ledgerId);
+    await validateTransactionCategory(
+      context.tx,
+      context.ledgerId,
+      categoryId,
+      "income",
+      true,
+    );
+    // The bonus is income in the receiving account's currency, priced like any entry.
+    const bonusPricing = await priceEntry(context, {
+      accountCurrency: to.currency,
+      amount: body.bonus.amount,
+      date: body.date,
+    });
+    bonus = await repo.createBonus(
+      pair(saved).from.transferId as string,
+      {
+        accountId: to.id,
+        categoryId,
+        amount: body.bonus.amount.amount,
+        currency: body.bonus.amount.currency,
+        date: body.date,
+        time: body.time,
+      },
+      bonusPricing,
+    );
+  }
+  let fee: TransactionRow | undefined;
+  if (body.fee) {
+    const from = accountOf(rows, body.fromAccountId);
+    const categoryId = body.fee.categoryId ?? from.feeCategoryId;
+    if (!categoryId)
+      throw new ApiProblem(409, "Conflict", "Choose a category for the fee.", [
+        {
+          field: "fee.categoryId",
+          message: "Choose an expense category for the fee.",
+        },
+      ]);
+    await lockTransactionCategories(context.tx, context.ledgerId);
+    await validateTransactionCategory(
+      context.tx,
+      context.ledgerId,
+      categoryId,
+      "expense",
+      true,
+    );
+    const cost = feeCost(body.fee, body.amount, from.currency);
+    // The fee is an expense in the sending account's currency, priced like any entry.
+    const feePricing = await priceEntry(context, {
+      accountCurrency: from.currency,
+      amount: { amount: -cost, currency: from.currency },
+      date: body.date,
+    });
+    fee = await repo.createFee(
+      pair(saved).from.transferId as string,
+      {
+        accountId: from.id,
+        categoryId,
+        amount: -cost,
+        currency: from.currency,
+        date: body.date,
+        time: body.time,
+      },
+      feePricing,
+    );
+  }
+  await check(context, rows);
+  return { status: 201, body: dto(saved, bonus, fee) };
+}
 export function createTransfer(
   db: Database,
   identity: WriteIdentity,
   body: CreateTransfer,
 ) {
-  return write(
-    db,
-    identity,
-    "POST transfers",
-    requestOf(body),
-    async (context) => {
-      const rows = await references(context, body);
-      const pricing = await priceTransfer(context, {
-        from: accountOf(rows, body.fromAccountId),
-        to: accountOf(rows, body.toAccountId),
-        amount: body.amount,
-        receivedAmount: body.receivedAmount,
-        date: body.date,
-        manualRate: body.fxRate,
-      });
-      const repo = transferRepository(context.tx, context.ledgerId);
-      const saved = await repo.create(body, pricing);
-      let bonus: TransactionRow | undefined;
-      if (body.bonus) {
-        const to = accountOf(rows, body.toAccountId);
-        const categoryId = body.bonus.categoryId ?? to.bonusCategoryId;
-        if (!categoryId)
-          throw new ApiProblem(
-            409,
-            "Conflict",
-            "Choose a category for the bonus.",
-            [
-              {
-                field: "bonus.categoryId",
-                message: "Choose an income category for the bonus.",
-              },
-            ],
-          );
-        await lockTransactionCategories(context.tx, context.ledgerId);
-        await validateTransactionCategory(
-          context.tx,
-          context.ledgerId,
-          categoryId,
-          "income",
-          true,
-        );
-        // The bonus is income in the receiving account's currency, priced like any entry.
-        const bonusPricing = await priceEntry(context, {
-          accountCurrency: to.currency,
-          amount: body.bonus.amount,
-          date: body.date,
-        });
-        bonus = await repo.createBonus(
-          pair(saved).from.transferId as string,
-          {
-            accountId: to.id,
-            categoryId,
-            amount: body.bonus.amount.amount,
-            currency: body.bonus.amount.currency,
-            date: body.date,
-            time: body.time,
-          },
-          bonusPricing,
-        );
-      }
-      let fee: TransactionRow | undefined;
-      if (body.fee) {
-        const from = accountOf(rows, body.fromAccountId);
-        const categoryId = body.fee.categoryId ?? from.feeCategoryId;
-        if (!categoryId)
-          throw new ApiProblem(
-            409,
-            "Conflict",
-            "Choose a category for the fee.",
-            [
-              {
-                field: "fee.categoryId",
-                message: "Choose an expense category for the fee.",
-              },
-            ],
-          );
-        await lockTransactionCategories(context.tx, context.ledgerId);
-        await validateTransactionCategory(
-          context.tx,
-          context.ledgerId,
-          categoryId,
-          "expense",
-          true,
-        );
-        const cost = feeCost(body.fee, body.amount, from.currency);
-        // The fee is an expense in the sending account's currency, priced like any entry.
-        const feePricing = await priceEntry(context, {
-          accountCurrency: from.currency,
-          amount: { amount: -cost, currency: from.currency },
-          date: body.date,
-        });
-        fee = await repo.createFee(
-          pair(saved).from.transferId as string,
-          {
-            accountId: from.id,
-            categoryId,
-            amount: -cost,
-            currency: from.currency,
-            date: body.date,
-            time: body.time,
-          },
-          feePricing,
-        );
-      }
-      await check(context, rows);
-      return { status: 201, body: dto(saved, bonus, fee) };
-    },
+  return write(db, identity, "POST transfers", requestOf(body), (context) =>
+    createTransferInContext(context, body),
   );
 }
 export function updateTransfer(

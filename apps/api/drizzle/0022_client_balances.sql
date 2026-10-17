@@ -1,0 +1,4 @@
+ALTER TABLE "accounts" ADD COLUMN "contact_id" uuid;--> statement-breakpoint
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_scoped_contact_fk" FOREIGN KEY ("ledger_id","contact_id") REFERENCES "public"."contacts"("ledger_id","id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "accounts_client_currency_idx" ON "accounts" USING btree ("ledger_id","contact_id","currency") WHERE "accounts"."contact_id" IS NOT NULL AND "accounts"."deleted_at" IS NULL;--> statement-breakpoint
+ALTER TABLE "accounts" ADD CONSTRAINT "accounts_contact_check" CHECK ("accounts"."contact_id" IS NULL OR "accounts"."type" = 'loan');

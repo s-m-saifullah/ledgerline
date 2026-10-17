@@ -93,6 +93,8 @@ export const accountSchema = z.object({
   bonusCategoryId: idSchema.nullable().default(null),
   feeCategoryId: idSchema.nullable().default(null),
   defaultFee: defaultFeeSchema.nullable().default(null),
+  // Set on the balance account that tracks money lent to or borrowed from one client (ADR 0030).
+  contactId: idSchema.nullable().default(null),
   balance: moneySchema,
   archivedAt: z.iso.datetime().nullable(),
   version: versionSchema,
