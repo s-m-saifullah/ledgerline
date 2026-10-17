@@ -2803,15 +2803,12 @@ button.budget-line:hover {
   line-height: 1.4;
   margin-top: 4px;
 }
-.settings-card .amount-entry-toggle + p {
-  margin-top: 0;
-  margin-bottom: 16px;
-}
 /* The hours-at-a-rate result: close under the rate box, with room before its button. */
 .hourly-helper > p {
   margin: 0 0 12px;
   line-height: 1.5;
 }
-.hourly-helper > button {
-  margin-bottom: 4px;
+.settings-card .amount-entry-toggle + p {
+  margin-top: 0;
+  margin-bottom: 16px;
 }
