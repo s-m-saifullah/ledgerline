@@ -8,7 +8,6 @@ import {
 import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app";
-import { readConfig } from "../../config";
 import { createDatabase } from "../../db/client";
 import { applyMigrations } from "../../db/migrate";
 import {
@@ -26,20 +25,15 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
-import { hashPassword } from "../auth/password";
+import {
+  requireTestDatabase,
+  seedUser,
+  signInCookie,
+  testConfig,
+} from "../../test-support/harness";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error("Receipts tests require dedicated ledgerline_test.");
-const config = readConfig({
-  NODE_ENV: "test",
-  DATABASE_URL: url,
-  APP_URL: "http://localhost:5173",
-  BETTER_AUTH_SECRET: "receipts-test-secret-only-000000000000000000",
-  OWNER_EMAIL: "receipts@example.com",
-  OWNER_PASSWORD: "Receipts-test-password-0000",
-  OWNER_NAME: "Test owner",
-});
+const url = requireTestDatabase("Receipts tests");
+const config = testConfig(url, "receipts");
 const { db, pool } = createDatabase(url),
   app = await buildApp(db, config);
 const ledgerId = newId(),
@@ -120,18 +114,11 @@ beforeAll(async () => {
   await db
     .insert(ledgers)
     .values(ids.map((id) => ({ id, name: "Synthetic receipts suite" })));
-  const password = await hashPassword(config.OWNER_PASSWORD);
+
   for (const [i, role] of (["owner", "editor", "viewer"] as const).entries()) {
     const id = users[i] as string,
       email = `receipt-${role}-${id}@example.com`;
-    await db.insert(user).values({ id, name: role, email });
-    await db.insert(credentials).values({
-      userId: id,
-      accountId: id,
-      providerId: "credential",
-      password,
-    });
-    await db.insert(ledgerMembers).values({ userId: id, ledgerId, role });
+    await seedUser(db, config, { id, email, name: role, ledgerId, role });
   }
   await db
     .insert(ledgerMembers)
@@ -139,19 +126,12 @@ beforeAll(async () => {
   await app.ready();
   const cookies = [];
   for (const [i, role] of ["owner", "editor", "viewer"].entries()) {
-    const r = await app.inject({
-      method: "POST",
-      url: "/api/v1/auth/sign-in/email",
-      headers: { origin: config.APP_URL },
-      payload: {
-        email: `receipt-${role}-${users[i]}@example.com`,
-        password: config.OWNER_PASSWORD,
-      },
-    });
-    expect(r.statusCode).toBe(200);
-    const c = r.headers["set-cookie"];
     cookies.push(
-      (Array.isArray(c) ? c : [c ?? ""]).map((v) => v.split(";")[0]).join("; "),
+      await signInCookie(
+        app,
+        config,
+        `receipt-${role}-${users[i]}@example.com`,
+      ),
     );
   }
   [cookie, editor, viewer] = cookies as [string, string, string];

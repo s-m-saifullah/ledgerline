@@ -6,7 +6,6 @@ import {
 import { inArray } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { buildApp } from "../../app";
-import { readConfig } from "../../config";
 import { createDatabase } from "../../db/client";
 import { applyMigrations } from "../../db/migrate";
 import {
@@ -23,25 +22,18 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import {
+  requireTestDatabase,
+  signInCookie,
+  testConfig,
+} from "../../test-support/harness";
 import { hashPassword } from "../auth/password";
 import { getBudgetMonth } from "../budgets/service";
 import { getHomeSummary } from "../home/service";
 import { postedCategoryTotals } from "./balance-service";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error(
-    "Base amount tests require the dedicated ledgerline_test database.",
-  );
-const config = readConfig({
-  NODE_ENV: "test",
-  DATABASE_URL: url,
-  APP_URL: "http://localhost:5173",
-  BETTER_AUTH_SECRET: "base-amounts-test-secret-only-00000000000000",
-  OWNER_EMAIL: "base-owner@example.com",
-  OWNER_PASSWORD: "Base-amounts-test-password-000",
-  OWNER_NAME: "Base owner",
-});
+const url = requireTestDatabase("Base amount tests");
+const config = testConfig(url, "base-amounts");
 const { db, pool } = createDatabase(url);
 const app = await buildApp(db, config);
 const ledgerId = newId();
@@ -68,20 +60,7 @@ const eur = {
   fxRate: "1.1217",
 };
 async function signIn() {
-  const response = await app.inject({
-    method: "POST",
-    url: "/api/v1/auth/sign-in/email",
-    headers: { origin: config.APP_URL },
-    payload: {
-      email: `base-owner-${ownerId}@example.com`,
-      password: config.OWNER_PASSWORD,
-    },
-  });
-  expect(response.statusCode).toBe(200);
-  const header = response.headers["set-cookie"];
-  return (Array.isArray(header) ? header : [header ?? ""])
-    .map((value) => value.split(";")[0])
-    .join("; ");
+  return signInCookie(app, config, `base-owner-${ownerId}@example.com`);
 }
 async function clearRows() {
   await db.transaction(async (tx) => {
