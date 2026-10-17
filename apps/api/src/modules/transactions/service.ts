@@ -390,6 +390,38 @@ async function checkBalances(
   );
   for (const row of rows) postedBalance(row.openingBalance, totals.get(row.id));
 }
+/** Saves an entry inside a write that is already open. */
+export async function createTransactionInContext(
+  context: WriteContext,
+  body: CreateTransaction,
+) {
+  if (body.splits?.some((line) => line.id))
+    throw new ApiProblem(
+      400,
+      "Invalid request",
+      "New split lines must not supply IDs.",
+    );
+  const rows = await references(context, body);
+  const pricing = await priceEntry(context, {
+    accountCurrency: accountOf(rows, body.accountId).currency,
+    amount: body.amount,
+    date: body.date,
+    manualRate: body.fxRate,
+  });
+  const row = required(
+    await transactionRepository(context.tx, context.ledgerId).create(
+      body,
+      pricing,
+    ),
+  );
+  await splitRepository(context.tx, context.ledgerId).replace(
+    row,
+    body.splits ?? [],
+    [],
+  );
+  await checkBalances(context, rows);
+  return { status: 201, body: await dto(context.tx, context.ledgerId, row) };
+}
 export function createTransaction(
   db: Database,
   identity: WriteIdentity,
@@ -397,34 +429,9 @@ export function createTransaction(
 ) {
   const { time, ...fields } = body;
   const request = time === undefined ? fields : { ...fields, time };
-  return write(db, identity, "POST transactions", request, async (context) => {
-    if (body.splits?.some((line) => line.id))
-      throw new ApiProblem(
-        400,
-        "Invalid request",
-        "New split lines must not supply IDs.",
-      );
-    const rows = await references(context, body);
-    const pricing = await priceEntry(context, {
-      accountCurrency: accountOf(rows, body.accountId).currency,
-      amount: body.amount,
-      date: body.date,
-      manualRate: body.fxRate,
-    });
-    const row = required(
-      await transactionRepository(context.tx, context.ledgerId).create(
-        body,
-        pricing,
-      ),
-    );
-    await splitRepository(context.tx, context.ledgerId).replace(
-      row,
-      body.splits ?? [],
-      [],
-    );
-    await checkBalances(context, rows);
-    return { status: 201, body: await dto(context.tx, context.ledgerId, row) };
-  });
+  return write(db, identity, "POST transactions", request, (context) =>
+    createTransactionInContext(context, body),
+  );
 }
 export function updateTransaction(
   db: Database,

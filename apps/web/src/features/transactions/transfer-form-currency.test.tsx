@@ -23,6 +23,7 @@ const account = (name: string, currency: string): Account => ({
   bonusCategoryId: null,
   feeCategoryId: null,
   defaultFee: null,
+  contactId: null,
   balance: { amount: 0, currency },
   archivedAt: null,
   version: 1,

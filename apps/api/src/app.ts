@@ -35,6 +35,7 @@ import { currencyRoutes } from "./modules/currencies/routes";
 import { homeRoutes } from "./modules/home/routes";
 import { ledgerRoutes } from "./modules/ledgers/routes";
 import { ledgerService } from "./modules/ledgers/service";
+import { loanRoutes } from "./modules/loans/routes";
 import { receiptRoutes } from "./modules/receivables/receipt-routes";
 import { clientRoutes } from "./modules/receivables/routes";
 import { recurringRoutes } from "./modules/recurring/routes";
@@ -61,7 +62,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.31" },
+      info: { title: "Ledgerline API", version: "0.1.32" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -298,6 +299,7 @@ export async function buildApp(
   await app.register(ledgerRoutes, { db, config, auth });
   await app.register(accountRoutes, { db, config, auth });
   await app.register(clientRoutes, { db, config, auth });
+  await app.register(loanRoutes, { db, config, auth });
   await app.register(receiptRoutes, { db, config, auth });
   await app.register(categoryRoutes, { db, config, auth });
   await app.register(recurringRoutes, { db, config, auth, now });

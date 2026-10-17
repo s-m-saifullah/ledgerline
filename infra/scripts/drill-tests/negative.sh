@@ -8,8 +8,8 @@ expect_fail() { # name, expected message, command...
 }
 base=$(latest)
 # 1. tampered manifest value
-cp "$base" t1.dump; cp "$base.sha256" t1.dump.sha256; sed -i 's/^check|balances|2|.*/check|balances|2|00000000000000000000000000000000/' <(true) 2>/dev/null
-sed 's/^check|balances|2|.*/check|balances|2|00000000000000000000000000000000/' "$base.manifest" > t1.dump.manifest
+cp "$base" t1.dump; cp "$base.sha256" t1.dump.sha256; sed -i 's/^check|balances|3|.*/check|balances|3|00000000000000000000000000000000/' <(true) 2>/dev/null
+sed 's/^check|balances|3|.*/check|balances|3|00000000000000000000000000000000/' "$base.manifest" > t1.dump.manifest
 sed -i "s#.*#$(cut -d' ' -f1 "$base.sha256")  t1.dump#" t1.dump.sha256
 expect_fail "tampered balance value" "Snapshot check mismatch for balances" bash restore-drill.sh t1.dump
 # 2. a check line removed
@@ -51,6 +51,10 @@ psqlx "UPDATE transactions SET fee_transfer_id='00000000-0000-7000-8000-00000000
 psqlx "UPDATE transactions SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-0000000000e8'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "tip outliving its payment" "Restored tip links failed validation" bash restore-drill.sh "$(latest)"
 psqlx "UPDATE transactions SET deleted_at='2026-10-08 00:00:00+00' WHERE id='00000000-0000-7000-8000-0000000000e8'" >/dev/null
+# 9e. a client loan account whose client was deleted
+psqlx "UPDATE contacts SET deleted_at='2026-10-08 00:00:00+00' WHERE id='00000000-0000-7000-8000-000000000c0a'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "loan account without its client" "Restored loan links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE contacts SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-000000000c0a'" >/dev/null
 # 10. clean again, then concurrent writes during the backup must not break the drill
 bash backup.sh >/dev/null; bash restore-drill.sh "$(latest)" >/dev/null 2>&1 && echo "PASS  clean data restores after repairs" || echo "FAIL  clean data did not restore"
 ( for i in $(seq 1 150); do psqlx "INSERT INTO transactions (id,ledger_id,account_id,category_id,kind,date,amount,base_amount) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b1','00000000-0000-7000-8000-0000000000c1','expense','2026-10-09',-$i,-$i)" >/dev/null; done ) &

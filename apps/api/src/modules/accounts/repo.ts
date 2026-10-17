@@ -3,7 +3,7 @@ import type {
   CreateAccount,
   UpdateAccount,
 } from "@ledgerline/shared";
-import { and, asc, eq, gt, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { accounts } from "../../db/schema";
 
@@ -49,6 +49,32 @@ export function accountRepository(db: DatabaseConnection, ledgerId: string) {
           .from(accounts)
           .where(and(scope, eq(accounts.id, id)))
       )[0],
+    /** The balance accounts of one client, one per currency (ADR 0030). */
+    forContact: (contactId: string, lock = false) => {
+      const query = db
+        .select()
+        .from(accounts)
+        .where(and(scope, eq(accounts.contactId, contactId)))
+        .orderBy(asc(accounts.currency));
+      return lock ? query.for("update") : query;
+    },
+    createForContact: async (input: {
+      contactId: string;
+      name: string;
+      currency: string;
+      openingBalance: number;
+    }) =>
+      (
+        await db
+          .insert(accounts)
+          .values({ ledgerId, type: "loan", ...input })
+          .returning()
+      )[0],
+    renameForContact: (contactId: string, name: string) =>
+      db
+        .update(accounts)
+        .set({ name, version: sql`${accounts.version} + 1` })
+        .where(and(scope, eq(accounts.contactId, contactId))),
     lockForAssignment: async (id: string) =>
       (
         await db

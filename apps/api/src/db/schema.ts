@@ -148,6 +148,8 @@ export const accounts = pgTable(
     feeCategoryId: uuid("fee_category_id"),
     defaultFeeAmount: bigint("default_fee_amount", { mode: "number" }),
     defaultFeeBps: integer("default_fee_bps"),
+    // Set on the balance account that tracks money lent to or borrowed from one client (ADR 0030).
+    contactId: uuid("contact_id"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     version: integer("version").notNull().default(1),
     ...audit(),
@@ -186,6 +188,21 @@ export const accounts = pgTable(
     check(
       "accounts_default_fee_check",
       sql`(${table.defaultFeeAmount} IS NULL OR ${table.defaultFeeAmount} > 0) AND (${table.defaultFeeBps} IS NULL OR ${table.defaultFeeBps} BETWEEN 1 AND 10000) AND (${table.defaultFeeAmount} IS NULL OR ${table.defaultFeeBps} IS NULL)`,
+    ),
+    foreignKey({
+      name: "accounts_scoped_contact_fk",
+      columns: [table.ledgerId, table.contactId],
+      foreignColumns: [contacts.ledgerId, contacts.id],
+    }),
+    // One balance account per client and currency; only loan-type accounts carry a client.
+    uniqueIndex("accounts_client_currency_idx")
+      .on(table.ledgerId, table.contactId, table.currency)
+      .where(
+        sql`${table.contactId} IS NOT NULL AND ${table.deletedAt} IS NULL`,
+      ),
+    check(
+      "accounts_contact_check",
+      sql`${table.contactId} IS NULL OR ${table.type} = 'loan'`,
     ),
     check("accounts_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check(

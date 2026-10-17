@@ -18,6 +18,7 @@ const fixture: Account = {
   bonusCategoryId: null,
   feeCategoryId: null,
   defaultFee: null,
+  contactId: null,
   balance: { amount: 120029, currency: "USD" },
   archivedAt: null,
   version: 1,
