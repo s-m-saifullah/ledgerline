@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { centsFirstValue, pastedValue } from "./amount-entry";
+import { centsFirstValue, pastedValue, plainAmountValue } from "./amount-entry";
 
 /** Type each character in turn, the way a keyboard reports it (the new text is the old plus one). */
 function type(start: string, keys: string, digits = 2) {
@@ -73,5 +73,26 @@ describe("pasting", () => {
     expect(pastedValue("abc", 2)).toBeNull();
     expect(pastedValue("1.234", 2)).toBeNull();
     expect(pastedValue("-5", 2)).toBeNull();
+  });
+});
+
+describe("the ordinary box", () => {
+  it("keeps only digits and one decimal point", () => {
+    expect(plainAmountValue("12a.5b", 2)).toBe("12.5");
+    expect(plainAmountValue("$1,200.50", 2)).toBe("1200.50");
+    expect(plainAmountValue("1.2.3", 2)).toBe("1.23");
+    expect(plainAmountValue("-5", 2)).toBe("5");
+    expect(plainAmountValue("abc", 2)).toBe("");
+  });
+  it("allows what is on the way to an amount", () => {
+    expect(plainAmountValue(".", 2)).toBe(".");
+    expect(plainAmountValue("12.", 2)).toBe("12.");
+    expect(plainAmountValue(".5", 2)).toBe(".5");
+  });
+  it("limits the decimals to the currency's", () => {
+    expect(plainAmountValue("12.345", 2)).toBe("12.34");
+    expect(plainAmountValue("1.2345", 3)).toBe("1.234");
+    expect(plainAmountValue("1500.5", 0)).toBe("1500");
+    expect(plainAmountValue("1500.", 0)).toBe("1500");
   });
 });

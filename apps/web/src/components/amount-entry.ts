@@ -69,3 +69,20 @@ export function pastedValue(text: string, digits: number): string | null {
 /** What the empty box suggests, e.g. "0.00" for USD and "0" for JPY. */
 export const amountPlaceholder = (digits: number) =>
   decimalFromCents(0, digits);
+
+/**
+ * The ordinary box keeps only what an amount can contain: digits and one decimal point, with no
+ * more decimals than the currency has (none at all for a currency without decimals). Pasted
+ * text such as "$1,200.50" is cleaned the same way, and a lone "." or "12." stays while typing.
+ */
+export function plainAmountValue(text: string, digits: number): string {
+  const kept = text.replace(/[^\d.]/g, "");
+  const dot = kept.indexOf(".");
+  if (dot === -1) return kept;
+  const whole = kept.slice(0, dot);
+  if (digits === 0) return whole;
+  return `${whole}.${kept
+    .slice(dot + 1)
+    .replace(/\./g, "")
+    .slice(0, digits)}`;
+}

@@ -13,6 +13,7 @@ import {
   amountPlaceholder,
   centsFirstValue,
   pastedValue,
+  plainAmountValue,
 } from "./amount-entry";
 
 type Props = ComponentPropsWithoutRef<"input"> & {
@@ -39,18 +40,36 @@ export const AmountInput = forwardRef<HTMLInputElement, Props>(
       if (typeof forwarded === "function") forwarded(node);
       else if (forwarded) forwarded.current = node;
     };
+    const digits = currencyDigits(currency);
     if (!centsFirst)
       return (
         <input
           ref={setRefs}
-          onChange={onChange}
+          onChange={(event) => {
+            const node = event.target;
+            const clean = plainAmountValue(node.value, digits);
+            if (clean !== node.value) {
+              // Keep the caret where the person was typing, less what was dropped before it.
+              const caret = node.selectionStart ?? node.value.length;
+              const dropped =
+                node.value.slice(0, caret).length -
+                plainAmountValue(node.value.slice(0, caret), digits).length;
+              node.value = clean;
+              try {
+                const at = Math.max(0, Math.min(clean.length, caret - dropped));
+                node.setSelectionRange(at, at);
+              } catch {
+                // Some input types cannot hold a selection.
+              }
+            }
+            onChange?.(event);
+          }}
           onFocus={onFocus}
           onPaste={onPaste}
           onClick={onClick}
           {...rest}
         />
       );
-    const digits = currencyDigits(currency);
     const toEnd = () => {
       const node = own.current;
       if (!node) return;

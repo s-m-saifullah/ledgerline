@@ -37,6 +37,23 @@ describe("AmountInput", () => {
     expect(screen.getByLabelText("Amount")).toHaveValue("12.5");
     expect(screen.getByLabelText("Amount")).not.toHaveAttribute("placeholder");
   });
+  it("refuses letters and extra decimals when the preference is off", async () => {
+    render(<Box on={false} />);
+    const box = screen.getByLabelText("Amount");
+    await userEvent.type(box, "1a2b.3c4d5");
+    expect(box).toHaveValue("12.34");
+    expect(screen.getByTestId("state")).toHaveTextContent("12.34");
+    await userEvent.clear(box);
+    await userEvent.click(box);
+    await userEvent.paste("$1,200.50");
+    expect(box).toHaveValue("1200.50");
+  });
+  it("allows no decimal point for a currency without decimals when the preference is off", async () => {
+    render(<Box on={false} currency="JPY" />);
+    const box = screen.getByLabelText("Amount");
+    await userEvent.type(box, "15.00");
+    expect(box).toHaveValue("1500");
+  });
   it("fills digits in from the right when the preference is on", async () => {
     render(<Box on />);
     const box = screen.getByLabelText("Amount");
