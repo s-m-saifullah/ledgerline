@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
-import { createDatabase } from "../../apps/api/src/db/client";
 import {
   type Category,
   categorySchema,
@@ -10,20 +7,11 @@ import {
 } from "../../packages/shared/src/index";
 import { clickCategoryAction, expectCategoryAction } from "./category-actions";
 import { chooseCategory } from "./category-picker";
+import { connectLocalDatabase } from "./ledger-setup";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
-const env = parseEnv(readFileSync(".env", "utf8"));
-const databaseUrl = env.DATABASE_URL;
-if (
-  !databaseUrl ||
-  !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
-  !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
-)
-  throw new Error(
-    "Category browser tests require the local development database.",
-  );
-const { pool } = createDatabase(databaseUrl);
+const { env, pool } = connectLocalDatabase("Category browser tests");
 let fixtureLedger = "";
 const fixtures: string[] = [];
 test.beforeEach(async ({ page }, testInfo) => {

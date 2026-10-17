@@ -1,23 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
-import { createDatabase } from "../../apps/api/src/db/client";
 import { type Account, accountSchema } from "../../packages/shared/src/index";
+import { connectLocalDatabase } from "./ledger-setup";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
-const env = parseEnv(readFileSync(".env", "utf8"));
-const databaseUrl = env.DATABASE_URL;
-if (
-  !databaseUrl ||
-  !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
-  !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
-)
-  throw new Error(
-    "Account browser tests require the local development database.",
-  );
-const { pool } = createDatabase(databaseUrl);
+const { env, pool } = connectLocalDatabase("Account browser tests");
 const created = new Map<string, Set<string>>();
 test.beforeEach(async ({ page }, testInfo) => {
   // Model independent clients without weakening the real auth rate limits.

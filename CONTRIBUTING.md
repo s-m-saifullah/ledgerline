@@ -37,6 +37,7 @@ Check that `pnpm lint` really passes (read its output), and test new UI at 320 p
 - **API integration tests** use the shared helpers in `apps/api/src/test-support/harness.ts`: `requireTestDatabase` (refuses anything but `ledgerline_test`), `testConfig`, `signInCookie` and `seedUser`. Do not copy the database guard, config block, sign-in or user-seeding code into a new test file; import the helpers. If a new test needs setup that two or more files would share, add it to the harness instead of repeating it.
 - Each endpoint still needs its own cross-ledger test (see the ledger scoping rule above).
 - Code in one API module calls another module's **service**, never its repository or tables.
+- **Browser specs** that build their own synthetic ledger use the helpers in `tests/e2e/ledger-setup.ts` (`connectLocalDatabase`, `createOwnerLedger`, `prepareBrowser`) instead of repeating the database guard, ledger and owner setup, ledger-list mock and client-address header. Clean-up stays in each spec because the tables differ.
 
 ## Pull requests
 

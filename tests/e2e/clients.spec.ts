@@ -1,22 +1,16 @@
-import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseEnv } from "node:util";
 import { expect, type Page, test } from "@playwright/test";
-import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
 import { clickAction } from "./client-actions";
+import {
+  connectLocalDatabase,
+  createOwnerLedger,
+  prepareBrowser,
+} from "./ledger-setup";
 import { signIn } from "./sign-in";
 
-const env = parseEnv(readFileSync(".env", "utf8")),
-  databaseUrl = env.DATABASE_URL;
-if (
-  !databaseUrl ||
-  !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
-  !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
-)
-  throw new Error("Clients browser tests require local database.");
-const { pool } = createDatabase(databaseUrl);
+const { env, pool } = connectLocalDatabase("Clients browser tests");
 let ledgerId = "",
   accountId = "",
   incomeId = "";
@@ -29,20 +23,11 @@ test.beforeEach(async ({ page }, info) => {
   ledgerId = newId();
   accountId = newId();
   incomeId = newId();
-  const owner = (
-    await pool.query(
-      "select id from users where email=$1 and deleted_at is null",
-      [env.OWNER_EMAIL],
-    )
-  ).rows[0];
-  if (!owner) throw new Error("Missing local test owner");
-  await pool.query("insert into ledgers(id,name) values($1,$2)", [
+  await createOwnerLedger(
+    pool,
+    env,
     ledgerId,
     `E2E owed ledger ${info.project.name}`,
-  ]);
-  await pool.query(
-    "insert into ledger_members(id,ledger_id,user_id,role) values($1,$2,$3,'owner')",
-    [newId(), ledgerId, owner.id],
   );
   await pool.query(
     "insert into accounts(id,ledger_id,name,type,opening_balance) values($1,$2,'Checking','bank',1000)",
@@ -52,26 +37,11 @@ test.beforeEach(async ({ page }, info) => {
     "insert into categories(id,ledger_id,name,kind) values($1,$2,'Services','income')",
     [incomeId, ledgerId],
   );
-  await page.route("**/api/v1/ledgers", (route) =>
-    route.fulfill({
-      json: {
-        items: [
-          {
-            id: ledgerId,
-            name: "Synthetic owed ledger",
-            timeZone: null,
-            version: 1,
-            baseCurrency: "USD",
-            role: "owner",
-          },
-        ],
-      },
-    }),
-  );
-  await page.setExtraHTTPHeaders({
-    "x-forwarded-for": `203.0.113.${150 + (info.workerIndex % 70)}`,
+  await prepareBrowser(page, info, {
+    ledgerId,
+    name: "Synthetic owed ledger",
+    forwarded: [150, 70],
   });
-  await page.emulateMedia({ colorScheme: "light" });
 });
 test.afterEach(async () => {
   const c = await pool.connect();

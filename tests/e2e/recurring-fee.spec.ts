@@ -1,22 +1,10 @@
-import { readFileSync } from "node:fs";
-import { parseEnv } from "node:util";
 import { expect, test } from "@playwright/test";
-import { createDatabase } from "../../apps/api/src/db/client";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
+import { connectLocalDatabase } from "./ledger-setup";
 import { signIn } from "./sign-in";
 
-const env = parseEnv(readFileSync(".env", "utf8"));
-const databaseUrl = env.DATABASE_URL;
-if (
-  !databaseUrl ||
-  !["localhost", "127.0.0.1"].includes(new URL(databaseUrl).hostname) ||
-  !["/ledgerline", "/ledgerline_test"].includes(new URL(databaseUrl).pathname)
-)
-  throw new Error(
-    "Recurring fee browser tests require the local development database.",
-  );
-const { pool } = createDatabase(databaseUrl);
+const { env, pool } = connectLocalDatabase("Recurring fee browser tests");
 let ledgerId = "";
 const fixtures: string[] = [];
 
