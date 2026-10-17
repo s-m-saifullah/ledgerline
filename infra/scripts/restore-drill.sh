@@ -15,8 +15,10 @@ trap cleanup EXIT
 # No network or host ports; this can never restore into the running app database.
 docker run -d --name "$name" --network none -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=restore postgres:18 >/dev/null
 ready=false
+# The image first runs a temporary server that listens only on its socket, then restarts. Checking
+# over TCP waits for the final server; a socket check can pass just before that shutdown.
 for attempt in $(seq 1 60); do
-  if docker exec "$name" pg_isready -U postgres -d restore >/dev/null 2>&1; then ready=true; break; fi
+  if docker exec "$name" pg_isready -h 127.0.0.1 -U postgres -d restore >/dev/null 2>&1; then ready=true; break; fi
   sleep 1
 done
 [[ "$ready" == true ]] || { echo 'Restore database did not become ready'; exit 1; }
