@@ -18,6 +18,7 @@ import { Plus } from "lucide-react";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { AmountInput } from "../../components/amount-input";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
@@ -520,7 +521,8 @@ export function TransferForm({
               ? `Amount sent (${fromCurrency})`
               : `Amount (${fromCurrency})`}
           </label>
-          <input
+          <AmountInput
+            currency={fromCurrency}
             id="transfer-amount"
             className="transaction-amount"
             type={privateMode ? "password" : "text"}
@@ -536,7 +538,8 @@ export function TransferForm({
               <label htmlFor="transfer-received">
                 Amount received ({toCurrency})
               </label>
-              <input
+              <AmountInput
+                currency={toCurrency}
                 id="transfer-received"
                 type={privateMode ? "password" : "text"}
                 inputMode="decimal"
@@ -657,7 +660,8 @@ export function TransferForm({
                   <label htmlFor="transfer-bonus-amount">
                     Bonus ({toCurrency})
                   </label>
-                  <input
+                  <AmountInput
+                    currency={toCurrency}
                     id="transfer-bonus-amount"
                     type={privateMode ? "password" : "text"}
                     inputMode="decimal"

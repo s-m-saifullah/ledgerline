@@ -564,3 +564,55 @@ test("date picker keeps month and year apart, and focus never overlaps the neigh
     }
   }
 });
+
+test("type amounts from the cents: the setting is saved and digits fill in from the right", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/more");
+  const toggle = page.getByLabel("Type amounts from the cents", {
+    exact: true,
+  });
+  await expect(toggle).not.toBeChecked();
+  // Off: the box is an ordinary one.
+  await openAdd(page);
+  await page.getByLabel("Amount (USD)").fill("19.29");
+  await expect(page.getByLabel("Amount (USD)")).toHaveValue("19.29");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await toggle.check();
+  for (const theme of ["light", "dark"] as const) {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.emulateMedia({ colorScheme: theme });
+    await page
+      .locator(".settings-card")
+      .filter({ has: toggle })
+      .screenshot({
+        path: join(tmpdir(), `ledgerline-amount-entry-320-${theme}.png`),
+      });
+  }
+  await page.reload();
+  await expect(toggle).toBeChecked();
+  await openAdd(page);
+  const amount = page.getByLabel("Amount (USD)");
+  await expect(amount).toHaveAttribute("placeholder", "0.00");
+  await amount.pressSequentially("4215");
+  await expect(amount).toHaveValue("42.15");
+  await page.keyboard.press("Backspace");
+  await expect(amount).toHaveValue("4.21");
+  await page.keyboard.press("5");
+  await expect(amount).toHaveValue("42.15");
+  await chooseCategory(page, "Category", "Food");
+  await page.getByRole("button", { name: "Save transaction" }).click();
+  await expect(
+    page.getByText("Transaction saved.", { exact: true }),
+  ).toBeVisible();
+  expect((await records())[0]).toMatchObject({ amount: "-4215" });
+  // Turning it off brings the ordinary box back.
+  await page.goto("/more");
+  await page
+    .getByLabel("Type amounts from the cents", { exact: true })
+    .uncheck();
+  await openAdd(page);
+  await page.getByLabel("Amount (USD)").fill("7.5");
+  await expect(page.getByLabel("Amount (USD)")).toHaveValue("7.5");
+});

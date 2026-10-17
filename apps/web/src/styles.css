@@ -2680,6 +2680,16 @@ button.budget-line:hover {
 .check-text {
   line-height: 20px;
 }
+/* The "type amounts from the cents" row on More: the same box-and-text row as the budget checkbox. */
+.amount-entry-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 400;
+}
 .currency-actions {
   justify-content: flex-start;
   margin-top: 0;

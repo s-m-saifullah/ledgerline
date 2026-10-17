@@ -77,6 +77,10 @@ The Transactions screen groups entries by day, with filters that stay in the add
 
 The eye icon blurs every amount on screen. Ledgerline sends nothing to analytics or tracking services, and its logs never contain amounts, payees or notes.
 
+## Typing amounts from the cents
+
+In **More, Appearance & privacy**, switch on **Type amounts from the cents** to type amounts the way many banking apps do: type digits only and the decimal point stays in place, so 1, 2, 3 reads 1.23. Backspace removes the last digit, and typing into a box that already has an amount adds digits to the end of it. A pasted amount is read as usual. The setting is saved on the device you are using, so turn it on for each phone or computer. It applies to every box where you type money, but not to exchange rates, percentages or hours.
+
 ## Keyboard
 
 Press Cmd or Ctrl plus K to open the command palette for jumping to pages and actions.

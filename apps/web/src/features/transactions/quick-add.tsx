@@ -11,6 +11,7 @@ import { Link } from "@tanstack/react-router";
 import { Plus, X } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { AmountInput } from "../../components/amount-input";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
@@ -599,7 +600,8 @@ export function QuickAddForm({
             <label htmlFor="transaction-amount">
               Amount ({watch("currency")})
             </label>
-            <input
+            <AmountInput
+              currency={watch("currency")}
               id="transaction-amount"
               className="transaction-amount"
               type={privateMode ? "password" : "text"}

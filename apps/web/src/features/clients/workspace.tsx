@@ -24,6 +24,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
+  type ComponentPropsWithoutRef,
   createContext,
   type ReactNode,
   useContext,
@@ -31,6 +32,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { AmountInput } from "../../components/amount-input";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
@@ -962,6 +964,8 @@ export function ClientsWorkspace({
     label: string,
     type = "text",
     required = false,
+    // A currency makes this a money box (typed from the cents when that preference is on).
+    money?: string,
   ) => (
     <label className="form-field" htmlFor={`client-${key}`} key={key}>
       {label}
@@ -979,7 +983,8 @@ export function ClientsWorkspace({
           onChange={(e) => setValues((v) => ({ ...v, [key]: e.target.value }))}
         />
       ) : (
-        <input
+        <MoneyOrText
+          money={money}
           id={`client-${key}`}
           type={type}
           value={values[key]}
@@ -1032,6 +1037,7 @@ export function ClientsWorkspace({
             `Amount received (${accountCurrency})`,
             privateMode ? "password" : "text",
             true,
+            accountCurrency,
           )}
           <PaymentRate
             settled={amountMinor(values.amount, itemCurrency)}
@@ -1060,6 +1066,8 @@ export function ClientsWorkspace({
             "tipAmount",
             `Tip (${accountCurrency}, optional)`,
             privateMode ? "password" : "text",
+            false,
+            accountCurrency,
           )}
           <p className="form-help">
             Extra money received beyond what is owed. It is saved as its own
@@ -1262,6 +1270,7 @@ export function ClientsWorkspace({
                       `Service amount (${values.currency})`,
                       privateMode ? "password" : "text",
                       true,
+                      values.currency,
                     )}
                     <HourlyHelper
                       currency={values.currency}
@@ -1302,6 +1311,7 @@ export function ClientsWorkspace({
                       `Payment amount (${itemCurrency})`,
                       privateMode ? "password" : "text",
                       true,
+                      itemCurrency,
                     )}
                     {op.payment?.tip && !op.payment.tip.deletedAt && (
                       <p className="muted">
@@ -1381,6 +1391,7 @@ export function ClientsWorkspace({
                           `Payment amount (${values.receiptCurrency})`,
                           privateMode ? "password" : "text",
                           true,
+                          values.receiptCurrency,
                         )}
                         <button
                           type="button"
@@ -1693,5 +1704,17 @@ function PaymentRate({
         "USD",
       )}
     </p>
+  );
+}
+
+/** A money box when a currency is given, otherwise a plain text input. */
+function MoneyOrText({
+  money,
+  ...rest
+}: { money: string | undefined } & ComponentPropsWithoutRef<"input">) {
+  return money ? (
+    <AmountInput currency={money} {...rest} />
+  ) : (
+    <input {...rest} />
   );
 }

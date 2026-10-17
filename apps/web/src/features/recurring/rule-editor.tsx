@@ -7,6 +7,7 @@ import type {
 import { Button } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AmountInput } from "../../components/amount-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
@@ -332,7 +333,8 @@ export function RuleEditor({
             </>
           )}
           <label htmlFor="rule-amount">{`Amount (${currency})`}</label>
-          <input
+          <AmountInput
+            currency={currency}
             id="rule-amount"
             inputMode="decimal"
             autoComplete="off"
@@ -344,7 +346,8 @@ export function RuleEditor({
           {cross && to && (
             <>
               <label htmlFor="rule-received">{`Amount that arrives (${to.currency})`}</label>
-              <input
+              <AmountInput
+                currency={to.currency}
                 id="rule-received"
                 inputMode="decimal"
                 autoComplete="off"
@@ -399,7 +402,8 @@ export function RuleEditor({
               {values.bonusOn && (
                 <>
                   <label htmlFor="rule-bonus">{`Bonus amount (${to.currency})`}</label>
-                  <input
+                  <AmountInput
+                    currency={to.currency}
                     id="rule-bonus"
                     inputMode="decimal"
                     autoComplete="off"

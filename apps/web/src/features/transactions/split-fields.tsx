@@ -1,6 +1,7 @@
 import type { Category } from "@ledgerline/shared";
 import { useContext } from "react";
 import { type UseFormReturn, useFieldArray } from "react-hook-form";
+import { AmountInput } from "../../components/amount-input";
 import { CategoryPicker } from "../categories/picker";
 import { PrivacyContext } from "../shell/preferences";
 import type { TransactionFormValues } from "./form";
@@ -68,7 +69,8 @@ export function SplitFields({
               <label htmlFor={`split-amount-${index}`}>
                 Split {index + 1} amount ({form.watch("currency")})
               </label>
-              <input
+              <AmountInput
+                currency={form.watch("currency")}
                 id={`split-amount-${index}`}
                 type={privateMode ? "password" : "text"}
                 inputMode="decimal"

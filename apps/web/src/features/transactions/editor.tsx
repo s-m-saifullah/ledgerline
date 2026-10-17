@@ -4,6 +4,7 @@ import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { AmountInput } from "../../components/amount-input";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
@@ -226,7 +227,8 @@ export function TransactionEditor({
           <label htmlFor="edit-transaction-amount">
             Amount ({watch("currency")})
           </label>
-          <input
+          <AmountInput
+            currency={watch("currency")}
             id="edit-transaction-amount"
             type={privateMode ? "password" : "text"}
             inputMode="decimal"
