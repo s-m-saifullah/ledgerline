@@ -598,9 +598,8 @@ test("client and service actions use one primary plus a menu on phones and inlin
   );
   await page.keyboard.press("Escape");
   await expect(cardMenu).toBeFocused();
-  // The client card, the lent-and-borrowed section and the service row each have one.
   const bars = page.locator(".action-bar");
-  await expect(bars).toHaveCount(3);
+  await expect(bars).toHaveCount(2);
   for (const button of await page.locator(".action-bar button").all()) {
     const box = await button.boundingBox();
     expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);

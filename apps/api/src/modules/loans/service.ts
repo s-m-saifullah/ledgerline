@@ -4,11 +4,15 @@ import {
   type LoanBalance,
   type LoanMove,
   type LoanOpening,
+  type LoanPeopleQuery,
   loanBalanceSchema,
   loanListSchema,
+  loanPeopleSchema,
   loanResultSchema,
 } from "@ledgerline/shared";
+import { and, asc, gt, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Database, DatabaseConnection } from "../../db/client";
+import { contacts } from "../../db/schema";
 import { ApiProblem } from "../../lib/problem";
 import { accountRepository } from "../accounts/repo";
 import { lockTransactionAccounts } from "../accounts/service";
@@ -54,6 +58,62 @@ const conflict = (message: string, field?: string) =>
   );
 const request = (body: object) => JSON.parse(JSON.stringify(body)) as JsonValue;
 
+/** Everyone you lend to or borrow from: added for loans, or already holding a balance account. */
+export async function listLoanPeople(
+  db: Database,
+  actorId: string,
+  ledgerId: string,
+  query: LoanPeopleQuery,
+) {
+  return db.transaction(
+    async (tx) => {
+      await requireLedgerRead(tx, actorId, ledgerId);
+      const rows = await tx
+        .select()
+        .from(contacts)
+        .where(
+          and(
+            sql`${contacts.ledgerId} = ${ledgerId}`,
+            isNull(contacts.deletedAt),
+            query.cursor ? gt(contacts.id, query.cursor) : undefined,
+            query.status === "active"
+              ? isNull(contacts.archivedAt)
+              : query.status === "archived"
+                ? isNotNull(contacts.archivedAt)
+                : undefined,
+            query.text
+              ? sql`strpos(lower(${contacts.name}),lower(${query.text})) > 0`
+              : undefined,
+            sql`(${contacts.origin} = 'loan' OR EXISTS (SELECT 1 FROM accounts a WHERE a.ledger_id = ${contacts.ledgerId} AND a.contact_id = ${contacts.id} AND a.deleted_at IS NULL))`,
+          ),
+        )
+        .orderBy(asc(contacts.id))
+        .limit(query.limit + 1);
+      const page = rows.slice(0, query.limit);
+      const repo = accountRepository(tx, ledgerId);
+      const items = [];
+      for (const row of page) {
+        const accounts = await repo.forContact(row.id);
+        items.push({
+          id: row.id,
+          name: row.name,
+          origin: row.origin,
+          archivedAt: row.archivedAt?.toISOString() ?? null,
+          version: row.version,
+          balances: await Promise.all(
+            accounts.map((account) => balanceDto(tx, ledgerId, account)),
+          ),
+        });
+      }
+      return loanPeopleSchema.parse({
+        items,
+        nextCursor:
+          rows.length > query.limit ? (page.at(-1)?.id ?? null) : null,
+      });
+    },
+    { isolationLevel: "repeatable read" },
+  );
+}
 export async function listLoans(
   db: Database,
   actorId: string,

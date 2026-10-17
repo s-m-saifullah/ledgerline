@@ -1,6 +1,6 @@
 # ADR 0030: Lending and borrowing with clients
 
-Date: 2026-10-17. Status: accepted by the owner when approving the design in chat (one running balance per client and currency, forgiveness both ways, existing loans can be added without moving money).
+Date: 2026-10-17. Status: accepted by the owner when approving the design in chat (one running balance per person and currency, forgiveness both ways, existing loans can be added without moving money, and a separate Loans screen).
 
 ## Context
 
@@ -14,5 +14,6 @@ Clients track services and payments, and every payment is income. A loan is not 
 - **Existing loans.** "Add an existing loan" sets the client's balance account's opening balance, so no money moves in any of your own accounts. It can be changed later with an expected version. It is shown on the client card as "Before Ledgerline".
 - **Managed accounts.** Accounts linked to a client cannot be created, renamed, archived or deleted from the accounts API (409 with a pointer to Clients) and are not offered in account pickers. A client that has a balance account cannot be deleted.
 - **Home.** Net worth already sums every account. Home gains `owed.lent` and `owed.borrowed` (valued like money owed, with missing-rate notices), and client-linked accounts stay out of `liabilitiesOwed` so a borrowed amount is not counted twice.
+- **Its own screen.** Loans (`/loans`, under More) lists the people you lend to or borrow from and opens one person at a time; Clients stays about services and payments. A person is one contact record underneath, with an `origin` (`client` or `loan`, migration 0023) saying which screen created them. Clients lists people created as clients or holding any service; Loans lists people created for loans or holding a balance account, so someone can appear on both. `GET /ledgers/{id}/loans` returns the people with their balances, and `GET /contacts` takes `kind=clients`. Home's lent and borrowed figures open Loans.
 - **Out of scope for now.** Interest, due dates and reminders, separate loans with their own history, and loans across currencies.
 - **API.** Additive: `GET /contacts/{id}/loans`, `POST /contacts/{id}/loans/{lend|borrow|repay|forgive|opening}`. Idempotency-Key, camelCase, money as `{ amount, currency }`, ledger-scoped with cross-ledger tests. Backup manifest and restore drill check that every client balance account has its client, one per client and currency.

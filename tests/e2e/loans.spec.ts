@@ -93,14 +93,12 @@ test.afterEach(async () => {
 });
 test.afterAll(async () => pool.end());
 
-/** A loan action: an inline button on wide screens, an item in the section's menu on phones. */
+/** A person's loan action: an inline button on wide screens, an item in the menu on phones. */
 async function loanAction(page: Page, name: string) {
   const inline = page
     .getByRole("button", { name, exact: true })
     .filter({ visible: true });
-  const trigger = page.getByRole("button", {
-    name: "Lend and borrow actions for Sam",
-  });
+  const trigger = page.getByRole("button", { name: /^More actions for/ });
   await inline.or(trigger).first().waitFor();
   if ((await inline.count()) > 0) return inline.first().click();
   await trigger.click();
@@ -112,32 +110,56 @@ async function balance(page: Page) {
   return (await response.json()).balance.amount as number;
 }
 const dialog = (page: Page) => page.getByRole("dialog");
-const section = (page: Page) =>
-  page.getByRole("region", { name: "Lent and borrowed" });
+const balances = (page: Page) =>
+  page.getByRole("region", { name: "Balance and activity" });
+/** Add a person and a loan from the list: who, what happened and the amount. */
+async function addLoan(
+  page: Page,
+  what: "I lent money" | "I borrowed money" | "A loan I already had",
+  amount: string,
+) {
+  await page.getByRole("button", { name: "Add loan", exact: true }).click();
+  await dialog(page)
+    .getByLabel(/^Who(?! owes)/)
+    .selectOption({ label: "A new person…" });
+  await dialog(page).getByLabel("Name", { exact: true }).fill("Sam");
+  await dialog(page)
+    .getByLabel(/^What happened/)
+    .selectOption({ label: what });
+  await dialog(page)
+    .getByLabel(/^Amount/)
+    .fill(amount);
+  await dialog(page)
+    .getByRole("button", {
+      name:
+        what === "I lent money"
+          ? "Lend"
+          : what === "I borrowed money"
+            ? "Borrow"
+            : "Save existing loan",
+      exact: true,
+    })
+    .click();
+}
 
 test("lend, repay and forgive keep exact balances, and an existing loan moves no money", async ({
   page,
 }) => {
   await signIn(page);
-  await page.goto("/clients");
-  await page.getByRole("button", { name: "Add client", exact: true }).click();
-  await page.getByLabel("Name", { exact: true }).fill("Sam");
-  await page.getByRole("button", { name: "Save client", exact: true }).click();
-  await expect(page.getByText("Client saved.", { exact: true })).toBeVisible();
-  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
-  await expect(section(page)).toContainText("Nothing lent or borrowed yet");
+  await page.goto("/loans");
+  await expect(
+    page.getByRole("heading", { name: "Loans", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Keep track of loans")).toBeVisible();
 
-  // An existing loan: they already owe 50.00, and nothing changes in the account.
-  await loanAction(page, "Add an existing loan");
-  await dialog(page)
-    .getByLabel(/^Amount/)
-    .fill("50.00");
-  await dialog(page)
-    .getByRole("button", { name: "Save existing loan", exact: true })
-    .click();
-  await expect(section(page)).toContainText("Sam owes you");
-  await expect(section(page)).toContainText("$50.00");
-  await expect(section(page)).toContainText("Before Ledgerline");
+  // An existing loan for a new person: they already owe 50.00, and no account changes.
+  await addLoan(page, "A loan I already had", "50.00");
+  await expect(
+    page.getByRole("heading", { name: "Sam", exact: true }),
+  ).toBeVisible();
+  await expect(balances(page)).toContainText("Sam owes you");
+  await expect(balances(page)).toContainText("$50.00");
+  await expect(balances(page)).toContainText("Before Ledgerline");
   expect(await balance(page)).toBe(100000);
 
   // Lend 20.00 from Checking.
@@ -146,7 +168,7 @@ test("lend, repay and forgive keep exact balances, and an existing loan moves no
     .getByLabel(/^Amount/)
     .fill("20.00");
   await dialog(page).getByRole("button", { name: "Lend", exact: true }).click();
-  await expect(section(page)).toContainText("$70.00");
+  await expect(balances(page)).toContainText("$70.00");
   expect(await balance(page)).toBe(98000);
 
   // Repay 30.00 back into Checking; a larger repayment is refused in the form.
@@ -166,56 +188,54 @@ test("lend, repay and forgive keep exact balances, and an existing loan moves no
   await dialog(page)
     .getByRole("button", { name: "Record repayment", exact: true })
     .click();
-  await expect(section(page)).toContainText("$40.00");
+  await expect(balances(page)).toContainText("$40.00");
   expect(await balance(page)).toBe(101000);
 
-  // Home shows what is lent out; the Accounts list does not list the client's balance account.
+  // The list shows the balance; Home links here; Accounts and Clients do not list Sam.
+  await page.getByRole("button", { name: "All people", exact: true }).click();
+  await expect(
+    page.locator(".client-card").filter({ hasText: "Sam" }),
+  ).toContainText("Owes you");
   await page.goto("/");
   await expect(
-    page.getByRole("link", { name: "Lent out. Open Clients" }),
+    page.getByRole("link", { name: "Lent out. Open Loans" }),
   ).toContainText("$40.00");
   await page.goto("/accounts");
   await expect(page.getByText("Checking").first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Sam" })).toHaveCount(0);
   await expect(page.locator("main")).not.toContainText("Sam");
+  await page.goto("/clients");
+  await expect(
+    page.getByRole("heading", { name: "Clients", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".client-card")).toHaveCount(0);
 
   // Forgive the rest: it becomes an expense and the balance settles.
-  await page.goto("/clients");
+  await page.goto("/loans");
   await page.locator(".client-card").filter({ hasText: "Sam" }).click();
   await loanAction(page, "Forgive what is left");
   await chooseCategory(dialog(page), "Expense category", "Bad debt");
   await dialog(page)
     .getByRole("button", { name: "Forgive", exact: true })
     .click();
-  await expect(section(page)).toContainText("Settled");
+  await expect(balances(page)).toContainText("Settled");
   expect(await balance(page)).toBe(101000);
 });
 
-test("borrowing makes a negative balance that you repay, on a narrow phone", async ({
+test("borrowing makes a negative balance that you repay, and a person can be renamed and archived, on a narrow phone", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await signIn(page);
-  await page.goto("/clients");
-  await page.getByRole("button", { name: "Add client", exact: true }).click();
-  await page.getByLabel("Name", { exact: true }).fill("Sam");
-  await page.getByRole("button", { name: "Save client", exact: true }).click();
-  await expect(page.getByText("Client saved.", { exact: true })).toBeVisible();
-  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
-  await loanAction(page, "Borrow money from Sam");
-  await dialog(page)
-    .getByLabel(/^Amount/)
-    .fill("15.00");
-  await dialog(page)
-    .getByRole("button", { name: "Borrow", exact: true })
-    .click();
-  await expect(section(page)).toContainText("You owe Sam");
-  await expect(section(page)).toContainText("$15.00");
+  await page.goto("/loans");
+  await addLoan(page, "I borrowed money", "15.00");
+  await expect(balances(page)).toContainText("You owe Sam");
+  await expect(balances(page)).toContainText("$15.00");
   expect(await balance(page)).toBe(101500);
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
   await loanAction(page, "Record repayment");
   await expect(dialog(page)).toContainText("You pay Sam back");
   await dialog(page)
@@ -224,6 +244,32 @@ test("borrowing makes a negative balance that you repay, on a narrow phone", asy
   await dialog(page)
     .getByRole("button", { name: "Record repayment", exact: true })
     .click();
-  await expect(section(page)).toContainText("Settled");
+  await expect(balances(page)).toContainText("Settled");
   expect(await balance(page)).toBe(100000);
+
+  await loanAction(page, "Rename");
+  await dialog(page).getByLabel("Name", { exact: true }).fill("Samira");
+  await dialog(page)
+    .getByRole("button", { name: "Save name", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Samira", exact: true }),
+  ).toBeVisible();
+  await loanAction(page, "Archive");
+  await dialog(page)
+    .getByRole("button", { name: "Archive", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Samira (archived)" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /^More actions for/ }).click();
+  await expect(
+    page.getByRole("menuitem", { name: "Unarchive", exact: true }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("menuitem", {
+      name: "Borrow money from Samira",
+      exact: true,
+    }),
+  ).toBeDisabled();
 });

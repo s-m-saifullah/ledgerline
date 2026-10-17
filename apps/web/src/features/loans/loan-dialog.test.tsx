@@ -1,4 +1,9 @@
-import { type Contact, type LoanBalance, newId } from "@ledgerline/shared";
+import {
+  type Contact,
+  type LoanBalance,
+  type LoanPerson,
+  newId,
+} from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -28,6 +33,7 @@ const client: Contact = {
   phone: null,
   email: null,
   note: null,
+  origin: "loan",
   archivedAt: null,
   version: 1,
   createdAt: stamp,
@@ -50,12 +56,20 @@ afterEach(() => {
   queryClient?.clear();
   vi.unstubAllGlobals();
 });
-function mount(mode: LoanAction, loans: LoanBalance[]) {
+function mount(
+  mode: LoanAction,
+  loans: LoanBalance[],
+  adding: { people: LoanPerson[] } | null = null,
+) {
   const writes: { url: string; body: Record<string, unknown> }[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (target: RequestInfo | URL, init?: RequestInit) => {
       const url = String(target);
+      if (init?.method === "POST" && url.endsWith("/contacts")) {
+        writes.push({ url, body: JSON.parse(String(init.body)) });
+        return new Response(JSON.stringify({ ...client, name: "Pat" }));
+      }
       if (init?.method === "POST") {
         writes.push({ url, body: JSON.parse(String(init.body)) });
         return new Response(
@@ -83,7 +97,8 @@ function mount(mode: LoanAction, loans: LoanBalance[]) {
     <QueryClientProvider client={queryClient}>
       <LoanDialog
         ledgerId={ledgerId}
-        client={client}
+        person={adding ? null : { id: client.id, name: client.name }}
+        people={adding?.people ?? []}
         loans={loans}
         mode={mode}
         returnFocusId="main-content"
@@ -134,5 +149,34 @@ describe("LoanDialog", () => {
       amount: { amount: -2500, currency: "USD" },
       expectedVersion: 3,
     });
+  });
+  it("adds a loan for a new person: creates them for Loans first, then lends", async () => {
+    const { writes, saved } = mount("lend", [], { people: [] });
+    await screen.findByRole("option", { name: "Everyday (USD)" });
+    await userEvent.type(screen.getByLabelText("Name"), "Pat");
+    await userEvent.type(screen.getByLabelText(/Amount/), "40");
+    await userEvent.click(screen.getByRole("button", { name: "Lend" }));
+    await waitFor(() => expect(saved).toHaveBeenCalledWith(client.id));
+    expect(writes[0]?.url).toMatch(/\/contacts$/);
+    expect(writes[0]?.body).toEqual({ name: "Pat", origin: "loan" });
+    expect(writes[1]?.url).toContain(`/contacts/${client.id}/loans/lend`);
+  });
+  it("asks who a loan is with when there are people to choose from", async () => {
+    const sam: LoanPerson = {
+      id: client.id,
+      name: "Sam",
+      origin: "loan",
+      archivedAt: null,
+      version: 1,
+      balances: [],
+    };
+    const { writes } = mount("lend", [], { people: [sam] });
+    await screen.findByRole("option", { name: "Everyday (USD)" });
+    await userEvent.type(screen.getByLabelText(/Amount/), "10");
+    await userEvent.click(screen.getByRole("button", { name: "Lend" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Choose who this is with",
+    );
+    expect(writes).toHaveLength(0);
   });
 });

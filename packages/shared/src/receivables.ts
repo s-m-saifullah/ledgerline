@@ -30,8 +30,11 @@ const contactFields = {
   email: z.email().max(254).nullable(),
   note: nullableText(2000),
 };
+// Which screen created the person; omitted means a client, and stays out of the saved request.
+export const contactOriginSchema = z.enum(["client", "loan"]);
 export const createContactSchema = z.strictObject({
   ...contactFields,
+  origin: contactOriginSchema.optional(),
   phone: contactFields.phone.default(null),
   email: contactFields.email.default(null),
   note: contactFields.note.default(null),
@@ -51,11 +54,14 @@ export const clientListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   status: z.enum(["all", "active", "archived"]).default("all"),
   text: z.string().trim().min(1).max(200).optional(),
+  // "clients" leaves out people who were only added for loans and have no services (ADR 0030).
+  kind: z.enum(["all", "clients"]).default("all"),
 });
 const timestamps = { createdAt: z.iso.datetime(), updatedAt: z.iso.datetime() };
 export const contactSchema = z.object({
   ...contactFields,
   ...timestamps,
+  origin: contactOriginSchema.default("client"),
   id: idSchema,
   ledgerId: idSchema,
   version: versionSchema,

@@ -27,6 +27,10 @@ export function contactRepository(db: DatabaseConnection, ledgerId: string) {
             q.text
               ? sql`strpos(lower(${contacts.name}),lower(${q.text})) > 0`
               : undefined,
+            // Clients: created as clients, or already given a service (ADR 0030).
+            q.kind === "clients"
+              ? sql`(${contacts.origin} = 'client' OR EXISTS (SELECT 1 FROM receivables r WHERE r.ledger_id = ${contacts.ledgerId} AND r.contact_id = ${contacts.id} AND r.deleted_at IS NULL))`
+              : undefined,
           ),
         )
         .orderBy(asc(contacts.id))

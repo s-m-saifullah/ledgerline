@@ -71,14 +71,17 @@ If a client pays more than they owe, type what you received: Ledgerline settles 
 
 ## Lending and borrowing
 
-Open **More, Clients** and choose a client. The **Lent and borrowed** section keeps one running balance per currency: when it is positive the client owes you, when it is negative you owe the client.
+Open **More, Loans** to track money you lent to or borrowed from friends and family. It is separate from Clients, and these people do not appear there. The list shows each person with what they owe you or what you owe them, one balance per currency.
 
-- **Lend money** takes the amount out of one of your accounts and adds it to what the client owes. **Borrow money** does the opposite: the money arrives in one of your accounts and you owe the client.
+Choose **Add loan**, pick the person (or add a new one), and say what happened: you lent money, you borrowed money, or it is a loan you already had. Open a person to act on their balance:
+
+- **Lend money** takes the amount out of one of your accounts and adds it to what they owe you. **Borrow money** does the opposite: the money arrives in one of your accounts and you owe them.
 - **Record repayment** follows the balance. When they owe you, the money comes back into an account you choose; when you owe them, it leaves one. You cannot repay more than what is open (lend or borrow instead).
 - **Forgive what is left** writes the open balance off. If you forgive them, it is an expense in a category you choose; if they forgive you, it is income in one. You can undo it from Transactions.
 - **Add an existing loan** records money that was lent or borrowed before you used Ledgerline. It sets the balance you start from and moves no money in any of your accounts. Choose it again later to change that starting balance.
+- **Rename** and **Archive** keep a person tidy; their balances and history are kept.
 
-Lending, borrowing and repaying are transfers, so they never count as income, spending or budgets. Home shows **Lent out** and **You owe clients** when they are not zero, and **Net worth** (on Accounts) includes them. The client's balance account is kept for you and does not appear in your account lists. You can also see each move under Transactions. A client with a loan record cannot be deleted; archive it instead.
+Lending, borrowing and repaying are transfers, so they never count as income, spending or budgets. Home shows **Lent out** and **You owe** when they are not zero, and **Net worth** (on Accounts) includes them. The balance account kept for each person does not appear in your account lists, but every move shows under Transactions.
 
 ## Finding and fixing entries
 

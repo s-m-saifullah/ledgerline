@@ -1,13 +1,14 @@
 import {
   type Account,
-  type Contact,
   currencyDigits,
   type LoanBalance,
   type LoanMove,
+  type LoanPerson,
   parseMinorUnits,
 } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { Amount } from "../../components/amount";
 import { AmountInput } from "../../components/amount-input";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
@@ -18,56 +19,70 @@ import { CategoryPicker } from "../categories/picker";
 import { useBaseValues } from "../currencies/base-value";
 import { getActiveAccounts } from "../transactions/api";
 import { localToday } from "../transactions/form";
-import { Amount } from "./amount";
-import { type LoanAction, prepareLoanWrite } from "./loans-api";
+import {
+  type LoanAction,
+  prepareCreatePerson,
+  prepareLoanWrite,
+} from "./loans-api";
 
-const heading = (mode: LoanAction, name: string, owedToYou: boolean) =>
-  ({
-    lend: [
-      `Lend money to ${name}`,
-      `The money leaves the account you choose and is recorded as owed by ${name}. It is a transfer, not spending.`,
-    ],
-    borrow: [
-      `Borrow money from ${name}`,
-      `The money enters the account you choose and is recorded as owed to ${name}. It is a transfer, not income.`,
-    ],
-    repay: [
-      "Record a repayment",
-      owedToYou
-        ? `${name} pays you back into the account you choose.`
-        : `You pay ${name} back from the account you choose.`,
-    ],
-    forgive: [
-      "Forgive what is left",
-      owedToYou
-        ? `You give up what ${name} owes you. It is recorded as an expense in the category you choose.`
-        : `${name} gives up what you owe. It is recorded as income in the category you choose.`,
-    ],
-    opening: [
-      "Add an existing loan",
-      "Record money that was already lent or borrowed before you used Ledgerline. Nothing changes in any of your accounts.",
-    ],
-  })[mode] as [string, string];
+const NEW = "new";
+const hints = (
+  name: string,
+  owedToYou: boolean,
+): Record<LoanAction, string> => ({
+  lend: `The money leaves the account you choose and is recorded as owed by ${name}. It is a transfer, not spending.`,
+  borrow: `The money enters the account you choose and is recorded as owed to ${name}. It is a transfer, not income.`,
+  repay: owedToYou
+    ? `${name} pays you back into the account you choose.`
+    : `You pay ${name} back from the account you choose.`,
+  forgive: owedToYou
+    ? `You give up what ${name} owes you. It is recorded as an expense in the category you choose.`
+    : `${name} gives up what you owe. It is recorded as income in the category you choose.`,
+  opening:
+    "Record money that was already lent or borrowed before you used Ledgerline. Nothing changes in any of your accounts.",
+});
+const titles = (name: string): Record<LoanAction, string> => ({
+  lend: name ? `Lend money to ${name}` : "Lend money",
+  borrow: name ? `Borrow money from ${name}` : "Borrow money",
+  repay: "Record a repayment",
+  forgive: "Forgive what is left",
+  opening: "Add an existing loan",
+});
 
-/** Lend, borrow, repay, forgive or add an existing loan (ADR 0030): one form, five actions. */
+/**
+ * Lend, borrow, repay, forgive or add an existing loan (ADR 0030): one form. Opened for one
+ * person it is that person's action; opened without one ("Add loan") it first asks who, and
+ * whether it is a loan, a borrowing or one you already had.
+ */
 export function LoanDialog({
   ledgerId,
-  client,
-  loans,
+  person,
+  people = [],
+  loans: personLoans = [],
   mode,
   returnFocusId,
   onClose,
   onSaved,
 }: {
   ledgerId: string;
-  client: Contact;
-  loans: LoanBalance[];
+  person: { id: string; name: string } | null;
+  /** For "Add loan": the people to choose from. */
+  people?: LoanPerson[];
+  loans?: LoanBalance[];
   mode: LoanAction;
   returnFocusId: string;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (personId: string) => void;
 }) {
   const values = useBaseValues(ledgerId);
+  const adding = person === null;
+  const [kind, setKind] = useState<LoanAction>(mode);
+  // With people to choose from nobody is preselected, so a loan is never saved to the wrong one.
+  const [chosen, setChosen] = useState(people.length > 0 ? "" : NEW);
+  const [newName, setNewName] = useState("");
+  const picked = adding ? people.find((row) => row.id === chosen) : undefined;
+  const name = adding ? (picked?.name ?? newName.trim()) : person.name;
+  const loans = adding ? (picked?.balances ?? []) : personLoans;
   const open = loans.filter((loan) => loan.balance.amount !== 0);
   const [currency, setCurrency] = useState(
     mode === "repay" || mode === "forgive"
@@ -77,7 +92,7 @@ export function LoanDialog({
   const loan = loans.find((row) => row.currency === currency);
   const balance = loan?.balance.amount ?? 0;
   const owedToYou = balance > 0;
-  const moves = mode === "lend" || mode === "borrow" || mode === "repay";
+  const moves = kind === "lend" || kind === "borrow" || kind === "repay";
   const accounts = useQuery({
     queryKey: ["accounts", ledgerId, "active-own"],
     queryFn: ({ signal }) => getActiveAccounts(ledgerId, signal),
@@ -86,7 +101,7 @@ export function LoanDialog({
   const categories = useQuery({
     queryKey: ["categories", ledgerId, "loan-forgive"],
     queryFn: ({ signal }) => getCategories(ledgerId, signal),
-    enabled: mode === "forgive",
+    enabled: kind === "forgive",
   });
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState("");
@@ -102,49 +117,51 @@ export function LoanDialog({
     sig: string;
     run: ReturnType<typeof prepareLoanWrite>;
   } | null>(null);
-  const [title, description] = heading(mode, client.name, owedToYou);
-  // Lend and borrow take their currency from the account; repay is limited to the account's too.
+  // A new person is created once, even when the loan itself has to be retried.
+  const created = useRef<{ name: string; id: string } | null>(null);
   const usable = (accounts.data ?? []).filter(
     (account: Account) =>
-      mode === "lend" || mode === "borrow" || account.currency === currency,
+      kind === "lend" || kind === "borrow" || account.currency === currency,
   );
   const account =
     usable.find((row) => row.id === accountId) ??
     (moves ? usable[0] : undefined);
   const effectiveCurrency =
-    mode === "lend" || mode === "borrow"
+    kind === "lend" || kind === "borrow"
       ? (account?.currency ?? currency)
       : currency;
   const digits = currencyDigits(effectiveCurrency);
-  const field = (message: string) => {
+  const fail = (message: string) => {
     setError(message);
-    return false;
   };
   const submit = async () => {
     setError("");
+    if (adding && chosen === "") return fail("Choose who this is with.");
+    if (adding && chosen === NEW && !newName.trim())
+      return fail("Enter the person's name.");
     let minor = 0;
-    if (mode !== "forgive") {
+    if (kind !== "forgive") {
       try {
         minor = parseMinorUnits(amount, digits);
       } catch {
-        return field("Enter an amount using numbers only.");
+        return fail("Enter an amount using numbers only.");
       }
-      if (minor <= 0 && !(mode === "opening" && minor === 0 && loan))
-        return field("Enter an amount greater than zero.");
+      if (minor <= 0 && !(kind === "opening" && minor === 0 && loan))
+        return fail("Enter an amount greater than zero.");
     }
-    if (moves && !account) return field("Choose one of your accounts.");
-    if (mode === "repay" && minor > Math.abs(balance))
-      return field("That is more than what is open.");
-    if (mode === "forgive" && !categoryId) return field("Choose a category.");
+    if (moves && !account) return fail("Choose one of your accounts.");
+    if (kind === "repay" && minor > Math.abs(balance))
+      return fail("That is more than what is open.");
+    if (kind === "forgive" && !categoryId) return fail("Choose a category.");
     const body =
-      mode === "forgive"
+      kind === "forgive"
         ? {
             currency,
             categoryId: categoryId as string,
             date,
             note: note.trim() || null,
           }
-        : mode === "opening"
+        : kind === "opening"
           ? {
               amount: {
                 amount: direction === "owedByMe" ? -minor : minor,
@@ -159,17 +176,27 @@ export function LoanDialog({
               time: null,
               note: note.trim() || null,
             } satisfies LoanMove);
-    const sig = JSON.stringify([mode, client.id, body]);
-    if (attempt.current?.sig !== sig)
-      attempt.current = {
-        sig,
-        run: prepareLoanWrite(ledgerId, client.id, mode, body),
-      };
     setBusy(true);
     try {
+      let personId = person?.id ?? picked?.id ?? "";
+      if (!personId) {
+        const trimmed = newName.trim();
+        if (created.current?.name !== trimmed)
+          created.current = {
+            name: trimmed,
+            id: (await prepareCreatePerson(ledgerId, trimmed)()).id,
+          };
+        personId = created.current.id;
+      }
+      const sig = JSON.stringify([kind, personId, body]);
+      if (attempt.current?.sig !== sig)
+        attempt.current = {
+          sig,
+          run: prepareLoanWrite(ledgerId, personId, kind, body),
+        };
       await attempt.current.run();
       attempt.current = null;
-      onSaved();
+      onSaved(personId);
     } catch (failure) {
       if (failure instanceof ApiError && failure.status < 500) {
         attempt.current = null;
@@ -180,11 +207,15 @@ export function LoanDialog({
     }
   };
   const currencyChoices =
-    mode === "opening"
+    kind === "opening"
       ? values.currencies
-      : mode === "repay" || mode === "forgive"
+      : kind === "repay" || kind === "forgive"
         ? open.map((row) => row.currency)
         : [];
+  const title = adding ? "Add a loan" : titles(name)[kind];
+  const description = adding
+    ? "Record money you lent, money you borrowed, or a loan you already had."
+    : hints(name, owedToYou)[kind];
   return (
     <EditorDialog
       open
@@ -195,7 +226,13 @@ export function LoanDialog({
       returnFocusId={returnFocusId}
       closeLabel="Close loan dialog"
       fallbackFocusId="main-content"
-      initialFocusId={mode === "forgive" ? "loan-category" : "loan-amount"}
+      initialFocusId={
+        adding
+          ? "loan-person"
+          : kind === "forgive"
+            ? "loan-category"
+            : "loan-amount"
+      }
     >
       <form
         className="account-form"
@@ -206,6 +243,60 @@ export function LoanDialog({
         }}
       >
         <fieldset disabled={busy} className="client-fields">
+          {adding && (
+            <>
+              <label className="form-field" htmlFor="loan-person">
+                Who
+                <NativeSelect
+                  id="loan-person"
+                  value={chosen}
+                  onChange={(event) => {
+                    setChosen(event.target.value);
+                    setCurrency(values.baseCurrency);
+                  }}
+                >
+                  {people.length > 0 && (
+                    <option value="" disabled>
+                      Choose a person…
+                    </option>
+                  )}
+                  {people.map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.name}
+                      {row.archivedAt ? " (archived)" : ""}
+                    </option>
+                  ))}
+                  <option value={NEW}>A new person…</option>
+                </NativeSelect>
+              </label>
+              {chosen === NEW && (
+                <label className="form-field" htmlFor="loan-name">
+                  Name
+                  <input
+                    id="loan-name"
+                    value={newName}
+                    maxLength={100}
+                    onChange={(event) => setNewName(event.target.value)}
+                  />
+                </label>
+              )}
+              <label className="form-field" htmlFor="loan-kind">
+                What happened
+                <NativeSelect
+                  id="loan-kind"
+                  value={kind}
+                  onChange={(event) =>
+                    setKind(event.target.value as LoanAction)
+                  }
+                >
+                  <option value="lend">I lent money</option>
+                  <option value="borrow">I borrowed money</option>
+                  <option value="opening">A loan I already had</option>
+                </NativeSelect>
+              </label>
+              <p className="muted">{hints(name || "them", owedToYou)[kind]}</p>
+            </>
+          )}
           {currencyChoices.length > 1 && (
             <label className="form-field" htmlFor="loan-currency">
               Currency
@@ -225,18 +316,16 @@ export function LoanDialog({
               </NativeSelect>
             </label>
           )}
-          {(mode === "repay" || mode === "forgive") && loan && (
+          {(kind === "repay" || kind === "forgive") && loan && (
             <p>
-              {owedToYou
-                ? `${client.name} owes you `
-                : `You owe ${client.name} `}
+              {owedToYou ? `${name} owes you ` : `You owe ${name} `}
               <Amount
                 value={Math.abs(balance)}
                 currency={loan.balance.currency}
               />
             </p>
           )}
-          {mode === "opening" && (
+          {kind === "opening" && (
             <label className="form-field" htmlFor="loan-direction">
               Who owes whom
               <NativeSelect
@@ -246,12 +335,12 @@ export function LoanDialog({
                   setDirection(event.target.value as "owedToMe" | "owedByMe")
                 }
               >
-                <option value="owedToMe">{client.name} owes me</option>
-                <option value="owedByMe">I owe {client.name}</option>
+                <option value="owedToMe">{name || "They"} owes me</option>
+                <option value="owedByMe">I owe {name || "them"}</option>
               </NativeSelect>
             </label>
           )}
-          {mode === "opening" && loan && (
+          {kind === "opening" && loan && (
             <p className="muted">
               This replaces the balance from before Ledgerline, currently{" "}
               <Amount
@@ -263,9 +352,9 @@ export function LoanDialog({
           )}
           {moves && (
             <label className="form-field" htmlFor="loan-account">
-              {mode === "lend"
+              {kind === "lend"
                 ? "Paid from"
-                : mode === "borrow"
+                : kind === "borrow"
                   ? "Received into"
                   : owedToYou
                     ? "Received into"
@@ -283,7 +372,7 @@ export function LoanDialog({
               </NativeSelect>
             </label>
           )}
-          {mode !== "forgive" && (
+          {kind !== "forgive" && (
             <label className="form-field" htmlFor="loan-amount">
               Amount ({effectiveCurrency})
               <AmountInput
@@ -296,7 +385,7 @@ export function LoanDialog({
               />
             </label>
           )}
-          {mode === "forgive" && (
+          {kind === "forgive" && (
             <div className="form-field">
               {categories.isError ? (
                 <p role="alert">Could not load categories.</p>
@@ -311,7 +400,7 @@ export function LoanDialog({
               )}
             </div>
           )}
-          {mode !== "opening" && (
+          {kind !== "opening" && (
             <label className="form-field" htmlFor="loan-date">
               Date
               <DateTimeInput
@@ -326,7 +415,7 @@ export function LoanDialog({
               />
             </label>
           )}
-          {mode !== "opening" && (
+          {kind !== "opening" && (
             <label className="form-field" htmlFor="loan-note">
               Note (optional)
               <input
@@ -355,13 +444,13 @@ export function LoanDialog({
           <button type="submit" className="button" disabled={busy}>
             {busy
               ? "Saving…"
-              : mode === "lend"
+              : kind === "lend"
                 ? "Lend"
-                : mode === "borrow"
+                : kind === "borrow"
                   ? "Borrow"
-                  : mode === "repay"
+                  : kind === "repay"
                     ? "Record repayment"
-                    : mode === "forgive"
+                    : kind === "forgive"
                       ? "Forgive"
                       : "Save existing loan"}
           </button>

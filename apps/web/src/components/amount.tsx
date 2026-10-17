@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { formatMoney } from "../accounts/money";
-import { PrivacyContext } from "../shell/preferences";
+import { formatMoney } from "../features/accounts/money";
+import { PrivacyContext } from "../features/shell/preferences";
 
 /** A money amount that follows privacy mode. */
 export function Amount({

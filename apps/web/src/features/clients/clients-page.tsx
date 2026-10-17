@@ -1,9 +1,5 @@
 import type { Contact, Receivable, ReceivableEvent } from "@ledgerline/shared";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import {
   Archive,
   ArchiveRestore,
@@ -19,12 +15,12 @@ import {
 import { useEffect, useState } from "react";
 import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { ActionButton } from "../../components/action-button";
+import { Amount } from "../../components/amount";
 import { BackToMore } from "../../components/back-to-more";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { formatTime12 } from "../../lib/time";
 import { localToday } from "../transactions/form";
-import { Amount } from "./amount";
 import {
   getClient,
   getClients,
@@ -32,9 +28,6 @@ import {
   getPayments,
   getServices,
 } from "./api";
-import { LoanDialog } from "./loan-dialog";
-import type { LoanAction } from "./loans-api";
-import { LoansSection, useLoans } from "./loans-section";
 import { useClientsWorkspace } from "./workspace";
 
 const labels: Record<ReceivableEvent["action"], string> = {
@@ -116,15 +109,6 @@ export function ClientsPage() {
       p.nextCursor && !params.includes(p.nextCursor) ? p.nextCursor : undefined,
     enabled: !!ledger && !!selected,
   });
-  const queryClient = useQueryClient();
-  const loans = useLoans(ledger?.id, selected);
-  const [loanMode, setLoanMode] = useState<LoanAction | null>(null);
-  const loanList = loans.data?.items ?? [];
-  const loanSaved = () => {
-    setLoanMode(null);
-    for (const key of ["loans", "contacts", "accounts", "home", "transactions"])
-      void queryClient.invalidateQueries({ queryKey: [key] });
-  };
   const writable = !!ledger && ledger.role !== "viewer",
     disabled = workspace?.blocked ?? false;
   const rows = clients.data?.pages.flatMap((p) => p.items) ?? [];
@@ -259,27 +243,6 @@ export function ClientsPage() {
                 )}
               </section>
             )
-          )}
-          {client.data && ledger && (
-            <LoansSection
-              ledgerId={ledger.id}
-              client={client.data}
-              loans={loanList}
-              writable={writable}
-              disabled={disabled || !!client.data.archivedAt}
-              onAction={setLoanMode}
-            />
-          )}
-          {loanMode && client.data && ledger && (
-            <LoanDialog
-              ledgerId={ledger.id}
-              client={client.data}
-              loans={loanList}
-              mode={loanMode}
-              returnFocusId={phone ? "loan-menu" : "main-content"}
-              onClose={() => setLoanMode(null)}
-              onSaved={loanSaved}
-            />
           )}
           <section aria-label="Services" className="client-section">
             <h2>Services</h2>

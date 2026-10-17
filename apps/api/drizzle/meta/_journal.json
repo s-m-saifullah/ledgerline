@@ -162,6 +162,13 @@
       "when": 1792223469419,
       "tag": "0022_client_balances",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792226046586,
+      "tag": "0023_contact_origin",
+      "breakpoints": true
     }
   ]
 }
