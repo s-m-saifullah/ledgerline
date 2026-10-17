@@ -11,7 +11,7 @@ Ledgerline is a self-hosted personal finance tracker: one place to record money 
 - Accounts (bank, cash, card, wallet, loan, savings) with computed balances.
 - Transactions, transfers between accounts and split transactions.
 - Your own categories and subcategories (create, rename, recolor, reorder, merge, archive, unarchive, delete), plus free-form tags.
-- Money owed to you: log unpaid services per client, record full or partial payments, see who owes what.
+- Money owed to you: log unpaid services per client, record full or partial payments, see who owes what. Money lent to or borrowed from a client is tracked as a running balance with transfers (ADR 0030).
 - Monthly budgets per category, with rollover.
 - Recurring transactions (rent, salary, subscriptions).
 - Dashboard and reports: spending by category, cash flow, net worth over time.

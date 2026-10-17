@@ -89,7 +89,11 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     refetchOnMount: "always",
   });
-  const items = accounts.data?.pages.flatMap((page) => page.items) ?? [];
+  // A client's balance account (ADR 0030) is managed from Clients, not listed here.
+  const items =
+    accounts.data?.pages
+      .flatMap((page) => page.items)
+      .filter((account) => !account.contactId) ?? [];
   const start = (
     intent:
       | { kind: "edit"; account?: Account }

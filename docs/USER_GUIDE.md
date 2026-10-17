@@ -69,6 +69,20 @@ Open **More, Clients** to add a client, log a service you provided (what, date, 
 
 If a client pays more than they owe, type what you received: Ledgerline settles what was owed and saves the extra as a **tip**, a separate income entry in the same account (choose a category for the tip; an income category named Tips is picked for you when it exists). A tip never changes what a client owes. When the account is in another currency, enter the tip in its own box. Deleting or undoing a payment removes its tip too; you can edit or delete a tip on its own from Transactions.
 
+## Lending and borrowing
+
+Open **More, Loans** to track money you lent to or borrowed from friends and family. It is separate from Clients, and these people do not appear there. The list shows each person with what they owe you or what you owe them, one balance per currency.
+
+Choose **Add loan**, pick the person (or add a new one), and say what happened: you lent money, you borrowed money, or it is a loan you already had. Open a person to act on their balance:
+
+- **Lend money** takes the amount out of one of your accounts and adds it to what they owe you. **Borrow money** does the opposite: the money arrives in one of your accounts and you owe them.
+- **Record repayment** follows the balance. When they owe you, the money comes back into an account you choose; when you owe them, it leaves one. You cannot repay more than what is open (lend or borrow instead).
+- **Forgive what is left** writes the open balance off. If you forgive them, it is an expense in a category you choose; if they forgive you, it is income in one. You can undo it from Transactions.
+- **Add an existing loan** records money that was lent or borrowed before you used Ledgerline. It sets the balance you start from and moves no money in any of your accounts. Choose it again later to change that starting balance.
+- **Rename** and **Archive** keep a person tidy; their balances and history are kept.
+
+Lending, borrowing and repaying are transfers, so they never count as income, spending or budgets. Home shows **Lent out** and **You owe** when they are not zero, and **Net worth** (on Accounts) includes them. The balance account kept for each person does not appear in your account lists, but every move shows under Transactions.
+
 ## Finding and fixing entries
 
 The Transactions screen groups entries by day, with filters that stay in the address bar. Edit or delete an entry from its details; a deleted entry can be restored with Undo. Deleting an account or category first requires deleting its connected transactions. Merging two categories moves everything from one to the other.

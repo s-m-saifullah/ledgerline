@@ -49,7 +49,8 @@ export async function getClients(
   cursor: string | null,
   signal?: AbortSignal,
 ) {
-  const q = new URLSearchParams({ status, limit: "50" });
+  // Clients leave out people who were only added for loans (ADR 0030).
+  const q = new URLSearchParams({ status, limit: "50", kind: "clients" });
   if (text) q.set("text", text);
   if (cursor) q.set("cursor", cursor);
   return contactListSchema.parse(

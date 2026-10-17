@@ -319,3 +319,43 @@ test("out-of-range converted balances fail rather than silently rounding money",
     /^Error: Home comparison exceeds the exact money range$/,
   );
 });
+
+test("client loan accounts count toward net worth and the lent and borrowed figures, not card and loan debts", () => {
+  const withLoans = [
+    ...accounts,
+    {
+      id: "c1",
+      type: "loan",
+      contactId: "sam",
+      balance: usd(30000),
+      archivedAt: null,
+    },
+    {
+      id: "c2",
+      type: "loan",
+      contactId: "alex",
+      balance: usd(-12000),
+      archivedAt: null,
+    },
+  ];
+  const fixture = {
+    baseCurrency: "USD",
+    monthStart: "2026-10-01",
+    monthEnd: "2026-10-31",
+    accounts: withLoans,
+    clients,
+    transactions,
+    home: {
+      ...home,
+      netWorth: usd(388725 + 30000 - 12000),
+      loans: { lent: usd(30000), borrowed: usd(12000) },
+    },
+  };
+  assert.deepEqual(compareHome(fixture), []);
+  fixture.home.loans = { lent: usd(30000), borrowed: usd(0) };
+  fixture.home.liabilitiesOwed = usd(51000);
+  assert.deepEqual(compareHome(fixture), [
+    "owed on cards and loans",
+    "borrowed from clients",
+  ]);
+});

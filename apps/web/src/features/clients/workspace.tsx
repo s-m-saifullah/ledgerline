@@ -648,22 +648,24 @@ export function ClientsWorkspace({
     if (!ledgerId) throw new Error("Choose a ledger.");
     const l = ledgerId;
     if (operation.kind === "contact") {
-      const body = createContactSchema.parse({
+      const fields = {
         name: values.name,
         phone: values.phone || null,
         email: values.email || null,
         note: values.note || null,
-      });
+      };
+      // Validate now; the plain fields are what is sent (an omitted origin means a client).
+      createContactSchema.parse(fields);
       const run = prepareClientWrite(
         l,
         operation.client ? `/contacts/${operation.client.id}` : "/contacts",
         operation.client ? "PATCH" : "POST",
         operation.client
           ? updateContactSchema.parse({
-              ...body,
+              ...fields,
               expectedVersion: operation.client.version,
             })
-          : body,
+          : fields,
       );
       return async () => {
         contactSchema.parse(await run());

@@ -24,6 +24,7 @@ import { CategoriesPage } from "./features/categories/categories-page";
 import { ClientsPage } from "./features/clients/clients-page";
 import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
+import { LoansPage } from "./features/loans/loans-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import { SettingsPage } from "./features/settings/settings-page";
 import {
@@ -184,6 +185,11 @@ const settings = createRoute({
   path: "/settings",
   component: SettingsPage,
 });
+const loans = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/loans",
+  component: LoansPage,
+});
 const router = createRouter({
   routeTree: rootRoute.addChildren([
     home,
@@ -196,6 +202,7 @@ const router = createRouter({
     currenciesRoute,
     recurring,
     clients,
+    loans,
     settings,
   ]),
 });

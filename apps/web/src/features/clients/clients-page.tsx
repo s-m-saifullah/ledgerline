@@ -12,15 +12,14 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { ActionButton } from "../../components/action-button";
+import { Amount } from "../../components/amount";
 import { BackToMore } from "../../components/back-to-more";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { formatTime12 } from "../../lib/time";
-import { formatMoney } from "../accounts/money";
-import { PrivacyContext } from "../shell/preferences";
 import { localToday } from "../transactions/form";
 import {
   getClient,
@@ -43,27 +42,6 @@ const labels: Record<ReceivableEvent["action"], string> = {
   paymentDeleted: "Payment deleted",
   paymentRestored: "Payment restored",
 };
-function Amount({
-  value,
-  currency = "USD",
-}: {
-  value: number;
-  currency?: string;
-}) {
-  const hidden = useContext(PrivacyContext);
-  return (
-    <span className="amount">
-      {hidden ? (
-        <>
-          <span aria-hidden="true">••••</span>
-          <span className="sr-only">Amount hidden</span>
-        </>
-      ) : (
-        formatMoney(value, currency)
-      )}
-    </span>
-  );
-}
 /** What a client owes: each currency's balance, then its value in dollars at today's rates. */
 function Balances({ client }: { client: Contact }) {
   if (!client.openBalances.length) return <Amount value={0} />;

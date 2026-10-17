@@ -15,6 +15,7 @@ import {
   Command,
   Eye,
   EyeOff,
+  HandCoins,
   Home,
   Layers,
   LogOut,
@@ -43,6 +44,7 @@ const moreArea = [
   "/currencies",
   "/recurring",
   "/clients",
+  "/loans",
   "/settings",
 ];
 const isActiveDestination = (to: string, pathname: string) =>
@@ -76,14 +78,16 @@ export function Shell({
         ? "Categories"
         : pathname === "/clients"
           ? "Clients"
-          : pathname === "/currencies"
-            ? "Currencies"
-            : pathname === "/recurring"
-              ? "Recurring"
-              : pathname === "/settings"
-                ? "Settings"
-                : (destinations.find(({ to }) => to === pathname)?.label ??
-                  "Home");
+          : pathname === "/loans"
+            ? "Loans"
+            : pathname === "/currencies"
+              ? "Currencies"
+              : pathname === "/recurring"
+                ? "Recurring"
+                : pathname === "/settings"
+                  ? "Settings"
+                  : (destinations.find(({ to }) => to === pathname)?.label ??
+                    "Home");
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -364,6 +368,11 @@ export function Shell({
                     icon: Wallet,
                   } as const,
                   {
+                    to: "/loans",
+                    label: "Loans",
+                    icon: HandCoins,
+                  } as const,
+                  {
                     to: "/settings",
                     label: "Settings",
                     icon: Settings,
@@ -621,6 +630,18 @@ export function MorePage() {
           <div>
             <h2>Clients</h2>
             <p>Track unpaid services, payments and money owed to you.</p>
+          </div>
+          <ChevronRight size={20} aria-hidden="true" />
+        </Link>
+      </section>
+      <section className="settings-card">
+        <Link to="/loans" className="settings-link">
+          <span className="account-icon">
+            <HandCoins size={22} />
+          </span>
+          <div>
+            <h2>Loans</h2>
+            <p>Money you lent to or borrowed from friends and family.</p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />
         </Link>

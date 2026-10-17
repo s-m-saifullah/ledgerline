@@ -12,6 +12,8 @@ import {
   account as credentials,
   ledgerMembers,
   ledgers,
+  receivableEvents,
+  receivables,
   session,
   transactions,
   user,
@@ -39,6 +41,7 @@ const ledgerId = newId(),
   ids = [ledgerId, other, foreign],
   users = [newId(), newId(), newId()];
 let cookie = "",
+  editor = "",
   accountId = "",
   expenseId = "",
   incomeId = "",
@@ -72,7 +75,11 @@ async function balance() {
 }
 async function clear() {
   await db.transaction(async (tx) => {
+    await tx
+      .delete(receivableEvents)
+      .where(inArray(receivableEvents.ledgerId, ids));
     await tx.delete(transactions).where(inArray(transactions.ledgerId, ids));
+    await tx.delete(receivables).where(inArray(receivables.ledgerId, ids));
     await tx.delete(accounts).where(inArray(accounts.ledgerId, ids));
     await tx.delete(contacts).where(inArray(contacts.ledgerId, ids));
   });
@@ -118,7 +125,7 @@ beforeAll(async () => {
       (Array.isArray(c) ? c : [c ?? ""]).map((v) => v.split(";")[0]).join("; "),
     );
   }
-  [cookie] = cookies as [string, string, string];
+  [cookie, editor] = cookies as [string, string, string];
 });
 beforeEach(async () => {
   await clear();
@@ -281,6 +288,90 @@ describe("lending and borrowing", () => {
     // Later money still adds to it.
     await move("repay", 500);
     expect(await owed()).toBe(-2000);
+  });
+  it("shows lent and borrowed money on Home without calling it a card or loan debt", async () => {
+    await move("lend", 300);
+    const other = (
+      await write("/contacts", { name: "Alex" })
+    ).json() as Contact;
+    await move("borrow", 120, {}, other);
+    const home = (await read("/home?month=2026-10")).json();
+    expect(home.loans.lent.amount).toBe(300);
+    expect(home.loans.borrowed.amount).toBe(120);
+    // Net worth counts both (1000 - 300 + 120 in the bank, +300 owed to you, -120 owed by you).
+    expect(home.netWorth.amount).toBe(1000);
+    expect(home.liabilitiesOwed.amount).toBe(0);
+    expect(home.inHand.amount).toBe(820);
+    expect(home.accounts.map((a: { name: string }) => a.name)).toEqual([
+      "Everyday",
+    ]);
+  });
+  it("lists the people you lend to, keeps them out of Clients, and keeps clients out of Loans", async () => {
+    const person = (
+      await write("/contacts", { name: "Pat", origin: "loan" })
+    ).json() as Contact;
+    expect(person.origin).toBe("loan");
+    expect(client.origin).toBe("client");
+    await move("lend", 300);
+    const people = (await read("/loans")).json().items as {
+      id: string;
+      balances: { balance: { amount: number } }[];
+    }[];
+    expect(people.map((p) => p.id).sort()).toEqual(
+      [client.id, person.id].sort(),
+    );
+    expect(
+      people.find((p) => p.id === client.id)?.balances[0]?.balance.amount,
+    ).toBe(300);
+    expect(people.find((p) => p.id === person.id)?.balances).toEqual([]);
+    // Clients show clients and people with services, not people added for loans.
+    const ids = async () =>
+      ((await read("/contacts?kind=clients")).json().items as Contact[]).map(
+        (c) => c.id,
+      );
+    expect(await ids()).toEqual([client.id]);
+    expect(((await read("/contacts")).json().items as Contact[]).length).toBe(
+      2,
+    );
+    const service = await write("/receivables", {
+      contactId: person.id,
+      description: "Website work",
+      serviceDate: "2026-10-07",
+      dueDate: null,
+      amount: money(5000),
+    });
+    expect(service.statusCode, service.body).toBe(201);
+    expect((await ids()).sort()).toEqual([client.id, person.id].sort());
+    // A plain client with no loan is not a loan person.
+    const plain = (await write("/contacts", { name: "Lee" })).json() as Contact;
+    expect(
+      ((await read("/loans")).json().items as { id: string }[]).some(
+        (p) => p.id === plain.id,
+      ),
+    ).toBe(false);
+  });
+  it("never lists another ledger's people", async () => {
+    await write(
+      "/contacts",
+      { name: "Elsewhere", origin: "loan" },
+      "POST",
+      cookie,
+      newId(),
+      other,
+    );
+    expect(((await read("/loans")).json().items as unknown[]).length).toBe(0);
+    const foreign = await app.inject({
+      url: `${base(other)}/loans`,
+      headers: { cookie: editor },
+    });
+    expect(foreign.statusCode).toBe(404);
+    const mine = await app.inject({
+      url: `${base(other)}/loans`,
+      headers: { cookie },
+    });
+    expect(
+      (mine.json().items as { name: string }[]).map((p) => p.name),
+    ).toEqual(["Elsewhere"]);
   });
   it("replays a retried write without moving money twice", async () => {
     const key = newId();

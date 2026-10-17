@@ -1,0 +1,2 @@
+ALTER TABLE "contacts" ADD COLUMN "origin" text DEFAULT 'client' NOT NULL;--> statement-breakpoint
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_origin_check" CHECK ("contacts"."origin" IN ('client', 'loan'));

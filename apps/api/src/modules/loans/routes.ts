@@ -1,11 +1,14 @@
 import {
   forgiveLoanSchema,
   idempotencyKeySchema,
+  ledgerParamsSchema,
   loanActionParamsSchema,
   loanListSchema,
   loanMoveSchema,
   loanOpeningSchema,
   loanParamsSchema,
+  loanPeopleQuerySchema,
+  loanPeopleSchema,
   loanResultSchema,
   problemSchema,
 } from "@ledgerline/shared";
@@ -18,7 +21,13 @@ import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
-import { forgiveLoan, listLoans, moveLoan, setLoanOpening } from "./service";
+import {
+  forgiveLoan,
+  listLoanPeople,
+  listLoans,
+  moveLoan,
+  setLoanOpening,
+} from "./service";
 
 const errors = {
   400: problemSchema,
@@ -57,6 +66,22 @@ export async function loanRoutes(
     if (!s) throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
     return s.user.id;
   }
+  app.get(
+    "/api/v1/ledgers/:ledgerId/loans",
+    {
+      schema: {
+        summary: "List the people you lend to or borrow from",
+        description:
+          "People added for loans or holding a loan balance, each with a balance per currency (positive: they owe you; negative: you owe them).",
+        tags: ["Clients"],
+        security: [{ sessionCookie: [] }],
+        params: ledgerParamsSchema,
+        querystring: loanPeopleQuerySchema,
+        response: { 200: loanPeopleSchema, ...errors },
+      },
+    },
+    async (r) => listLoanPeople(db, await actor(r), r.params.ledgerId, r.query),
+  );
   app.get(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/loans",
     {

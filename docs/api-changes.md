@@ -2,6 +2,14 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.34 — People you lend to or borrow from
+
+Migration 0023 (ADR 0030). Contacts gain `origin` (`client` or `loan`): `POST /contacts` accepts an optional `origin` (omitted means `client`) and every contact reads back its `origin`. `GET /contacts` gains `kind=all|clients` (default `all`): `clients` leaves out people who were added for loans and have no services. New `GET /ledgers/{ledgerId}/loans` lists everyone added for loans or holding a loan balance account, each with a balance per currency, with the usual `status`, `text`, `cursor` and `limit` filters.
+
+## 0.1.33 — Lent and borrowed money on Home
+
+`GET /ledgers/{ledgerId}/home` gains `loans: { lent, borrowed }` (USD, valued at the newest stored rates like account balances; `borrowed` is a non-negative amount): the sum of positive and of negative client balances (ADR 0030). Client balance accounts no longer count toward `liabilitiesOwed`, which stays about cards and loans you owe elsewhere. Net worth already included them. Older saved responses read as zero.
+
 ## 0.1.32 — Lending and borrowing (ADR 0030)
 
 Add `GET /api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans` (one running balance per currency: positive means the client owes you, negative means you owe the client) and `POST /api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/{action}` with action `lend`, `borrow`, `repay`, `forgive` or `opening`. Lend, borrow and repay take `{ accountId, amount, date, time?, note? }` and save an ordinary transfer between one of your accounts and the client's balance account (the amount's currency must be the account's); repay follows the balance's sign and cannot exceed what is open. `forgive` takes `{ currency, categoryId, date, note? }` and writes off the whole open balance as an expense (they owed you) or income (you owed them) entry. `opening` takes `{ amount, expectedVersion? }` and sets the balance before Ledgerline without moving money in any account; changing an existing one needs `expectedVersion`. Every write needs an `Idempotency-Key` and returns `{ balance, transferId, transactionId }`.

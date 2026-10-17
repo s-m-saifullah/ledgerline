@@ -5,7 +5,11 @@ import {
   moneySchema,
   versionSchema,
 } from "./contracts";
-import { contactParamsSchema, positiveMoneySchema } from "./receivables";
+import {
+  contactOriginSchema,
+  contactParamsSchema,
+  positiveMoneySchema,
+} from "./receivables";
 import { transactionDateSchema, transactionTimeSchema } from "./transactions";
 
 /** Money lent to or borrowed from a client (ADR 0030): one running balance per client and currency. */
@@ -51,6 +55,27 @@ export const loanResultSchema = z.object({
   transferId: idSchema.nullable(),
   transactionId: idSchema.nullable(),
 });
+// The people you lend to or borrow from, each with a balance per currency (ADR 0030).
+export const loanPeopleQuerySchema = z.object({
+  cursor: idSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  status: z.enum(["all", "active", "archived"]).default("all"),
+  text: z.string().trim().min(1).max(200).optional(),
+});
+export const loanPersonSchema = z.object({
+  id: idSchema,
+  name: z.string(),
+  origin: contactOriginSchema,
+  archivedAt: z.iso.datetime().nullable(),
+  version: versionSchema,
+  balances: z.array(loanBalanceSchema),
+});
+export const loanPeopleSchema = z.object({
+  items: z.array(loanPersonSchema),
+  nextCursor: idSchema.nullable(),
+});
+export type LoanPeopleQuery = z.infer<typeof loanPeopleQuerySchema>;
+export type LoanPerson = z.infer<typeof loanPersonSchema>;
 export type LoanMove = z.infer<typeof loanMoveSchema>;
 export type ForgiveLoan = z.infer<typeof forgiveLoanSchema>;
 export type LoanOpening = z.infer<typeof loanOpeningSchema>;

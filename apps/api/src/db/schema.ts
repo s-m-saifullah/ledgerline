@@ -786,12 +786,17 @@ export const contacts = pgTable(
     phone: text("phone"),
     email: text("email"),
     note: text("note"),
+    // Which screen created the person: Clients (services) or Loans (money lent or borrowed).
+    origin: text("origin", { enum: ["client", "loan"] })
+      .notNull()
+      .default("client"),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     version: integer("version").notNull().default(1),
     ...audit(),
   },
   (t) => [
     uniqueIndex("contacts_scope_idx").on(t.ledgerId, t.id),
+    check("contacts_origin_check", sql`${t.origin} IN ('client', 'loan')`),
     check(
       "contacts_fields_check",
       sql`char_length(btrim(${t.name})) between 1 and 100 AND char_length(${t.phone}) <= 100 AND char_length(${t.email}) <= 254 AND char_length(${t.note}) <= 2000`,
