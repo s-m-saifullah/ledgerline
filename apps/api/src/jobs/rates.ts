@@ -1,10 +1,10 @@
+import { localDate } from "@ledgerline/shared";
 import type { Database } from "../db/client";
 import type { RateFetcher } from "../modules/currencies/provider";
 import { currencyRepository } from "../modules/currencies/repo";
 import { refreshRates } from "../modules/currencies/service";
 import { listLedgerOwners } from "../modules/ledgers/repo";
 import { writeRepository } from "../modules/writes/repo";
-import { localDate } from "./local-date";
 import type { JobLog } from "./runner";
 
 /**

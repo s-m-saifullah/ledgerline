@@ -6,6 +6,7 @@ export * from "./budgets";
 export * from "./categories";
 export * from "./contracts";
 export * from "./currency";
+export * from "./dates";
 export * from "./transactions";
 
 export const newId = v7;

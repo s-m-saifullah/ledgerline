@@ -26,6 +26,7 @@ import { ApiError } from "../../lib/api";
 import { cleanAmountText, decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { rateSentence } from "../../lib/rate-format";
+import { localToday } from "../../lib/time";
 import { CategoryPicker } from "../categories/picker";
 import { EntryRate } from "../currencies/entry-rate";
 import { prepareTransactionUndo } from "./api";
@@ -36,7 +37,6 @@ import {
   amountMinor,
   isPositiveAmount,
   lastActiveAccount,
-  localToday,
   rememberAccount,
   transactionFormSchema,
 } from "./form";

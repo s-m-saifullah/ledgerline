@@ -42,12 +42,13 @@ import { ApiError } from "../../lib/api";
 import { decimalFromCents, formatMoney } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { rateSentence } from "../../lib/rate-format";
+import { localToday } from "../../lib/time";
 import { getCategories } from "../categories/api";
 import { CategoryPicker } from "../categories/picker";
 import { useBaseValues } from "../currencies/base-value";
 import { EntryRate } from "../currencies/entry-rate";
 import { getAllAccounts } from "../transactions/api";
-import { amountMinor, localToday } from "../transactions/form";
+import { amountMinor } from "../transactions/form";
 import {
   getAllClients,
   getClient,

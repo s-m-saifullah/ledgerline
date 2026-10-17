@@ -1,8 +1,8 @@
 import { type Account, newId } from "@ledgerline/shared";
 import { afterEach, expect, it } from "vitest";
+import { localToday } from "../../lib/time";
 import {
   lastActiveAccount,
-  localToday,
   rememberAccount,
   transactionBody,
   transactionDefaults,

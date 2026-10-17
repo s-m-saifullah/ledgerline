@@ -19,8 +19,7 @@ import { Amount } from "../../components/amount";
 import { BackToMore } from "../../components/back-to-more";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
-import { formatTime12 } from "../../lib/time";
-import { localToday } from "../transactions/form";
+import { formatTime12, localToday } from "../../lib/time";
 import {
   getClient,
   getClients,

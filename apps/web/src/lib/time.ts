@@ -1,3 +1,9 @@
+import { localDate } from "@ledgerline/shared";
+
+/** Today's date (YYYY-MM-DD) on this device's clock and time zone. */
+export function localToday(now = new Date()) {
+  return localDate(now, Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
 /** "14:05" becomes "2:05 PM". Values that are not a valid HH:mm time are returned unchanged. */
 export function formatTime12(value: string): string {
   const match = /^(\d{2}):(\d{2})$/.exec(value);

@@ -14,11 +14,11 @@ import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
+import { localToday } from "../../lib/time";
 import { getCategories } from "../categories/api";
 import { CategoryPicker } from "../categories/picker";
 import { useBaseValues } from "../currencies/base-value";
 import { getActiveAccounts } from "../transactions/api";
-import { localToday } from "../transactions/form";
 import {
   type LoanAction,
   prepareCreatePerson,
