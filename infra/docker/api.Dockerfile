@@ -1,6 +1,6 @@
 FROM node:24.21.0-bookworm-slim AS build
 WORKDIR /app
-RUN npm install --global pnpm@10.33.2
+RUN npm install --global pnpm@12.14.0
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @ledgerline/api build

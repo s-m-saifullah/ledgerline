@@ -25,7 +25,7 @@ Built so far: accounts, transactions, transfers and splits, money owed, monthly 
 
 ## Local development
 
-Requires Git, Node 24, pnpm, and Docker with Compose.
+Requires Git, Node 24, pnpm 12 (the exact version is pinned in `package.json`, and an older pnpm switches to it by itself) and Docker with Compose.
 
 ```bash
 pnpm install --frozen-lockfile
