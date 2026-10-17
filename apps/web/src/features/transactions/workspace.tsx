@@ -10,6 +10,7 @@ import {
 } from "react";
 import { EditorDialog } from "../../components/editor-dialog";
 import { Toast } from "../../components/toast";
+import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
 import { getCategories } from "../categories/api";
 import { CategoryMergeWorkspace } from "../categories/merge-workspace";
@@ -311,9 +312,8 @@ export function TransactionWorkspace({
               </EditorDialog>
             ))}
           {deleted && dismissedId === toastId && (
-            <button
-              type="button"
-              className="undo-pill"
+            <UndoPill
+              label="Undo last deletion"
               disabled={
                 undoBusy ||
                 quickAddLocked ||
@@ -322,10 +322,15 @@ export function TransactionWorkspace({
                 mergeLocked ||
                 !writable
               }
-              onClick={() => void undo()}
-            >
-              Undo last deletion
-            </button>
+              dismissDisabled={undoBusy || undoUncertain}
+              onUndo={() => void undo()}
+              onDismiss={() => {
+                setDeleted(null);
+                setNotice("");
+                setUndoError("");
+                attempt.current = null;
+              }}
+            />
           )}
           {(deleted || notice) && dismissedId !== toastId && (
             <Toast

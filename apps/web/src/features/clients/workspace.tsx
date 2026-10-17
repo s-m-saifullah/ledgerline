@@ -37,6 +37,7 @@ import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { Toast } from "../../components/toast";
+import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents, formatMoney } from "../accounts/money";
 import { getCategories } from "../categories/api";
@@ -1544,19 +1545,20 @@ export function ClientsWorkspace({
         </EditorDialog>
       )}
       {notice && !open && toastDone && undo && writable && (
-        <button
-          type="button"
-          className="undo-pill"
+        <UndoPill
+          label="Undo Client action"
           disabled={blocked || frozen}
-          onClick={() => {
+          onUndo={() => {
             const next = undo;
             setUndo(null);
             setNotice("");
             void begin(next, "main-content", false);
           }}
-        >
-          Undo Client action
-        </button>
+          onDismiss={() => {
+            setUndo(null);
+            setNotice("");
+          }}
+        />
       )}
       {notice && !open && !toastDone && (
         <Toast

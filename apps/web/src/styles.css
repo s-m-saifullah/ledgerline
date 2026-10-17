@@ -2437,14 +2437,42 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   right: 24px;
   bottom: 24px;
   z-index: 25;
+  display: flex;
+  align-items: center;
   min-height: 44px;
-  padding: 8px 16px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 4px 16px #0002;
   font-size: 13px;
+}
+.undo-pill-action {
+  min-height: 44px;
+  padding: 8px 4px 8px 16px;
+  border: 0;
+  border-radius: 999px 0 0 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.undo-pill-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 0 999px 999px 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.undo-pill-action:disabled,
+.undo-pill-dismiss:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 @media (max-width: 700px) {
   .undo-pill {
