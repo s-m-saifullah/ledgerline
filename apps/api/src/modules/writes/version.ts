@@ -1,7 +1,7 @@
 import { versionSchema } from "@ledgerline/shared";
 import { ApiProblem } from "../../lib/problem";
 
-export function versionConflict(): ApiProblem {
+function versionConflict(): ApiProblem {
   return new ApiProblem(
     409,
     "Conflict",

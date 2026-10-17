@@ -4,7 +4,7 @@ import { budgets } from "../../db/schema";
 
 export type BudgetRow = typeof budgets.$inferSelect;
 /** The database stores a month as its first day. */
-export const monthStart = (month: string) => `${month}-01`;
+const monthStart = (month: string) => `${month}-01`;
 
 export function budgetRepository(db: DatabaseConnection, ledgerId: string) {
   const scope = and(eq(budgets.ledgerId, ledgerId), isNull(budgets.deletedAt));

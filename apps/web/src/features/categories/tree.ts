@@ -1,7 +1,7 @@
 import type { Category, ReorderCategories } from "@ledgerline/shared";
 export const byOrder = (a: Category, b: Category) =>
   a.sortOrder - b.sortOrder || a.id.localeCompare(b.id);
-export function siblings(items: readonly Category[], category: Category) {
+function siblings(items: readonly Category[], category: Category) {
   return items
     .filter(
       (row) =>

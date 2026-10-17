@@ -51,7 +51,7 @@ export async function categoryMergeReferences(
     ),
   };
 }
-export type CategoryMergeReferences = Awaited<
+type CategoryMergeReferences = Awaited<
   ReturnType<typeof categoryMergeReferences>
 >;
 

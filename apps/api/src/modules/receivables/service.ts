@@ -51,7 +51,7 @@ function required<T>(row: T | undefined): T {
   return row;
 }
 const money = (amount: number, currency: string) => ({ amount, currency });
-export async function dto(
+async function dto(
   db: DatabaseConnection,
   ledgerId: string,
   row: ReceivableRow,
@@ -139,7 +139,7 @@ export function write(
     },
   );
 }
-export async function parent(
+async function parent(
   c: WriteContext,
   id: string,
   deleted = false,
@@ -697,9 +697,7 @@ export async function categoryMergePayments(
     ),
   };
 }
-export type CategoryMergePayments = Awaited<
-  ReturnType<typeof categoryMergePayments>
->;
+type CategoryMergePayments = Awaited<ReturnType<typeof categoryMergePayments>>;
 
 /** No public payment-edit bypass: this hook can change only the category of a live pair. */
 export async function mergeLinkedPaymentCategories(

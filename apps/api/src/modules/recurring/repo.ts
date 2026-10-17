@@ -8,7 +8,7 @@ export type NewRule = Omit<
   typeof recurringRules.$inferInsert,
   "id" | "ledgerId" | "version" | "createdAt" | "updatedAt" | "deletedAt"
 >;
-export type RuleChanges = Partial<NewRule>;
+type RuleChanges = Partial<NewRule>;
 
 export function recurringRepository(db: DatabaseConnection, ledgerId: string) {
   const rules = and(

@@ -1,4 +1,4 @@
-export type ProblemField = { field: string; message: string };
+type ProblemField = { field: string; message: string };
 
 export function problem(
   status: number,

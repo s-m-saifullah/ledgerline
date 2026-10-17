@@ -11,7 +11,8 @@ import {
   receivableSchema,
 } from "@ledgerline/shared";
 import { api, prepareFinancialWrite } from "../../lib/api";
-export const clientPath = (ledgerId: string) => `/ledgers/${ledgerId}`;
+
+const clientPath = (ledgerId: string) => `/ledgers/${ledgerId}`;
 export async function getClient(l: string, id: string) {
   return contactSchema.parse(await api(`${clientPath(l)}/contacts/${id}`));
 }
