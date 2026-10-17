@@ -142,7 +142,7 @@ async function addLoan(
     .click();
 }
 
-test("lend, repay and forgive keep exact balances, and an existing loan moves no money", async ({
+test("lend, repay and waive keep exact balances, and an existing loan moves no money", async ({
   page,
 }) => {
   await signIn(page);
@@ -163,7 +163,7 @@ test("lend, repay and forgive keep exact balances, and an existing loan moves no
   expect(await balance(page)).toBe(100000);
 
   // Lend 20.00 from Checking.
-  await loanAction(page, "Lend money to Sam");
+  await loanAction(page, "Lend money");
   await dialog(page)
     .getByLabel(/^Amount/)
     .fill("20.00");
@@ -209,13 +209,13 @@ test("lend, repay and forgive keep exact balances, and an existing loan moves no
   ).toBeVisible();
   await expect(page.locator(".client-card")).toHaveCount(0);
 
-  // Forgive the rest: it becomes an expense and the balance settles.
+  // Waive the rest: it becomes an expense and the balance settles.
   await page.goto("/loans");
   await page.locator(".client-card").filter({ hasText: "Sam" }).click();
-  await loanAction(page, "Forgive what is left");
+  await loanAction(page, "Waive what is left");
   await chooseCategory(dialog(page), "Expense category", "Bad debt");
   await dialog(page)
-    .getByRole("button", { name: "Forgive", exact: true })
+    .getByRole("button", { name: "Waive", exact: true })
     .click();
   await expect(balances(page)).toContainText("Settled");
   expect(await balance(page)).toBe(101000);
@@ -268,7 +268,7 @@ test("borrowing makes a negative balance that you repay, and a person can be ren
   ).toBeEnabled();
   await expect(
     page.getByRole("menuitem", {
-      name: "Borrow money from Samira",
+      name: "Borrow money",
       exact: true,
     }),
   ).toBeDisabled();

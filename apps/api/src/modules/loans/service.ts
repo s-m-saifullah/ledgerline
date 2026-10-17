@@ -1,5 +1,4 @@
 import {
-  type ForgiveLoan,
   type JsonValue,
   type LoanBalance,
   type LoanMove,
@@ -9,6 +8,7 @@ import {
   loanListSchema,
   loanPeopleSchema,
   loanResultSchema,
+  type WaiveLoan,
 } from "@ledgerline/shared";
 import { and, asc, gt, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Database, DatabaseConnection } from "../../db/client";
@@ -264,17 +264,17 @@ export function moveLoan(
   );
 }
 
-export function forgiveLoan(
+export function waiveLoan(
   db: Database,
   identity: WriteIdentity,
   contactId: string,
-  body: ForgiveLoan,
+  body: WaiveLoan,
 ) {
   return runFinancialWrite(
     db,
     {
       ...identity,
-      operation: `POST contacts/${contactId.toLowerCase()}/loans/forgive`,
+      operation: `POST contacts/${contactId.toLowerCase()}/loans/waive`,
       request: request(body),
     },
     async (context) => {
@@ -285,7 +285,7 @@ export function forgiveLoan(
       );
       if (!account) throw new ApiProblem(404, "Not found", "Loan not found.");
       const balance = await currentBalance(context, account);
-      if (balance === 0) throw conflict("There is nothing to forgive.");
+      if (balance === 0) throw conflict("There is nothing to waive.");
       // They owed you: you give it up (an expense). You owed them: they give it up (income).
       const entry = await createTransactionInContext(context, {
         accountId: account.id,

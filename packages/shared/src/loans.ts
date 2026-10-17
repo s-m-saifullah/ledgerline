@@ -15,7 +15,7 @@ import { transactionDateSchema, transactionTimeSchema } from "./transactions";
 /** Money lent to or borrowed from a client (ADR 0030): one running balance per client and currency. */
 export const loanParamsSchema = contactParamsSchema;
 export const loanActionParamsSchema = contactParamsSchema.extend({
-  action: z.enum(["lend", "borrow", "repay", "forgive", "opening"]),
+  action: z.enum(["lend", "borrow", "repay", "waive", "opening"]),
 });
 // Lend, borrow and repay all move money between one of your own accounts and the client's balance;
 // the amount's currency is the loan's currency and must be the account's currency too.
@@ -26,9 +26,9 @@ export const loanMoveSchema = z.strictObject({
   time: transactionTimeSchema.nullable().default(null),
   note: z.string().trim().max(2000).nullable().default(null),
 });
-// Forgiving writes off the whole open balance: an expense when the client owed you, income when
+// Waiving writes off the whole open balance: an expense when the client owed you, income when
 // you owed the client, in a category you choose.
-export const forgiveLoanSchema = z.strictObject({
+export const waiveLoanSchema = z.strictObject({
   currency: currencySchema,
   categoryId: idSchema,
   date: transactionDateSchema,
@@ -77,7 +77,7 @@ export const loanPeopleSchema = z.object({
 export type LoanPeopleQuery = z.infer<typeof loanPeopleQuerySchema>;
 export type LoanPerson = z.infer<typeof loanPersonSchema>;
 export type LoanMove = z.infer<typeof loanMoveSchema>;
-export type ForgiveLoan = z.infer<typeof forgiveLoanSchema>;
+export type WaiveLoan = z.infer<typeof waiveLoanSchema>;
 export type LoanOpening = z.infer<typeof loanOpeningSchema>;
 export type LoanBalance = z.infer<typeof loanBalanceSchema>;
 export type LoanResult = z.infer<typeof loanResultSchema>;
