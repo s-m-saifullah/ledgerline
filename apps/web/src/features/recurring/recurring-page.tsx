@@ -3,6 +3,7 @@ import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
 import { getCategories } from "../categories/api";
 import { Amount } from "../home/amount";
@@ -85,6 +86,7 @@ export function RecurringPage() {
   const ready = !!ledger && !!timeZone && !!accounts.data && !!categories.data;
   return (
     <>
+      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">MAKE IT YOURS</p>
         <h1 id="recurring-title" tabIndex={-1}>

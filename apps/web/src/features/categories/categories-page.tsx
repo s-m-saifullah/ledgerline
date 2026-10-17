@@ -1,7 +1,6 @@
 import type { Category, ledgerSchema } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import {
   Archive,
   ArchiveRestore,
@@ -17,6 +16,7 @@ import { useState } from "react";
 import type { z } from "zod";
 import { useIsPhone } from "../../components/action-bar";
 import { ActionMenu } from "../../components/action-menu";
+import { BackToMore } from "../../components/back-to-more";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
@@ -376,9 +376,7 @@ function LedgerCategories({
   };
   return (
     <>
-      <Link to="/more" className="accounts-back">
-        ← More
-      </Link>
+      <BackToMore />
       <div className="page-heading accounts-heading">
         <div>
           <p className="eyebrow">YOUR PERSONAL LEDGER</p>

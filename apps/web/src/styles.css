@@ -2680,13 +2680,13 @@ button.budget-line:hover {
 .check-text {
   line-height: 20px;
 }
-/* The "type amounts from the cents" row on More: the same box-and-text row as the budget checkbox. */
+/* A setting row on the Settings page: the same box-and-text row as the budget checkbox. */
 .amount-entry-toggle {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   min-height: 44px;
-  margin-top: 16px;
+  margin-top: 8px;
   font-size: 14px;
   font-weight: 400;
 }
@@ -2802,4 +2802,16 @@ button.budget-line:hover {
   font-size: 12px;
   line-height: 1.4;
   margin-top: 4px;
+}
+.settings-card .amount-entry-toggle + p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+/* The hours-at-a-rate result: close under the rate box, with room before its button. */
+.hourly-helper > p {
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
+.hourly-helper > button {
+  margin-bottom: 4px;
 }

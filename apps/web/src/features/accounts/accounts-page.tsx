@@ -5,7 +5,6 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import {
   Archive,
   Banknote,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 import { useContext, useState } from "react";
 import type { z } from "zod";
+import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
 import { getCategories } from "../categories/api";
@@ -134,9 +134,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
   };
   return (
     <>
-      <Link to="/more" className="accounts-back">
-        ← More
-      </Link>
+      <BackToMore />
       <div className="page-heading accounts-heading">
         <div>
           <p className="eyebrow">YOUR PERSONAL LEDGER</p>

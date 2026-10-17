@@ -1,4 +1,5 @@
 import { useContext } from "react";
+import { BackToMore } from "../../components/back-to-more";
 import { TimeZoneCard } from "../ledger/time-zone-card";
 import {
   AmountEntryContext,
@@ -12,6 +13,7 @@ export function SettingsPage() {
   const { centsFirst, setCentsFirst } = useContext(AmountEntryContext);
   return (
     <>
+      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">MAKE IT YOURS</p>
         <h1>Settings</h1>
