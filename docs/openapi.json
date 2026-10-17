@@ -23112,11 +23112,11 @@
     },
     "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/{action}": {
       "post": {
-        "summary": "Lend, borrow, repay, forgive or add an existing loan",
+        "summary": "Lend, borrow, repay, waive or add an existing loan",
         "tags": [
           "Clients"
         ],
-        "description": "Action is lend, borrow, repay, forgive or opening. Lend, borrow and repay save an ordinary transfer between one of your accounts and the client's balance account. Forgive writes off the whole open balance as an expense or income entry. Opening sets the balance before Ledgerline without moving money. Idempotency-Key required.",
+        "description": "Action is lend, borrow, repay, waive or opening. Lend, borrow and repay save an ordinary transfer between one of your accounts and the client's balance account. Waive writes off the whole open balance as an expense or income entry. Opening sets the balance before Ledgerline without moving money. Idempotency-Key required.",
         "requestBody": {
           "required": true,
           "content": {
@@ -23290,7 +23290,7 @@
                 "lend",
                 "borrow",
                 "repay",
-                "forgive",
+                "waive",
                 "opening"
               ]
             },

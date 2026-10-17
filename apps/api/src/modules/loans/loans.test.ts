@@ -150,7 +150,7 @@ beforeEach(async () => {
   });
   await db.insert(categories).values([
     { id: expenseId, ledgerId, name: "Bad debt", kind: "expense" },
-    { id: incomeId, ledgerId, name: "Debt forgiven", kind: "income" },
+    { id: incomeId, ledgerId, name: "Debt waived", kind: "income" },
   ]);
   const r = await write("/contacts", {
     name: "Sam",
@@ -225,23 +225,23 @@ describe("lending and borrowing", () => {
     expect(await owed()).toBe(0);
     expect(await balance()).toBe(1000);
   });
-  it("forgives what is left as an expense, or as income when you owed", async () => {
+  it("waives what is left as an expense, or as income when you owed", async () => {
     await move("lend", 300);
-    const forgive = (categoryId: string) =>
-      write(`/contacts/${client.id}/loans/forgive`, {
+    const waive = (categoryId: string) =>
+      write(`/contacts/${client.id}/loans/waive`, {
         currency: "USD",
         categoryId,
         date: "2026-10-08",
       });
-    expect((await forgive(incomeId)).statusCode).toBe(409);
-    const r = await forgive(expenseId);
+    expect((await waive(incomeId)).statusCode).toBe(409);
+    const r = await waive(expenseId);
     expect(r.statusCode, r.body).toBe(201);
     expect(await owed()).toBe(0);
     expect(await balance()).toBe(700);
-    expect((await forgive(expenseId)).statusCode).toBe(409);
+    expect((await waive(expenseId)).statusCode).toBe(409);
     await move("borrow", 100);
-    expect((await forgive(expenseId)).statusCode).toBe(409);
-    expect((await forgive(incomeId)).statusCode).toBe(201);
+    expect((await waive(expenseId)).statusCode).toBe(409);
+    expect((await waive(incomeId)).statusCode).toBe(201);
     expect(await owed()).toBe(0);
     const entries = await db
       .select()

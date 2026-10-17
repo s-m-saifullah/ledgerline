@@ -77,9 +77,10 @@ Choose **Add loan**, pick the person (or add a new one), and say what happened: 
 
 - **Lend money** takes the amount out of one of your accounts and adds it to what they owe you. **Borrow money** does the opposite: the money arrives in one of your accounts and you owe them.
 - **Record repayment** follows the balance. When they owe you, the money comes back into an account you choose; when you owe them, it leaves one. You cannot repay more than what is open (lend or borrow instead).
-- **Forgive what is left** writes the open balance off. If you forgive them, it is an expense in a category you choose; if they forgive you, it is income in one. You can undo it from Transactions.
-- **Add an existing loan** records money that was lent or borrowed before you used Ledgerline. It sets the balance you start from and moves no money in any of your accounts. Choose it again later to change that starting balance.
+- **Waive what is left** writes the open balance off. If they owed you, it is an expense in a category you choose; if you owed them, it is income in one. You can undo it from Transactions.
 - **Rename** and **Archive** keep a person tidy; their balances and history are kept.
+
+A loan you already had before using Ledgerline goes in through **Add loan**: choose **A loan I already had**. It sets the balance you start from and moves no money in any of your accounts. To change that starting balance later, choose **Add loan** again, pick the same person and **A loan I already had**.
 
 Lending, borrowing and repaying are transfers, so they never count as income, spending or budgets. Home shows **Lent out** and **You owe** when they are not zero, and **Net worth** (on Accounts) includes them. The balance account kept for each person does not appear in your account lists, but every move shows under Transactions.
 
