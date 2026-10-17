@@ -1,9 +1,9 @@
 packages:
   - apps/*
   - packages/*
-onlyBuiltDependencies:
-  - esbuild
-  - '@biomejs/biome'
+allowBuilds:
+  '@biomejs/biome': true
+  esbuild: true
 # esbuild comes in only through build and dev tools (drizzle-kit, tsup, tsx, vite). Keep every copy
 # on the patched release, including the ones pulled in as optional peers of better-auth.
 overrides:
