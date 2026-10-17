@@ -119,7 +119,7 @@ function Setup({
             : "This ledger has no accounts yet. Ask the ledger owner to add one."}
         </p>
         {writable && (
-          <Link to="/more/accounts" className="button home-accounts-link">
+          <Link to="/accounts" className="button home-accounts-link">
             Set up accounts
             <ArrowUpRight size={18} />
           </Link>
@@ -135,7 +135,7 @@ function Setup({
             : "Categories haven't been set up yet."}
         </p>
         {writable && (
-          <Link to="/more/categories" className="button secondary-button">
+          <Link to="/categories" className="button secondary-button">
             Set up categories
           </Link>
         )}
@@ -212,7 +212,7 @@ export function HomePage() {
                       ? "that account is"
                       : "those accounts are"}{" "}
                     left out of these totals.{" "}
-                    <Link to="/more/currencies">Add a rate</Link>
+                    <Link to="/currencies">Add a rate</Link>
                   </span>
                 )}
                 {data.pendingCount > 0 && (
@@ -242,7 +242,7 @@ export function HomePage() {
                   <span className="muted">Cleared spending in {label}</span>
                 </article>
                 <Link
-                  to="/more/clients"
+                  to="/clients"
                   className="stat-card home-link-card"
                   aria-label="Owed to you. Open Clients"
                 >
@@ -269,7 +269,7 @@ export function HomePage() {
               <section className="activity-card">
                 <div className="section-heading">
                   <h2>Accounts</h2>
-                  <Link to="/more/accounts" className="quiet-link">
+                  <Link to="/accounts" className="quiet-link">
                     Manage accounts
                   </Link>
                 </div>
@@ -281,7 +281,7 @@ export function HomePage() {
                 <ul className="home-list">
                   {data.accounts.map((row) => (
                     <li key={row.id}>
-                      <Link to="/more/accounts" className="home-account-row">
+                      <Link to="/accounts" className="home-account-row">
                         <span>
                           <strong>{row.name}</strong>
                           <span className="muted">
@@ -306,7 +306,7 @@ export function HomePage() {
                   ))}
                   {data.otherActive.count > 0 && (
                     <li>
-                      <Link to="/more/accounts" className="home-account-row">
+                      <Link to="/accounts" className="home-account-row">
                         <span>
                           <strong>
                             {data.otherActive.count} other{" "}
@@ -323,7 +323,7 @@ export function HomePage() {
                   )}
                   {data.archived.count > 0 && (
                     <li>
-                      <Link to="/more/accounts" className="home-account-row">
+                      <Link to="/accounts" className="home-account-row">
                         <span>
                           <strong>Archived accounts</strong>
                           <span className="muted">

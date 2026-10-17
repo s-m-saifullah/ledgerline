@@ -86,6 +86,7 @@ test("creates, retries, edits and archives real accounts with privacy and confli
   });
   await nav.getByRole("link", { name: "More", exact: true }).click();
   await page.getByRole("link", { name: /^Accounts/ }).click();
+  await expect(page).toHaveURL(/\/accounts$/);
   await expect(
     page.getByRole("heading", { name: "Accounts", exact: true }),
   ).toBeVisible();

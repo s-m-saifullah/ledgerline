@@ -110,7 +110,7 @@ test.afterEach(async () => {
 });
 test.afterAll(async () => pool.end());
 async function clients(page: Page) {
-  await page.goto("/more/clients");
+  await page.goto("/clients");
   await expect(
     page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();

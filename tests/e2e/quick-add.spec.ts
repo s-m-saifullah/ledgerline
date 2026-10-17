@@ -569,7 +569,7 @@ test("type amounts from the cents: the setting is saved and digits fill in from 
   page,
 }) => {
   await signIn(page);
-  await page.goto("/more");
+  await page.goto("/settings");
   const toggle = page.getByLabel("Type amounts from the cents", {
     exact: true,
   });
@@ -608,7 +608,7 @@ test("type amounts from the cents: the setting is saved and digits fill in from 
   ).toBeVisible();
   expect((await records())[0]).toMatchObject({ amount: "-4215" });
   // Turning it off brings the ordinary box back.
-  await page.goto("/more");
+  await page.goto("/settings");
   await page
     .getByLabel("Type amounts from the cents", { exact: true })
     .uncheck();

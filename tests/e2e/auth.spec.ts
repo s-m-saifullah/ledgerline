@@ -91,7 +91,7 @@ test("Appearance setting can return to the system theme", async ({ page }) => {
     .getByRole("button", { name: "Switch to dark theme", exact: true })
     .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.goto("/more");
+  await page.goto("/settings");
   const theme = page.getByRole("group", { name: "Theme" });
   await expect(theme.getByRole("radio", { name: "Dark" })).toBeChecked();
   await theme.getByRole("radio", { name: "System" }).check();

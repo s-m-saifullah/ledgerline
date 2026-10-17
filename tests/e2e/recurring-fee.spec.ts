@@ -108,7 +108,7 @@ test("a recurring transfer carries a fee that is worked out for each occurrence"
   page,
 }) => {
   await signIn(page);
-  await page.goto("/more/recurring");
+  await page.goto("/recurring");
   const start = new Date(Date.now() - 45 * 86_400_000)
     .toISOString()
     .slice(0, 10);

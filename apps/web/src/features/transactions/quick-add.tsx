@@ -536,7 +536,7 @@ export function QuickAddForm({
       !categoryAttempt.current ? (
         <div className="account-error transaction-setup">
           <p>Create an active account before recording entries.</p>
-          <Link to="/more/accounts" className="button" onClick={onDismiss}>
+          <Link to="/accounts" className="button" onClick={onDismiss}>
             Set up accounts
           </Link>
         </div>

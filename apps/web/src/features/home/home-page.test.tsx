@@ -196,7 +196,7 @@ describe("Home", () => {
     expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Owed to you/ })).toHaveAttribute(
       "href",
-      "/more/clients",
+      "/clients",
     );
     expect(screen.getByRole("link", { name: "View all" })).toHaveAttribute(
       "href",
@@ -261,7 +261,7 @@ describe("Home", () => {
     expect(missing).toHaveTextContent("JPY has no exchange rate yet");
     expect(
       within(missing).getByRole("link", { name: "Add a rate" }),
-    ).toHaveAttribute("href", "/more/currencies");
+    ).toHaveAttribute("href", "/currencies");
   });
 
   it("removes every amount from the page in privacy mode", async () => {
@@ -316,7 +316,7 @@ describe("Home", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Set up accounts" }),
-    ).toHaveAttribute("href", "/more/accounts");
+    ).toHaveAttribute("href", "/accounts");
     expect(screen.queryByText("In hand")).not.toBeInTheDocument();
   });
 
@@ -348,7 +348,7 @@ describe("Home", () => {
     ]);
     expect(
       await screen.findByRole("link", { name: "Set up categories" }),
-    ).toHaveAttribute("href", "/more/categories");
+    ).toHaveAttribute("href", "/categories");
     expect(
       screen.getByText("Use Add to record your first entry"),
     ).toBeInTheDocument();

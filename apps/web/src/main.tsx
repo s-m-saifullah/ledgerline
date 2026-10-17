@@ -25,9 +25,11 @@ import { ClientsPage } from "./features/clients/clients-page";
 import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
+import { SettingsPage } from "./features/settings/settings-page";
 import {
   AmountEntryContext,
   PrivacyContext,
+  PrivacyControlContext,
   ThemeContext,
   usePreferences,
 } from "./features/shell/preferences";
@@ -72,34 +74,41 @@ function Root() {
     );
   return (
     <PrivacyContext value={preferences.privateMode}>
-      <AmountEntryContext
+      <PrivacyControlContext
         value={{
-          centsFirst: preferences.centsFirst,
-          setCentsFirst: preferences.setCentsFirst,
+          privateMode: preferences.privateMode,
+          setPrivateMode: preferences.setPrivateMode,
         }}
       >
-        <ThemeContext
-          value={{ theme: preferences.theme, setTheme: preferences.setTheme }}
+        <AmountEntryContext
+          value={{
+            centsFirst: preferences.centsFirst,
+            setCentsFirst: preferences.setCentsFirst,
+          }}
         >
-          <Shell
-            key={session.data.user.id}
-            preferences={preferences}
-            session={session.data}
-            onSignOut={async () => {
-              await client.cancelQueries();
-              client.setQueryData(["session"], null);
-              client.removeQueries({ queryKey: ["ledgers"] });
-              client.removeQueries({ queryKey: ["accounts"] });
-              client.removeQueries({ queryKey: ["categories"] });
-              client.removeQueries({ queryKey: ["transactions"] });
-              client.removeQueries({ queryKey: ["home"] });
-              for (const key of ["contacts", "receivables", "clientHistory"])
-                client.removeQueries({ queryKey: [key] });
-              await router.navigate({ to: "/" });
-            }}
-          />
-        </ThemeContext>
-      </AmountEntryContext>
+          <ThemeContext
+            value={{ theme: preferences.theme, setTheme: preferences.setTheme }}
+          >
+            <Shell
+              key={session.data.user.id}
+              preferences={preferences}
+              session={session.data}
+              onSignOut={async () => {
+                await client.cancelQueries();
+                client.setQueryData(["session"], null);
+                client.removeQueries({ queryKey: ["ledgers"] });
+                client.removeQueries({ queryKey: ["accounts"] });
+                client.removeQueries({ queryKey: ["categories"] });
+                client.removeQueries({ queryKey: ["transactions"] });
+                client.removeQueries({ queryKey: ["home"] });
+                for (const key of ["contacts", "receivables", "clientHistory"])
+                  client.removeQueries({ queryKey: [key] });
+                await router.navigate({ to: "/" });
+              }}
+            />
+          </ThemeContext>
+        </AmountEntryContext>
+      </PrivacyControlContext>
     </PrivacyContext>
   );
 }
@@ -147,28 +156,33 @@ const more = createRoute({
 });
 const accounts = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/more/accounts",
+  path: "/accounts",
   component: AccountsPage,
 });
 const categories = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/more/categories",
+  path: "/categories",
   component: CategoriesPage,
 });
 const currenciesRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/more/currencies",
+  path: "/currencies",
   component: CurrenciesPage,
 });
 const recurring = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/more/recurring",
+  path: "/recurring",
   component: RecurringPage,
 });
 const clients = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/more/clients",
+  path: "/clients",
   component: ClientsPage,
+});
+const settings = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: SettingsPage,
 });
 const router = createRouter({
   routeTree: rootRoute.addChildren([
@@ -182,6 +196,7 @@ const router = createRouter({
     currenciesRoute,
     recurring,
     clients,
+    settings,
   ]),
 });
 declare module "@tanstack/react-router" {

@@ -115,7 +115,7 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
   await signIn(page);
 
   // 1. Set the euro rate by hand on the Currencies screen: 1 USD = 1.25 EUR, so 1 EUR = 0.80 USD.
-  await page.goto("/more/currencies");
+  await page.goto("/currencies");
   await expect(
     page.getByRole("heading", { name: "Currencies", exact: true }),
   ).toBeVisible();
@@ -126,7 +126,7 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
   await expect(page.locator(".topbar-page")).toHaveText("Currencies");
 
   // 2. Add a euro account; its card shows euros and today's value in dollars.
-  await page.goto("/more/accounts");
+  await page.goto("/accounts");
   await page
     .getByRole("button", { name: /Add (your first )?account/, exact: true })
     .click();

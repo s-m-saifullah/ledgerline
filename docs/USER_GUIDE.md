@@ -54,7 +54,7 @@ Open **Budgets** to plan spending month by month.
 
 ## Recurring entries
 
-For rent, salary, subscriptions and regular transfers, open **More, Recurring** and choose **Add a recurring entry**. First set your **time zone** under More (the Ledger card), so Ledgerline knows what today is for you.
+For rent, salary, subscriptions and regular transfers, open **More, Recurring** and choose **Add a recurring entry**. First set your **time zone** under **More, Settings** (the Ledger card), so Ledgerline knows what today is for you.
 
 1. Pick a name, the type (expense, income or transfer), the account, the amount and the category, then how often it repeats (every N days, weeks, months or years) and the date it starts. An end date is optional. The form shows the next dates before you save.
 2. On each date Ledgerline creates the entry for you, already counted, dated on that day. If the server was off or the start date is in the past, the missed ones are created too, one per date, and the form tells you how many are due before you save. Nothing is ever created twice, and an entry you delete is not created again.
@@ -79,7 +79,7 @@ The eye icon blurs every amount on screen. Ledgerline sends nothing to analytics
 
 ## Typing amounts from the cents
 
-In **More, Appearance & privacy**, switch on **Type amounts from the cents** to type amounts the way many banking apps do: type digits only and the decimal point stays in place, so 1, 2, 3 reads 1.23. Backspace removes the last digit, and typing into a box that already has an amount adds digits to the end of it. A pasted amount is read as usual. The setting is saved on the device you are using, so turn it on for each phone or computer. It applies to every box where you type money, but not to exchange rates, percentages or hours. With the setting off, money boxes accept only digits and one decimal point, with as many decimals as the currency has.
+In **More, Settings**, switch on **Type amounts from the cents** to type amounts the way many banking apps do: type digits only and the decimal point stays in place, so 1, 2, 3 reads 1.23. Backspace removes the last digit, and typing into a box that already has an amount adds digits to the end of it. A pasted amount is read as usual. The setting is saved on the device you are using, so turn it on for each phone or computer. It applies to every box where you type money, but not to exchange rates, percentages or hours. With the setting off, money boxes accept only digits and one decimal point, with as many decimals as the currency has.
 
 ## Keyboard
 
