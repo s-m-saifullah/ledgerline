@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.38 — CSV import
+
+Migration 0024 (ADR 0034): `import_batches` and a nullable `transactions.import_batch_id`. Four endpoints under a new `Imports` tag. The web app reads the CSV file itself, so these take mapped rows as JSON (at most 5,000 rows, bodies up to 4 MB) and no file is ever uploaded or kept: `POST /api/v1/ledgers/{ledgerId}/imports/preview` checks rows and saves nothing (each row is `ready`, `duplicate` or `problem` with a reason); `POST .../imports` (`Idempotency-Key`, owner/editor) saves them all as plain income or expense entries of one batch, all or nothing, with the failing line named in the error, and returns the batch and `duplicatesIncluded`; `GET .../imports` lists the 20 newest batches that were not undone with how many entries each still has; `POST .../imports/{batchId}/undo` (`expectedVersion`, `Idempotency-Key`) deletes whatever is left of the batch and retires it (`404` for a batch already undone, another ledger's batch or a non-member). Viewers can preview and list but not import or undo. An archived or client-balance account is `409`; another ledger's account or category is `404` (a `problem` row in the preview).
+
 ## 0.1.37 — CSV export
 
 No migration (ADR 0033). Three read-only downloads under a new `Exports` tag, each `200 text/csv` (UTF-8 with a byte-order mark): `GET /api/v1/ledgers/{ledgerId}/exports/transactions.csv` with the Transactions list filters (`accountId`, `categoryId`, `from`, `to`, `text`, `status`, `kind`; no paging), `.../exports/accounts.csv` and `.../exports/categories.csv`. The file is built while it is sent from one consistent snapshot and is never stored on the server; responses are `Cache-Control: no-store` attachments. Transactions are listed oldest first with positive decimal amounts in each currency's own digits and a `type` column for the direction; a transfer is one row, a split entry one row per line. Viewers can export; a ledger the caller is not a member of is `404`; an invalid filter is `400`.

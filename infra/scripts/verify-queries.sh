@@ -5,9 +5,9 @@
 # copy, so expectations always come from the same snapshot as the dump.
 
 # Checks that become manifest lines (check|name|value).
-VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans)
+VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans imports)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links)
 
 verify_requires() {
   case "$1" in
@@ -18,6 +18,7 @@ verify_requires() {
     receipts|receipt_contacts) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='receivable_payments' AND column_name='receipt_id')" ;;
     fees|fee_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='fee_transfer_id')" ;;
     tips|tip_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='tip_payment_id')" ;;
+    imports|import_links) echo "SELECT to_regclass('public.import_batches') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='import_batch_id')" ;;
     loans|loan_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts' AND column_name='contact_id')" ;;
     recurring|recurring_links) echo "SELECT to_regclass('public.recurring_rules') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL" ;;
     *) echo "SELECT false" ;;
@@ -64,6 +65,10 @@ verify_sql() {
     loan_links) echo "SELECT (SELECT count(*) FROM accounts a WHERE a.deleted_at IS NULL AND a.contact_id IS NOT NULL AND (a.type <> 'loan' OR NOT EXISTS (SELECT 1 FROM contacts c WHERE c.ledger_id=a.ledger_id AND c.id=a.contact_id AND c.deleted_at IS NULL))) + (SELECT count(*) FROM (SELECT 1 FROM accounts a WHERE a.deleted_at IS NULL AND a.contact_id IS NOT NULL GROUP BY a.ledger_id, a.contact_id, a.currency HAVING count(*) > 1) x)" ;;
     # Every tip is an income entry whose payment exists in the same ledger and, when that payment is deleted, is deleted too; a receipt has at most one tip.
     tip_links) echo "SELECT (SELECT count(*) FROM transactions t WHERE t.tip_payment_id IS NOT NULL AND (t.kind <> 'income' OR NOT EXISTS (SELECT 1 FROM receivable_payments p WHERE p.ledger_id=t.ledger_id AND p.id=t.tip_payment_id AND (p.deleted_at IS NULL OR t.deleted_at IS NOT NULL)))) + (SELECT count(*) FROM (SELECT p.ledger_id, p.receipt_id FROM transactions t JOIN receivable_payments p ON p.ledger_id=t.ledger_id AND p.id=t.tip_payment_id WHERE p.receipt_id IS NOT NULL GROUP BY 1, 2 HAVING count(*) > 1) x)" ;;
+    # CSV imports (ADR 0034): live and undone batches, and the live and deleted entries that belong to batches.
+    imports) echo "SELECT (SELECT count(*) FROM import_batches WHERE deleted_at IS NULL) || '|' || (SELECT count(*) FROM import_batches WHERE deleted_at IS NOT NULL) || '|' || (SELECT count(*) FROM transactions WHERE import_batch_id IS NOT NULL AND deleted_at IS NULL) || '|' || (SELECT count(*) FROM transactions WHERE import_batch_id IS NOT NULL AND deleted_at IS NOT NULL)" ;;
+    # Every batch entry has its batch in the same ledger; a batch holds exactly as many entries (live or deleted) as it recorded; an undone batch has no live entry left.
+    import_links) echo "SELECT (SELECT count(*) FROM transactions t WHERE t.import_batch_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM import_batches b WHERE b.ledger_id=t.ledger_id AND b.id=t.import_batch_id)) + (SELECT count(*) FROM import_batches b WHERE (SELECT count(*) FROM transactions t WHERE t.ledger_id=b.ledger_id AND t.import_batch_id=b.id) <> b.row_count OR (b.deleted_at IS NOT NULL AND EXISTS (SELECT 1 FROM transactions t WHERE t.ledger_id=b.ledger_id AND t.import_batch_id=b.id AND t.deleted_at IS NULL)))" ;;
     *) return 1 ;;
   esac
 }

@@ -199,6 +199,61 @@ export function transactionRepository(
         )
         .orderBy(asc(transactions.date), asc(transactions.id))
         .limit(limit),
+    /** Live entries of one account in a date range, for spotting duplicates before an import. */
+    importCandidates: (accountId: string, from: string, to: string) =>
+      db
+        .select({
+          id: transactions.id,
+          date: transactions.date,
+          amount: transactions.amount,
+        })
+        .from(transactions)
+        .where(
+          and(
+            scope,
+            eq(transactions.accountId, accountId),
+            gte(transactions.date, from),
+            lte(transactions.date, to),
+          ),
+        ),
+    /** Which of these ids are live entries of the ledger. */
+    existingIds: async (ids: string[]) =>
+      ids.length
+        ? (
+            await db
+              .select({ id: transactions.id })
+              .from(transactions)
+              .where(and(scope, inArray(transactions.id, ids)))
+          ).map((row) => row.id)
+        : [],
+    /** How many live entries each import still has. */
+    importCounts: (batchIds: string[]) =>
+      batchIds.length
+        ? db
+            .select({
+              batchId: transactions.importBatchId,
+              total: sql<string>`count(*)::text`,
+            })
+            .from(transactions)
+            .where(and(scope, inArray(transactions.importBatchId, batchIds)))
+            .groupBy(transactions.importBatchId)
+        : Promise.resolve([]),
+    /** The accounts that a batch's live entries are in now (an edit may have moved one). */
+    importAccounts: (batchId: string) =>
+      db
+        .selectDistinct({ accountId: transactions.accountId })
+        .from(transactions)
+        .where(and(scope, eq(transactions.importBatchId, batchId))),
+    /** Deletes every live entry of an import together. */
+    removeImported: (batchId: string, deletedAt: Date) =>
+      db
+        .update(transactions)
+        .set({
+          deletedAt,
+          version: sql`${transactions.version} + 1`,
+        })
+        .where(and(scope, eq(transactions.importBatchId, batchId)))
+        .returning({ id: transactions.id }),
     /** The receiving legs of transfers (account, amount and currency). */
     transferIncoming: (transferIds: string[]) =>
       transferIds.length
@@ -302,12 +357,17 @@ export function transactionRepository(
           ),
         )
         .returning(),
-    create: async (body: CreateTransaction, pricing: EntryPricing) =>
+    create: async (
+      body: CreateTransaction,
+      pricing: EntryPricing,
+      extra: { importBatchId?: string } = {},
+    ) =>
       (
         await db
           .insert(transactions)
           .values({
             ...body,
+            ...extra,
             ...(body.splits
               ? { createdAt: new Date(), updatedAt: new Date() }
               : {}),
