@@ -15,6 +15,7 @@ import {
   Command,
   Eye,
   EyeOff,
+  FileUp,
   HandCoins,
   Home,
   Layers,
@@ -45,6 +46,7 @@ const moreArea = [
   "/recurring",
   "/clients",
   "/loans",
+  "/import",
   "/settings",
 ];
 const isActiveDestination = (to: string, pathname: string) =>
@@ -80,14 +82,16 @@ export function Shell({
           ? "Clients"
           : pathname === "/loans"
             ? "Loans"
-            : pathname === "/currencies"
-              ? "Currencies"
-              : pathname === "/recurring"
-                ? "Recurring"
-                : pathname === "/settings"
-                  ? "Settings"
-                  : (destinations.find(({ to }) => to === pathname)?.label ??
-                    "Home");
+            : pathname === "/import"
+              ? "Import"
+              : pathname === "/currencies"
+                ? "Currencies"
+                : pathname === "/recurring"
+                  ? "Recurring"
+                  : pathname === "/settings"
+                    ? "Settings"
+                    : (destinations.find(({ to }) => to === pathname)?.label ??
+                      "Home");
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -373,6 +377,11 @@ export function Shell({
                     icon: HandCoins,
                   } as const,
                   {
+                    to: "/import",
+                    label: "Import from CSV",
+                    icon: FileUp,
+                  } as const,
+                  {
                     to: "/settings",
                     label: "Settings",
                     icon: Settings,
@@ -642,6 +651,18 @@ export function MorePage() {
           <div>
             <h2>Loans</h2>
             <p>Money you lent to or borrowed from friends and family.</p>
+          </div>
+          <ChevronRight size={20} aria-hidden="true" />
+        </Link>
+      </section>
+      <section className="settings-card">
+        <Link to="/import" className="settings-link">
+          <span className="account-icon">
+            <FileUp size={22} />
+          </span>
+          <div>
+            <h2>Import</h2>
+            <p>Bring in a bank statement or spreadsheet saved as CSV.</p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />
         </Link>

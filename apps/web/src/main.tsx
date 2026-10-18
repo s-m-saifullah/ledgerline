@@ -24,6 +24,7 @@ import { CategoriesPage } from "./features/categories/categories-page";
 import { ClientsPage } from "./features/clients/clients-page";
 import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
+import { ImportPage } from "./features/imports/import-page";
 import { InsightsPage } from "./features/insights/insights-page";
 import { LoansPage } from "./features/loans/loans-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
@@ -180,6 +181,11 @@ const settings = createRoute({
   path: "/settings",
   component: SettingsPage,
 });
+const importRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/import",
+  component: ImportPage,
+});
 const loans = createRoute({
   getParentRoute: () => rootRoute,
   path: "/loans",
@@ -198,6 +204,7 @@ const router = createRouter({
     recurring,
     clients,
     loans,
+    importRoute,
     settings,
   ]),
 });
