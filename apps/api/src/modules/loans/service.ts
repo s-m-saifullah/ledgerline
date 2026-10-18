@@ -7,6 +7,7 @@ import {
   loanListSchema,
   loanPeopleSchema,
   loanResultSchema,
+  type RemoveLoan,
   type WaiveLoan,
 } from "@ledgerline/shared";
 import type { Database, DatabaseConnection } from "../../db/client";
@@ -16,6 +17,7 @@ import {
   accountsForContact,
   createContactAccount,
   lockTransactionAccounts,
+  removeContactAccount,
   setContactAccountOpening,
 } from "../accounts/service";
 import {
@@ -354,6 +356,45 @@ export function setLoanOpening(
           transactionId: null,
         }) as JsonValue,
       };
+    },
+  );
+}
+
+/** Removes one currency's balance of a client, with its starting balance, once nothing else uses it. */
+export function removeLoan(
+  db: Database,
+  identity: WriteIdentity,
+  contactId: string,
+  accountId: string,
+  body: RemoveLoan,
+) {
+  return runFinancialWrite(
+    db,
+    {
+      ...identity,
+      operation: `DELETE contacts/${contactId.toLowerCase()}/loans/${accountId.toLowerCase()}`,
+      request: request(body),
+    },
+    async (context) => {
+      const [contact] = await lockContacts(context.tx, context.ledgerId, [
+        contactId,
+      ]);
+      if (!contact) throw new ApiProblem(404, "Not found", "Client not found.");
+      const account = (
+        await accountsForContact(context.tx, context.ledgerId, contact.id, true)
+      ).find((row) => row.id === accountId.toLowerCase());
+      if (!account) throw new ApiProblem(404, "Not found", "Loan not found.");
+      const version = nextVersion(account.version, body.expectedVersion);
+      requireVersionUpdate(
+        await removeContactAccount(
+          context.tx,
+          context.ledgerId,
+          account.id,
+          body.expectedVersion,
+          version,
+        ),
+      );
+      return { status: 204, body: null };
     },
   );
 }

@@ -1,4 +1,4 @@
-import type { LoanPerson } from "@ledgerline/shared";
+import type { LoanBalance, LoanPerson } from "@ledgerline/shared";
 import {
   useInfiniteQuery,
   useQuery,
@@ -27,6 +27,7 @@ import { LoanDialog } from "./loan-dialog";
 import { getLoanPeople, getPerson, type LoanAction } from "./loans-api";
 import { PersonLoans, useLoans } from "./loans-section";
 import { PersonDialog } from "./person-dialog";
+import { RemoveLoanDialog } from "./remove-loan-dialog";
 
 /** Each currency's balance for one person, in a short sentence. */
 function Summary({ person }: { person: LoanPerson }) {
@@ -70,6 +71,7 @@ export function LoansPage() {
     adding: boolean;
     editCurrency?: string;
   } | null>(null);
+  const [removing, setRemoving] = useState<LoanBalance | null>(null);
   const [personAction, setPersonAction] = useState<
     "rename" | "archive" | "unarchive" | null
   >(null);
@@ -254,6 +256,7 @@ export function LoansPage() {
                     personId={detail.id}
                     name={detail.name}
                     loans={loanList}
+                    onRemove={setRemoving}
                     onEdit={(editCurrency) =>
                       setDialog({
                         mode: "opening",
@@ -400,6 +403,19 @@ export function LoansPage() {
           onSaved={(personId) => {
             setDialog(null);
             setSelected(personId);
+            refresh();
+          }}
+        />
+      )}
+      {removing && detail && ledger && (
+        <RemoveLoanDialog
+          ledgerId={ledger.id}
+          person={{ id: detail.id, name: detail.name }}
+          loan={removing}
+          returnFocusId="main-content"
+          onClose={() => setRemoving(null)}
+          onRemoved={() => {
+            setRemoving(null);
             refresh();
           }}
         />

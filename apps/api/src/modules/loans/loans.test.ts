@@ -510,3 +510,160 @@ describe("lending and borrowing", () => {
     ).toHaveLength(1);
   });
 });
+
+describe("removing a loan", () => {
+  const remove = (
+    who: Contact,
+    id: string,
+    expectedVersion: number,
+    key = newId(),
+    actor = cookie,
+    ledger = ledgerId,
+  ) =>
+    write(
+      `/contacts/${who.id}/loans/${id}`,
+      { expectedVersion },
+      "DELETE",
+      actor,
+      key,
+      ledger,
+    );
+  const opening = (amount: number, extra: object = {}) =>
+    write(`/contacts/${client.id}/loans/opening`, {
+      amount: money(amount),
+      ...extra,
+    });
+
+  it("removes a loan that has only its starting balance, replays a retry, and lets it be added again", async () => {
+    expect((await opening(5000)).statusCode).toBe(200);
+    const loan = (await loans())[0];
+    const key = newId();
+    const first = await remove(client, loan?.accountId as string, 1, key);
+    expect(first.statusCode, first.body).toBe(204);
+    expect(
+      (await remove(client, loan?.accountId as string, 1, key)).statusCode,
+    ).toBe(204);
+    expect(await loans()).toHaveLength(0);
+    const home = (await read("/home?month=2026-10")).json();
+    expect(home.loans.lent.amount).toBe(0);
+    expect(home.netWorth.amount).toBe(1000);
+    // The person stays, and the same currency can be added again.
+    expect((await read(`/contacts/${client.id}`)).statusCode).toBe(200);
+    expect((await opening(700)).statusCode).toBe(200);
+    expect(await owed()).toBe(700);
+    expect(await balance()).toBe(1000);
+  });
+  it("refuses while entries still use the loan, then removes it once they are deleted", async () => {
+    await opening(5000);
+    const lent = (await move("lend", 300)).json() as LoanResult;
+    const loan = (await loans())[0];
+    const refused = await remove(client, loan?.accountId as string, 1);
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().detail).toContain("Delete them first");
+    expect(await loans()).toHaveLength(1);
+    expect(await balance()).toBe(700);
+    await write(`/contacts/${client.id}/loans/waive`, {
+      currency: "USD",
+      categoryId: expenseId,
+      date: "2026-10-08",
+    });
+    expect(
+      (await remove(client, loan?.accountId as string, 1)).statusCode,
+    ).toBe(409);
+    const waived = (
+      await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.ledgerId, ledgerId),
+            eq(transactions.kind, "expense"),
+          ),
+        )
+    )[0];
+    expect(
+      (
+        await write(
+          `/transactions/${waived?.id}`,
+          { expectedVersion: 1 },
+          "DELETE",
+        )
+      ).statusCode,
+    ).toBe(204);
+    expect(
+      (
+        await write(
+          `/transfers/${lent.transferId}`,
+          { expectedVersion: 1 },
+          "DELETE",
+        )
+      ).statusCode,
+    ).toBe(204);
+    expect(await balance()).toBe(1000);
+    const gone = await remove(client, loan?.accountId as string, 1);
+    expect(gone.statusCode, gone.body).toBe(204);
+    expect(await loans()).toHaveLength(0);
+  });
+  it("needs the current version and a loan of this client", async () => {
+    await opening(5000);
+    const loan = (await loans())[0];
+    expect(
+      (await remove(client, loan?.accountId as string, 7)).statusCode,
+    ).toBe(409);
+    const second = (
+      await write("/contacts", { name: "Pat" })
+    ).json() as Contact;
+    expect(
+      (await remove(second, loan?.accountId as string, 1)).statusCode,
+    ).toBe(404);
+    expect((await remove(client, newId(), 1)).statusCode).toBe(404);
+    expect(await loans()).toHaveLength(1);
+  });
+  it("never crosses ledgers, and needs write access and a session", async () => {
+    await opening(5000);
+    const loan = (await loans())[0];
+    const foreignClient = (
+      await write(
+        "/contacts",
+        { name: "Elsewhere" },
+        "POST",
+        cookie,
+        newId(),
+        other,
+      )
+    ).json() as Contact;
+    // Another ledger's client or this client's loan through another ledger: not found, nothing removed.
+    expect(
+      (await remove(foreignClient, loan?.accountId as string, 1)).statusCode,
+    ).toBe(404);
+    expect(
+      (
+        await remove(
+          client,
+          loan?.accountId as string,
+          1,
+          newId(),
+          cookie,
+          other,
+        )
+      ).statusCode,
+    ).toBe(404);
+    expect(
+      (await remove(client, loan?.accountId as string, 1, newId(), ""))
+        .statusCode,
+    ).toBe(401);
+    await db
+      .update(ledgerMembers)
+      .set({ role: "viewer" })
+      .where(
+        and(
+          eq(ledgerMembers.ledgerId, ledgerId),
+          eq(ledgerMembers.userId, users[0] as string),
+        ),
+      );
+    expect(
+      (await remove(client, loan?.accountId as string, 1)).statusCode,
+    ).toBe(403);
+    expect(await loans()).toHaveLength(1);
+  });
+});

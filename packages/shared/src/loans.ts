@@ -40,6 +40,14 @@ export const loanOpeningSchema = z.strictObject({
   amount: moneySchema,
   expectedVersion: versionSchema.optional(),
 });
+// Removing a loan deletes the client's balance account for one currency, with its starting balance.
+// It is refused while any entry still uses that balance; delete those entries first.
+export const removeLoanParamsSchema = contactParamsSchema.extend({
+  accountId: idSchema,
+});
+export const removeLoanSchema = z.strictObject({
+  expectedVersion: versionSchema,
+});
 export const loanBalanceSchema = z.object({
   accountId: idSchema,
   currency: currencySchema,
@@ -81,3 +89,5 @@ export type WaiveLoan = z.infer<typeof waiveLoanSchema>;
 export type LoanOpening = z.infer<typeof loanOpeningSchema>;
 export type LoanBalance = z.infer<typeof loanBalanceSchema>;
 export type LoanResult = z.infer<typeof loanResultSchema>;
+
+export type RemoveLoan = z.infer<typeof removeLoanSchema>;

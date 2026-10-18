@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.35 — Remove a loan
+
+No migration (ADR 0030). New `DELETE /api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/{accountId}` with body `{ expectedVersion }` and an `Idempotency-Key` (same-key retries replay `204`): soft-deletes one currency's balance account of a client, with its starting balance. It is refused with `409` while any active entry (lend, borrow, repayment, waiver, including pending ones) or recurring rule still uses the account, so a removal never changes the balance of any of your own accounts; delete those entries first. A stale version is `409`; a loan that is not this client's, or a client from another ledger, is `404`. The client stays, and the same currency can be added again afterwards.
+
 ## 0.1.34 — People you lend to or borrow from
 
 Migration 0023 (ADR 0030). Contacts gain `origin` (`client` or `loan`): `POST /contacts` accepts an optional `origin` (omitted means `client`) and every contact reads back its `origin`. `GET /contacts` gains `kind=all|clients` (default `all`): `clients` leaves out people who were added for loans and have no services. New `GET /ledgers/{ledgerId}/loans` lists everyone added for loans or holding a loan balance account, each with a balance per currency, with the usual `status`, `text`, `cursor` and `limit` filters.

@@ -411,3 +411,21 @@ export function renameContactAccounts(
 ) {
   return accountRepository(db, ledgerId).renameForContact(contactId, name);
 }
+/** Deletes a client's balance account once no entry uses it (ADR 0030). */
+export async function removeContactAccount(
+  db: DatabaseTransaction,
+  ledgerId: string,
+  id: string,
+  expectedVersion: number,
+  version: number,
+) {
+  await requireNoActiveTransactions(
+    db,
+    ledgerId,
+    "accountId",
+    id,
+    "This loan still has entries. Delete them first.",
+  );
+  await requireNoActiveRules(db, ledgerId, "accountId", id);
+  return accountRepository(db, ledgerId).remove(id, expectedVersion, version);
+}
