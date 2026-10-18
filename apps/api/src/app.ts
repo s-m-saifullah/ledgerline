@@ -32,6 +32,7 @@ import {
   type RateFetcher,
 } from "./modules/currencies/provider";
 import { currencyRoutes } from "./modules/currencies/routes";
+import { exportRoutes } from "./modules/exports/routes";
 import { homeRoutes } from "./modules/home/routes";
 import { ledgerRoutes } from "./modules/ledgers/routes";
 import { ledgerService } from "./modules/ledgers/service";
@@ -63,7 +64,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.36" },
+      info: { title: "Ledgerline API", version: "0.1.37" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -91,7 +92,20 @@ export async function buildApp(
         },
       },
     } as NonNullable<FastifyDynamicSwaggerOptions["openapi"]>, // Zod emits JSON Schema 2020-12, supported by OpenAPI 3.1.
-    transform: jsonSchemaTransform,
+    transform: (route) => {
+      const result = jsonSchemaTransform(route);
+      // CSV downloads are not JSON: describe the 200 response as text/csv.
+      const response = (
+        result.schema as { response?: Record<string, unknown> } | undefined
+      )?.response;
+      if (route.url.endsWith(".csv") && response?.["200"])
+        response["200"] = {
+          description: (response["200"] as { description?: string })
+            .description,
+          content: { "text/csv": { schema: { type: "string" } } },
+        };
+      return result;
+    },
   });
   const auth = createAuth(db, config);
   app.setErrorHandler<FastifyError>((error, request, reply) => {
@@ -310,5 +324,6 @@ export async function buildApp(
   await app.register(transferRoutes, { db, config, auth });
   await app.register(homeRoutes, { db, config, auth });
   await app.register(reportRoutes, { db, config, auth });
+  await app.register(exportRoutes, { db, config, auth });
   return app;
 }

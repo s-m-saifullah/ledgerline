@@ -7,6 +7,7 @@ export * from "./categories";
 export * from "./contracts";
 export * from "./currency";
 export * from "./dates";
+export * from "./exports";
 export * from "./transactions";
 
 export const newId = v7;
@@ -29,6 +30,20 @@ export function parseMinorUnits(value: string, decimals = 2): number {
   )
     throw new RangeError("Amount exceeds safe integer range");
   return Number(signed);
+}
+
+/** Decimal text for an integer in minor units ("1250" with 2 decimals is "12.50"), by integer math. */
+export function formatMinorUnits(amount: number, decimals = 2): string {
+  if (!Number.isSafeInteger(amount))
+    throw new RangeError("Amount must be a safe integer");
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 6)
+    throw new RangeError("Invalid decimal precision");
+  const units = BigInt(amount);
+  const magnitude = units < 0n ? -units : units;
+  const scale = 10n ** BigInt(decimals);
+  const whole = String(magnitude / scale);
+  const fraction = String(magnitude % scale).padStart(decimals, "0");
+  return `${units < 0n ? "-" : ""}${whole}${decimals ? `.${fraction}` : ""}`;
 }
 
 export function addMoney(a: Money, b: Money): Money {

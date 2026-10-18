@@ -1,7 +1,7 @@
 import type { DatabaseConnection } from "../../db/client";
 import { categoryRepository } from "./repo";
 
-/** Every non-deleted category with what a report needs to name and group it. */
+/** Every non-deleted category with what a report or an export needs to name and group it. */
 export async function categoryReportRows(
   db: DatabaseConnection,
   ledgerId: string,
@@ -11,6 +11,7 @@ export async function categoryReportRows(
     id: row.id,
     parentId: row.parentId,
     name: row.name,
+    kind: row.kind,
     color: row.color,
     archived: row.archivedAt !== null,
   }));
