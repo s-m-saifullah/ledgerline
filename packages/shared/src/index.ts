@@ -50,4 +50,5 @@ export * from "./loans";
 export * from "./receipts";
 export * from "./receivables";
 export * from "./recurring";
+export * from "./reports";
 export * from "./transfers";

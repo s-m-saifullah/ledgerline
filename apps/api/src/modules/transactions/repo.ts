@@ -341,6 +341,10 @@ export function transactionRepository(
           ),
         )
         .groupBy(transactions.kind),
+    /** Cleared income and expense base totals per YYYY-MM month (same rows as monthFlow). */
+    flowByMonth: (from: string, to: string) =>
+      db.execute<{ month: string; kind: string; total: string }>(sql`
+      select to_char(date,'YYYY-MM') as month,kind,sum(base_amount)::text as total from transactions where ledger_id=${ledgerId} and deleted_at is null and status='cleared' and kind in ('income','expense') and date between ${from}::date and ${to}::date group by 1,2`),
     pendingCount: async () =>
       Number(
         (
