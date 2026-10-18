@@ -35,7 +35,7 @@ Findings:
 | 5 | **Split the long components,** one per PR, starting with `ClientsWorkspace`, then `TransferForm`, `RuleEditor`, `LedgerCategories`, `QuickAddForm` and `clientRoutes` | Medium | Keep every browser spec green and check by eye at 320, 390 and desktop in light and dark |
 | 6 | **Remote branch cleanup** | Outward-facing | Only with the owner's explicit say-so; merged branches only |
 
-Steps 1 to 4 and 6 are done (2026-10-17, `v0.1.5` carried 1 to 4; step 6 deleted the 42 merged remote branches). Step 5 follows the release so the release does not carry refactors; it can start now.
+Steps 1 to 4 and 6 are done (2026-10-17, `v0.1.5` carried 1 to 4; step 6 deleted the 42 merged remote branches). Step 5 followed the release and is done (2026-10-17: `ClientsWorkspace`, `TransferForm`, `RuleEditor`, `LedgerCategories`, `QuickAddForm` and `clientRoutes`, one pull request each, each checked against before/after screenshots or the unchanged OpenAPI file). The plan is complete.
 
 ## Rules for every step
 
