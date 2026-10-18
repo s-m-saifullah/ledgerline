@@ -9,6 +9,7 @@ import { formatMoney } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { formatTime12 } from "../../lib/time";
 import { getCategories } from "../categories/api";
+import { ExportButton } from "../exports/export-button";
 import { getAllAccounts, getTransactions } from "./api";
 import {
   dayLabel,
@@ -222,6 +223,11 @@ export function TransactionsPage() {
         >
           Clear filters
         </button>
+        <ExportButton
+          ledgerId={ledger?.id}
+          filters={filters}
+          disabled={rangeInvalid}
+        />
         {(filterError || rangeInvalid) && (
           <p role="alert" className="field-error">
             {filterError || "Choose an end date on or after the start date."}
