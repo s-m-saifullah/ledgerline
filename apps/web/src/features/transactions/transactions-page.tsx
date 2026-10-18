@@ -224,12 +224,17 @@ export function TransactionsPage() {
         >
           Clear filters
         </button>
-        <ExportButton
-          ledgerId={ledger?.id}
-          filters={filters}
-          disabled={rangeInvalid}
-        />
-        <ImportLinks />
+        <details>
+          <summary>Import and export</summary>
+          <div className="transaction-data-tools">
+            <ExportButton
+              ledgerId={ledger?.id}
+              filters={filters}
+              disabled={rangeInvalid}
+            />
+            <ImportLinks />
+          </div>
+        </details>
         {(filterError || rangeInvalid) && (
           <p role="alert" className="field-error">
             {filterError || "Choose an end date on or after the start date."}
