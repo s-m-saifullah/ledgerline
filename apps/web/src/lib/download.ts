@@ -13,7 +13,12 @@ export async function downloadFile(path: string, fallbackName: string) {
     /filename="([^"\r\n]+)"/.exec(
       response.headers.get("content-disposition") ?? "",
     )?.[1] ?? fallbackName;
-  const url = URL.createObjectURL(await response.blob());
+  saveBlob(await response.blob(), name);
+}
+
+/** Saves a file through the browser from memory; the address is released a few seconds later. */
+export function saveBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
   try {
     const link = document.createElement("a");
     link.href = url;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCsv, unguardText } from "./csv-parse";
+import { detectDelimiter, parseCsv, unguardText } from "./csv-parse";
 
 describe("parseCsv", () => {
   it("reads plain, quoted and empty cells with CRLF or LF", () => {
@@ -41,5 +41,27 @@ describe("unguardText", () => {
     expect(unguardText("'quoted")).toBe("'quoted");
     expect(unguardText("it's")).toBe("it's");
     expect(unguardText("plain")).toBe("plain");
+  });
+});
+
+describe("delimiters", () => {
+  it("reads semicolon and tab separated files", () => {
+    expect(parseCsv("a;b\n1;2,5\n", ";")).toEqual([
+      ["a", "b"],
+      ["1", "2,5"],
+    ]);
+    expect(parseCsv("a\tb\n1\t2\n", "\t")).toEqual([
+      ["a", "b"],
+      ["1", "2"],
+    ]);
+  });
+  it("detects the delimiter from the first line, ignoring quoted text", () => {
+    expect(detectDelimiter("Date,Amount,Memo\n1,2,3\n")).toBe(",");
+    expect(detectDelimiter("Date;Amount;Memo\n1;2,5;3\n")).toBe(";");
+    expect(detectDelimiter("Date\tAmount\n")).toBe("\t");
+    expect(detectDelimiter('"a,b,c";x;y\n')).toBe(";");
+    expect(detectDelimiter("single\n")).toBe(",");
+    expect(detectDelimiter("")).toBe(",");
+    expect(detectDelimiter("\uFEFFa;b\n")).toBe(";");
   });
 });

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { DateTimeInput } from "../../components/date-time-input";
 import { getLedgers } from "../../lib/api";
+import { ImportLinks } from "../imports/import-links";
 import { DownloadMessage } from "./message";
 import { exportPath } from "./paths";
 import { useCsvDownload } from "./use-csv-download";
@@ -90,6 +91,11 @@ export function YourDataCard() {
       <p className="muted">
         These files hold your financial data. Keep them somewhere private.
       </p>
+      <h3 className="import-subheading">Bring data in</h3>
+      <p className="muted">
+        Add entries from a bank statement or spreadsheet saved as CSV.
+      </p>
+      <ImportLinks />
     </section>
   );
 }

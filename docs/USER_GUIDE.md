@@ -105,6 +105,17 @@ Your ledger can be downloaded as CSV files that open in Excel, Numbers or Google
 2. Amounts are plain numbers in each currency's own decimals, and the **type** column (income, expense, transfer) gives the direction. A transfer is one row; a split entry is one row per line. Fees and bonuses are ordinary rows.
 3. A file is made at the moment you download it and is never kept on the server. It holds your financial data, so store it somewhere private.
 
+## Importing a statement
+
+Use **Import from CSV** (on Transactions, in Settings under Your data, or More, Import) to add entries from a bank statement or a spreadsheet saved as CSV.
+
+1. **Template:** unsure how to lay a file out? **Download CSV template** sits next to the Import button and the file chooser. Fill it in and import it.
+2. **Choose a file and the account** to import into. The file is read in your browser; it is never sent to the server or stored. Only the entries you approve are saved.
+3. **Match your columns.** We guess from the column names and remember your choices for files with the same headers on this device. Say how dates are written, whether amounts are one signed column, an amount plus a type column, or separate money in and money out columns, and how numbers look (`1,234.56` or `1.234,56`). Files separated by semicolons or tabs work too.
+4. **Choose categories.** Every entry needs one of your categories. Names in the file that match yours are used automatically; for the rest, pick a category or a default for expenses and one for income. Categories are never created for you.
+5. **Review.** Rows that look like entries you already have (same account, date and amount, or the same entry id from an export) are listed as possible duplicates and left out unless you tick them. Rows that can't be read are listed with the reason. Transfers and split entries in an exported file can't be imported yet.
+6. **Import.** All the entries are saved together or not at all. **Undo this import** removes whatever is left of that import; it is also available later under Recent imports.
+
 ## Privacy
 
 The eye icon blurs every amount on screen. Ledgerline sends nothing to analytics or tracking services, and its logs never contain amounts, payees or notes.
