@@ -130,6 +130,11 @@ test("the template is offered next to the Import button and the file chooser", a
   page,
 }) => {
   await page.goto("/transactions");
+  // Hidden until the Import and export section is opened.
+  await expect(
+    page.getByRole("link", { name: "Import from CSV" }),
+  ).toBeHidden();
+  await page.getByText("Import and export", { exact: true }).click();
   await expect(
     page.getByRole("link", { name: "Import from CSV" }),
   ).toBeVisible();

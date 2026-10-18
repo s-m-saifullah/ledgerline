@@ -101,13 +101,13 @@ The Transactions screen groups entries by day, with filters that stay in the add
 
 Your ledger can be downloaded as CSV files that open in Excel, Numbers or Google Sheets.
 
-1. **Transactions:** use **Export as CSV** under the filters to save exactly the entries the screen is showing. Or open **More, Settings, Your data**, optionally choose a date range, and download every entry. **Download accounts** and **Download categories** save those lists.
+1. **Transactions:** open **Import and export** under the filters (it stays closed until you need it) and use **Export as CSV** to save exactly the entries the screen is showing. Or open **More, Settings, Your data**, optionally choose a date range, and download every entry. **Download accounts** and **Download categories** save those lists.
 2. Amounts are plain numbers in each currency's own decimals, and the **type** column (income, expense, transfer) gives the direction. A transfer is one row; a split entry is one row per line. Fees and bonuses are ordinary rows.
 3. A file is made at the moment you download it and is never kept on the server. It holds your financial data, so store it somewhere private.
 
 ## Importing a statement
 
-Use **Import from CSV** (on Transactions, in Settings under Your data, or More, Import) to add entries from a bank statement or a spreadsheet saved as CSV.
+Use **Import from CSV** (on Transactions under **Import and export**, in Settings under Your data, or More, Import) to add entries from a bank statement or a spreadsheet saved as CSV.
 
 1. **Template:** unsure how to lay a file out? **Download CSV template** sits next to the Import button and the file chooser. Fill it in and import it.
 2. **Choose a file and the account** to import into. The file is read in your browser; it is never sent to the server or stored. Only the entries you approve are saved.

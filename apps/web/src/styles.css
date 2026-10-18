@@ -3147,3 +3147,9 @@ button.budget-line:hover {
   padding: 0;
   border: 0;
 }
+.transaction-data-tools {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+  margin-top: 8px;
+}
