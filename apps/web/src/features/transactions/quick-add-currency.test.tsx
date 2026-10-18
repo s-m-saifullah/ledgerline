@@ -10,7 +10,7 @@ import {
   json,
   ledgerId,
 } from "../../test-support/category-fixtures";
-import { QuickAddForm } from "./quick-add";
+import { QuickAddForm } from "./quick-add-form";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to }: { children: ReactNode; to: string }) => (

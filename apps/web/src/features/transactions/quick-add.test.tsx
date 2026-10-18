@@ -12,7 +12,8 @@ import {
   ledgerId,
 } from "../../test-support/category-fixtures";
 import { rememberAccount } from "./form";
-import { QuickAdd, QuickAddForm } from "./quick-add";
+import { QuickAdd } from "./quick-add";
+import { QuickAddForm } from "./quick-add-form";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
