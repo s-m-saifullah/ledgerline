@@ -379,7 +379,7 @@ async function references(
   }
   return rows;
 }
-async function checkBalances(
+export async function checkBalances(
   context: WriteContext,
   rows: Awaited<ReturnType<typeof lockTransactionAccounts>>,
 ) {

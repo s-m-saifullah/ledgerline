@@ -313,6 +313,42 @@ export const categories = pgTable(
   ],
 );
 
+/** One CSV import: its entries point back at it so the whole batch can be undone (ADR 0034). */
+export const importBatches = pgTable(
+  "import_batches",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => user.id),
+    accountId: uuid("account_id").notNull(),
+    // The file's name only; the file's contents are never kept.
+    sourceName: text("source_name"),
+    rowCount: integer("row_count").notNull(),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    uniqueIndex("import_batches_scope_idx").on(table.ledgerId, table.id),
+    foreignKey({
+      name: "import_batches_scoped_account_fk",
+      columns: [table.ledgerId, table.accountId],
+      foreignColumns: [accounts.ledgerId, accounts.id],
+    }),
+    index("import_batches_ledger_created_idx").on(
+      table.ledgerId,
+      table.createdAt,
+    ),
+    check(
+      "import_batches_fields_check",
+      sql`${table.rowCount} BETWEEN 1 AND 5000 AND (${table.sourceName} IS NULL OR char_length(${table.sourceName}) BETWEEN 1 AND 200)`,
+    ),
+    check("import_batches_version_check", sql`${table.version} >= 1`),
+  ],
+);
 export const transactions = pgTable(
   "transactions",
   {
@@ -337,6 +373,8 @@ export const transactions = pgTable(
     feeTransferId: uuid("fee_transfer_id"),
     // The income entry a payment's tip created points back at that payment (ADR 0027).
     tipPaymentId: uuid("tip_payment_id"),
+    // The CSV import that created this entry, if any (ADR 0034).
+    importBatchId: uuid("import_batch_id"),
     receivablePaymentId: uuid("receivable_payment_id"),
     receivableId: uuid("receivable_id"),
     status: text("status")
@@ -415,6 +453,19 @@ export const transactions = pgTable(
     check(
       "transactions_tip_payment_check",
       sql`${table.tipPaymentId} IS NULL OR (${table.kind} = 'income' AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL AND ${table.relatedTransferId} IS NULL AND ${table.feeTransferId} IS NULL)`,
+    ),
+    foreignKey({
+      name: "transactions_scoped_import_batch_fk",
+      columns: [table.ledgerId, table.importBatchId],
+      foreignColumns: [importBatches.ledgerId, importBatches.id],
+    }),
+    index("transactions_ledger_import_batch_idx")
+      .on(table.ledgerId, table.importBatchId)
+      .where(sql`${table.importBatchId} IS NOT NULL`),
+    // An imported entry is a plain income or expense entry.
+    check(
+      "transactions_import_batch_check",
+      sql`${table.importBatchId} IS NULL OR (${table.kind} IN ('income', 'expense') AND ${table.transferId} IS NULL AND NOT ${table.isSplit} AND ${table.receivablePaymentId} IS NULL AND ${table.relatedTransferId} IS NULL AND ${table.feeTransferId} IS NULL AND ${table.tipPaymentId} IS NULL)`,
     ),
     index("transactions_ledger_date_id_idx").on(
       table.ledgerId,

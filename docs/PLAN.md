@@ -79,7 +79,8 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 | budgets | category_id, month, amount, rollover flag; carried-over amounts are computed, never stored |
 | currencies, exchange_rates | the currencies a ledger has added, and exact stored rates (fetched or set by hand) |
 | recurring_rules, recurring_runs | what to create and when, and what happened to each occurrence |
-| tags, goals, import_batches | later phases (no attachments, ADR 0031) |
+| import_batches | one CSV import and its entries (`transactions.import_batch_id`, ADR 0034) |
+| tags, goals | later phases (no attachments, ADR 0031) |
 
 **Rules every table follows**
 
@@ -112,7 +113,7 @@ Home, Transactions, Budgets, Insights and More, plus a central Add button (botto
 1. **Quick add:** Add, amount, category, Save, with Undo.
 2. **Transfer:** switch Add to Transfer and pick the two accounts.
 3. **Monthly review:** Budgets, open an over-budget category, recategorize or move budget.
-4. **CSV import:** upload, map columns (saved per source) or use the template, preview with duplicates flagged, confirm; the batch can be undone.
+4. **CSV import:** choose a file (it is read in the browser and never stored; ADR 0034), map columns (saved on the device) or use the template, preview with duplicates flagged, confirm; the batch can be undone.
 5. **First run:** create the owner account, add accounts with their balances, pick a starter category set, land on Home.
 
 ## Feature notes
