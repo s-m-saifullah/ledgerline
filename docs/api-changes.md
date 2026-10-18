@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.36 — Reports
+
+No migration (ADR 0032). Two read-only endpoints under a new `Reports` tag. `GET /api/v1/ledgers/{ledgerId}/reports/spending?month=YYYY-MM` returns the month's cleared spending in the base currency (frozen base amounts), top-level categories largest first with subcategories rolled up into the parent, each with its amount and a rounded share in basis points, plus the total. `GET /api/v1/ledgers/{ledgerId}/reports/cash-flow?to=YYYY-MM&months=N` (`months` 1 to 24, default 12) returns income, spending and net for each month ending at `to`, oldest first, with empty months as zeros. Both use the same rows as Home's money in and out (cleared income and expense entries; split entries by line; no transfers, pending or deleted entries). Viewers can read; a ledger the caller is not a member of is `404`; an invalid month or range is `400`; a total beyond the exact integer range is `409`.
+
 ## 0.1.35 — Remove a loan
 
 No migration (ADR 0030). New `DELETE /api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/{accountId}` with body `{ expectedVersion }` and an `Idempotency-Key` (same-key retries replay `204`): soft-deletes one currency's balance account of a client, with its starting balance. It is refused with `409` while any active entry (lend, borrow, repayment, waiver, including pending ones) or recurring rule still uses the account, so a removal never changes the balance of any of your own accounts; delete those entries first. A stale version is `409`; a loan that is not this client's, or a client from another ledger, is `404`. The client stays, and the same currency can be added again afterwards.
