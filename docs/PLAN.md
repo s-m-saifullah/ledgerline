@@ -18,7 +18,7 @@ Ledgerline is a self-hosted personal finance tracker: one place to record money 
 - CSV import and export.
 - Multi-currency: daily rates from a free API, a manual override on any rate, totals in one base currency.
 
-**v1 does not do** (kept out on purpose): automatic bank syncing, investment tracking, shared household budgets and receipt OCR. The data model leaves room for each.
+**v1 does not do** (kept out on purpose): automatic bank syncing, investment tracking, shared household budgets, receipt OCR and storing receipt images or other attached files (ADR 0031). The data model leaves room for the others.
 
 **Working assumptions:** one owner, with roles ready for an invited user later; data entered manually or by CSV.
 
@@ -79,7 +79,7 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 | budgets | category_id, month, amount, rollover flag; carried-over amounts are computed, never stored |
 | currencies, exchange_rates | the currencies a ledger has added, and exact stored rates (fetched or set by hand) |
 | recurring_rules, recurring_runs | what to create and when, and what happened to each occurrence |
-| tags, goals, attachments, import_batches | later phases |
+| tags, goals, import_batches | later phases (no attachments, ADR 0031) |
 
 **Rules every table follows**
 
@@ -159,7 +159,7 @@ Releases: a version tag runs the full checks, builds `linux/arm64` images, pushe
 | 0 Foundations | Monorepo, CI, Docker Compose, auth, design tokens, app shell, themes, first deploy | App shell live over HTTPS |
 | 1 Core ledger | Accounts, categories, transactions, transfers, splits, money owed, quick add, list, Clients, Home | Daily use for seven consecutive days |
 | 2 Budgets | Budgets with rollover, currencies, recurring rules (see [PHASE_2_PLAN.md](PHASE_2_PLAN.md)) | One full month budgeted and reviewed |
-| 3 Insights and import | Reports, tags and receipts, CSV import and export | Imported statements match the bank |
+| 3 Insights and import | Reports, tags, CSV import and export | Imported statements match the bank |
 | 4 Hardening | Two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility | Restore drill passes; v1.0 tagged |
 | 5 Android | Compose app, Room offline cache, background sync, biometric lock, signed APK | |
 | After v1.0 | User-selectable accent color; invite a second user | |
