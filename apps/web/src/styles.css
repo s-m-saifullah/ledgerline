@@ -2812,6 +2812,10 @@ button.budget-line:hover {
   display: inline;
   font-size: inherit;
 }
+.account-form .loan-replaces .amount {
+  display: inline;
+  font-size: inherit;
+}
 .client-section .loan-row > strong .amount {
   font-size: 18px;
 }

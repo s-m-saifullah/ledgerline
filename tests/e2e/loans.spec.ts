@@ -132,6 +132,37 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
   await expect(balances(page)).toContainText("Before Ledgerline");
   expect(await balance(page)).toBe(100000);
 
+  // A mistake in the starting balance can be fixed: flip it to "you owe 40.00", then back.
+  await balances(page)
+    .getByRole("button", {
+      name: "Change the balance from before Ledgerline (USD)",
+    })
+    .click();
+  await dialog(page).getByLabel("Who owes whom").selectOption("owedByMe");
+  await dialog(page)
+    .getByLabel(/^Amount/)
+    .fill("40.00");
+  await dialog(page)
+    .getByRole("button", { name: "Save existing loan" })
+    .click();
+  await expect(balances(page)).toContainText("You owe Sam");
+  await expect(balances(page)).toContainText("$40.00");
+  await balances(page)
+    .getByRole("button", {
+      name: "Change the balance from before Ledgerline (USD)",
+    })
+    .click();
+  await dialog(page).getByLabel("Who owes whom").selectOption("owedToMe");
+  await dialog(page)
+    .getByLabel(/^Amount/)
+    .fill("50.00");
+  await dialog(page)
+    .getByRole("button", { name: "Save existing loan" })
+    .click();
+  await expect(balances(page)).toContainText("Sam owes you");
+  await expect(balances(page)).toContainText("$50.00");
+  expect(await balance(page)).toBe(100000);
+
   // Lend 20.00 from Checking.
   await loanAction(page, "Lend money");
   await dialog(page)

@@ -14,6 +14,7 @@ import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
+import { decimalFromCents } from "../../lib/money";
 import { localToday } from "../../lib/time";
 import { getCategories } from "../categories/api";
 import { CategoryPicker } from "../categories/picker";
@@ -60,6 +61,7 @@ export function LoanDialog({
   people = [],
   loans: personLoans = [],
   mode,
+  editCurrency,
   returnFocusId,
   onClose,
   onSaved,
@@ -70,6 +72,8 @@ export function LoanDialog({
   people?: LoanPerson[];
   loans?: LoanBalance[];
   mode: LoanAction;
+  /** Change the balance from before Ledgerline in this currency (the currency stays fixed). */
+  editCurrency?: string | undefined;
   returnFocusId: string;
   onClose: () => void;
   onSaved: (personId: string) => void;
@@ -84,10 +88,15 @@ export function LoanDialog({
   const name = adding ? (picked?.name ?? newName.trim()) : person.name;
   const loans = adding ? (picked?.balances ?? []) : personLoans;
   const open = loans.filter((loan) => loan.balance.amount !== 0);
+  const editing = editCurrency
+    ? loans.find((row) => row.currency === editCurrency)
+    : undefined;
   const [currency, setCurrency] = useState(
-    mode === "repay" || mode === "waive"
-      ? (open[0]?.currency ?? values.baseCurrency)
-      : values.baseCurrency,
+    editing
+      ? editing.currency
+      : mode === "repay" || mode === "waive"
+        ? (open[0]?.currency ?? values.baseCurrency)
+        : values.baseCurrency,
   );
   const loan = loans.find((row) => row.currency === currency);
   const balance = loan?.balance.amount ?? 0;
@@ -104,9 +113,16 @@ export function LoanDialog({
     enabled: kind === "waive",
   });
   const [accountId, setAccountId] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(
+    editing
+      ? decimalFromCents(
+          Math.abs(editing.openingBalance.amount),
+          currencyDigits(editing.currency),
+        )
+      : "",
+  );
   const [direction, setDirection] = useState<"owedToMe" | "owedByMe">(
-    "owedToMe",
+    editing && editing.openingBalance.amount < 0 ? "owedByMe" : "owedToMe",
   );
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [date, setDate] = useState(localToday());
@@ -206,16 +222,23 @@ export function LoanDialog({
       setBusy(false);
     }
   };
-  const currencyChoices =
-    kind === "opening"
+  const currencyChoices = editing
+    ? []
+    : kind === "opening"
       ? values.currencies
       : kind === "repay" || kind === "waive"
         ? open.map((row) => row.currency)
         : [];
-  const title = adding ? "Add a loan" : titles(name)[kind];
-  const description = adding
-    ? "Record money you lent, money you borrowed, or a loan you already had."
-    : hints(name, owedToYou)[kind];
+  const title = editing
+    ? "Change the balance from before Ledgerline"
+    : adding
+      ? "Add a loan"
+      : titles(name)[kind];
+  const description = editing
+    ? `Fix the amount or who owes whom for ${name} (${editing.currency}). Nothing changes in any of your accounts.`
+    : adding
+      ? "Record money you lent, money you borrowed, or a loan you already had."
+      : hints(name, owedToYou)[kind];
   return (
     <EditorDialog
       open
@@ -341,10 +364,11 @@ export function LoanDialog({
             </label>
           )}
           {kind === "opening" && loan && (
-            <p className="muted">
+            <p className="muted loan-replaces">
               This replaces the balance from before Ledgerline, currently{" "}
+              {loan.openingBalance.amount < 0 ? "you owed " : "owed to you "}
               <Amount
-                value={loan.openingBalance.amount}
+                value={Math.abs(loan.openingBalance.amount)}
                 currency={loan.currency}
               />
               . Money you lend or repay later stays on top of it.

@@ -80,7 +80,7 @@ Choose **Add loan**, pick the person (or add a new one), and say what happened: 
 - **Waive what is left** writes the open balance off. If they owed you, it is an expense in a category you choose; if you owed them, it is income in one. You can undo it from Transactions.
 - **Rename** and **Archive** keep a person tidy; their balances and history are kept.
 
-A loan you already had before using Ledgerline goes in through **Add loan**: choose **A loan I already had**. It sets the balance you start from and moves no money in any of your accounts. To change that starting balance later, choose **Add loan** again, pick the same person and **A loan I already had**.
+A loan you already had before using Ledgerline goes in through **Add loan**: choose **A loan I already had**. It sets the balance you start from and moves no money in any of your accounts. If you made a mistake, open the person and press **Change** next to **Before Ledgerline**: you can fix the amount or who owes whom (the currency stays as it is; for a wrong currency, set this one to zero and add the loan again in the right currency).
 
 Lending, borrowing and repaying are transfers, so they never count as income, spending or budgets. Home shows **Lent out** and **You owe** when they are not zero, and **Net worth** (on Accounts) includes them. The balance account kept for each person does not appear in your account lists, but every move shows under Transactions.
 
