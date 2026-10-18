@@ -97,6 +97,14 @@ Lending, borrowing and repaying are transfers, so they never count as income, sp
 
 The Transactions screen groups entries by day, with filters that stay in the address bar. Edit or delete an entry from its details; a deleted entry can be restored with Undo. Deleting an account or category first requires deleting its connected transactions. Merging two categories moves everything from one to the other.
 
+## Exporting your data
+
+Your ledger can be downloaded as CSV files that open in Excel, Numbers or Google Sheets.
+
+1. **Transactions:** use **Export as CSV** under the filters to save exactly the entries the screen is showing. Or open **More, Settings, Your data**, optionally choose a date range, and download every entry. **Download accounts** and **Download categories** save those lists.
+2. Amounts are plain numbers in each currency's own decimals, and the **type** column (income, expense, transfer) gives the direction. A transfer is one row; a split entry is one row per line. Fees and bonuses are ordinary rows.
+3. A file is made at the moment you download it and is never kept on the server. It holds your financial data, so store it somewhere private.
+
 ## Privacy
 
 The eye icon blurs every amount on screen. Ledgerline sends nothing to analytics or tracking services, and its logs never contain amounts, payees or notes.

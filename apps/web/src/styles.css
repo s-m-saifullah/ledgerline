@@ -2989,3 +2989,26 @@ button.budget-line:hover {
   margin-top: 0;
   margin-bottom: 16px;
 }
+
+/* Exports */
+.export-inline {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+.export-hint {
+  margin: 0;
+  font-size: 12px;
+}
+.export-range {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}

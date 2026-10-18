@@ -16,6 +16,26 @@ export class ApiError extends Error {
   }
 }
 
+/** The error a failed response stands for: the API's own message when it sent one. */
+export async function apiError(response: Response) {
+  const result = problemSchema.safeParse(
+    await response.json().catch(() => null),
+  );
+  const message =
+    response.status === 429
+      ? "Too many attempts. Please wait a minute."
+      : result.success
+        ? result.data.detail
+        : response.status === 401
+          ? "Please sign in to continue."
+          : "We couldn't complete that request. Please try again.";
+  return new ApiError(
+    response.status,
+    message,
+    result.success ? result.data.errors : [],
+  );
+}
+
 export async function api<T>(
   path: string,
   options: RequestInit = {},
@@ -34,24 +54,7 @@ export async function api<T>(
     ...options,
     headers,
   });
-  if (!response.ok) {
-    const result = problemSchema.safeParse(
-      await response.json().catch(() => null),
-    );
-    const message =
-      response.status === 429
-        ? "Too many attempts. Please wait a minute."
-        : result.success
-          ? result.data.detail
-          : response.status === 401
-            ? "Please sign in to continue."
-            : "We couldn't complete that request. Please try again.";
-    throw new ApiError(
-      response.status,
-      message,
-      result.success ? result.data.errors : [],
-    );
-  }
+  if (!response.ok) throw await apiError(response);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }

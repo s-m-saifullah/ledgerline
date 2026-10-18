@@ -5,6 +5,7 @@ import {
   PrivacyControlContext,
   ThemeContext,
 } from "../../lib/preferences";
+import { YourDataCard } from "../exports/your-data-card";
 import { TimeZoneCard } from "../ledger/time-zone-card";
 
 export function SettingsPage() {
@@ -79,6 +80,7 @@ export function SettingsPage() {
         </p>
       </section>
       <TimeZoneCard />
+      <YourDataCard />
     </>
   );
 }
