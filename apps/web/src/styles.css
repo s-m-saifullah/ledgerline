@@ -2658,6 +2658,157 @@ button.budget-line:hover {
 .budget-over {
   color: var(--danger);
 }
+/* Insights */
+.insight-heading {
+  margin: 24px 0 12px;
+  font-size: 16px;
+}
+.insight-line {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 16px;
+  text-align: left;
+  color: var(--text);
+  font: inherit;
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.insight-line:hover {
+  border-color: var(--accent);
+}
+.insight-line-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.insight-line-detail {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.insight-line-top strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.insight-chevron {
+  flex-shrink: 0;
+  transition: transform 150ms;
+}
+.insight-chevron.open {
+  transform: rotate(180deg);
+}
+.insight-children {
+  list-style: none;
+  margin: 8px 0 0 16px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.flow-chart {
+  padding: 16px 12px 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+[data-privacy="true"] .flow-chart {
+  filter: blur(6px);
+}
+.flow-months {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+}
+.flow-month {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 0;
+  border-radius: 6px;
+}
+.flow-month.selected {
+  background: var(--accent-soft);
+}
+.flow-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  height: 120px;
+}
+.flow-bar {
+  display: block;
+  width: 40%;
+  max-width: 12px;
+  border-radius: 2px 2px 0 0;
+}
+.flow-in {
+  background: var(--accent);
+}
+.flow-out {
+  background: var(--muted);
+}
+.flow-label {
+  font-size: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+.flow-month.selected .flow-label {
+  color: var(--text);
+  font-weight: 600;
+}
+.flow-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+.flow-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border-radius: 2px;
+}
+.flow-legend .flow-key:first-child {
+  margin-left: 0;
+}
+.flow-summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+}
+.flow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.flow-table th,
+.flow-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.flow-table td,
+.flow-table thead th:not(:first-child) {
+  text-align: right;
+}
+.flow-table th {
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}
 .account-fields > .budget-rollover {
   display: flex;
   align-items: flex-start;

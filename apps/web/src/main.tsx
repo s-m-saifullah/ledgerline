@@ -14,7 +14,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { BarChart3, Layers } from "lucide-react";
+import { Layers } from "lucide-react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AccountsPage } from "./features/accounts/accounts-page";
@@ -24,6 +24,7 @@ import { CategoriesPage } from "./features/categories/categories-page";
 import { ClientsPage } from "./features/clients/clients-page";
 import { CurrenciesPage } from "./features/currencies/currencies-page";
 import { HomePage } from "./features/home/home-page";
+import { InsightsPage } from "./features/insights/insights-page";
 import { LoansPage } from "./features/loans/loans-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import { SettingsPage } from "./features/settings/settings-page";
@@ -142,13 +143,7 @@ const budgets = createRoute({
 const insights = createRoute({
   getParentRoute: () => rootRoute,
   path: "/insights",
-  component: () => (
-    <EmptyPage
-      title="Insights"
-      description="Reports and trends arrive in an upcoming update."
-      icon={BarChart3}
-    />
-  ),
+  component: InsightsPage,
 });
 const more = createRoute({
   getParentRoute: () => rootRoute,

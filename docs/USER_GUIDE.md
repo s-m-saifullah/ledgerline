@@ -31,6 +31,15 @@ Open **Budgets** to plan spending month by month.
 4. Turn on **carry over** for a category and what is left (or overspent, as a negative) moves into the next month. It is worked out from your entries each time, so editing an old entry or budget updates later months by itself.
 5. **Copy from last month** fills in a new month from the previous one. Amounts are hidden in privacy mode like everywhere else.
 
+## Insights
+
+Open **Insights** to see where a month's money went.
+
+1. Pick a month with the arrows. The top shows what you **spent**, then the money in and the net for that month.
+2. **Spending by category** lists the categories largest first, each with its share of the month's spending. A category with subcategories has an arrow: tap it to see the subcategories and anything spent in the category itself. Tap a category without subcategories, or a subcategory, to open its entries for that month in Transactions.
+3. **Money in and out** shows the 12 months up to the chosen month as bars (teal for money in, grey for spending). **Show the figures** lists the same numbers as a table.
+4. Only cleared entries count, in your base currency, split entries by line, with transfers left out. The month's money in and spending match Home's. Amounts are hidden in privacy mode like everywhere else.
+
 ## Other currencies
 
 1. Open **More, Currencies** and choose **Add a currency**. Ledgerline fetches today's rate; you can set a rate yourself on any date and it is kept, never replaced by a refresh. Rates read base-currency first: *1 USD = 0.89 EUR*.

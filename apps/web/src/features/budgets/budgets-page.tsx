@@ -1,14 +1,13 @@
 import type { BudgetLine } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Amount } from "../../components/amount-text";
+import { MonthSwitcher } from "../../components/month-switcher";
 import { getLedgers } from "../../lib/api";
-import { monthLabel, useCurrentMonth } from "../../lib/month";
+import { monthLabel, shiftMonth, useCurrentMonth } from "../../lib/month";
 import { getBudgetMonth, prepareBudgetCopy } from "./api";
 import { BudgetEditor } from "./budget-editor";
-import { shiftMonth } from "./month";
 
 /** How much of the month's allowance (budget plus carried-in) is used, capped to the bar. */
 export function usedShare(line: BudgetLine) {
@@ -149,27 +148,7 @@ export function BudgetsPage() {
         <h1 id="budgets-title" tabIndex={-1}>
           Budgets
         </h1>
-        <div className="month-switcher">
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Previous month"
-            onClick={() => setChosen(previous)}
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <p className="muted" aria-live="polite">
-            {monthLabel(month)}
-          </p>
-          <button
-            type="button"
-            className="icon-button"
-            aria-label="Next month"
-            onClick={() => setChosen(shiftMonth(month, 1))}
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
+        <MonthSwitcher month={month} onChange={setChosen} />
       </div>
       {(ledgers.isError || view.isError) && (
         <div className="account-error">
