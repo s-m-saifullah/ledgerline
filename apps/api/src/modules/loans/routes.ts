@@ -8,6 +8,8 @@ import {
   loanPeopleQuerySchema,
   loanPeopleSchema,
   loanResultSchema,
+  removeLoanParamsSchema,
+  removeLoanSchema,
   waiveLoanSchema,
 } from "@ledgerline/shared";
 import type { FastifyInstance } from "fastify";
@@ -23,6 +25,7 @@ import {
   listLoanPeople,
   listLoans,
   moveLoan,
+  removeLoan,
   setLoanOpening,
   waiveLoan,
 } from "./service";
@@ -134,5 +137,32 @@ export async function loanRoutes(
               );
       return sendFinancialWrite(reply, result);
     },
+  );
+  app.delete(
+    "/api/v1/ledgers/:ledgerId/contacts/:contactId/loans/:accountId",
+    {
+      schema: {
+        summary: "Remove a loan",
+        description:
+          "Soft-deletes a client's balance account for one currency, with its starting balance, so the loan disappears from the client, Home and net worth. Refused with 409 while any entry (lend, borrow, repayment, waiver) still uses it: delete those entries first. Requires expectedVersion. Idempotency-Key required; same-key retries replay 204.",
+        tags: ["Clients"],
+        security: [{ sessionCookie: [] }],
+        params: removeLoanParamsSchema,
+        headers: writeHeaders,
+        body: removeLoanSchema,
+        response: { 204: z.null(), ...errors },
+      },
+    },
+    async (r, reply) =>
+      sendFinancialWrite(
+        reply,
+        await removeLoan(
+          db,
+          await financialWriteIdentity(auth, config, r),
+          r.params.contactId,
+          r.params.accountId,
+          r.body,
+        ),
+      ),
   );
 }

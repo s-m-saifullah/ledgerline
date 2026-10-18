@@ -9,17 +9,14 @@ export async function requireNoActiveTransactions(
   ledgerId: string,
   field: "accountId" | "categoryId",
   id: string,
+  message = "Delete the connected transactions first, or archive this item to keep its history.",
 ) {
   if (
     (await transactionRepository(db, ledgerId).hasActiveReference(field, id)) ||
     (field === "categoryId" &&
       (await splitRepository(db, ledgerId).hasCategory(id)))
   )
-    throw new ApiProblem(
-      409,
-      "Conflict",
-      "Delete the connected transactions first, or archive this item to keep its history.",
-    );
+    throw new ApiProblem(409, "Conflict", message);
 }
 /** A recurring rule still using an account or category blocks deleting it (archiving stays possible). */
 export async function requireNoActiveRules(

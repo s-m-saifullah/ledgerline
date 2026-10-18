@@ -102,3 +102,15 @@ export function preparePersonChange(
         );
   return async () => contactSchema.parse(await run());
 }
+/** Removes one currency's balance of a person; refused (409) while entries still use it. */
+export function prepareRemoveLoan(
+  ledgerId: string,
+  personId: string,
+  loan: { accountId: string; version: number },
+) {
+  return prepareFinancialWrite<void>(
+    `${clientPath(ledgerId)}/contacts/${personId}/loans/${loan.accountId}`,
+    "DELETE",
+    { expectedVersion: loan.version },
+  );
+}

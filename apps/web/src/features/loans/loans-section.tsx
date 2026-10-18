@@ -18,7 +18,15 @@ export function useLoans(
   });
 }
 /** What one person owes you or you owe them, per currency (positive: they owe you). */
-function BalanceLines({ name, loans }: { name: string; loans: LoanBalance[] }) {
+function BalanceLines({
+  name,
+  loans,
+  onRemove,
+}: {
+  name: string;
+  loans: LoanBalance[];
+  onRemove: (loan: LoanBalance) => void;
+}) {
   return (
     <ul className="client-rows" aria-label="Loan balances">
       {loans.map((loan) => {
@@ -32,14 +40,25 @@ function BalanceLines({ name, loans }: { name: string; loans: LoanBalance[] }) {
                   ? `You owe ${name}`
                   : `Settled (${loan.currency})`}
             </span>
-            {amount !== 0 && (
-              <strong>
-                <Amount
-                  value={Math.abs(amount)}
-                  currency={loan.balance.currency}
-                />
-              </strong>
-            )}
+            <div className="loan-row-end">
+              {amount !== 0 && (
+                <strong>
+                  <Amount
+                    value={Math.abs(amount)}
+                    currency={loan.balance.currency}
+                  />
+                </strong>
+              )}
+              <button
+                type="button"
+                id={`loan-remove-${loan.currency}`}
+                className="secondary-button danger-action"
+                aria-label={`Remove the ${loan.currency} loan`}
+                onClick={() => onRemove(loan)}
+              >
+                Remove
+              </button>
+            </div>
           </li>
         );
       })}
@@ -53,12 +72,14 @@ export function PersonLoans({
   name,
   loans,
   onEdit,
+  onRemove,
 }: {
   ledgerId: string;
   personId: string;
   name: string;
   loans: LoanBalance[];
   onEdit: (currency: string) => void;
+  onRemove: (loan: LoanBalance) => void;
 }) {
   const ids = loans.map((loan) => loan.accountId);
   const activity = useQuery({
@@ -88,7 +109,7 @@ export function PersonLoans({
           add a loan you already had.
         </p>
       ) : (
-        <BalanceLines name={name} loans={loans} />
+        <BalanceLines name={name} loans={loans} onRemove={onRemove} />
       )}
       {before.length > 0 && (
         <>

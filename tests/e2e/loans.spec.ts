@@ -274,3 +274,51 @@ test("borrowing makes a negative balance that you repay, and a person can be ren
     }),
   ).toBeDisabled();
 });
+
+test("a loan can be removed while only its starting balance is left, and not while entries use it", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/loans");
+  await addLoan(page, "A loan I already had", "50.00");
+  await expect(balances(page)).toContainText("Sam owes you");
+
+  // A lend adds an entry, so the loan cannot be removed yet: the dialog lists its date only.
+  await loanAction(page, "Lend money");
+  await dialog(page)
+    .getByLabel(/^Amount/)
+    .fill("20.00");
+  await dialog(page).getByRole("button", { name: "Lend", exact: true }).click();
+  await expect(balances(page)).toContainText("$70.00");
+  await balances(page)
+    .getByRole("button", { name: "Remove the USD loan" })
+    .click();
+  const entries = dialog(page).getByRole("list", {
+    name: "Entries using this loan",
+  });
+  await expect(entries).toBeVisible();
+  await expect(entries.getByRole("listitem")).toHaveCount(1);
+  await expect(entries).toContainText(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(
+    dialog(page).getByRole("button", { name: "Remove loan" }),
+  ).toHaveCount(0);
+  await dialog(page)
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
+  await expect(balances(page)).toContainText("$70.00");
+  expect(await balance(page)).toBe(98000);
+});
+test("removing a loan with only a starting balance takes it away and moves no money", async ({
+  page,
+}) => {
+  await signIn(page);
+  await page.goto("/loans");
+  await addLoan(page, "A loan I already had", "50.00");
+  await expect(balances(page)).toContainText("$50.00");
+  await balances(page)
+    .getByRole("button", { name: "Remove the USD loan" })
+    .click();
+  await dialog(page).getByRole("button", { name: "Remove loan" }).click();
+  await expect(balances(page)).toContainText("Nothing lent or borrowed yet");
+  expect(await balance(page)).toBe(100000);
+});

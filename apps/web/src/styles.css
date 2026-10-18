@@ -2805,6 +2805,11 @@ button.budget-line:hover {
 .client-section .loan-row > .amount {
   font-size: 15px;
 }
+.loan-row-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .client-section .loan-note {
   margin: 8px 0 24px;
 }
