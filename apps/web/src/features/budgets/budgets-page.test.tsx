@@ -7,11 +7,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { currentMonth } from "../../lib/month";
+import { currentMonth, shiftMonth } from "../../lib/month";
 import { PrivacyContext } from "../../lib/preferences";
 import { parseBudgetAmount } from "./budget-editor";
 import { BudgetsPage, usedShare } from "./budgets-page";
-import { shiftMonth } from "./month";
 
 const ledgerId = newId();
 const usd = (amount: number) => ({ amount, currency: "USD" as const });
