@@ -60,6 +60,7 @@ function mount(
   mode: LoanAction,
   loans: LoanBalance[],
   adding: { people: LoanPerson[] } | null = null,
+  editCurrency?: string,
 ) {
   const writes: { url: string; body: Record<string, unknown> }[] = [];
   vi.stubGlobal(
@@ -101,6 +102,7 @@ function mount(
         people={adding?.people ?? []}
         loans={loans}
         mode={mode}
+        editCurrency={editCurrency}
         returnFocusId="main-content"
         onClose={() => {}}
         onSaved={saved}
@@ -200,6 +202,32 @@ describe("LoanDialog", () => {
     expect(writes[0]?.url).toContain(`/contacts/${client.id}/loans/opening`);
     expect(writes[0]?.body).toMatchObject({
       amount: { amount: 7500, currency: "USD" },
+      expectedVersion: 3,
+    });
+  });
+  it("opens prefilled to change the balance from before Ledgerline, with the currency fixed", async () => {
+    const before: LoanBalance = {
+      ...loan(5000),
+      openingBalance: { amount: -12550, currency: "USD" },
+    };
+    const { writes, saved } = mount("opening", [before], null, "USD");
+    expect(
+      screen.getByRole("heading", {
+        name: "Change the balance from before Ledgerline",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Currency")).toBeNull();
+    expect(screen.getByLabelText("Who owes whom")).toHaveValue("owedByMe");
+    expect(screen.getByLabelText(/Amount/)).toHaveValue("125.50");
+    await userEvent.selectOptions(screen.getByLabelText("Who owes whom"), [
+      "owedToMe",
+    ]);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save existing loan" }),
+    );
+    await waitFor(() => expect(saved).toHaveBeenCalled());
+    expect(writes[0]?.body).toMatchObject({
+      amount: { amount: 12550, currency: "USD" },
       expectedVersion: 3,
     });
   });

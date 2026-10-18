@@ -68,6 +68,7 @@ export function LoansPage() {
   const [dialog, setDialog] = useState<{
     mode: LoanAction;
     adding: boolean;
+    editCurrency?: string;
   } | null>(null);
   const [personAction, setPersonAction] = useState<
     "rename" | "archive" | "unarchive" | null
@@ -253,6 +254,13 @@ export function LoansPage() {
                     personId={detail.id}
                     name={detail.name}
                     loans={loanList}
+                    onEdit={(editCurrency) =>
+                      setDialog({
+                        mode: "opening",
+                        adding: false,
+                        editCurrency,
+                      })
+                    }
                   />
                 )}
               </>
@@ -378,12 +386,15 @@ export function LoansPage() {
           people={rows}
           loans={loanList}
           mode={dialog.mode}
+          editCurrency={dialog.editCurrency}
           returnFocusId={
             dialog.adding
               ? "add-loan"
-              : phone
-                ? "loan-person-menu"
-                : "loan-primary"
+              : dialog.editCurrency
+                ? `loan-edit-${dialog.editCurrency}`
+                : phone
+                  ? "loan-person-menu"
+                  : "loan-primary"
           }
           onClose={() => setDialog(null)}
           onSaved={(personId) => {

@@ -52,11 +52,13 @@ export function PersonLoans({
   personId,
   name,
   loans,
+  onEdit,
 }: {
   ledgerId: string;
   personId: string;
   name: string;
   loans: LoanBalance[];
+  onEdit: (currency: string) => void;
 }) {
   const ids = loans.map((loan) => loan.accountId);
   const activity = useQuery({
@@ -89,19 +91,36 @@ export function PersonLoans({
         <BalanceLines name={name} loans={loans} />
       )}
       {before.length > 0 && (
-        <p className="muted loan-note">
-          Before Ledgerline:{" "}
-          {before.map((loan, index) => (
-            <span key={loan.accountId}>
-              {index > 0 && ", "}
-              {loan.openingBalance.amount > 0 ? "owed to you " : "you owed "}
-              <Amount
-                value={Math.abs(loan.openingBalance.amount)}
-                currency={loan.openingBalance.currency}
-              />
-            </span>
-          ))}
-        </p>
+        <>
+          <h2>Before Ledgerline</h2>
+          <ul
+            className="client-rows"
+            aria-label="Balances from before Ledgerline"
+          >
+            {before.map((loan) => (
+              <li key={loan.accountId} className="loan-row">
+                <span>
+                  {loan.openingBalance.amount > 0
+                    ? "Owed to you "
+                    : "You owed "}
+                  <Amount
+                    value={Math.abs(loan.openingBalance.amount)}
+                    currency={loan.openingBalance.currency}
+                  />
+                </span>
+                <button
+                  type="button"
+                  id={`loan-edit-${loan.currency}`}
+                  className="secondary-button"
+                  aria-label={`Change the balance from before Ledgerline (${loan.currency})`}
+                  onClick={() => onEdit(loan.currency)}
+                >
+                  Change
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       {(activity.data?.length ?? 0) > 0 && (
         <>
