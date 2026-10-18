@@ -1,11 +1,14 @@
 import type {
   CreateTransaction,
+  ExportTransactionsQuery,
   TransactionListQuery,
 } from "@ledgerline/shared";
 import {
   and,
+  asc,
   desc,
   eq,
+  gt,
   gte,
   inArray,
   isNull,
@@ -147,6 +150,74 @@ export function transactionRepository(
         .orderBy(desc(transactions.date), desc(transactions.id))
         .limit(query.limit + 1);
     },
+    /**
+     * One page of an export, oldest first, with each transfer as its outgoing leg only. The
+     * filters mean what they mean on the list; an account filter also keeps a transfer that
+     * arrives in that account.
+     */
+    exportPage: (
+      query: ExportTransactionsQuery,
+      after: { date: string; id: string } | null,
+      limit: number,
+    ) =>
+      db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            scope,
+            sql`not (${transactions.kind} = 'transfer' and ${transactions.amount} > 0)`,
+            after
+              ? or(
+                  gt(transactions.date, after.date),
+                  and(
+                    eq(transactions.date, after.date),
+                    gt(transactions.id, after.id),
+                  ),
+                )
+              : undefined,
+            query.accountId
+              ? or(
+                  eq(transactions.accountId, query.accountId),
+                  sql`(${transactions.kind} = 'transfer' and exists (select 1 from transactions i where i.ledger_id = ${ledgerId} and i.transfer_id = ${transactions.transferId} and i.amount > 0 and i.deleted_at is null and i.account_id = ${query.accountId}))`,
+                )
+              : undefined,
+            query.categoryId
+              ? or(
+                  eq(transactions.categoryId, query.categoryId),
+                  sql`exists (select 1 from ${transactionSplits} where ${transactionSplits.ledgerId} = ${transactions.ledgerId} and ${transactionSplits.transactionId} = ${transactions.id} and ${transactionSplits.categoryId} = ${query.categoryId} and ${transactionSplits.deletedAt} is null)`,
+                )
+              : undefined,
+            query.from ? gte(transactions.date, query.from) : undefined,
+            query.to ? lte(transactions.date, query.to) : undefined,
+            query.status ? eq(transactions.status, query.status) : undefined,
+            query.kind ? eq(transactions.kind, query.kind) : undefined,
+            query.text
+              ? sql`(strpos(lower(coalesce(${transactions.payee}, '')), lower(${query.text})) > 0 OR strpos(lower(coalesce(${transactions.note}, '')), lower(${query.text})) > 0)`
+              : undefined,
+          ),
+        )
+        .orderBy(asc(transactions.date), asc(transactions.id))
+        .limit(limit),
+    /** The receiving legs of transfers (account, amount and currency). */
+    transferIncoming: (transferIds: string[]) =>
+      transferIds.length
+        ? db
+            .select({
+              transferId: transactions.transferId,
+              accountId: transactions.accountId,
+              amount: transactions.amount,
+              currency: transactions.currency,
+            })
+            .from(transactions)
+            .where(
+              and(
+                scope,
+                inArray(transactions.transferId, transferIds),
+                sql`${transactions.amount} > 0`,
+              ),
+            )
+        : Promise.resolve([]),
     find: async (id: string, lock = false, includeDeleted = false) => {
       const query = db
         .select()

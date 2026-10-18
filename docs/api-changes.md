@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.37 — CSV export
+
+No migration (ADR 0033). Three read-only downloads under a new `Exports` tag, each `200 text/csv` (UTF-8 with a byte-order mark): `GET /api/v1/ledgers/{ledgerId}/exports/transactions.csv` with the Transactions list filters (`accountId`, `categoryId`, `from`, `to`, `text`, `status`, `kind`; no paging), `.../exports/accounts.csv` and `.../exports/categories.csv`. The file is built while it is sent from one consistent snapshot and is never stored on the server; responses are `Cache-Control: no-store` attachments. Transactions are listed oldest first with positive decimal amounts in each currency's own digits and a `type` column for the direction; a transfer is one row, a split entry one row per line. Viewers can export; a ledger the caller is not a member of is `404`; an invalid filter is `400`.
+
 ## 0.1.36 — Reports
 
 No migration (ADR 0032). Two read-only endpoints under a new `Reports` tag. `GET /api/v1/ledgers/{ledgerId}/reports/spending?month=YYYY-MM` returns the month's cleared spending in the base currency (frozen base amounts), top-level categories largest first with subcategories rolled up into the parent, each with its amount and a rounded share in basis points, plus the total. `GET /api/v1/ledgers/{ledgerId}/reports/cash-flow?to=YYYY-MM&months=N` (`months` 1 to 24, default 12) returns income, spending and net for each month ending at `to`, oldest first, with empty months as zeros. Both use the same rows as Home's money in and out (cleared income and expense entries; split entries by line; no transfers, pending or deleted entries). Viewers can read; a ledger the caller is not a member of is `404`; an invalid month or range is `400`; a total beyond the exact integer range is `409`.

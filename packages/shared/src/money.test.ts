@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addMoney,
+  formatMinorUnits,
   idSchema,
   isoDate,
   moneySchema,
@@ -53,4 +54,20 @@ it("generates UUIDv7 and validates real calendar dates", () => {
   expect(idSchema.parse(newId())).toBeTruthy();
   expect(isoDate("2026-10-06")).toBe("2026-10-06");
   expect(() => isoDate("2026-02-30")).toThrow();
+});
+
+describe("formatMinorUnits", () => {
+  it("writes exact decimal text for each precision and round-trips with parseMinorUnits", () => {
+    expect(formatMinorUnits(1250)).toBe("12.50");
+    expect(formatMinorUnits(5)).toBe("0.05");
+    expect(formatMinorUnits(-5)).toBe("-0.05");
+    expect(formatMinorUnits(0)).toBe("0.00");
+    expect(formatMinorUnits(1200, 0)).toBe("1200");
+    expect(formatMinorUnits(1234, 3)).toBe("1.234");
+    expect(formatMinorUnits(Number.MAX_SAFE_INTEGER)).toBe("90071992547409.91");
+    for (const value of [0, 1, -1, 99, 100, 123456789, -987654321])
+      expect(parseMinorUnits(formatMinorUnits(value))).toBe(value);
+    expect(() => formatMinorUnits(1.5)).toThrow();
+    expect(() => formatMinorUnits(1, 7)).toThrow();
+  });
 });
