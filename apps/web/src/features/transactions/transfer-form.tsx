@@ -3,191 +3,35 @@ import {
   type Account,
   bonusFromBps,
   type Category,
-  createTransferSchema,
   currencyDigits,
-  deriveRate,
-  feeFromBps,
-  parseMinorUnits,
-  rateSchema,
   type Transaction,
   type Transfer,
 } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { AmountInput } from "../../components/amount-input";
-import { DateTimeInput } from "../../components/date-time-input";
 import { EditorDialog } from "../../components/editor-dialog";
-import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
-import { cleanAmountText, decimalFromCents } from "../../lib/money";
+import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
-import { rateSentence } from "../../lib/rate-format";
-import { localToday } from "../../lib/time";
-import { CategoryPicker } from "../categories/picker";
-import { EntryRate } from "../currencies/entry-rate";
 import { prepareTransactionUndo } from "./api";
-import { defaultFeeText, feeHint, feeMinor, parseFee } from "./fee";
-import { FeePreview } from "./fee-preview";
+import { defaultFeeText, feeMinor, parseFee } from "./fee";
+import { amountMinor, rememberAccount } from "./form";
+import { buildTransferBody } from "./transfer/build-body";
 import {
-  amountMessage,
-  amountMinor,
-  isPositiveAmount,
-  lastActiveAccount,
-  rememberAccount,
-  transactionFormSchema,
-} from "./form";
+  renderAccountPickers,
+  renderAmountFields,
+  renderBonusFields,
+  renderFeeField,
+  renderLinkedNotes,
+  renderMoreCategories,
+  renderWhenAndNote,
+} from "./transfer/fields";
+import type { TransferFormContext } from "./transfer/form-context";
+import { defaults, makeSchema, type Values } from "./transfer/schema";
 import { getTransfer, prepareTransferSave, transferLeg } from "./transfers";
 
-/** The transfer form's rules depend on the two accounts' currencies, so they are built per list. */
-function makeSchema(accounts: readonly Account[]) {
-  const currencyOf = (id: string) =>
-    accounts.find((row) => row.id === id)?.currency ?? "USD";
-  return z
-    .object({
-      amount: z.string().trim().transform(cleanAmountText),
-      // Only used when the two accounts have different currencies.
-      receivedAmount: z.string().trim().transform(cleanAmountText),
-      // A rate set by hand ("" means use the stored one); only for transfers between two
-      // non-USD currencies.
-      fxRate: z.string(),
-      fromAccountId: createTransferSchema.shape.fromAccountId,
-      toAccountId: createTransferSchema.shape.toAccountId,
-      date: createTransferSchema.shape.date,
-      time: transactionFormSchema.shape.time,
-      note: transactionFormSchema.shape.note,
-      // An optional bonus on the received amount (ADR 0023); only sent when switched on.
-      bonusOn: z.boolean(),
-      bonusAmount: z.string().trim().transform(cleanAmountText),
-      bonusCategoryId: z.string(),
-      // An optional fee on the sending account (ADR 0025): "2" is fixed, "2%" is a percentage.
-      feeText: z.string(),
-      feeCategoryId: z.string(),
-    })
-    .superRefine((row, ctx) => {
-      const from = currencyOf(row.fromAccountId);
-      const to = currencyOf(row.toAccountId);
-      if (row.fromAccountId === row.toAccountId)
-        ctx.addIssue({
-          code: "custom",
-          path: ["toAccountId"],
-          message: "Choose two different accounts.",
-        });
-      if (!isPositiveAmount(row.amount, from))
-        ctx.addIssue({
-          code: "custom",
-          path: ["amount"],
-          message: amountMessage(from),
-        });
-      if (from !== to && !isPositiveAmount(row.receivedAmount, to))
-        ctx.addIssue({
-          code: "custom",
-          path: ["receivedAmount"],
-          message: `Enter how much arrives in ${to}.`,
-        });
-      if (row.bonusOn) {
-        if (!isPositiveAmount(row.bonusAmount, to))
-          ctx.addIssue({
-            code: "custom",
-            path: ["bonusAmount"],
-            message: `Enter the bonus in ${to}, or switch it off.`,
-          });
-        if (!row.bonusCategoryId)
-          ctx.addIssue({
-            code: "custom",
-            path: ["bonusCategoryId"],
-            message: "Choose a category for the bonus.",
-          });
-      }
-      const fee = parseFee(row.feeText, from);
-      if (fee.kind === "invalid")
-        ctx.addIssue({
-          code: "custom",
-          path: ["feeText"],
-          message: fee.message,
-        });
-      else if (fee.kind !== "none") {
-        const sent = amountMinor(row.amount, from);
-        if (
-          fee.kind === "percent" &&
-          sent !== null &&
-          feeFromBps(sent, fee.bps) < 1
-        )
-          ctx.addIssue({
-            code: "custom",
-            path: ["feeText"],
-            message: "That fee comes to less than the smallest unit.",
-          });
-        if (!row.feeCategoryId)
-          ctx.addIssue({
-            code: "custom",
-            path: ["feeCategoryId"],
-            message: "Choose a category for the fee.",
-          });
-      }
-      if (row.fxRate !== "" && !rateSchema.safeParse(row.fxRate).success)
-        ctx.addIssue({
-          code: "custom",
-          path: ["fxRate"],
-          message: "Enter a valid exchange rate.",
-        });
-    });
-}
-type Values = z.infer<ReturnType<typeof makeSchema>>;
-function defaults(
-  row: Transfer | undefined,
-  accounts: readonly Account[],
-  actorId: string,
-  ledgerId: string,
-): Values {
-  const from = lastActiveAccount(actorId, ledgerId, accounts);
-  return row
-    ? {
-        amount: decimalFromCents(
-          row.amount.amount,
-          currencyDigits(row.amount.currency),
-        ),
-        receivedAmount:
-          row.receivedAmount.currency === row.amount.currency
-            ? ""
-            : decimalFromCents(
-                row.receivedAmount.amount,
-                currencyDigits(row.receivedAmount.currency),
-              ),
-        // The transfer keeps its saved rate unless one is set here.
-        fxRate: "",
-        fromAccountId: row.fromAccountId,
-        toAccountId: row.toAccountId,
-        date: row.date,
-        time: row.time ?? "",
-        note: row.note ?? "",
-        bonusOn: false,
-        bonusAmount: "",
-        bonusCategoryId: "",
-        feeText: "",
-        feeCategoryId: "",
-      }
-    : {
-        amount: "",
-        receivedAmount: "",
-        fxRate: "",
-        fromAccountId: from,
-        toAccountId:
-          accounts.find((account) => !account.archivedAt && account.id !== from)
-            ?.id ?? "",
-        date: localToday(),
-        time: "",
-        note: "",
-        bonusOn: false,
-        bonusAmount: "",
-        bonusCategoryId: "",
-        feeText: "",
-        feeCategoryId: "",
-      };
-}
 export function TransferForm({
   actorId = "",
   ledgerId,
@@ -345,60 +189,7 @@ export function TransferForm({
         };
       } else {
         if (!values) return;
-        const from = currencyOf(values.fromAccountId);
-        const to = currencyOf(values.toAccountId);
-        const {
-          receivedAmount,
-          fxRate,
-          bonusOn: withBonus,
-          bonusAmount,
-          bonusCategoryId,
-          feeText: typedFee,
-          feeCategoryId: feeCategory,
-          ...fields
-        } = values;
-        const fee = parseFee(typedFee, from);
-        const body = createTransferSchema.parse({
-          ...fields,
-          amount: {
-            amount: parseMinorUnits(values.amount, currencyDigits(from)),
-            currency: from,
-          },
-          ...(from !== to
-            ? {
-                receivedAmount: {
-                  amount: parseMinorUnits(receivedAmount, currencyDigits(to)),
-                  currency: to,
-                },
-              }
-            : {}),
-          // A hand-set rate only matters when neither account is in the base currency.
-          ...(fxRate && from !== "USD" && to !== "USD" ? { fxRate } : {}),
-          ...(withBonus && !baseline
-            ? {
-                bonus: {
-                  amount: {
-                    amount: parseMinorUnits(bonusAmount, currencyDigits(to)),
-                    currency: to,
-                  },
-                  categoryId: bonusCategoryId,
-                },
-              }
-            : {}),
-          ...(!baseline && fee.kind === "fixed"
-            ? {
-                fee: {
-                  amount: { amount: fee.minor, currency: from },
-                  categoryId: feeCategory,
-                },
-              }
-            : {}),
-          ...(!baseline && fee.kind === "percent"
-            ? { fee: { basisPoints: fee.bps, categoryId: feeCategory } }
-            : {}),
-          time: values.time || null,
-          note: values.note || null,
-        });
+        const body = buildTransferBody(values, accounts, baseline);
         attempt.current = prepareTransferSave(ledgerId, baseline, body);
       }
       operation.current = mode;
@@ -461,6 +252,35 @@ export function TransferForm({
       setBusy(false);
     }
   };
+  const form: TransferFormContext = {
+    register,
+    watch,
+    setValue,
+    errors,
+    accounts,
+    baseline,
+    categories,
+    privateMode,
+    ledgerId,
+    fromCurrency,
+    toCurrency,
+    crossCurrency,
+    fromAccount,
+    toAccount,
+    bps,
+    bonusOn,
+    feeInput,
+    feeCost,
+    sentMinor,
+    feeCategoryId,
+    bonusCategoryId,
+    feeEdited,
+    bonusEdited,
+    moreOpen,
+    setMoreOpen,
+    hasFee,
+    hasBonus,
+  };
   return (
     <EditorDialog
       open={open}
@@ -516,280 +336,13 @@ export function TransferForm({
             !writable
           }
         >
-          <label htmlFor="transfer-amount">
-            {crossCurrency
-              ? `Amount sent (${fromCurrency})`
-              : `Amount (${fromCurrency})`}
-          </label>
-          <AmountInput
-            currency={fromCurrency}
-            id="transfer-amount"
-            className="transaction-amount"
-            type={privateMode ? "password" : "text"}
-            inputMode="decimal"
-            autoComplete="off"
-            {...register("amount")}
-          />
-          {errors.amount && (
-            <p className="field-error">{errors.amount.message}</p>
-          )}
-          {crossCurrency && (
-            <>
-              <label htmlFor="transfer-received">
-                Amount received ({toCurrency})
-              </label>
-              <AmountInput
-                currency={toCurrency}
-                id="transfer-received"
-                type={privateMode ? "password" : "text"}
-                inputMode="decimal"
-                autoComplete="off"
-                {...register("receivedAmount")}
-              />
-              {errors.receivedAmount && (
-                <p className="field-error">{errors.receivedAmount.message}</p>
-              )}
-              <TransferRate
-                sent={amountMinor(watch("amount"), fromCurrency)}
-                received={amountMinor(watch("receivedAmount"), toCurrency)}
-                fromCurrency={fromCurrency}
-                toCurrency={toCurrency}
-              />
-              {fromCurrency !== "USD" && toCurrency !== "USD" && (
-                <EntryRate
-                  ledgerId={ledgerId}
-                  currency={fromCurrency}
-                  date={watch("date")}
-                  amountMinor={amountMinor(watch("amount"), fromCurrency)}
-                  manualRate={watch("fxRate")}
-                  onManualRate={(rate) => setValue("fxRate", rate)}
-                />
-              )}
-            </>
-          )}
-          <div className="transaction-context">
-            {(["fromAccountId", "toAccountId"] as const).map((field) => (
-              <div key={field}>
-                <label htmlFor={`transfer-${field}`}>
-                  {field === "fromAccountId" ? "From account" : "To account"}
-                </label>
-                <NativeSelect
-                  id={`transfer-${field}`}
-                  {...register(field, {
-                    // A rate set by hand belonged to the old accounts.
-                    onChange: () => setValue("fxRate", ""),
-                  })}
-                >
-                  <option value="" disabled>
-                    Choose an account
-                  </option>
-                  {accounts
-                    .filter(
-                      (row) => !row.archivedAt || row.id === baseline?.[field],
-                    )
-                    .map((row) => (
-                      <option
-                        key={row.id}
-                        value={row.id}
-                        disabled={!!row.archivedAt}
-                      >
-                        {row.name}
-                        {row.archivedAt ? " (archived)" : ""}
-                      </option>
-                    ))}
-                </NativeSelect>
-                {errors[field] && (
-                  <p className="field-error">{errors[field]?.message}</p>
-                )}
-              </div>
-            ))}
-          </div>
-          {!baseline && fromAccount && (
-            <div className="transfer-fee">
-              <label htmlFor="transfer-fee">Fee (optional)</label>
-              <input
-                id="transfer-fee"
-                type={privateMode ? "password" : "text"}
-                inputMode="text"
-                autoComplete="off"
-                placeholder="2 or 2%"
-                aria-invalid={!!errors.feeText}
-                aria-describedby="transfer-fee-help transfer-fee-preview"
-                {...register("feeText", {
-                  onChange: () => {
-                    feeEdited.current = true;
-                  },
-                })}
-              />
-              <p id="transfer-fee-help" className="form-help">
-                {feeHint} Charged to {fromAccount.name} in {fromCurrency}; the
-                amount received stays the same.
-              </p>
-              {errors.feeText && (
-                <p className="field-error">{errors.feeText.message}</p>
-              )}
-              <p
-                id="transfer-fee-preview"
-                className="form-help"
-                aria-live="polite"
-              >
-                <FeePreview
-                  fee={feeInput.kind}
-                  cost={feeCost}
-                  sent={sentMinor}
-                  currency={fromCurrency}
-                  accountName={fromAccount.name}
-                />
-              </p>
-            </div>
-          )}
-          {!baseline && toAccount && (bps || bonusOn) && (
-            <div className="transfer-bonus">
-              <label className="split-toggle">
-                <input
-                  type="checkbox"
-                  checked={bonusOn}
-                  onChange={(event) =>
-                    setValue("bonusOn", event.target.checked)
-                  }
-                />{" "}
-                Add a bonus{bps ? ` (${bps / 100}% of what arrives)` : ""}
-              </label>
-              {bonusOn && (
-                <>
-                  <label htmlFor="transfer-bonus-amount">
-                    Bonus ({toCurrency})
-                  </label>
-                  <AmountInput
-                    currency={toCurrency}
-                    id="transfer-bonus-amount"
-                    type={privateMode ? "password" : "text"}
-                    inputMode="decimal"
-                    autoComplete="off"
-                    {...register("bonusAmount", {
-                      onChange: () => {
-                        bonusEdited.current = true;
-                      },
-                    })}
-                  />
-                  {errors.bonusAmount && (
-                    <p className="field-error">{errors.bonusAmount.message}</p>
-                  )}
-                  <p className="form-help">
-                    Saved as income in {toAccount.name} together with the
-                    transfer. Switch it off to save the transfer alone.
-                  </p>
-                </>
-              )}
-            </div>
-          )}
-          {!baseline && toAccount && !bps && !bonusOn && (
-            <button
-              type="button"
-              className="quiet-button inline-category-toggle"
-              onClick={() => setValue("bonusOn", true)}
-            >
-              <Plus size={16} />
-              Add a bonus
-            </button>
-          )}
-          {!baseline && (
-            <details
-              className="transaction-details transfer-more"
-              open={moreOpen}
-              onToggle={(event) => setMoreOpen(event.currentTarget.open)}
-            >
-              <summary>
-                More
-                <span className="muted transfer-more-hint">
-                  {" "}
-                  fee {bonusOn || bps ? "and bonus " : ""}categories
-                </span>
-              </summary>
-              <div className="account-fields">
-                <CategoryPicker
-                  categories={categories}
-                  kind="expense"
-                  label="Fee category"
-                  value={feeCategoryId || null}
-                  onChange={(id) => setValue("feeCategoryId", id ?? "")}
-                />
-                {errors.feeCategoryId && (
-                  <p className="field-error">{errors.feeCategoryId.message}</p>
-                )}
-                {bonusOn && (
-                  <>
-                    <CategoryPicker
-                      categories={categories}
-                      kind="income"
-                      label="Bonus category"
-                      value={bonusCategoryId || null}
-                      onChange={(id) => setValue("bonusCategoryId", id ?? "")}
-                    />
-                    {errors.bonusCategoryId && (
-                      <p className="field-error">
-                        {errors.bonusCategoryId.message}
-                      </p>
-                    )}
-                  </>
-                )}
-                <p className="form-help">
-                  Used only when the transfer has a fee
-                  {bonusOn ? " or a bonus" : ""}. An account can remember its
-                  default categories when you edit it.
-                </p>
-              </div>
-            </details>
-          )}
-          {hasFee && (
-            <p className="form-help">
-              This transfer has a fee entry. It is a separate expense, so edit
-              it from the transaction list.
-            </p>
-          )}
-          {hasBonus && (
-            <p className="form-help">
-              This transfer has a bonus entry. It is separate income, so edit it
-              from the transaction list.
-            </p>
-          )}
-          <div className="transaction-context">
-            <div>
-              <label htmlFor="transfer-date">Date</label>
-              <DateTimeInput
-                label="Date"
-                required
-                id="transfer-date"
-                type="date"
-                min="0001-01-01"
-                max="9999-12-31"
-                {...register("date")}
-              />
-              {errors.date && (
-                <p className="field-error">Choose a valid date.</p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="transfer-time">Time (optional)</label>
-              <DateTimeInput
-                label="Time (optional)"
-                id="transfer-time"
-                type="time"
-                step={60}
-                {...register("time")}
-              />
-              {errors.time && (
-                <p className="field-error">Choose a valid time.</p>
-              )}
-            </div>
-          </div>
-          <label htmlFor="transfer-note">Note</label>
-          <textarea
-            id="transfer-note"
-            rows={2}
-            maxLength={2000}
-            {...register("note")}
-          />
+          {renderAmountFields(form)}
+          {renderAccountPickers(form)}
+          {renderFeeField(form)}
+          {renderBonusFields(form)}
+          {renderMoreCategories(form)}
+          {renderLinkedNotes(form)}
+          {renderWhenAndNote(form)}
         </fieldset>
         {error && (
           <p role="alert" className="field-error account-error">
@@ -901,37 +454,5 @@ export function TransferForm({
         </div>
       </form>
     </EditorDialog>
-  );
-}
-
-/**
- * When one account is in USD, the amounts themselves fix the rate; show it so a typo in the
- * received amount is easy to spot ("1 USD = 0.89 EUR").
- */
-function TransferRate({
-  sent,
-  received,
-  fromCurrency,
-  toCurrency,
-}: {
-  sent: number | null;
-  received: number | null;
-  fromCurrency: string;
-  toCurrency: string;
-}) {
-  if (sent === null || received === null) return null;
-  const base =
-    fromCurrency === "USD" ? sent : toCurrency === "USD" ? received : null;
-  if (base === null) return null;
-  const foreign = fromCurrency === "USD" ? toCurrency : fromCurrency;
-  const foreignAmount = fromCurrency === "USD" ? received : sent;
-  return (
-    <p className="form-help" aria-live="polite">
-      {rateSentence(
-        foreign,
-        deriveRate(base, foreignAmount, foreign, "USD"),
-        "USD",
-      )}
-    </p>
   );
 }
