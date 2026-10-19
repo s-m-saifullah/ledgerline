@@ -18,3 +18,30 @@ export async function cashFlowByMonth(
     total: row.kind === "income" ? BigInt(row.total) : -BigInt(row.total),
   }));
 }
+
+/**
+ * Each account's cleared total before `from` (`before`) and per YYYY-MM month from `from`
+ * through `to` (`months`), as bigints. Deleted and pending entries are left out.
+ */
+export async function accountTotalsByMonth(
+  db: DatabaseConnection,
+  ledgerId: string,
+  from: string,
+  to: string,
+) {
+  const result = await transactionRepository(db, ledgerId).accountTotalsByMonth(
+    from,
+    to,
+  );
+  const before = new Map<string, bigint>();
+  const months = new Map<string, Map<string, bigint>>();
+  for (const row of result.rows) {
+    if (row.month === null) before.set(row.accountId, BigInt(row.total));
+    else {
+      const byMonth = months.get(row.accountId) ?? new Map<string, bigint>();
+      byMonth.set(row.month, BigInt(row.total));
+      months.set(row.accountId, byMonth);
+    }
+  }
+  return { before, months };
+}

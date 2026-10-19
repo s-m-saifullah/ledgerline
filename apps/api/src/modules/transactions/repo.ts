@@ -486,6 +486,17 @@ export function transactionRepository(
     flowByMonth: (from: string, to: string) =>
       db.execute<{ month: string; kind: string; total: string }>(sql`
       select to_char(date,'YYYY-MM') as month,kind,sum(base_amount)::text as total from transactions where ledger_id=${ledgerId} and deleted_at is null and status='cleared' and kind in ('income','expense') and date between ${from}::date and ${to}::date group by 1,2`),
+    /**
+     * Cleared amounts per account up to `to`: one row per account and YYYY-MM month from
+     * `from` on, and one row per account (month null) for everything dated before `from`.
+     */
+    accountTotalsByMonth: (from: string, to: string) =>
+      db.execute<{
+        accountId: string;
+        month: string | null;
+        total: string;
+      }>(sql`
+      select account_id as "accountId",case when date<${from}::date then null else to_char(date,'YYYY-MM') end as month,sum(amount)::text as total from transactions where ledger_id=${ledgerId} and deleted_at is null and status='cleared' and date<=${to}::date group by 1,2`),
     pendingCount: async () =>
       Number(
         (

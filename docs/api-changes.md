@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.42 — Net worth over time
+
+No migration (ADR 0036). One read-only endpoint in the `Reports` group: `GET /api/v1/ledgers/{ledgerId}/reports/net-worth?to=YYYY-MM&months=N` (`months` 1 to 24, default 12), oldest first. Each point has `month`, `asOf` (the month's last day, or today for the current month; a later month repeats today), `netWorth` (base currency) and `unconvertedCurrencies`. A point is every account's opening balance plus its cleared, live entries dated on or before `asOf` (transfers count on each account; pending and deleted entries do not), each account valued at the newest stored rate on or before `asOf`. A currency with no such rate leaves its accounts out of that point and is named (a zero balance never makes a point incomplete); a later rate is never borrowed. The accounts are Home's (archived and client loan accounts included), so the latest point equals Home's `netWorth` unless an entry or rate is dated after today. Viewers can read; a ledger the caller is not a member of is `404`; an invalid month or `months` is `400`; a total beyond the exact integer range is `409`.
+
 ## 0.1.41 — Tags on recurring rules
 
 Migration 0026 (ADR 0035): `recurring_rules.tag_ids`, a list of at most 10 tag ids (default empty). Recurring rules gain `tagIds` on create, edit and in responses (omitted means none). Every entry a rule creates gets those tags, and a transfer rule puts them on both legs (its fee and bonus do not get them). Unknown or other-ledger tags return 404; archived tags are allowed. Deleting a tag takes it off every rule that carries it and moves those rules' versions on. Backup and restore gain a `rule_tags` invariant.

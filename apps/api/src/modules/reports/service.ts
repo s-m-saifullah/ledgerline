@@ -2,14 +2,22 @@ import {
   type CashFlowReport,
   monthRange,
   monthsEndingAt,
+  type NetWorthReport,
   type SpendingReport,
 } from "@ledgerline/shared";
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
+import { accountOpeningOverview } from "../accounts/home-service";
 import { categoryReportRows } from "../categories/report-service";
+import { ratesUpTo } from "../currencies/service";
 import { requireLedgerRead } from "../ledgers/service";
+import { postedBalance } from "../transactions/balance-service";
 import { spendingByCategoryMonth } from "../transactions/budget-service";
-import { cashFlowByMonth } from "../transactions/report-service";
+import { convertOrConflict } from "../transactions/pricing";
+import {
+  accountTotalsByMonth,
+  cashFlowByMonth,
+} from "../transactions/report-service";
 
 function safe(value: bigint) {
   if (
@@ -156,6 +164,91 @@ export async function getCashFlowReport(
             income: usd(income),
             spending: usd(spending),
             net: usd(income - spending),
+          };
+        }),
+      };
+    },
+    { isolationLevel: "repeatable read" },
+  );
+}
+
+/**
+ * Net worth at the end of each of the last `months` months (ADR 0036): every account's
+ * opening balance plus its cleared, live entries dated on or before the point, valued at the
+ * newest stored rate on or before that day. A currency with no such rate is left out of that
+ * point and named. The current month's point (and any later one) is as of today.
+ */
+export async function getNetWorthReport(
+  db: Database,
+  actorId: string,
+  ledgerId: string,
+  to: string,
+  months: number,
+): Promise<NetWorthReport> {
+  const list = monthsEndingAt(to, months);
+  const first = list[0] as string;
+  const today = new Date().toISOString().slice(0, 10);
+  const asOf = (month: string) => {
+    const end = monthRange(month).end;
+    return end < today ? end : today;
+  };
+  const last = asOf(to);
+  return db.transaction(
+    async (tx) => {
+      const ledger = await requireLedgerRead(tx, actorId, ledgerId);
+      const baseCurrency = ledger.baseCurrency;
+      const accounts = await accountOpeningOverview(tx, ledgerId);
+      const totals = await accountTotalsByMonth(
+        tx,
+        ledgerId,
+        monthRange(first).start,
+        last,
+      );
+      const rates = await ratesUpTo(
+        tx,
+        ledgerId,
+        accounts.map((row) => row.currency).filter((c) => c !== baseCurrency),
+        last,
+      );
+      const running = new Map(
+        accounts.map((row) => [row.id, totals.before.get(row.id) ?? 0n]),
+      );
+      return {
+        from: first,
+        to,
+        months: list.map((month) => {
+          const day = asOf(month);
+          const unconverted = new Set<string>();
+          let total = 0n;
+          for (const account of accounts) {
+            const sum =
+              (running.get(account.id) ?? 0n) +
+              (totals.months.get(account.id)?.get(month) ?? 0n);
+            running.set(account.id, sum);
+            const balance = postedBalance(account.openingBalance, sum);
+            if (account.currency === baseCurrency) total += BigInt(balance);
+            else {
+              const rate = (rates.get(account.currency) ?? []).findLast(
+                (row) => row.date <= day,
+              );
+              // A zero balance adds nothing, so it never makes a month incomplete.
+              if (rate)
+                total += BigInt(
+                  convertOrConflict(
+                    balance,
+                    rate.rate,
+                    account.currency,
+                    baseCurrency,
+                  ),
+                );
+              else if (balance !== 0) unconverted.add(account.currency);
+            }
+          }
+          return {
+            month,
+            asOf: day,
+            netWorth: usd(total),
+            unconvertedCurrencies: [...unconverted].sort(),
           };
         }),
       };

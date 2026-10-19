@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lte, sql } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { currencies, exchangeRates } from "../../db/schema";
 
@@ -95,6 +95,19 @@ export function rateRepository(db: DatabaseConnection, ledgerId: string) {
           .orderBy(desc(exchangeRates.date))
           .limit(1)
       )[0],
+    /** Every stored rate for these currencies dated on or before `date`, oldest first. */
+    upTo: (codes: string[], date: string) =>
+      db
+        .select()
+        .from(exchangeRates)
+        .where(
+          and(
+            scope,
+            inArray(exchangeRates.code, codes),
+            lte(exchangeRates.date, date),
+          ),
+        )
+        .orderBy(asc(exchangeRates.date)),
     find: async (id: string) =>
       (
         await db

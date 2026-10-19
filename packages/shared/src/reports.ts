@@ -44,8 +44,24 @@ export const cashFlowReportSchema = z.object({
     }),
   ),
 });
+export const netWorthReportQuerySchema = cashFlowReportQuerySchema;
+export const netWorthReportSchema = z.object({
+  from: homeMonthSchema,
+  to: homeMonthSchema,
+  months: z.array(
+    z.object({
+      month: homeMonthSchema,
+      // The day the point is as of: the month's last day, or today for the current month (later months repeat today).
+      asOf: z.iso.date(),
+      netWorth: usdMoneySchema,
+      // Currencies with no stored rate on or before asOf; their accounts are left out of netWorth.
+      unconvertedCurrencies: z.array(z.string()),
+    }),
+  ),
+});
 export type SpendingReport = z.infer<typeof spendingReportSchema>;
 export type CashFlowReport = z.infer<typeof cashFlowReportSchema>;
+export type NetWorthReport = z.infer<typeof netWorthReportSchema>;
 
 /** The `count` months ending at `to` (YYYY-MM), oldest first, by integer month math. */
 export function monthsEndingAt(to: string, count: number) {
