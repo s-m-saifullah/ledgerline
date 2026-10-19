@@ -78,6 +78,9 @@ export function TransactionsPage() {
         .map((row) => [row.id, row]),
     ).values(),
   ];
+  const filtersApplied = Object.values(filters).some(
+    (value) => value !== undefined && value !== "",
+  );
   const days = [...new Set(rows.map((row) => row.date))];
   const setFilter = (key: keyof TransactionFilters, value: string) =>
     setDraft((previous) => ({ ...previous, [key]: value || undefined }));
@@ -233,16 +236,18 @@ export function TransactionsPage() {
             </div>
           </div>
         </details>
-        <button
-          type="button"
-          className="quiet-button"
-          onClick={() => {
-            setDraft({});
-            void navigate({ to: "/transactions", search: {} });
-          }}
-        >
-          Clear filters
-        </button>
+        {filtersApplied && (
+          <button
+            type="button"
+            className="quiet-button"
+            onClick={() => {
+              setDraft({});
+              void navigate({ to: "/transactions", search: {} });
+            }}
+          >
+            Clear filters
+          </button>
+        )}
         <details>
           <summary>Import and export</summary>
           <div className="transaction-data-tools">
