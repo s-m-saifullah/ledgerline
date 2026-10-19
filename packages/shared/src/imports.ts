@@ -32,6 +32,9 @@ export const importRowSchema = z.strictObject({
   status: transactionStatusSchema,
   // The `id` column of a file this app exported, for an exact duplicate match.
   sourceId: idSchema.nullable(),
+  // Tag names from the file (ADR 0035). The server finds each by name, ignoring case, or creates
+  // it; more than ten, or a name that is not a valid tag name, makes the row a problem.
+  tags: z.array(z.string().max(200)).max(50).default([]),
 });
 export const importParamsSchema = ledgerParamsSchema;
 export const importBatchParamsSchema = ledgerParamsSchema.extend({
@@ -59,6 +62,8 @@ export const importPreviewSchema = z.object({
     duplicate: z.number().int(),
     problem: z.number().int(),
   }),
+  // Tag names in the rows that no tag has yet; confirming creates them.
+  newTags: z.array(z.string()).default([]),
 });
 export const importBatchSchema = z.object({
   id: idSchema,
@@ -74,6 +79,8 @@ export const createImportResultSchema = z.object({
   batch: importBatchSchema,
   // Rows imported although they matched an existing entry (the owner chose to include them).
   duplicatesIncluded: z.number().int(),
+  // Tags the import created because the file named them and no tag had that name.
+  tagsCreated: z.number().int().default(0),
 });
 export const importBatchListSchema = z.object({
   items: z.array(importBatchSchema),

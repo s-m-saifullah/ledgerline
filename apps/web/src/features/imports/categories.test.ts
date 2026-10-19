@@ -37,6 +37,7 @@ const row = (over: Partial<FileRow> = {}): FileRow => ({
   payee: null,
   note: null,
   status: "cleared",
+  tags: [],
   sourceId: null,
   ...over,
 });

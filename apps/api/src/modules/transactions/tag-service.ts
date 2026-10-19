@@ -2,7 +2,7 @@ import type { TagRef } from "@ledgerline/shared";
 import type { DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionCategories } from "../categories/service";
-import { requireTags, tagRefs } from "../tags/service";
+import { ensureTagsByName, requireTags, tagRefs } from "../tags/service";
 import { tagLinkRepository } from "./tag-link-repo";
 
 /** The tags on each of these entries, by entry id (ADR 0035). */
@@ -55,4 +55,27 @@ export async function detachUnusedTag(
       "Remove this tag from its entries first, or archive it to keep its history.",
     );
   await repo.detach(tagId);
+}
+/**
+ * For an import: find or create the tags the rows name, then put them on the new entries.
+ * `entries` pairs each saved entry with its (already checked, distinct) tag names.
+ */
+export async function attachImportedTags(
+  tx: Parameters<typeof lockTransactionCategories>[0],
+  ledgerId: string,
+  entries: { entryId: string; names: string[] }[],
+) {
+  const names = entries.flatMap((entry) => entry.names);
+  if (!names.length) return 0;
+  await lockTransactionCategories(tx, ledgerId);
+  const { ids, created } = await ensureTagsByName(tx, ledgerId, names);
+  await tagLinkRepository(tx, ledgerId).insertMany(
+    entries.flatMap((entry) =>
+      entry.names.map((name) => ({
+        entryId: entry.entryId,
+        tagId: ids.get(name.trim().toLowerCase()) as string,
+      })),
+    ),
+  );
+  return created;
 }

@@ -34,6 +34,7 @@ export const transactionCsvColumns = [
   "line",
   "fx_rate",
   "base_amount",
+  "tags",
 ] as const;
 export const accountCsvColumns = [
   "id",

@@ -72,6 +72,9 @@ export function transactionsCsv(
           payee: guardedText(row.payee),
           status: row.status,
           rate: formatRate(parseRate(row.fxRate)),
+          tags: guardedText(
+            (page.tagsOf(row.id) ?? []).map((tag) => tag.name).join("; "),
+          ),
         };
         const emit = (
           line: string,
@@ -99,6 +102,7 @@ export function transactionsCsv(
             line,
             common.rate,
             decimal(baseAmount, ledger.baseCurrency),
+            common.tags,
           ]);
         };
         if (lines.length)

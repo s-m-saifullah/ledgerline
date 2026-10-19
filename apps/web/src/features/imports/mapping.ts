@@ -22,6 +22,8 @@ export type ImportMapping = {
   payee: number | null;
   note: number | null;
   status: number | null;
+  // Tag names, separated by ; or , (ADR 0035).
+  tags: number | null;
   id: number | null;
   // The export's split-line number; rows with one are split entries, which import skips.
   splitLine: number | null;
@@ -64,6 +66,7 @@ const NAMES = {
   payee: ["payee", "merchant", "description", "name", "counterparty"],
   note: ["note", "notes", "memo", "reference", "details", "narrative"],
   status: ["status"],
+  tags: ["tags", "tag", "labels"],
   id: ["id"],
   splitLine: ["line"],
 } as const;
@@ -96,6 +99,7 @@ export function emptyMapping(hasHeader: boolean): ImportMapping {
     payee: null,
     note: null,
     status: null,
+    tags: null,
     id: null,
     splitLine: null,
   };
@@ -156,6 +160,7 @@ export function guessMapping(table: string[][]): ImportMapping {
     "payee",
     "note",
     "status",
+    "tags",
     "id",
     "splitLine",
   ] as const)
@@ -192,7 +197,8 @@ export function withColumn(
     | "subcategory"
     | "payee"
     | "note"
-    | "status",
+    | "status"
+    | "tags",
   at: number | null,
 ): ImportMapping {
   const next = { ...mapping, [name]: at };
@@ -253,6 +259,7 @@ export function savedMapping(
       parsed.payee,
       parsed.note,
       parsed.status,
+      parsed.tags ?? null,
       parsed.id,
       parsed.splitLine,
     ];

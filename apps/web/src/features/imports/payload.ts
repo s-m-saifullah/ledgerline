@@ -51,6 +51,7 @@ export function toImportRows(
       payee: row.payee,
       note: row.note,
       status: row.status,
+      tags: row.tags,
       sourceId: row.sourceId,
     });
   }

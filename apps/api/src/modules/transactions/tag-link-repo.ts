@@ -65,6 +65,17 @@ export function tagLinkRepository(db: DatabaseConnection, ledgerId: string) {
       );
       if (missing.length) await db.insert(transactionTags).values(missing);
     },
+    /** Put tags on entries that have none yet (a fresh import). */
+    insertMany: async (links: { entryId: string; tagId: string }[]) => {
+      for (let at = 0; at < links.length; at += 1000)
+        await db.insert(transactionTags).values(
+          links.slice(at, at + 1000).map((link) => ({
+            ledgerId,
+            transactionId: link.entryId,
+            tagId: link.tagId,
+          })),
+        );
+    },
     /** Live entries (not deleted ones) per tag. */
     usage: async (tagIds: string[]) => {
       const counts = new Map<string, number>();

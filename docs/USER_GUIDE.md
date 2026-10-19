@@ -112,6 +112,7 @@ Your ledger can be downloaded as CSV files that open in Excel, Numbers or Google
 
 1. **Transactions:** open **Import and export** under the filters (it stays closed until you need it) and use **Export as CSV** to save exactly the entries the screen is showing. Or open **More, Settings, Your data**, optionally choose a date range, and download every entry. **Download accounts** and **Download categories** save those lists.
 2. Amounts are plain numbers in each currency's own decimals, and the **type** column (income, expense, transfer) gives the direction. A transfer is one row; a split entry is one row per line. Fees and bonuses are ordinary rows.
+   The last column, **tags**, holds an entry's tags separated by `; `.
 3. A file is made at the moment you download it and is never kept on the server. It holds your financial data, so store it somewhere private.
 
 ## Importing a statement
@@ -123,6 +124,7 @@ Use **Import from CSV** (on Transactions under **Import and export**, in Setting
 3. **Match your columns.** We guess from the column names and remember your choices for files with the same headers on this device. Say how dates are written, whether amounts are one signed column, an amount plus a type column, or separate money in and money out columns, and how numbers look (`1,234.56` or `1.234,56`). Files separated by semicolons or tabs work too.
 4. **Choose categories.** Every entry needs one of your categories. Names in the file that match yours are used automatically; for the rest, pick a category or a default for expenses and one for income. Categories are never created for you.
 5. **Review.** Rows that look like entries you already have (same account, date and amount, or the same entry id from an export) are listed as possible duplicates and left out unless you tick them. Rows that can't be read are listed with the reason. Transfers and split entries in an exported file can't be imported yet.
+   **Tags:** an optional tags column (names separated by `;` or `,`) is matched to your tags ignoring capitals; names you don't have yet are created when you import, and the review lists them. Undoing an import leaves those tags in place.
 6. **Import.** All the entries are saved together or not at all. **Undo this import** removes whatever is left of that import; it is also available later under Recent imports.
 
 ## Privacy

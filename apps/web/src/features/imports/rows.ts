@@ -14,6 +14,7 @@ export type FileRow = {
   payee: string | null;
   note: string | null;
   status: "cleared" | "pending";
+  tags: string[];
   sourceId: string | null;
 };
 export type RowNote = { line: number; reason: string };
@@ -164,6 +165,17 @@ export function readRows(
       fail("The payee or note is too long.");
       continue;
     }
+    // Names split on ; or , and without repeats (ignoring case); the server checks each name.
+    const tags: string[] = [];
+    for (const part of unguard(cell(mapping.tags)).split(/[;,]/)) {
+      const name = part.trim();
+      if (name && !tags.some((t) => t.toLowerCase() === name.toLowerCase()))
+        tags.push(name);
+    }
+    if (tags.length > 10) {
+      fail("An entry can have at most 10 tags.");
+      continue;
+    }
     const sourceId = cell(mapping.id);
     rows.push({
       line,
@@ -176,6 +188,7 @@ export function readRows(
       payee,
       note,
       status,
+      tags,
       sourceId: ID.test(sourceId) ? sourceId.toLowerCase() : null,
     });
   }

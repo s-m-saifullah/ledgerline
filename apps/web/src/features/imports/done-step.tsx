@@ -15,6 +15,8 @@ export function DoneStep({ w }: { w: Wizard }) {
         They are in {w.account?.name ?? "your account"}.
         {result.duplicatesIncluded > 0 &&
           ` ${result.duplicatesIncluded} of them looked like entries you already had, and you chose to include them.`}
+        {result.tagsCreated > 0 &&
+          ` ${result.tagsCreated} new ${result.tagsCreated === 1 ? "tag was" : "tags were"} created.`}
       </p>
       <div className="export-actions">
         <Link

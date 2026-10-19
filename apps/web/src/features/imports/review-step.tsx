@@ -88,6 +88,19 @@ export function ReviewStep({ w }: { w: Wizard }) {
       </section>
       {w.preview.data && (
         <>
+          {w.preview.data.newTags.length > 0 && (
+            <section
+              className="settings-card"
+              aria-labelledby="import-tags-title"
+            >
+              <h2 id="import-tags-title">New tags</h2>
+              <p className="muted">
+                These tags in the file don't exist yet. Importing creates them
+                (you can delete unused ones later under More, Tags):{" "}
+                {w.preview.data.newTags.join(", ")}.
+              </p>
+            </section>
+          )}
           {duplicates.length > 0 && (
             <section
               className="settings-card"

@@ -49,6 +49,22 @@ export function tagRepository(db: DatabaseConnection, ledgerId: string) {
             .from(tags)
             .where(and(scope, inArray(tags.id, ids)))
         : Promise.resolve([] as TagRow[]),
+    /** Live tags whose name matches any of these, ignoring case and surrounding spaces. */
+    byNames: (keys: string[]) =>
+      keys.length
+        ? db
+            .select()
+            .from(tags)
+            .where(
+              and(
+                scope,
+                sql`lower(btrim(${tags.name})) in (${sql.join(
+                  keys.map((key) => sql`${key}`),
+                  sql`, `,
+                )})`,
+              ),
+            )
+        : Promise.resolve([] as TagRow[]),
     byName: async (name: string, exceptId?: string) =>
       (
         await db
