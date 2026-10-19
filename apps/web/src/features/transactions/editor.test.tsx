@@ -33,6 +33,7 @@ const row: Transaction = {
   receivableId: null,
   isSplit: false,
   splits: [],
+  tags: [],
   status: "cleared",
   payee: "Shop",
   note: null,

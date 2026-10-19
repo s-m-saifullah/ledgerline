@@ -579,6 +579,64 @@ export const transactionSplits = pgTable(
   ],
 );
 
+/** Free-form labels for entries (ADR 0035). A tag never changes a balance, a budget or a total. */
+export const tags = pgTable(
+  "tags",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    name: text("name").notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    version: integer("version").notNull().default(1),
+    ...audit(),
+  },
+  (table) => [
+    uniqueIndex("tags_ledger_id_id_idx").on(table.ledgerId, table.id),
+    uniqueIndex("tags_ledger_name_idx")
+      .on(table.ledgerId, sql`lower(btrim(${table.name}))`)
+      .where(sql`${table.deletedAt} IS NULL`),
+    check(
+      "tags_name_check",
+      sql`char_length(btrim(${table.name})) BETWEEN 1 AND 40 AND strpos(${table.name}, ',') = 0 AND strpos(${table.name}, chr(59)) = 0 AND ${table.name} !~ '[[:cntrl:]]'`,
+    ),
+    check("tags_version_check", sql`${table.version} >= 1`),
+  ],
+);
+
+/** One tag on one entry. A transfer's two legs carry the same tags (ADR 0035). */
+export const transactionTags = pgTable(
+  "transaction_tags",
+  {
+    id: primaryId(),
+    ledgerId: uuid("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    transactionId: uuid("transaction_id").notNull(),
+    tagId: uuid("tag_id").notNull(),
+    ...audit(),
+  },
+  (table) => [
+    foreignKey({
+      name: "transaction_tags_scoped_transaction_fk",
+      columns: [table.ledgerId, table.transactionId],
+      foreignColumns: [transactions.ledgerId, transactions.id],
+    }),
+    foreignKey({
+      name: "transaction_tags_scoped_tag_fk",
+      columns: [table.ledgerId, table.tagId],
+      foreignColumns: [tags.ledgerId, tags.id],
+    }),
+    uniqueIndex("transaction_tags_live_idx")
+      .on(table.ledgerId, table.transactionId, table.tagId)
+      .where(sql`${table.deletedAt} IS NULL`),
+    index("transaction_tags_tag_idx")
+      .on(table.ledgerId, table.tagId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
 function paymentKey(): [AnyPgColumn, AnyPgColumn] {
   return [receivablePayments.ledgerId, receivablePayments.id];
 }

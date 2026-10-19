@@ -80,7 +80,8 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 | currencies, exchange_rates | the currencies a ledger has added, and exact stored rates (fetched or set by hand) |
 | recurring_rules, recurring_runs | what to create and when, and what happened to each occurrence |
 | import_batches | one CSV import and its entries (`transactions.import_batch_id`, ADR 0034) |
-| tags, goals | later phases (no attachments, ADR 0031) |
+| tags, transaction_tags | free-form labels and their links to entries (ADR 0035) |
+| goals | a later phase (no attachments, ADR 0031) |
 
 **Rules every table follows**
 

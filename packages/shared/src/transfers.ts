@@ -7,6 +7,7 @@ import {
   versionSchema,
 } from "./contracts";
 import { rateSchema } from "./currency";
+import { tagIdsSchema, tagRefSchema } from "./tags";
 import { transactionDateSchema, transactionTimeSchema } from "./transactions";
 
 const fields = {
@@ -70,6 +71,8 @@ export const createTransferSchema = z
     fxRate: manualRate,
     bonus,
     fee,
+    // Both legs carry the same tags; the bonus and the fee do not (ADR 0035).
+    tagIds: tagIdsSchema.optional(),
     time: fields.time.default(null),
     note: fields.note.default(null),
   })
@@ -82,6 +85,8 @@ export const updateTransferSchema = z
     ...fields,
     receivedAmount,
     fxRate: manualRate,
+    // Omitted keeps the tags; an empty list clears them.
+    tagIds: tagIdsSchema.optional(),
     expectedVersion: versionSchema,
   })
   .refine(distinct, {
@@ -124,6 +129,7 @@ export const transferSchema = z.object({
     })
     .nullable()
     .default(null),
+  tags: z.array(tagRefSchema).default([]),
   id: idSchema,
   ledgerId: idSchema,
   fromTransactionId: idSchema,

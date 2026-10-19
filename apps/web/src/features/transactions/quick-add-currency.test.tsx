@@ -75,6 +75,7 @@ function mount(rate: string | null, accounts = [euro, dollars]) {
     receivableId: null,
     isSplit: false,
     splits: [],
+    tags: [],
     payee: null,
     note: null,
     status: "cleared",

@@ -77,6 +77,7 @@ const transaction: Transaction = {
   receivableId: null,
   isSplit: false,
   splits: [],
+  tags: [],
   payee: null,
   note: null,
   status: "cleared",

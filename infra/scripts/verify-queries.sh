@@ -5,9 +5,9 @@
 # copy, so expectations always come from the same snapshot as the dump.
 
 # Checks that become manifest lines (check|name|value).
-VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans imports)
+VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans imports tags)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links)
 
 verify_requires() {
   case "$1" in
@@ -19,6 +19,7 @@ verify_requires() {
     fees|fee_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='fee_transfer_id')" ;;
     tips|tip_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='tip_payment_id')" ;;
     imports|import_links) echo "SELECT to_regclass('public.import_batches') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='import_batch_id')" ;;
+    tags|tag_links) echo "SELECT to_regclass('public.tags') IS NOT NULL AND to_regclass('public.transaction_tags') IS NOT NULL" ;;
     loans|loan_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts' AND column_name='contact_id')" ;;
     recurring|recurring_links) echo "SELECT to_regclass('public.recurring_rules') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL" ;;
     *) echo "SELECT false" ;;
@@ -69,6 +70,10 @@ verify_sql() {
     imports) echo "SELECT (SELECT count(*) FROM import_batches WHERE deleted_at IS NULL) || '|' || (SELECT count(*) FROM import_batches WHERE deleted_at IS NOT NULL) || '|' || (SELECT count(*) FROM transactions WHERE import_batch_id IS NOT NULL AND deleted_at IS NULL) || '|' || (SELECT count(*) FROM transactions WHERE import_batch_id IS NOT NULL AND deleted_at IS NOT NULL)" ;;
     # Every batch entry has its batch in the same ledger; a batch holds exactly as many entries (live or deleted) as it recorded; an undone batch has no live entry left.
     import_links) echo "SELECT (SELECT count(*) FROM transactions t WHERE t.import_batch_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM import_batches b WHERE b.ledger_id=t.ledger_id AND b.id=t.import_batch_id)) + (SELECT count(*) FROM import_batches b WHERE (SELECT count(*) FROM transactions t WHERE t.ledger_id=b.ledger_id AND t.import_batch_id=b.id) <> b.row_count OR (b.deleted_at IS NOT NULL AND EXISTS (SELECT 1 FROM transactions t WHERE t.ledger_id=b.ledger_id AND t.import_batch_id=b.id AND t.deleted_at IS NULL)))" ;;
+    # Tags (ADR 0035): live, archived and deleted tags, then live links on live entries and on deleted entries.
+    tags) echo "SELECT (SELECT count(*) FROM tags WHERE deleted_at IS NULL AND archived_at IS NULL) || '|' || (SELECT count(*) FROM tags WHERE deleted_at IS NULL AND archived_at IS NOT NULL) || '|' || (SELECT count(*) FROM tags WHERE deleted_at IS NOT NULL) || '|' || (SELECT count(*) FROM transaction_tags l JOIN transactions t ON t.ledger_id=l.ledger_id AND t.id=l.transaction_id WHERE l.deleted_at IS NULL AND t.deleted_at IS NULL) || '|' || (SELECT count(*) FROM transaction_tags l JOIN transactions t ON t.ledger_id=l.ledger_id AND t.id=l.transaction_id WHERE l.deleted_at IS NULL AND t.deleted_at IS NOT NULL)" ;;
+    # Every live link points at a live tag of its own ledger; an entry carries a tag at most once; both legs of a transfer carry the same tags.
+    tag_links) echo "SELECT (SELECT count(*) FROM transaction_tags l WHERE l.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM tags g WHERE g.ledger_id=l.ledger_id AND g.id=l.tag_id AND g.deleted_at IS NULL)) + (SELECT count(*) FROM (SELECT 1 FROM transaction_tags l WHERE l.deleted_at IS NULL GROUP BY l.ledger_id, l.transaction_id, l.tag_id HAVING count(*) > 1) x) + (SELECT count(*) FROM (SELECT 1 FROM transaction_tags l JOIN transactions t ON t.ledger_id=l.ledger_id AND t.id=l.transaction_id WHERE l.deleted_at IS NULL AND t.kind='transfer' AND t.transfer_id IS NOT NULL GROUP BY t.ledger_id, t.transfer_id, l.tag_id HAVING count(*) <> (SELECT count(*) FROM transactions x WHERE x.ledger_id=t.ledger_id AND x.transfer_id=t.transfer_id AND x.kind='transfer')) y)" ;;
     *) return 1 ;;
   esac
 }

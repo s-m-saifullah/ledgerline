@@ -61,6 +61,7 @@ export function transferLeg(row: Transfer) {
     receivableId: null,
     isSplit: false,
     splits: [],
+    tags: row.tags,
     version: row.version,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

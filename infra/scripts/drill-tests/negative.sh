@@ -59,6 +59,13 @@ psqlx "UPDATE contacts SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-000
 psqlx "UPDATE transactions SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-0000000000eb'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "entry outliving its undone import" "Restored import links failed validation" bash restore-drill.sh "$(latest)"
 psqlx "UPDATE transactions SET deleted_at='2026-10-09 00:00:00+00' WHERE id='00000000-0000-7000-8000-0000000000eb'" >/dev/null
+# 9g. a live link to a deleted tag, then a transfer whose two legs carry different tags
+psqlx "UPDATE tags SET deleted_at='2026-10-09 00:00:00+00' WHERE id='00000000-0000-7000-8000-000000000902'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "link to a deleted tag" "Restored tag links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE tags SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-000000000902'" >/dev/null
+psqlx "UPDATE transaction_tags SET deleted_at='2026-10-09 00:00:00+00' WHERE id='00000000-0000-7000-8000-000000000913'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "transfer legs with different tags" "Restored tag links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE transaction_tags SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-000000000913'" >/dev/null
 # 10. clean again, then concurrent writes during the backup must not break the drill
 bash backup.sh >/dev/null; bash restore-drill.sh "$(latest)" >/dev/null 2>&1 && echo "PASS  clean data restores after repairs" || echo "FAIL  clean data did not restore"
 ( for i in $(seq 1 150); do psqlx "INSERT INTO transactions (id,ledger_id,account_id,category_id,kind,date,amount,base_amount) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b1','00000000-0000-7000-8000-0000000000c1','expense','2026-10-09',-$i,-$i)" >/dev/null; done ) &
