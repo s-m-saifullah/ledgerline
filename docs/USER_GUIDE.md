@@ -97,6 +97,15 @@ Lending, borrowing and repaying are transfers, so they never count as income, sp
 
 The Transactions screen groups entries by day, with filters that stay in the address bar. Edit or delete an entry from its details; a deleted entry can be restored with Undo. Deleting an account or category first requires deleting its connected transactions. Merging two categories moves everything from one to the other.
 
+## Tags
+
+A tag is a free-form label for an entry, such as `holiday` or `reimbursable`. An entry can have up to ten. Tags never change a balance, a budget or any total.
+
+- **Adding tags:** in **Add**, open **More details**, and type in the **Tags** box. Tap one of your most used tags, or type a new name and choose **Create**. Press Enter to pick or create without saving the entry. The entry editor and the transfer form have the same box. A transfer's tags sit on both of its sides; its fee and bonus are separate entries and are tagged on their own.
+- **Names:** up to 40 characters, no commas or semicolons.
+- **Finding entries:** on **Transactions**, open **Filter entries** and choose a **Tag**. Tags show as small labels under each entry.
+- **Managing tags:** **More, Tags** lists every tag with how many entries use it. You can rename a tag (entries show the new name at once), archive it (it leaves the lists you pick from but stays on its entries) or delete it. Only a tag no entry uses can be deleted; archive the others.
+
 ## Exporting your data
 
 Your ledger can be downloaded as CSV files that open in Excel, Numbers or Google Sheets.

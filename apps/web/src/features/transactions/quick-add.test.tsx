@@ -1,6 +1,11 @@
 import { type Account, newId, type Transaction } from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render as renderPlain,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type ReactNode, useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
@@ -102,6 +107,15 @@ const props = {
   onCategorySaved: vi.fn(),
   onRefresh: vi.fn(async () => {}),
 };
+// The tag picker needs a query client even when it fetches nothing.
+const render = (ui: React.ReactElement) =>
+  renderPlain(ui, {
+    wrapper: ({ children }) => (
+      <QueryClientProvider client={new QueryClient()}>
+        {children}
+      </QueryClientProvider>
+    ),
+  });
 async function fill() {
   await userEvent.type(screen.getByLabelText("Amount (USD)"), "42.15");
   await chooseCategory("Category", expense.name);

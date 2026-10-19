@@ -26,6 +26,7 @@ export function buildTransferBody(
     bonusCategoryId,
     feeText: typedFee,
     feeCategoryId: feeCategory,
+    tagIds,
     ...fields
   } = values;
   const fee = parseFee(typedFee, from);
@@ -67,6 +68,8 @@ export function buildTransferBody(
     ...(!baseline && fee.kind === "percent"
       ? { fee: { basisPoints: fee.bps, categoryId: feeCategory } }
       : {}),
+    // An edit always says which tags it ends with, so removing the last one clears it.
+    ...(baseline || tagIds.length > 0 ? { tagIds } : {}),
     time: values.time || null,
     note: values.note || null,
   });

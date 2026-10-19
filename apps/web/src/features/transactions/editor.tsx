@@ -12,6 +12,7 @@ import { ApiError } from "../../lib/api";
 import { PrivacyContext } from "../../lib/preferences";
 import { CategoryPicker } from "../categories/picker";
 import { EntryRate } from "../currencies/entry-rate";
+import { TagPicker } from "../tags/tag-picker";
 import {
   getTransaction,
   prepareTransactionEdit,
@@ -347,6 +348,12 @@ export function TransactionEditor({
             rows={2}
             maxLength={2000}
             {...register("note")}
+          />
+          <TagPicker
+            id="edit-transaction-tags"
+            ledgerId={ledgerId}
+            value={watch("tagIds")}
+            onChange={(ids) => setValue("tagIds", ids)}
           />
           <label htmlFor="edit-transaction-status">Status</label>
           <NativeSelect id="edit-transaction-status" {...register("status")}>

@@ -28,6 +28,7 @@ import {
   Settings,
   Shapes,
   Sun,
+  Tags,
   Wallet,
   X,
 } from "lucide-react";
@@ -42,6 +43,7 @@ const moreArea = [
   "/more",
   "/accounts",
   "/categories",
+  "/tags",
   "/currencies",
   "/recurring",
   "/clients",
@@ -78,20 +80,22 @@ export function Shell({
       ? "Accounts"
       : pathname === "/categories"
         ? "Categories"
-        : pathname === "/clients"
-          ? "Clients"
-          : pathname === "/loans"
-            ? "Loans"
-            : pathname === "/import"
-              ? "Import"
-              : pathname === "/currencies"
-                ? "Currencies"
-                : pathname === "/recurring"
-                  ? "Recurring"
-                  : pathname === "/settings"
-                    ? "Settings"
-                    : (destinations.find(({ to }) => to === pathname)?.label ??
-                      "Home");
+        : pathname === "/tags"
+          ? "Tags"
+          : pathname === "/clients"
+            ? "Clients"
+            : pathname === "/loans"
+              ? "Loans"
+              : pathname === "/import"
+                ? "Import"
+                : pathname === "/currencies"
+                  ? "Currencies"
+                  : pathname === "/recurring"
+                    ? "Recurring"
+                    : pathname === "/settings"
+                      ? "Settings"
+                      : (destinations.find(({ to }) => to === pathname)
+                          ?.label ?? "Home");
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -357,6 +361,11 @@ export function Shell({
                     icon: Shapes,
                   } as const,
                   {
+                    to: "/tags",
+                    label: "Tags",
+                    icon: Tags,
+                  } as const,
+                  {
                     to: "/currencies",
                     label: "Currencies",
                     icon: Coins,
@@ -602,6 +611,20 @@ export function MorePage() {
             <h2>Categories</h2>
             <p>
               Create, organize and style your income and expense categories.
+            </p>
+          </div>
+          <ChevronRight size={20} aria-hidden="true" />
+        </Link>
+      </section>
+      <section className="settings-card">
+        <Link to="/tags" className="settings-link">
+          <span className="account-icon">
+            <Tags size={22} />
+          </span>
+          <div>
+            <h2>Tags</h2>
+            <p>
+              Free-form labels for entries, like a trip or a reimbursable cost.
             </p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />

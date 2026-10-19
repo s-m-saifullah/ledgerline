@@ -11,6 +11,8 @@ import { formatTime12 } from "../../lib/time";
 import { getCategories } from "../categories/api";
 import { ExportButton } from "../exports/export-button";
 import { ImportLinks } from "../imports/import-links";
+import { TagChips } from "../tags/tag-chips";
+import { useTags } from "../tags/use-tags";
 import { getAllAccounts, getTransactions } from "./api";
 import {
   dayLabel,
@@ -55,6 +57,7 @@ export function TransactionsPage() {
     queryFn: ({ signal }) => getCategories(ledger?.id as string, signal),
     enabled: !!ledger,
   });
+  const tags = useTags(ledger?.id);
   const accountNames = new Map(
     accounts.data?.map((row) => [
       row.id,
@@ -159,6 +162,22 @@ export function TransactionsPage() {
                 {categories.data?.map((row) => (
                   <option key={row.id} value={row.id}>
                     {categoryName(row.id)}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div>
+              <label htmlFor="filter-tag">Tag</label>
+              <NativeSelect
+                id="filter-tag"
+                value={draft.tagId ?? ""}
+                onChange={(event) => setFilter("tagId", event.target.value)}
+              >
+                <option value="">All tags</option>
+                {tags.data?.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
+                    {row.archivedAt ? " (archived)" : ""}
                   </option>
                 ))}
               </NativeSelect>
@@ -329,6 +348,7 @@ export function TransactionsPage() {
                             {row.note}
                           </span>
                         )}
+                        <TagChips tags={row.tags} />
                       </span>
                       <span className="transaction-row-value">
                         <strong>
