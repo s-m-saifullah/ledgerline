@@ -1,0 +1,2 @@
+ALTER TABLE "recurring_rules" ADD COLUMN "tag_ids" uuid[] DEFAULT '{}'::uuid[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "recurring_rules" ADD CONSTRAINT "recurring_rules_tags_check" CHECK (cardinality("recurring_rules"."tag_ids") <= 10);

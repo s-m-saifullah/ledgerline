@@ -217,3 +217,15 @@ describe("recurring form", () => {
     expect(rule(null)).toMatchObject({ feeText: "", feeCategoryId: "" });
   });
 });
+
+describe("recurring form tags", () => {
+  it("sends the chosen tags with the rule and reads them back", () => {
+    const tag = newId();
+    expect(body({ tagIds: [tag] }).tagIds).toEqual([tag]);
+    expect(body().tagIds).toEqual([]);
+    expect(
+      valuesFromRule({ ...body({ tagIds: [tag] }), id: newId() } as never)
+        .tagIds,
+    ).toEqual([tag]);
+  });
+});

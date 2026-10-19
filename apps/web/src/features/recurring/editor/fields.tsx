@@ -2,6 +2,7 @@ import type { RecurringFrequency } from "@ledgerline/shared";
 import { AmountInput } from "../../../components/amount-input";
 import { NativeSelect } from "../../../components/native-select";
 import { CategoryPicker } from "../../categories/picker";
+import { TagPicker } from "../../tags/tag-picker";
 import { feeHint, feeMinor } from "../../transactions/fee";
 import { FeePreview } from "../../transactions/fee-preview";
 import { everySentence, formatDate } from "../schedule";
@@ -300,7 +301,7 @@ export function renderMoreCategories(form: RuleFormContext) {
 
 /** Payee and note. */
 export function renderPayeeAndNote(form: RuleFormContext) {
-  const { transfer, values, set } = form;
+  const { transfer, values, set, ledgerId } = form;
   return (
     <>
       {!transfer && (
@@ -323,6 +324,18 @@ export function renderPayeeAndNote(form: RuleFormContext) {
         value={values.note}
         onChange={(event) => set("note", event.target.value)}
       />
+      <TagPicker
+        id="rule-tags"
+        ledgerId={ledgerId}
+        value={values.tagIds}
+        onChange={(ids) => set("tagIds", ids)}
+      />
+      {transfer && (
+        <p className="form-help">
+          Both sides of each transfer get these tags. A fee or bonus is its own
+          entry and does not.
+        </p>
+      )}
     </>
   );
 }

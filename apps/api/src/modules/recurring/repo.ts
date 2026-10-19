@@ -34,6 +34,15 @@ export function recurringRepository(db: DatabaseConnection, ledgerId: string) {
           .where(and(rules, eq(recurringRules.id, id)))
       )[0],
     /** Rules that still point at an account or category, so it cannot be deleted (ADR 0006). */
+    /** Takes a tag off every rule that has it (the tag is being deleted); each rule's version moves on. */
+    removeTag: (tagId: string) =>
+      db
+        .update(recurringRules)
+        .set({
+          tagIds: sql`array_remove(${recurringRules.tagIds}, ${tagId}::uuid)`,
+          version: sql`${recurringRules.version} + 1`,
+        })
+        .where(and(rules, sql`${tagId}::uuid = any(${recurringRules.tagIds})`)),
     hasActiveReference: async (
       field: "accountId" | "categoryId",
       id: string,

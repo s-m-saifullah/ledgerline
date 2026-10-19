@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.41 — Tags on recurring rules
+
+Migration 0026 (ADR 0035): `recurring_rules.tag_ids`, a list of at most 10 tag ids (default empty). Recurring rules gain `tagIds` on create, edit and in responses (omitted means none). Every entry a rule creates gets those tags, and a transfer rule puts them on both legs (its fee and bonus do not get them). Unknown or other-ledger tags return 404; archived tags are allowed. Deleting a tag takes it off every rule that carries it and moves those rules' versions on. Backup and restore gain a `rule_tags` invariant.
+
 ## 0.1.40 — Tags in CSV export and import
 
 No migration (ADR 0035, amending ADR 0033 and 0034). The transactions CSV gains a last column, `tags`: the entry's tag names joined with `; `, empty when it has none, repeated on every line of a split entry and read from a transfer's sending leg (text that could run as a formula gets the usual leading apostrophe). The list filter `tagId` also applies to `GET /exports/transactions.csv`. Import rows (`POST /imports/preview` and `POST /imports`) gain an optional `tags` array of names (at most 50 sent, at most 10 used per row after trimming and dropping repeats ignoring case); a name that is not a valid tag name or a row with more than 10 tags is a `problem` row in the preview and a 409 naming the line on confirm. Confirming finds each tag by name ignoring case (archived tags included) or creates it, and puts the tags on the new entries. `POST /imports/preview` returns `newTags` (names no tag has yet, first spelling) and `POST /imports` returns `tagsCreated`. Undoing an import leaves the tags it created.

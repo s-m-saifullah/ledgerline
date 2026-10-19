@@ -28,7 +28,9 @@ import {
   recurringRules,
   recurringRuns,
   session,
+  tags,
   transactions,
+  transactionTags,
   user,
   writeReceipts,
 } from "../../db/schema";
@@ -144,6 +146,9 @@ async function signIn(email: string) {
 }
 async function clearRows() {
   await db
+    .delete(transactionTags)
+    .where(inArray(transactionTags.ledgerId, fixtureLedgers));
+  await db
     .delete(recurringRuns)
     .where(inArray(recurringRuns.ledgerId, fixtureLedgers));
   await db
@@ -152,6 +157,7 @@ async function clearRows() {
   await db
     .delete(transactions)
     .where(inArray(transactions.ledgerId, fixtureLedgers));
+  await db.delete(tags).where(inArray(tags.ledgerId, fixtureLedgers));
   await db
     .delete(writeReceipts)
     .where(inArray(writeReceipts.ledgerId, fixtureLedgers));
@@ -942,5 +948,100 @@ describe("logging", () => {
     ]);
     expect(logged).not.toContain("Secret");
     expect(logged).not.toContain("120000");
+  });
+});
+
+describe("tags on a rule (ADR 0035)", () => {
+  const tagNamed = async (name: string, ledger = ledgerId) => {
+    const response = await send("POST", "/tags", { name }, cookies[0], ledger);
+    expect(response.statusCode, response.body).toBe(201);
+    return response.json() as { id: string; version: number };
+  };
+  const tagsOnEntries = async (accountId: string) => {
+    const rows = await liveEntries(accountId);
+    const links = await db
+      .select()
+      .from(transactionTags)
+      .where(
+        and(
+          inArray(
+            transactionTags.transactionId,
+            rows.map((row) => row.id),
+          ),
+          isNull(transactionTags.deletedAt),
+        ),
+      );
+    return rows.map(
+      (row) => links.filter((link) => link.transactionId === row.id).length,
+    );
+  };
+  it("saves tags on the rule and gives them to every entry it creates", async () => {
+    const trip = await tagNamed("Trip");
+    at("2026-11-03T12:00:00Z");
+    const made = await make(
+      rent({ tagIds: [trip.id], startDate: "2026-09-01" }),
+    );
+    expect(made.tagIds).toEqual([trip.id]);
+    expect((await rule(made.id)).tagIds).toEqual([trip.id]);
+    await run();
+    const entries = await liveEntries();
+    expect(entries.length).toBeGreaterThan(1);
+    expect(await tagsOnEntries(ids.checking)).toEqual(entries.map(() => 1));
+    // A rule without tags makes untagged entries.
+    const plain = await make(rent({ title: "Plain", startDate: "2026-11-01" }));
+    expect(plain.tagIds).toEqual([]);
+  });
+
+  it("puts a transfer rule's tags on both legs", async () => {
+    const trip = await tagNamed("Trip");
+    at("2026-11-03T12:00:00Z");
+    await make(transfer({ tagIds: [trip.id], startDate: "2026-11-01" }));
+    expect(await tagsOnEntries(ids.checking)).toEqual([1]);
+    expect(await tagsOnEntries(ids.savings)).toEqual([1]);
+  });
+
+  it("changes tags on edit and keeps archived tags", async () => {
+    const trip = await tagNamed("Trip");
+    const gift = await tagNamed("Gift");
+    const made = await make(rent({ tagIds: [trip.id] }));
+    await send("POST", `/tags/${gift.id}/archive`, { expectedVersion: 1 });
+    const edited = await send("PATCH", `/recurring-rules/${made.id}`, {
+      ...rent({ tagIds: [gift.id] }),
+      expectedVersion: made.version,
+    });
+    expect(edited.statusCode, edited.body).toBe(200);
+    expect(recurringRuleSchema.parse(edited.json()).tagIds).toEqual([gift.id]);
+  });
+
+  it("drops a deleted tag from its rules, and refuses unknown or foreign tags", async () => {
+    const trip = await tagNamed("Trip");
+    const made = await make(rent({ tagIds: [trip.id] }));
+    const gone = await send("DELETE", `/tags/${trip.id}`, {
+      expectedVersion: trip.version,
+    });
+    expect(gone.statusCode, gone.body).toBe(204);
+    const after = await rule(made.id);
+    expect(after.tagIds).toEqual([]);
+    expect(after.version).toBe(made.version + 1);
+    const foreign = { id: newId() };
+    await db
+      .insert(tags)
+      .values({ id: foreign.id, ledgerId: foreignLedger, name: "Theirs" });
+    for (const tagIds of [[newId()], [foreign.id]])
+      expect(
+        (await send("POST", "/recurring-rules", rent({ tagIds }))).statusCode,
+      ).toBe(404);
+    const many = await Promise.all(
+      Array.from({ length: 11 }, (_, i) => tagNamed(`T${i}`)),
+    );
+    expect(
+      (
+        await send(
+          "POST",
+          "/recurring-rules",
+          rent({ tagIds: many.map((tag) => tag.id) }),
+        )
+      ).statusCode,
+    ).toBe(400);
   });
 });

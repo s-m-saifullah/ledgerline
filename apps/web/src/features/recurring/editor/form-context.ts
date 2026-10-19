@@ -6,6 +6,7 @@ import type { upcomingDates } from "../schedule";
 
 /** What the rule editor's field sections read from the editor (one object, no hidden state). */
 export type RuleFormContext = {
+  ledgerId: string;
   values: RuleFormValues;
   set: <K extends keyof RuleFormValues>(
     key: K,
