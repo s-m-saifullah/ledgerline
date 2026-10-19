@@ -82,7 +82,12 @@ test.beforeEach(async ({ page }, testInfo) => {
 });
 test.afterEach(async () => {
   for (const id of fixtures) {
-    for (const table of ["transactions", "accounts", "categories"])
+    for (const table of [
+      "transactions",
+      "accounts",
+      "categories",
+      "currencies",
+    ])
       await pool.query(
         `UPDATE ${table} SET deleted_at=now(), updated_at=now() WHERE ledger_id=$1`,
         [id],
@@ -128,6 +133,34 @@ test("insights moves between months and lists the figures", async ({
   await expect(page.getByText(`Spent in ${monthName(previous)}`)).toBeVisible();
   await expect(page.locator(".stat-card .amount")).toHaveText("$7.00");
   await expect(page.getByRole("link", { name: /Fun/ })).toContainText("100.0%");
-  await page.getByText("Show the figures").click();
-  await expect(page.getByRole("table")).toContainText("-$7.00");
+  await page.getByText("Show the figures").first().click();
+  await expect(page.getByRole("table").first()).toContainText("-$7.00");
+});
+
+test("insights shows net worth over time and flags a month with no rate", async ({
+  page,
+}) => {
+  const ledgerId = fixtures[0] as string;
+  await pool.query(
+    "INSERT INTO currencies (id,ledger_id,code) VALUES ($1,$2,'EUR')",
+    [newId(), ledgerId],
+  );
+  await pool.query(
+    "INSERT INTO accounts (id,ledger_id,name,type,currency,opening_balance) VALUES ($1,$2,'Euros','bank','EUR',5000)",
+    [newId(), ledgerId],
+  );
+  await page.goto("/insights");
+  await expect(
+    page.getByRole("heading", { name: /^Net worth, 12 months to / }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: /Net worth at the end/ }),
+  ).toBeVisible();
+  await expect(page.locator(".nw-note")).toContainText("EUR");
+  await page.getByText("Show the figures").last().click();
+  const table = page.getByRole("table").last();
+  // 250000 - 1000 - 9000 - 5500 - 700 cents; the euro account has no rate, so it is left out.
+  await expect(table).toContainText("$2,338.00");
+  await expect(table).toContainText("without EUR");
+  await expect(table).toContainText("-$7.00");
 });

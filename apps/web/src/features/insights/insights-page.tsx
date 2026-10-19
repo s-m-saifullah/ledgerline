@@ -4,8 +4,9 @@ import { Amount } from "../../components/amount-text";
 import { MonthSwitcher } from "../../components/month-switcher";
 import { getLedgers } from "../../lib/api";
 import { monthLabel, useCurrentMonth } from "../../lib/month";
-import { getCashFlowReport, getSpendingReport } from "./api";
+import { getCashFlowReport, getNetWorthReport, getSpendingReport } from "./api";
 import { CashFlowChart } from "./cash-flow-chart";
+import { NetWorthChart } from "./net-worth-chart";
 import { SpendingList } from "./spending-list";
 
 export function InsightsPage() {
@@ -28,8 +29,16 @@ export function InsightsPage() {
     enabled: !!ledger,
     staleTime: 0,
   });
+  const worth = useQuery({
+    queryKey: ["reports", "net-worth", ledger?.id, month],
+    queryFn: ({ signal }) =>
+      getNetWorthReport(ledger?.id as string, month, signal),
+    enabled: !!ledger,
+    staleTime: 0,
+  });
   const selected = flow.data?.months.find((row) => row.month === month);
-  const failed = ledgers.isError || spending.isError || flow.isError;
+  const failed =
+    ledgers.isError || spending.isError || flow.isError || worth.isError;
   const hasFlow = !!flow.data?.months.some(
     (row) => row.income.amount > 0 || row.spending.amount > 0,
   );
@@ -45,7 +54,7 @@ export function InsightsPage() {
       {failed && (
         <div className="account-error">
           <p role="alert">
-            {spending.data || flow.data
+            {spending.data || flow.data || worth.data
               ? "Couldn't refresh. Showing the last numbers we loaded."
               : "Couldn't load your insights."}
           </p>
@@ -57,6 +66,7 @@ export function InsightsPage() {
               if (ledger) {
                 void spending.refetch();
                 void flow.refetch();
+                void worth.refetch();
               }
             }}
           >
@@ -104,6 +114,14 @@ export function InsightsPage() {
           ) : (
             <p className="muted">Nothing recorded in these months.</p>
           )}
+        </>
+      )}
+      {worth.data && (
+        <>
+          <h2 className="insight-heading">
+            Net worth, 12 months to {monthLabel(month)}
+          </h2>
+          <NetWorthChart report={worth.data} selected={month} />
         </>
       )}
     </>
