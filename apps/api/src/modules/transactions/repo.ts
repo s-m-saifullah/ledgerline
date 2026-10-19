@@ -18,7 +18,11 @@ import {
   sql,
 } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
-import { transactionSplits, transactions } from "../../db/schema";
+import {
+  transactionSplits,
+  transactions,
+  transactionTags,
+} from "../../db/schema";
 import type { EntryPricing } from "./pricing";
 
 export type TransactionRow = typeof transactions.$inferSelect;
@@ -138,6 +142,9 @@ export function transactionRepository(
                   sql`exists (select 1 from ${transactionSplits} where ${transactionSplits.ledgerId} = ${transactions.ledgerId} and ${transactionSplits.transactionId} = ${transactions.id} and ${transactionSplits.categoryId} = ${query.categoryId} and ${transactionSplits.deletedAt} is null)`,
                 )
               : undefined,
+            query.tagId
+              ? sql`exists (select 1 from ${transactionTags} where ${transactionTags.ledgerId} = ${transactions.ledgerId} and ${transactionTags.transactionId} = ${transactions.id} and ${transactionTags.tagId} = ${query.tagId} and ${transactionTags.deletedAt} is null)`
+              : undefined,
             query.from ? gte(transactions.date, query.from) : undefined,
             query.to ? lte(transactions.date, query.to) : undefined,
             query.status ? eq(transactions.status, query.status) : undefined,
@@ -187,6 +194,9 @@ export function transactionRepository(
                   eq(transactions.categoryId, query.categoryId),
                   sql`exists (select 1 from ${transactionSplits} where ${transactionSplits.ledgerId} = ${transactions.ledgerId} and ${transactionSplits.transactionId} = ${transactions.id} and ${transactionSplits.categoryId} = ${query.categoryId} and ${transactionSplits.deletedAt} is null)`,
                 )
+              : undefined,
+            query.tagId
+              ? sql`exists (select 1 from ${transactionTags} where ${transactionTags.ledgerId} = ${transactions.ledgerId} and ${transactionTags.transactionId} = ${transactions.id} and ${transactionTags.tagId} = ${query.tagId} and ${transactionTags.deletedAt} is null)`
               : undefined,
             query.from ? gte(transactions.date, query.from) : undefined,
             query.to ? lte(transactions.date, query.to) : undefined,

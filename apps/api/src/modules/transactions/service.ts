@@ -30,6 +30,7 @@ import { type EntryPricing, priceEntry, pricePayment } from "./pricing";
 import { type TransactionRow, transactionRepository } from "./repo";
 
 import { type SplitRow, splitRepository } from "./split-repo";
+import { assignTags, entryTags } from "./tag-service";
 
 async function dto(
   db: DatabaseConnection,
@@ -39,6 +40,7 @@ async function dto(
   return transactionDto(
     row,
     row.isSplit ? await splitRepository(db, ledgerId).forParent(row) : [],
+    (await entryTags(db, ledgerId, [row.id])).get(row.id),
   );
 }
 function accountOf(
@@ -305,11 +307,17 @@ export async function listTransactions(
       const splits = page.length
         ? await splitRepository(tx, ledgerId).list(page.map((row) => row.id))
         : [];
+      const tags = await entryTags(
+        tx,
+        ledgerId,
+        page.map((row) => row.id),
+      );
       return {
         items: page.map((row) =>
           transactionDto(
             row,
             splits.filter((line) => line.transactionId === row.id),
+            tags.get(row.id),
           ),
         ),
         nextCursor:
@@ -419,6 +427,8 @@ export async function createTransactionInContext(
     body.splits ?? [],
     [],
   );
+  if (body.tagIds?.length)
+    await assignTags(context.tx, context.ledgerId, [row.id], body.tagIds);
   await checkBalances(context, rows);
   return { status: 201, body: await dto(context.tx, context.ledgerId, row) };
 }
@@ -523,6 +533,13 @@ export function updateTransaction(
         parsed.data.splits ?? [],
         previous,
       );
+      if (parsed.data.tagIds !== undefined)
+        await assignTags(
+          context.tx,
+          context.ledgerId,
+          [row.id],
+          parsed.data.tagIds,
+        );
       await checkBalances(context, rows);
       return {
         status: 200,

@@ -50,6 +50,7 @@ function entry(over: Record<string, unknown> = {}) {
     receivableId: null,
     isSplit: false,
     splits: [],
+    tags: [],
     version: 1,
     createdAt: "2026-10-05T00:00:00.000Z",
     updatedAt: "2026-10-05T00:00:00.000Z",

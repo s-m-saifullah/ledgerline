@@ -3,10 +3,11 @@ import {
   feeFromBps,
   type JsonValue,
   type Money,
+  type TagRef,
   transferSchema,
   type UpdateTransfer,
 } from "@ledgerline/shared";
-import type { Database } from "../../db/client";
+import type { Database, DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionAccounts } from "../accounts/service";
 import {
@@ -24,6 +25,7 @@ import { nextVersion } from "../writes/version";
 import { postedBalance, postedTransactionTotals } from "./balance-service";
 import { priceEntry, priceTransfer } from "./pricing";
 import type { TransactionRow } from "./repo";
+import { assignTags, entryTags } from "./tag-service";
 import { transferRepository } from "./transfer-repo";
 
 function accountOf(
@@ -58,6 +60,7 @@ function dto(
   rows: TransactionRow[],
   bonus?: TransactionRow,
   fee?: TransactionRow,
+  tags: TagRef[] = [],
 ) {
   const { from, to } = pair(rows);
   return transferSchema.parse({
@@ -73,6 +76,7 @@ function dto(
     baseAmount: { amount: to.baseAmount, currency: "USD" },
     bonus: linkedDto(bonus),
     fee: linkedDto(fee),
+    tags,
     date: from.date,
     time: from.time,
     note: from.note,
@@ -80,6 +84,15 @@ function dto(
     createdAt: from.createdAt.toISOString(),
     updatedAt: from.updatedAt.toISOString(),
   });
+}
+/** The tags a transfer carries (both legs carry the same ones; the sending leg is read). */
+async function tagsOf(
+  db: DatabaseConnection,
+  ledgerId: string,
+  rows: TransactionRow[],
+) {
+  const { from } = pair(rows);
+  return (await entryTags(db, ledgerId, [from.id])).get(from.id) ?? [];
 }
 /** What a requested fee costs, in the sending account's smallest unit (ADR 0025). */
 function feeCost(
@@ -162,7 +175,13 @@ export async function getTransfer(
 ) {
   await requireLedgerRead(db, actorId, ledgerId);
   const repo = transferRepository(db, ledgerId);
-  return dto(await repo.find(id), await repo.bonus(id), await repo.fee(id));
+  const rows = await repo.find(id);
+  return dto(
+    rows,
+    await repo.bonus(id),
+    await repo.fee(id),
+    await tagsOf(db, ledgerId, rows),
+  );
 }
 /** Saves a transfer (and its optional bonus and fee) inside a write that is already open. */
 export async function createTransferInContext(
@@ -180,6 +199,13 @@ export async function createTransferInContext(
   });
   const repo = transferRepository(context.tx, context.ledgerId);
   const saved = await repo.create(body, pricing);
+  if (body.tagIds?.length)
+    await assignTags(
+      context.tx,
+      context.ledgerId,
+      saved.map((row) => row.id),
+      body.tagIds,
+    );
   let bonus: TransactionRow | undefined;
   if (body.bonus) {
     const to = accountOf(rows, body.toAccountId);
@@ -263,7 +289,15 @@ export async function createTransferInContext(
     );
   }
   await check(context, rows);
-  return { status: 201, body: dto(saved, bonus, fee) };
+  return {
+    status: 201,
+    body: dto(
+      saved,
+      bonus,
+      fee,
+      await tagsOf(context.tx, context.ledgerId, saved),
+    ),
+  };
 }
 export function createTransfer(
   db: Database,
@@ -305,11 +339,23 @@ export function updateTransfer(
             : undefined,
       });
       const saved = await repo.update(id, body, version, pricing);
+      if (body.tagIds !== undefined)
+        await assignTags(
+          context.tx,
+          context.ledgerId,
+          saved.map((row) => row.id),
+          body.tagIds,
+        );
       await check(context, rows);
       // An edit leaves the bonus and the fee alone; they are ordinary entries from then on.
       return {
         status: 200,
-        body: dto(saved, await repo.bonus(id), await repo.fee(id)),
+        body: dto(
+          saved,
+          await repo.bonus(id),
+          await repo.fee(id),
+          await tagsOf(context.tx, context.ledgerId, saved),
+        ),
       };
     },
   );
@@ -356,7 +402,12 @@ export function transferLifecycle(
       return restore
         ? {
             status: 200,
-            body: dto(updated, await repo.bonus(id), await repo.fee(id)),
+            body: dto(
+              updated,
+              await repo.bonus(id),
+              await repo.fee(id),
+              await tagsOf(context.tx, context.ledgerId, updated),
+            ),
           }
         : { status: 204, body: null };
     },

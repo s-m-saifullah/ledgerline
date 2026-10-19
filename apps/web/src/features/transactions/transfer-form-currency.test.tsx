@@ -58,6 +58,7 @@ const saved = (
   receivedAmount: { amount: received, currency: to.currency },
   bonus: null,
   fee: null,
+  tags: [],
   baseAmount: { amount: 10000, currency: "USD" },
   date: "2026-10-07",
   time: null,

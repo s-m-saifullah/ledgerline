@@ -8,6 +8,7 @@ import {
   versionSchema,
 } from "./contracts";
 import { rateSchema } from "./currency";
+import { tagIdsSchema, tagRefSchema } from "./tags";
 
 export const transactionKindSchema = z.enum(["expense", "income"]);
 export const transactionStatusSchema = z.enum(["cleared", "pending"]);
@@ -56,6 +57,8 @@ export const createTransactionSchema = z
     ...fields,
     // Omission preserves ordinary pre-upgrade receipt fingerprints.
     splits: splitsInputSchema.optional(),
+    // Omission keeps ordinary fingerprints unchanged and means no tags (ADR 0035).
+    tagIds: tagIdsSchema.optional(),
     // Set the rate by hand: base-currency value of one unit of the entry's currency. Omit it
     // and the newest stored rate on or before the date is used.
     fxRate: rateSchema.optional(),
@@ -130,6 +133,8 @@ export const createTransactionSchema = z
 export const updateTransactionSchema = z
   .strictObject({
     splits: splitsInputSchema.nullable().optional(),
+    // Omitted keeps the entry's tags; an empty list clears them.
+    tagIds: tagIdsSchema.optional(),
     fxRate: rateSchema.optional(),
     accountId: fields.accountId.optional(),
     categoryId: fields.categoryId.optional(),
@@ -181,6 +186,7 @@ export const transactionListQuerySchema = z
     text: z.string().trim().min(1).max(200).optional(),
     status: transactionStatusSchema.optional(),
     kind: z.enum(["expense", "income", "transfer"]).optional(),
+    tagId: idSchema.optional(),
   })
   .refine((body) => !body.from || !body.to || body.from <= body.to, {
     path: ["to"],
@@ -208,6 +214,8 @@ export const transactionSchema = z.object({
   receivableId: idSchema.nullable().default(null),
   isSplit: z.boolean().default(false),
   splits: z.array(transactionSplitSchema).default([]),
+  // Old idempotency receipts predate tags.
+  tags: z.array(tagRefSchema).default([]),
   version: versionSchema,
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),

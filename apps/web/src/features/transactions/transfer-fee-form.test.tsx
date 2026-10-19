@@ -42,6 +42,7 @@ const saved = (extra: Partial<Transfer> = {}): Transfer => ({
   baseAmount: { amount: 10000, currency: "USD" },
   bonus: null,
   fee: null,
+  tags: [],
   date: "2026-10-07",
   time: null,
   note: null,

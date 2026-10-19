@@ -2,6 +2,7 @@ import type { DatabaseConnection } from "../../db/client";
 import { transactionDto } from "./dto";
 import { transactionRepository } from "./repo";
 import { splitRepository } from "./split-repo";
+import { entryTags } from "./tag-service";
 
 /** Cleared income/expense for a calendar range, pending count and the latest rows. */
 export async function homeTransactionOverview(
@@ -19,6 +20,11 @@ export async function homeTransactionOverview(
   const splits = rows.length
     ? await splitRepository(db, ledgerId).list(rows.map((row) => row.id))
     : [];
+  const tags = await entryTags(
+    db,
+    ledgerId,
+    rows.map((row) => row.id),
+  );
   const destinations = new Map(
     (
       await repo.transferDestinations(
@@ -37,6 +43,7 @@ export async function homeTransactionOverview(
       transaction: transactionDto(
         row,
         splits.filter((line) => line.transactionId === row.id),
+        tags.get(row.id),
       ),
     })),
   };

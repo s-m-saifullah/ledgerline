@@ -9,6 +9,7 @@ export * from "./csv-parse";
 export * from "./currency";
 export * from "./dates";
 export * from "./exports";
+export * from "./tags";
 export * from "./transactions";
 
 export const newId = v7;
