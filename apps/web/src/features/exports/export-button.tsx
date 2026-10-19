@@ -9,7 +9,7 @@ export function ExportButton({
   disabled,
 }: {
   ledgerId: string | undefined;
-  filters: Record<string, string | undefined>;
+  filters: Record<string, string | boolean | undefined>;
   disabled: boolean;
 }) {
   const { busy, message, start } = useCsvDownload();

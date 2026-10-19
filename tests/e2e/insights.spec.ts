@@ -164,3 +164,19 @@ test("insights shows net worth over time and flags a month with no rate", async 
   await expect(table).toContainText("without EUR");
   await expect(table).toContainText("-$7.00");
 });
+
+test("filtering Transactions by a main category includes its subcategories", async ({
+  page,
+}) => {
+  await page.goto("/transactions");
+  await page.getByText("Filter entries").click();
+  await page.getByLabel("Category", { exact: true }).selectOption({
+    label: "Food",
+  });
+  await expect(page.getByText("Includes its subcategories.")).toBeVisible();
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(page).toHaveURL(/includeSubcategories=true/);
+  await expect(page.getByText("Lunch")).toBeVisible();
+  await expect(page.getByText("Market")).toBeVisible();
+  await expect(page.getByText("Cinema")).toHaveCount(0);
+});

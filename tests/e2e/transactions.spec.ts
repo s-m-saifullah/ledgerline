@@ -224,6 +224,19 @@ test("groups days, loads stable cursor pages, retains URL filters and hides amou
   });
   await page.getByRole("button", { name: "Clear filters" }).click();
   await expect(page).not.toHaveURL(/text=/);
+  await expect(page.getByRole("button", { name: "Clear filters" })).toHaveCount(
+    0,
+  );
+});
+
+test("shows Clear filters only while a filter is applied", async ({ page }) => {
+  await openHistory(page);
+  const clear = page.getByRole("button", { name: "Clear filters" });
+  await expect(clear).toHaveCount(0);
+  await page.getByLabel("Search payer, payee or note").fill("a");
+  await expect(clear).toHaveCount(0);
+  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(clear).toBeVisible();
 });
 
 test("reloads stale edits, corrects exact money/time/status and refreshes posted balances", async ({

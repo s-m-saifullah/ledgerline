@@ -26,6 +26,20 @@ import {
 import type { EntryPricing } from "./pricing";
 
 export type TransactionRow = typeof transactions.$inferSelect;
+/** An entry or one of its split lines is in the category, or in a subcategory when asked for. */
+function categoryFilter(
+  query: Pick<TransactionListQuery, "categoryId" | "includeSubcategories">,
+) {
+  const id = query.categoryId as string;
+  const family = query.includeSubcategories
+    ? sql`(select c.id from categories c where c.ledger_id = ${transactions.ledgerId} and (c.id = ${id} or c.parent_id = ${id}))`
+    : sql`(${id}::uuid)`;
+  return or(
+    sql`${transactions.categoryId} in ${family}`,
+    sql`exists (select 1 from ${transactionSplits} where ${transactionSplits.ledgerId} = ${transactions.ledgerId} and ${transactionSplits.transactionId} = ${transactions.id} and ${transactionSplits.categoryId} in ${family} and ${transactionSplits.deletedAt} is null)`,
+  );
+}
+
 export function transactionRepository(
   db: DatabaseConnection,
   ledgerId: string,
@@ -136,12 +150,7 @@ export function transactionRepository(
             query.accountId
               ? eq(transactions.accountId, query.accountId)
               : undefined,
-            query.categoryId
-              ? or(
-                  eq(transactions.categoryId, query.categoryId),
-                  sql`exists (select 1 from ${transactionSplits} where ${transactionSplits.ledgerId} = ${transactions.ledgerId} and ${transactionSplits.transactionId} = ${transactions.id} and ${transactionSplits.categoryId} = ${query.categoryId} and ${transactionSplits.deletedAt} is null)`,
-                )
-              : undefined,
+            query.categoryId ? categoryFilter(query) : undefined,
             query.tagId
               ? sql`exists (select 1 from ${transactionTags} where ${transactionTags.ledgerId} = ${transactions.ledgerId} and ${transactionTags.transactionId} = ${transactions.id} and ${transactionTags.tagId} = ${query.tagId} and ${transactionTags.deletedAt} is null)`
               : undefined,
@@ -189,12 +198,7 @@ export function transactionRepository(
                   sql`(${transactions.kind} = 'transfer' and exists (select 1 from transactions i where i.ledger_id = ${ledgerId} and i.transfer_id = ${transactions.transferId} and i.amount > 0 and i.deleted_at is null and i.account_id = ${query.accountId}))`,
                 )
               : undefined,
-            query.categoryId
-              ? or(
-                  eq(transactions.categoryId, query.categoryId),
-                  sql`exists (select 1 from ${transactionSplits} where ${transactionSplits.ledgerId} = ${transactions.ledgerId} and ${transactionSplits.transactionId} = ${transactions.id} and ${transactionSplits.categoryId} = ${query.categoryId} and ${transactionSplits.deletedAt} is null)`,
-                )
-              : undefined,
+            query.categoryId ? categoryFilter(query) : undefined,
             query.tagId
               ? sql`exists (select 1 from ${transactionTags} where ${transactionTags.ledgerId} = ${transactions.ledgerId} and ${transactionTags.transactionId} = ${transactions.id} and ${transactionTags.tagId} = ${query.tagId} and ${transactionTags.deletedAt} is null)`
               : undefined,

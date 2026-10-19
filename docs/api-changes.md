@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.43 — Category filter can include subcategories
+
+No migration. `GET /transactions` and `GET /exports/transactions.csv` accept `includeSubcategories=true` (the only accepted value) next to `categoryId`: the filter then also matches entries, and split lines, filed under that category's subcategories. Without it `categoryId` matches only that category, as before (Insights links to "directly in" a parent rely on this). A subcategory has no children, so the flag changes nothing for it; another ledger's categories never match.
+
 ## 0.1.42 — Net worth over time
 
 No migration (ADR 0036). One read-only endpoint in the `Reports` group: `GET /api/v1/ledgers/{ledgerId}/reports/net-worth?to=YYYY-MM&months=N` (`months` 1 to 24, default 12), oldest first. Each point has `month`, `asOf` (the month's last day, or today for the current month; a later month repeats today), `netWorth` (base currency) and `unconvertedCurrencies`. A point is every account's opening balance plus its cleared, live entries dated on or before `asOf` (transfers count on each account; pending and deleted entries do not), each account valued at the newest stored rate on or before `asOf`. A currency with no such rate leaves its accounts out of that point and is named (a zero balance never makes a point incomplete); a later rate is never borrowed. The accounts are Home's (archived and client loan accounts included), so the latest point equals Home's `netWorth` unless an entry or rate is dated after today. Viewers can read; a ledger the caller is not a member of is `404`; an invalid month or `months` is `400`; a total beyond the exact integer range is `409`.
