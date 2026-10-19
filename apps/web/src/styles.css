@@ -19,7 +19,8 @@ body {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 button,
@@ -55,7 +56,8 @@ h2 {
   font-weight: 600;
   letter-spacing: -0.025em;
 }
-input {
+input,
+textarea {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-input);
@@ -64,7 +66,8 @@ input {
   color: var(--text);
   width: 100%;
 }
-input[aria-invalid="true"] {
+input[aria-invalid="true"],
+textarea[aria-invalid="true"] {
   border-color: var(--danger);
 }
 select {
