@@ -711,6 +711,8 @@ export const recurringRules = pgTable(
     feeCategoryId: uuid("fee_category_id"),
     payee: text("payee"),
     note: text("note"),
+    // Tags each created entry gets (ADR 0035). Deleting a tag removes it from here; archived tags stay.
+    tagIds: uuid("tag_ids").array().notNull().default(sql`'{}'::uuid[]`),
     frequency: text("frequency", {
       enum: ["day", "week", "month", "year"],
     }).notNull(),
@@ -787,6 +789,10 @@ export const recurringRules = pgTable(
       sql`(${table.pausedAt} IS NULL) = (${table.pausedReason} IS NULL)`,
     ),
     check("recurring_rules_version_check", sql`${table.version} >= 1`),
+    check(
+      "recurring_rules_tags_check",
+      sql`cardinality(${table.tagIds}) <= 10`,
+    ),
   ],
 );
 

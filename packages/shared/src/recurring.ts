@@ -5,6 +5,7 @@ import {
   moneySchema,
   versionSchema,
 } from "./contracts";
+import { tagIdsSchema } from "./tags";
 import { transactionDateSchema } from "./transactions";
 
 export const recurringFrequencySchema = z.enum([
@@ -180,6 +181,8 @@ const ruleFields = {
   fee: fee.nullable().default(null),
   payee: z.string().trim().max(200).nullable(),
   note: z.string().trim().max(2000).nullable(),
+  // Tags each created entry gets; a transfer's two legs get them, its fee and bonus do not (ADR 0035).
+  tagIds: tagIdsSchema.default([]),
   frequency: recurringFrequencySchema,
   interval: z.number().int().min(1).max(365),
   startDate: transactionDateSchema,

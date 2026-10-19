@@ -204,6 +204,7 @@ export function RuleEditor({
     );
   const currency = from?.currency ?? "USD";
   const form: RuleFormContext = {
+    ledgerId,
     values,
     set,
     setValues,

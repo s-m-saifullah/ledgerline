@@ -14,6 +14,7 @@ import { ApiProblem } from "../../lib/problem";
 import { lockTransactionAccounts } from "../accounts/service";
 import { validateTransactionCategory } from "../categories/service";
 import { requireLedgerRead, requireLedgerWrite } from "../ledgers/service";
+import { requireTags } from "../tags/service";
 import {
   runFinancialWrite,
   type WriteContext,
@@ -68,6 +69,7 @@ function ruleDto(row: RuleRow, needsAttention: number): RecurringRule {
           : { basisPoints: row.feeBps ?? 0, categoryId: row.feeCategoryId },
     payee: row.payee,
     note: row.note,
+    tagIds: row.tagIds,
     frequency: row.frequency,
     interval: row.interval,
     startDate: row.startDate,
@@ -114,6 +116,7 @@ const columns = (body: RuleInput) => ({
   feeCategoryId: body.fee?.categoryId ?? null,
   payee: body.payee,
   note: body.note,
+  tagIds: body.tagIds,
   frequency: body.frequency,
   interval: body.interval,
   startDate: body.startDate,
@@ -179,6 +182,7 @@ async function validateTemplate(context: WriteContext, body: RuleInput) {
         "Use the receiving account's currency for the bonus.",
       );
   }
+  await requireTags(context.tx, context.ledgerId, body.tagIds);
   if (body.kind !== "transfer" && body.categoryId)
     await validateTransactionCategory(
       context.tx,

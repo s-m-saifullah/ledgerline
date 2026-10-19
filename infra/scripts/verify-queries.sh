@@ -7,7 +7,7 @@
 # Checks that become manifest lines (check|name|value).
 VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans imports tags)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links rule_tags)
 
 verify_requires() {
   case "$1" in
@@ -20,6 +20,7 @@ verify_requires() {
     tips|tip_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='tip_payment_id')" ;;
     imports|import_links) echo "SELECT to_regclass('public.import_batches') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='import_batch_id')" ;;
     tags|tag_links) echo "SELECT to_regclass('public.tags') IS NOT NULL AND to_regclass('public.transaction_tags') IS NOT NULL" ;;
+    rule_tags) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='recurring_rules' AND column_name='tag_ids')" ;;
     loans|loan_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts' AND column_name='contact_id')" ;;
     recurring|recurring_links) echo "SELECT to_regclass('public.recurring_rules') IS NOT NULL AND to_regclass('public.recurring_runs') IS NOT NULL" ;;
     *) echo "SELECT false" ;;
@@ -74,6 +75,8 @@ verify_sql() {
     tags) echo "SELECT (SELECT count(*) FROM tags WHERE deleted_at IS NULL AND archived_at IS NULL) || '|' || (SELECT count(*) FROM tags WHERE deleted_at IS NULL AND archived_at IS NOT NULL) || '|' || (SELECT count(*) FROM tags WHERE deleted_at IS NOT NULL) || '|' || (SELECT count(*) FROM transaction_tags l JOIN transactions t ON t.ledger_id=l.ledger_id AND t.id=l.transaction_id WHERE l.deleted_at IS NULL AND t.deleted_at IS NULL) || '|' || (SELECT count(*) FROM transaction_tags l JOIN transactions t ON t.ledger_id=l.ledger_id AND t.id=l.transaction_id WHERE l.deleted_at IS NULL AND t.deleted_at IS NOT NULL)" ;;
     # Every live link points at a live tag of its own ledger; an entry carries a tag at most once; both legs of a transfer carry the same tags.
     tag_links) echo "SELECT (SELECT count(*) FROM transaction_tags l WHERE l.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM tags g WHERE g.ledger_id=l.ledger_id AND g.id=l.tag_id AND g.deleted_at IS NULL)) + (SELECT count(*) FROM (SELECT 1 FROM transaction_tags l WHERE l.deleted_at IS NULL GROUP BY l.ledger_id, l.transaction_id, l.tag_id HAVING count(*) > 1) x) + (SELECT count(*) FROM (SELECT 1 FROM transaction_tags l JOIN transactions t ON t.ledger_id=l.ledger_id AND t.id=l.transaction_id WHERE l.deleted_at IS NULL AND t.kind='transfer' AND t.transfer_id IS NOT NULL GROUP BY t.ledger_id, t.transfer_id, l.tag_id HAVING count(*) <> (SELECT count(*) FROM transactions x WHERE x.ledger_id=t.ledger_id AND x.transfer_id=t.transfer_id AND x.kind='transfer')) y)" ;;
+    # Every tag a live recurring rule carries is a live tag of the rule's ledger (deleting a tag takes it off its rules).
+    rule_tags) echo "SELECT count(*) FROM recurring_rules r, unnest(r.tag_ids) AS t(id) WHERE r.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM tags g WHERE g.ledger_id=r.ledger_id AND g.id=t.id AND g.deleted_at IS NULL)" ;;
     *) return 1 ;;
   esac
 }

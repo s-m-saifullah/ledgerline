@@ -68,6 +68,7 @@ function rule(extra: Partial<RecurringRule> = {}): RecurringRule {
     fee: null,
     payee: null,
     note: null,
+    tagIds: [],
     frequency: "month",
     interval: 1,
     startDate: "2026-11-01",

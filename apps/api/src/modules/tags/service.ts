@@ -11,6 +11,7 @@ import type { Database, DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionCategories } from "../categories/service";
 import { requireLedgerRead } from "../ledgers/service";
+import { removeTagFromRules } from "../recurring/references";
 import { detachUnusedTag, tagUsage } from "../transactions/tag-service";
 import {
   runFinancialWrite,
@@ -210,6 +211,7 @@ export function deleteTag(
       const current = required(await repo.find(id));
       const version = nextVersion(current.version, body.expectedVersion);
       await detachUnusedTag(context.tx, context.ledgerId, id);
+      await removeTagFromRules(context.tx, context.ledgerId, id);
       requireVersionUpdate(
         await repo.update(
           id,

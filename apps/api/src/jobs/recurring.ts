@@ -61,6 +61,7 @@ async function executeOccurrence(
           date,
           time: null,
           note: rule.note,
+          ...(rule.tagIds.length ? { tagIds: rule.tagIds } : {}),
           ...(rule.receivedAmount !== null && rule.receivedCurrency
             ? {
                 receivedAmount: {
@@ -117,6 +118,7 @@ async function executeOccurrence(
           status: "cleared",
           payee: rule.payee,
           note: rule.note,
+          ...(rule.tagIds.length ? { tagIds: rule.tagIds } : {}),
         }),
       );
       transactionId = (result.body as { id: string }).id;

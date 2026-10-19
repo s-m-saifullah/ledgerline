@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.40"
+    "version": "0.1.41"
   },
   "components": {
     "schemas": {
@@ -36881,6 +36881,16 @@
                               }
                             ]
                           },
+                          "tagIds": {
+                            "default": [],
+                            "maxItems": 10,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                            }
+                          },
                           "frequency": {
                             "type": "string",
                             "enum": [
@@ -36976,6 +36986,7 @@
                           "fee",
                           "payee",
                           "note",
+                          "tagIds",
                           "frequency",
                           "interval",
                           "startDate",
@@ -37551,6 +37562,16 @@
                       }
                     ]
                   },
+                  "tagIds": {
+                    "default": [],
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                    }
+                  },
                   "frequency": {
                     "type": "string",
                     "enum": [
@@ -37864,6 +37885,16 @@
                         }
                       ]
                     },
+                    "tagIds": {
+                      "default": [],
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      }
+                    },
                     "frequency": {
                       "type": "string",
                       "enum": [
@@ -37959,6 +37990,7 @@
                     "fee",
                     "payee",
                     "note",
+                    "tagIds",
                     "frequency",
                     "interval",
                     "startDate",
@@ -38570,6 +38602,16 @@
                         }
                       ]
                     },
+                    "tagIds": {
+                      "default": [],
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      }
+                    },
                     "frequency": {
                       "type": "string",
                       "enum": [
@@ -38665,6 +38707,7 @@
                     "fee",
                     "payee",
                     "note",
+                    "tagIds",
                     "frequency",
                     "interval",
                     "startDate",
@@ -39233,6 +39276,16 @@
                       }
                     ]
                   },
+                  "tagIds": {
+                    "default": [],
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                    }
+                  },
                   "frequency": {
                     "type": "string",
                     "enum": [
@@ -39562,6 +39615,16 @@
                         }
                       ]
                     },
+                    "tagIds": {
+                      "default": [],
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      }
+                    },
                     "frequency": {
                       "type": "string",
                       "enum": [
@@ -39657,6 +39720,7 @@
                     "fee",
                     "payee",
                     "note",
+                    "tagIds",
                     "frequency",
                     "interval",
                     "startDate",
@@ -40691,6 +40755,16 @@
                         }
                       ]
                     },
+                    "tagIds": {
+                      "default": [],
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      }
+                    },
                     "frequency": {
                       "type": "string",
                       "enum": [
@@ -40786,6 +40860,7 @@
                     "fee",
                     "payee",
                     "note",
+                    "tagIds",
                     "frequency",
                     "interval",
                     "startDate",
@@ -41428,6 +41503,16 @@
                         }
                       ]
                     },
+                    "tagIds": {
+                      "default": [],
+                      "maxItems": 10,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
+                      }
+                    },
                     "frequency": {
                       "type": "string",
                       "enum": [
@@ -41523,6 +41608,7 @@
                     "fee",
                     "payee",
                     "note",
+                    "tagIds",
                     "frequency",
                     "interval",
                     "startDate",

@@ -26,6 +26,7 @@ export type RuleFormValues = {
   feeCategoryId: string;
   payee: string;
   note: string;
+  tagIds: string[];
   frequency: RecurringFrequency;
   interval: string;
   startDate: string;
@@ -52,6 +53,7 @@ export function ruleDefaults(
     feeCategoryId: "",
     payee: "",
     note: "",
+    tagIds: [],
     frequency: "month",
     interval: "1",
     startDate: today,
@@ -94,6 +96,7 @@ export function valuesFromRule(rule: RecurringRule): RuleFormValues {
     feeCategoryId: rule.fee?.categoryId ?? "",
     payee: rule.payee ?? "",
     note: rule.note ?? "",
+    tagIds: rule.tagIds,
     frequency: rule.frequency,
     interval: String(rule.interval),
     startDate: rule.startDate,
@@ -189,6 +192,7 @@ export function ruleBody(
           : null,
     payee: transfer ? null : values.payee.trim() || null,
     note: values.note.trim() || null,
+    tagIds: values.tagIds,
     frequency: values.frequency,
     interval,
     startDate: values.startDate,
