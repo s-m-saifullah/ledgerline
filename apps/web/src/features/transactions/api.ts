@@ -112,6 +112,8 @@ export function prepareTransactionEdit(
       JSON.stringify({
         ...fields,
         ...(time === undefined ? {} : { time }),
+        // An empty list clears the entry's tags.
+        tagIds: fields.tagIds ?? [],
         // Explicit null converts a split back to a single-category entry.
         ...(transaction.isSplit && !body.splits ? { splits: null } : {}),
         expectedVersion: transaction.version,

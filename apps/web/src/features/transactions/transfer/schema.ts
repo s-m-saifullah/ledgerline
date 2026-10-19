@@ -5,6 +5,7 @@ import {
   feeFromBps,
   rateSchema,
   type Transfer,
+  tagIdsSchema,
 } from "@ledgerline/shared";
 import { z } from "zod";
 import { cleanAmountText, decimalFromCents } from "../../../lib/money";
@@ -42,6 +43,7 @@ export function makeSchema(accounts: readonly Account[]) {
       // An optional fee on the sending account (ADR 0025): "2" is fixed, "2%" is a percentage.
       feeText: z.string(),
       feeCategoryId: z.string(),
+      tagIds: tagIdsSchema,
     })
     .superRefine((row, ctx) => {
       const from = currencyOf(row.fromAccountId);
@@ -145,6 +147,7 @@ export function defaults(
         bonusCategoryId: "",
         feeText: "",
         feeCategoryId: "",
+        tagIds: row.tags.map((tag) => tag.id),
       }
     : {
         amount: "",
@@ -162,5 +165,6 @@ export function defaults(
         bonusCategoryId: "",
         feeText: "",
         feeCategoryId: "",
+        tagIds: [],
       };
 }

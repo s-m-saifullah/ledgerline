@@ -175,3 +175,19 @@ it("reads the amount in the account's currency and sends a rate only when set by
     }).success,
   ).toBe(false);
 });
+it("sends tags only when there are some, so a plain entry's payload is unchanged", () => {
+  const base = {
+    ...transactionDefaults(actorId, ledgerId, [account("Bank")]),
+    amount: "5",
+    categoryId: newId(),
+  };
+  expect(transactionBody(base)).not.toHaveProperty("tagIds");
+  const tag = newId();
+  expect(transactionBody({ ...base, tagIds: [tag] }).tagIds).toEqual([tag]);
+  expect(
+    transactionFormSchema.safeParse({
+      ...base,
+      tagIds: Array.from({ length: 11 }, () => newId()),
+    }).success,
+  ).toBe(false);
+});

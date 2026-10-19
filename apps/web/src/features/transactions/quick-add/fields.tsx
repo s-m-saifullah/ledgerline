@@ -5,6 +5,7 @@ import { DateTimeInput } from "../../../components/date-time-input";
 import { NativeSelect } from "../../../components/native-select";
 import { CategoryPicker } from "../../categories/picker";
 import { EntryRate } from "../../currencies/entry-rate";
+import { TagPicker } from "../../tags/tag-picker";
 import { amountMinor } from "../form";
 import { SplitFields } from "../split-fields";
 import type { QuickAddContext } from "./context";
@@ -243,6 +244,12 @@ export function renderMoreDetails(ctx: QuickAddContext) {
           maxLength={2000}
           rows={2}
           {...register("note")}
+        />
+        <TagPicker
+          id="transaction-tags"
+          ledgerId={ctx.ledgerId}
+          value={ctx.watch("tagIds")}
+          onChange={(ids) => ctx.setValue("tagIds", ids)}
         />
         <label htmlFor="transaction-status">Status</label>
         <NativeSelect id="transaction-status" {...register("status")}>

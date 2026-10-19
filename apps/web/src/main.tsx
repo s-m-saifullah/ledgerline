@@ -30,6 +30,7 @@ import { LoansPage } from "./features/loans/loans-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import { SettingsPage } from "./features/settings/settings-page";
 import { EmptyPage, MorePage, Shell } from "./features/shell/shell";
+import { TagsPage } from "./features/tags/tags-page";
 import { transactionSearchSchema } from "./features/transactions/filters";
 import { TransactionsPage } from "./features/transactions/transactions-page";
 import { getSession } from "./lib/api";
@@ -104,7 +105,12 @@ function Root() {
                 client.removeQueries({ queryKey: ["categories"] });
                 client.removeQueries({ queryKey: ["transactions"] });
                 client.removeQueries({ queryKey: ["home"] });
-                for (const key of ["contacts", "receivables", "clientHistory"])
+                for (const key of [
+                  "contacts",
+                  "receivables",
+                  "clientHistory",
+                  "tags",
+                ])
                   client.removeQueries({ queryKey: [key] });
                 await router.navigate({ to: "/" });
               }}
@@ -186,6 +192,11 @@ const importRoute = createRoute({
   path: "/import",
   component: ImportPage,
 });
+const tagsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/tags",
+  component: TagsPage,
+});
 const loans = createRoute({
   getParentRoute: () => rootRoute,
   path: "/loans",
@@ -200,6 +211,7 @@ const router = createRouter({
     more,
     accounts,
     categories,
+    tagsRoute,
     currenciesRoute,
     recurring,
     clients,

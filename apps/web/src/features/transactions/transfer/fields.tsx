@@ -4,6 +4,7 @@ import { DateTimeInput } from "../../../components/date-time-input";
 import { NativeSelect } from "../../../components/native-select";
 import { CategoryPicker } from "../../categories/picker";
 import { EntryRate } from "../../currencies/entry-rate";
+import { TagPicker } from "../../tags/tag-picker";
 import { feeHint } from "../fee";
 import { FeePreview } from "../fee-preview";
 import { amountMinor } from "../form";
@@ -330,7 +331,7 @@ export function renderLinkedNotes(form: TransferFormContext) {
 
 /** Date, time and note. */
 export function renderWhenAndNote(form: TransferFormContext) {
-  const { register, errors } = form;
+  const { register, errors, watch, setValue, ledgerId } = form;
   return (
     <>
       <div className="transaction-context">
@@ -365,6 +366,12 @@ export function renderWhenAndNote(form: TransferFormContext) {
         rows={2}
         maxLength={2000}
         {...register("note")}
+      />
+      <TagPicker
+        id="transfer-tags"
+        ledgerId={ledgerId}
+        value={watch("tagIds")}
+        onChange={(ids) => setValue("tagIds", ids)}
       />
     </>
   );

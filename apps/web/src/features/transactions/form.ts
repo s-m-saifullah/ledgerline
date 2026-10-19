@@ -7,6 +7,7 @@ import {
   parseMinorUnits,
   rateSchema,
   type Transaction,
+  tagIdsSchema,
   transactionKindSchema,
   transactionStatusSchema,
   transactionTimeSchema,
@@ -69,6 +70,7 @@ export const transactionFormSchema = z
     status: transactionStatusSchema,
     payee: z.string().trim().max(200),
     note: z.string().trim().max(2000),
+    tagIds: tagIdsSchema,
   })
   .superRefine((values, ctx) => {
     const digits = currencyDigits(values.currency);
@@ -134,10 +136,11 @@ export function transactionBody(values: TransactionFormValues) {
   const parsed = transactionFormSchema.parse(values);
   const digits = currencyDigits(parsed.currency);
   const cents = parseMinorUnits(parsed.amount, digits);
-  const { splitEnabled, splits, currency, fxRate, ...fields } = parsed;
+  const { splitEnabled, splits, currency, fxRate, tagIds, ...fields } = parsed;
   return createTransactionSchema.parse({
     ...fields,
     ...(fxRate ? { fxRate } : {}),
+    ...(tagIds.length > 0 ? { tagIds } : {}),
     categoryId: splitEnabled ? null : parsed.categoryId,
     ...(splitEnabled
       ? {
@@ -209,6 +212,7 @@ export function transactionDefaults(
     status: "cleared",
     payee: "",
     note: "",
+    tagIds: [],
   };
 }
 
@@ -236,5 +240,6 @@ export function transactionEditDefaults(
     status: row.status,
     payee: row.payee ?? "",
     note: row.note ?? "",
+    tagIds: row.tags.map((tag) => tag.id),
   };
 }
