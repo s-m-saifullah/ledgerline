@@ -376,6 +376,28 @@ export async function latestRates(
   return found;
 }
 
+/**
+ * Stored rates dated on or before `date` for each currency, oldest first, so a caller can
+ * pick the newest one on or before any earlier date (the lookup rule of ADR 0022). A
+ * currency with none is absent.
+ */
+export async function ratesUpTo(
+  db: DatabaseConnection,
+  ledgerId: string,
+  codes: string[],
+  date: string,
+) {
+  const found = new Map<string, { date: string; rate: string }[]>();
+  const wanted = [...new Set(codes)];
+  if (!wanted.length) return found;
+  for (const row of await rateRepository(db, ledgerId).upTo(wanted, date)) {
+    const list = found.get(row.code) ?? [];
+    list.push({ date: row.date, rate: rateDto(row).rate });
+    found.set(row.code, list);
+  }
+  return found;
+}
+
 /** An account may use the base currency or any currency the ledger has added. */
 export async function requireUsableCurrency(
   db: DatabaseConnection,

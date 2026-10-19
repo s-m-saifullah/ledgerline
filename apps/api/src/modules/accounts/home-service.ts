@@ -26,3 +26,16 @@ export async function accountBalanceOverview(
     balance: postedBalance(row.openingBalance, totals.get(row.id)),
   }));
 }
+
+/** Every non-deleted account (archived included) with its opening balance, for balances at past dates. */
+export async function accountOpeningOverview(
+  db: DatabaseConnection,
+  ledgerId: string,
+) {
+  const rows = await accountRepository(db, ledgerId).all();
+  return rows.map((row) => ({
+    id: row.id,
+    currency: row.currency,
+    openingBalance: row.openingBalance,
+  }));
+}

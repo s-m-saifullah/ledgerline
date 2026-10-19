@@ -1,6 +1,6 @@
 # ADR 0036: Net worth over time
 
-Date: 2026-10-19. Status: accepted by the owner when approving the design in chat (every recommended choice). Not built yet. Builds on [0022](0022-currency-valuation-and-rate-rules.md) and [0032](0032-report-definitions.md); answers the question ADR 0022 and ADR 0032 left open, how to value old balances.
+Date: 2026-10-19. Status: accepted by the owner when approving the design in chat (every recommended choice). API built in 0.1.42 (the screen follows). Builds on [0022](0022-currency-valuation-and-rate-rules.md) and [0032](0032-report-definitions.md); answers the question ADR 0022 and ADR 0032 left open, how to value old balances.
 
 ## Context
 
@@ -16,3 +16,8 @@ Home shows net worth now, valuing each account balance at the newest stored rate
 - **No storage.** No table, no migration, no cached figures, so nothing new for the backup manifest or restore drill.
 - **Screen.** A "Net worth over time" section on Insights in plain markup (Recharts is not installed), with the figures listed under the chart, tabular figures, privacy mode and a note on incomplete months.
 - **Privacy.** Report requests log like any other read: no amounts or account names.
+
+## Details settled while building the API
+
+- Each point carries `asOf`, the day it is valued: the month's last day, or today for the current month and any later one. Entries and rates dated after today are not used, so the latest point equals Home's figure unless something is dated in the future (Home counts those at once).
+- A currency counts as left out only when an account in it has a non-zero balance at that point and no rate on or before it. A zero balance adds nothing, so it never makes a month incomplete (Home lists such a currency; the report does not).

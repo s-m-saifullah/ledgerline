@@ -1,6 +1,8 @@
 import {
   cashFlowReportQuerySchema,
   cashFlowReportSchema,
+  netWorthReportQuerySchema,
+  netWorthReportSchema,
   problemSchema,
   reportParamsSchema,
   spendingReportQuerySchema,
@@ -13,7 +15,11 @@ import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import type { Auth } from "../auth/service";
-import { getCashFlowReport, getSpendingReport } from "./service";
+import {
+  getCashFlowReport,
+  getNetWorthReport,
+  getSpendingReport,
+} from "./service";
 
 const errors = {
   400: problemSchema,
@@ -74,6 +80,29 @@ export async function reportRoutes(
     },
     async (request) =>
       getCashFlowReport(
+        db,
+        await actor(request.headers),
+        request.params.ledgerId,
+        request.query.to,
+        request.query.months,
+      ),
+  );
+  app.get(
+    "/api/v1/ledgers/:ledgerId/reports/net-worth",
+    {
+      schema: {
+        summary: "Net worth at the end of each month",
+        description:
+          "Read-only. Net worth in the base currency at the end of each of the last `months` calendar months ending at `to` (YYYY-MM; default 12, at most 24), oldest first. A point is every account's opening balance plus its cleared, live entries dated on or before that day (transfers count on each account; pending and deleted entries do not), valued at the newest stored rate on or before that day. The accounts are the same as Home's net worth (archived and client loan accounts included). A currency with no stored rate on or before a point leaves its accounts out of that point and is named in `unconvertedCurrencies`; a later rate is never borrowed. The current month's point is as of today (`asOf`).",
+        tags: ["Reports"],
+        security: [{ sessionCookie: [] }],
+        params: reportParamsSchema,
+        querystring: netWorthReportQuerySchema,
+        response: { 200: netWorthReportSchema, ...errors },
+      },
+    },
+    async (request) =>
+      getNetWorthReport(
         db,
         await actor(request.headers),
         request.params.ledgerId,
