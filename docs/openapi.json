@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.39"
+    "version": "0.1.40"
   },
   "components": {
     "schemas": {
@@ -59612,6 +59612,15 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "tags": {
+                          "default": [],
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 200
+                          }
                         }
                       },
                       "required": [
@@ -59722,11 +59731,19 @@
                         "problem"
                       ],
                       "additionalProperties": false
+                    },
+                    "newTags": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
                     }
                   },
                   "required": [
                     "rows",
-                    "counts"
+                    "counts",
+                    "newTags"
                   ],
                   "additionalProperties": false
                 }
@@ -60166,6 +60183,15 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "tags": {
+                          "default": [],
+                          "maxItems": 50,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "maxLength": 200
+                          }
                         }
                       },
                       "required": [
@@ -60295,11 +60321,18 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991
+                    },
+                    "tagsCreated": {
+                      "default": 0,
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     }
                   },
                   "required": [
                     "batch",
-                    "duplicatesIncluded"
+                    "duplicatesIncluded",
+                    "tagsCreated"
                   ],
                   "additionalProperties": false
                 }

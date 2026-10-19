@@ -2,6 +2,7 @@ import type { ExportTransactionsQuery } from "@ledgerline/shared";
 import type { DatabaseConnection } from "../../db/client";
 import { transactionRepository } from "./repo";
 import { splitRepository } from "./split-repo";
+import { entryTags } from "./tag-service";
 
 export const EXPORT_PAGE_SIZE = 1000;
 
@@ -26,8 +27,14 @@ export async function exportTransactionPage(
       )
     ).map((row) => [row.transferId, row]),
   );
+  const tags = await entryTags(
+    db,
+    ledgerId,
+    rows.map((row) => row.id),
+  );
   return {
     rows,
+    tagsOf: (id: string) => tags.get(id),
     full: rows.length === EXPORT_PAGE_SIZE,
     linesOf: (id: string) =>
       lines

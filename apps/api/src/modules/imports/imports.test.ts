@@ -19,8 +19,10 @@ import {
   ledgerMembers,
   ledgers,
   session,
+  tags,
   transactionSplits,
   transactions,
+  transactionTags,
   user,
   writeReceipts,
 } from "../../db/schema";
@@ -140,11 +142,15 @@ async function seed(ledger = ledgerId): Promise<Setup> {
 async function clear() {
   await db.transaction(async (tx) => {
     await tx
+      .delete(transactionTags)
+      .where(inArray(transactionTags.ledgerId, ids));
+    await tx
       .delete(transactionSplits)
       .where(inArray(transactionSplits.ledgerId, ids));
     await tx.delete(transactions).where(inArray(transactions.ledgerId, ids));
   });
   await db.delete(importBatches).where(inArray(importBatches.ledgerId, ids));
+  await db.delete(tags).where(inArray(tags.ledgerId, ids));
   await db.delete(categories).where(inArray(categories.ledgerId, ids));
   await db.delete(accounts).where(inArray(accounts.ledgerId, ids));
   await db.delete(writeReceipts).where(inArray(writeReceipts.ledgerId, ids));
@@ -711,5 +717,124 @@ describe("access", () => {
       ).statusCode,
     ).toBe(403);
     expect((await entries(s.checking)).length).toBe(1);
+  });
+});
+
+describe("tags in a file", () => {
+  const tagsOf = async (accountId: string) => {
+    const response = await get(
+      `/transactions?accountId=${accountId}&limit=100`,
+    );
+    return (
+      response.json().items as { date: string; tags: { name: string }[] }[]
+    )
+      .map((e) => [e.date, e.tags.map((t) => t.name).sort()] as const)
+      .sort((a, b) => a[0].localeCompare(b[0]));
+  };
+  it("previews which tags are new, ignoring case and keeping the first spelling", async () => {
+    await send("/tags", { name: "Trip" });
+    const result = await preview(s.checking, [
+      row(s.food, { tags: ["trip", "Gift", "gift", "  Holiday "] }),
+      row(s.food, { tags: ["HOLIDAY", "Gift"], date: "2026-10-06" }),
+    ]);
+    expect(result.newTags).toEqual(["Gift", "Holiday"]);
+    expect(result.counts.ready).toBe(2);
+  });
+
+  it("flags rows with a bad tag name or too many tags, and saves nothing for them", async () => {
+    const eleven = Array.from({ length: 11 }, (_, i) => `t${i}`);
+    const result = await preview(s.checking, [
+      row(s.food, { tags: ["fine"] }),
+      row(s.food, { tags: ["a;b"] }),
+      row(s.food, { tags: ["x".repeat(41)] }),
+      row(s.food, { tags: eleven }),
+    ]);
+    expect(result.rows.map((r) => r.state)).toEqual([
+      "ready",
+      "problem",
+      "problem",
+      "problem",
+    ]);
+    const refused = await post("/imports", {
+      accountId: s.checking,
+      sourceName: null,
+      rows: [row(s.food, { tags: eleven })],
+    });
+    expect(refused.statusCode).toBe(409);
+    expect(await entries(s.checking)).toHaveLength(0);
+    expect((await get("/tags")).json().items).toHaveLength(0);
+  });
+
+  it("finds tags by name or creates them, and an undo leaves the tags", async () => {
+    const trip = await send("/tags", { name: "Trip" });
+    await send("/tags", { name: "Old" }).then((tag) =>
+      send(`/tags/${tag.id}/archive`, { expectedVersion: tag.version }),
+    );
+    const response = await post("/imports", {
+      accountId: s.checking,
+      sourceName: null,
+      rows: [
+        row(s.food, { tags: ["TRIP", "Gift"] }),
+        row(s.food, { tags: ["old"], date: "2026-10-06" }),
+        row(s.food, { date: "2026-10-07" }),
+      ],
+    });
+    expect(response.statusCode, response.body).toBe(201);
+    const result = createImportResultSchema.parse(response.json());
+    expect(result.tagsCreated).toBe(1);
+    expect(await tagsOf(s.checking)).toEqual([
+      ["2026-10-05", ["Gift", "Trip"]],
+      ["2026-10-06", ["Old"]],
+      ["2026-10-07", []],
+    ]);
+    // The existing tag was reused, not copied.
+    const tagList = (await get("/tags")).json().items as {
+      id: string;
+      name: string;
+      usageCount: number;
+    }[];
+    expect(tagList).toHaveLength(3);
+    expect(tagList.find((t) => t.id === trip.id)?.usageCount).toBe(1);
+    const undone = await post(`/imports/${result.batch.id}/undo`, {
+      expectedVersion: result.batch.version,
+    });
+    expect(undone.statusCode).toBe(200);
+    expect((await get("/tags")).json().items).toHaveLength(3);
+    expect(await entries(s.checking)).toHaveLength(0);
+  });
+
+  it("does not use another ledger's tags", async () => {
+    const other = await send("/tags", { name: "Trip" }, otherLedger);
+    const response = await post("/imports", {
+      accountId: s.checking,
+      sourceName: null,
+      rows: [row(s.food, { tags: ["Trip"] })],
+    });
+    expect(response.statusCode, response.body).toBe(201);
+    expect(createImportResultSchema.parse(response.json()).tagsCreated).toBe(1);
+    const mine = (await get("/tags")).json().items as { id: string }[];
+    expect(mine).toHaveLength(1);
+    expect(mine[0]?.id).not.toBe(other.id);
+    const theirs = (await get("/tags", otherLedger)).json().items as {
+      usageCount: number;
+    }[];
+    expect(theirs[0]?.usageCount).toBe(0);
+  });
+
+  it("round-trips the tags column of an export", async () => {
+    const trip = await send("/tags", { name: "Trip" });
+    await send("/transactions", {
+      accountId: s.checking,
+      categoryId: s.food,
+      kind: "expense",
+      date: "2026-10-02",
+      amount: money(-1050),
+      tagIds: [trip.id],
+    });
+    const [head, ...lines] = parseCsv(
+      (await get("/exports/transactions.csv")).body,
+    );
+    const at = (head as string[]).indexOf("tags");
+    expect(lines.map((cells) => cells[at])).toEqual(["Trip"]);
   });
 });

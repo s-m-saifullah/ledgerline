@@ -72,12 +72,18 @@ export function createImport(
         rowCount: body.rows.length,
       });
       if (!batch) throw new Error("Import batch was not saved");
-      await createImportedEntries(context, batch.id, account.id, body.rows);
+      const { tagsCreated } = await createImportedEntries(
+        context,
+        batch.id,
+        account.id,
+        body.rows,
+      );
       return {
         status: 201,
         body: {
           batch: dto(batch, body.rows.length),
           duplicatesIncluded: duplicates.size,
+          tagsCreated,
         },
       };
     },

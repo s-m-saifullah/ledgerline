@@ -15,6 +15,7 @@ export function templateCsv() {
       "payee",
       "note",
       "status",
+      "tags",
     ],
     [
       "2026-01-15",
@@ -26,6 +27,7 @@ export function templateCsv() {
       "Corner shop",
       "Weekly shop",
       "cleared",
+      "home; weekly",
     ],
     [
       "2026-01-16",
@@ -37,6 +39,7 @@ export function templateCsv() {
       "Acme Inc",
       "January pay",
       "cleared",
+      "",
     ],
   ];
   return `﻿${lines.map((cells) => cells.join(",")).join("\r\n")}\r\n`;

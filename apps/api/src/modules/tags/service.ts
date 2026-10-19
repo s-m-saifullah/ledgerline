@@ -251,3 +251,37 @@ export async function tagRefs(
     ]),
   );
 }
+/** The comparison key of a tag name: tags are the same when this is. */
+export const tagKey = (name: string) => name.trim().toLowerCase();
+/** Which of these names (by key) already belong to a live tag, archived ones included. */
+export async function existingTagKeys(
+  db: DatabaseConnection,
+  ledgerId: string,
+  names: string[],
+) {
+  const rows = await tagRepository(db, ledgerId).byNames([
+    ...new Set(names.map(tagKey)),
+  ]);
+  return new Set(rows.map((row) => tagKey(row.name)));
+}
+/** Finds each tag by name (ignoring case) or creates it; returns key to id and how many were new. */
+export async function ensureTagsByName(
+  tx: DatabaseConnection,
+  ledgerId: string,
+  names: string[],
+) {
+  const repo = tagRepository(tx, ledgerId);
+  const keys = [...new Set(names.map(tagKey))];
+  const ids = new Map(
+    (await repo.byNames(keys)).map((row) => [tagKey(row.name), row.id]),
+  );
+  let created = 0;
+  for (const name of names) {
+    const key = tagKey(name);
+    if (ids.has(key)) continue;
+    const row = required(await repo.create(name.trim()));
+    ids.set(key, row.id);
+    created++;
+  }
+  return { ids, created };
+}

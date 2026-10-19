@@ -2,18 +2,46 @@ import {
   createTransactionSchema,
   type ImportPreview,
   type ImportRow,
+  maxTagsPerEntry,
+  tagNameSchema,
 } from "@ledgerline/shared";
 import type { DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { lockTransactionAccounts } from "../accounts/service";
 import { validateTransactionCategory } from "../categories/service";
+import { existingTagKeys, tagKey } from "../tags/service";
 import type { WriteContext } from "../writes/service";
 import { priceEntry } from "./pricing";
 import { transactionRepository } from "./repo";
 import { checkBalances } from "./service";
+import { attachImportedTags } from "./tag-service";
 
 const signed = (row: ImportRow) =>
   row.kind === "expense" ? -row.amount : row.amount;
+
+/** A row's tag names, trimmed and without repeats (ignoring case), or why they can't be used. */
+function rowTags(row: ImportRow): { names: string[]; problem: string | null } {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of row.tags) {
+    const name = raw.trim();
+    if (!name || seen.has(tagKey(name))) continue;
+    if (!tagNameSchema.safeParse(name).success)
+      return {
+        names: [],
+        problem:
+          "A tag name must be 1 to 40 characters, without commas or semicolons.",
+      };
+    seen.add(tagKey(name));
+    names.push(name);
+  }
+  return names.length > maxTagsPerEntry
+    ? {
+        names: [],
+        problem: `An entry can have at most ${maxTagsPerEntry} tags.`,
+      }
+    : { names, problem: null };
+}
 
 /**
  * Which rows of a file already look like entries in the ledger: the same id (a file this app
@@ -106,7 +134,9 @@ export async function previewImportRows(
         ),
       );
     const reason =
-      checkedCategories.get(categoryKey) ?? checkedDates.get(row.date);
+      checkedCategories.get(categoryKey) ??
+      checkedDates.get(row.date) ??
+      rowTags(row).problem;
     if (reason) problems.set(row.line, reason);
   }
   const duplicates = await findImportDuplicates(
@@ -128,6 +158,17 @@ export async function previewImportRows(
       reason: problem ?? duplicate ?? null,
     };
   });
+  // Tag names no tag has yet (first spelling wins); confirming creates them.
+  const wanted = new Map<string, string>();
+  for (const row of rows)
+    for (const name of rowTags(row).names)
+      if (!wanted.has(tagKey(name))) wanted.set(tagKey(name), name);
+  const known = await existingTagKeys(context.tx, context.ledgerId, [
+    ...wanted.values(),
+  ]);
+  const newTags = [...wanted]
+    .filter(([key]) => !known.has(key))
+    .map(([, name]) => name);
   const count = (state: "ready" | "duplicate" | "problem") =>
     out.filter((row) => row.state === state).length;
   return {
@@ -137,6 +178,7 @@ export async function previewImportRows(
       duplicate: count("duplicate"),
       problem: count("problem"),
     },
+    newTags,
   };
 }
 
@@ -175,6 +217,7 @@ export async function createImportedEntries(
     }
   }
   const repo = transactionRepository(tx, ledgerId);
+  const tagged: { entryId: string; names: string[] }[] = [];
   for (const row of rows) {
     const amount = { amount: signed(row), currency: account.currency };
     try {
@@ -183,7 +226,9 @@ export async function createImportedEntries(
         amount,
         date: row.date,
       });
-      await repo.create(
+      const tags = rowTags(row);
+      if (tags.problem) throw new ApiProblem(409, "Conflict", tags.problem);
+      const saved = await repo.create(
         createTransactionSchema.parse({
           accountId,
           categoryId: row.categoryId,
@@ -198,6 +243,8 @@ export async function createImportedEntries(
         pricing,
         { importBatchId: batchId },
       );
+      if (saved && tags.names.length)
+        tagged.push({ entryId: saved.id, names: tags.names });
     } catch (error) {
       if (error instanceof ApiProblem)
         throw new ApiProblem(
@@ -209,7 +256,9 @@ export async function createImportedEntries(
       throw error;
     }
   }
+  const tagsCreated = await attachImportedTags(tx, ledgerId, tagged);
   await checkBalances(context, locked);
+  return { tagsCreated };
 }
 
 /** Deletes whatever is left of an import; entries already deleted stay as they are. */

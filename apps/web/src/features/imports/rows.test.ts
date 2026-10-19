@@ -204,3 +204,25 @@ describe("readRows", () => {
     });
   });
 });
+
+describe("tags column", () => {
+  it("splits names on ; or , without repeats and reads the export's apostrophe guard", () => {
+    const { rows, problems } = read(
+      'Date,Amount,Tags\n2026-10-05,-1,"Holiday; gift, holiday"\n2026-10-06,-2,\n2026-10-07,-3,\'=odd\n',
+    );
+    expect(problems).toEqual([]);
+    expect(rows.map((row) => row.tags)).toEqual([
+      ["Holiday", "gift"],
+      [],
+      ["=odd"],
+    ]);
+  });
+  it("refuses a row with more than ten tags", () => {
+    const names = Array.from({ length: 11 }, (_, i) => `t${i}`).join(";");
+    const { rows, problems } = read(
+      `Date,Amount,Tags\n2026-10-05,-1,${names}\n`,
+    );
+    expect(rows).toEqual([]);
+    expect(problems[0]?.reason).toContain("at most 10 tags");
+  });
+});

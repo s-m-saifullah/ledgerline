@@ -20,7 +20,8 @@ type ColumnKey =
   | "subcategory"
   | "payee"
   | "note"
-  | "status";
+  | "status"
+  | "tags";
 
 function ColumnSelect({
   w,
@@ -221,6 +222,11 @@ export function ColumnsStep({ w }: { w: Wizard }) {
           <ColumnSelect w={w} name="note" label="Note" />
           <ColumnSelect w={w} name="category" label="Category" />
           <ColumnSelect w={w} name="subcategory" label="Subcategory" />
+          <ColumnSelect
+            w={w}
+            name="tags"
+            label="Tags (names separated by ; or ,)"
+          />
           <ColumnSelect w={w} name="time" label="Time" />
           <ColumnSelect
             w={w}

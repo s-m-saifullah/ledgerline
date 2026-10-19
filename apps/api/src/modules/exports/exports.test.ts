@@ -11,8 +11,10 @@ import {
   ledgerMembers,
   ledgers,
   session,
+  tags,
   transactionSplits,
   transactions,
+  transactionTags,
   user,
   writeReceipts,
 } from "../../db/schema";
@@ -112,6 +114,7 @@ const header = [
   "line",
   "fx_rate",
   "base_amount",
+  "tags",
 ];
 /** Rows without their ids, which change on every run. */
 const body = (rows: string[][]) => rows.slice(1).map((row) => row.slice(1));
@@ -119,10 +122,14 @@ const body = (rows: string[][]) => rows.slice(1).map((row) => row.slice(1));
 async function clear() {
   await db.transaction(async (tx) => {
     await tx
+      .delete(transactionTags)
+      .where(inArray(transactionTags.ledgerId, ids));
+    await tx
       .delete(transactionSplits)
       .where(inArray(transactionSplits.ledgerId, ids));
     await tx.delete(transactions).where(inArray(transactions.ledgerId, ids));
   });
+  await db.delete(tags).where(inArray(tags.ledgerId, ids));
   await db.delete(categories).where(inArray(categories.ledgerId, ids));
   await db.delete(accounts).where(inArray(accounts.ledgerId, ids));
   await db.delete(writeReceipts).where(inArray(writeReceipts.ledgerId, ids));
@@ -355,6 +362,7 @@ describe("transactions export", () => {
         "",
         "1",
         "2500.00",
+        "",
       ],
       [
         "2026-10-02",
@@ -373,6 +381,7 @@ describe("transactions export", () => {
         "",
         "1",
         "10.00",
+        "",
       ],
       [
         "2026-10-03",
@@ -391,6 +400,7 @@ describe("transactions export", () => {
         "",
         "1",
         "90.00",
+        "",
       ],
       [
         "2026-10-04",
@@ -409,6 +419,7 @@ describe("transactions export", () => {
         "",
         "1",
         "25.00",
+        "",
       ],
       [
         "2026-10-05",
@@ -427,6 +438,7 @@ describe("transactions export", () => {
         "1",
         "1",
         "60.00",
+        "",
       ],
       [
         "2026-10-05",
@@ -445,6 +457,7 @@ describe("transactions export", () => {
         "2",
         "1",
         "30.00",
+        "",
       ],
       [
         "2026-10-06",
@@ -463,6 +476,7 @@ describe("transactions export", () => {
         "",
         "1",
         "50.00",
+        "",
       ],
       [
         "2026-10-07",
@@ -481,6 +495,7 @@ describe("transactions export", () => {
         "",
         "0.0067",
         "0.08",
+        "",
       ],
       [
         "2026-10-08",
@@ -499,12 +514,74 @@ describe("transactions export", () => {
         "",
         "1",
         "100.00",
+        "",
       ],
     ]);
     // Split lines share their entry's id; every other row has its own.
     const idsOf = rows.slice(1).map((row) => row[0]);
     expect(idsOf[4]).toBe(idsOf[5]);
     expect(new Set(idsOf).size).toBe(8);
+  });
+
+  it("writes each entry's tags, on every split line and on a transfer's sending leg", async () => {
+    const s = await fixture();
+    const trip = await send("/tags", { name: "Trip" });
+    const odd = await send("/tags", { name: "=odd" });
+    await send("/transactions", {
+      accountId: s.checking,
+      categoryId: s.fun,
+      kind: "expense",
+      date: "2026-11-01",
+      amount: money(-500),
+      tagIds: [trip.id],
+    });
+    await send("/transactions", {
+      accountId: s.checking,
+      categoryId: s.fun,
+      kind: "expense",
+      date: "2026-11-02",
+      amount: money(-700),
+      tagIds: [odd.id, trip.id],
+    });
+    await db
+      .update(accounts)
+      .set({ archivedAt: null })
+      .where(inArray(accounts.id, [s.savings]));
+    await send("/transfers", {
+      fromAccountId: s.checking,
+      toAccountId: s.savings,
+      amount: money(900),
+      date: "2026-11-03",
+      tagIds: [trip.id],
+    });
+    const tagged = body(await csv("/exports/transactions.csv")).filter(
+      (row) => (row[0] ?? "") >= "2026-11-01",
+    );
+    expect(tagged.map((row) => [row[0], row[2], row.at(-1)])).toEqual([
+      ["2026-11-01", "expense", "Trip"],
+      ["2026-11-02", "expense", "'=odd; Trip"],
+      ["2026-11-03", "transfer", "Trip"],
+    ]);
+    // Entries without tags leave the column empty.
+    const plain = body(await csv("/exports/transactions.csv"));
+    expect(plain.filter((row) => row.at(-1) === "")).toHaveLength(
+      plain.length - 3,
+    );
+  });
+  it("filters by tag like the list does", async () => {
+    const s = await fixture();
+    const trip = await send("/tags", { name: "Trip" });
+    await send("/transactions", {
+      accountId: s.checking,
+      categoryId: s.fun,
+      kind: "expense",
+      date: "2026-11-01",
+      amount: money(-500),
+      tagIds: [trip.id],
+    });
+    expect(
+      body(await csv(`/exports/transactions.csv?tagId=${trip.id}`)),
+    ).toHaveLength(1);
   });
 
   it("sends a download that is never cached", async () => {
@@ -593,6 +670,7 @@ describe("transactions export", () => {
         "",
         "1",
         "1234.56",
+        "",
       ],
     ]);
     const denied = await get(
