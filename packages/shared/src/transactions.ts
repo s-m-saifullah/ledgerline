@@ -181,6 +181,8 @@ export const transactionListQuerySchema = z
     limit: z.coerce.number().int().min(1).max(100).default(50),
     accountId: idSchema.optional(),
     categoryId: idSchema.optional(),
+    // With "true", categoryId also matches the entries filed under its subcategories.
+    includeSubcategories: z.enum(["true"]).optional(),
     from: transactionDateSchema.optional(),
     to: transactionDateSchema.optional(),
     text: z.string().trim().min(1).max(200).optional(),

@@ -9,6 +9,8 @@ export const transactionSearchSchema = z.object({
   text: z.string().trim().max(200).optional().catch(undefined),
   accountId: idSchema.optional().catch(undefined),
   categoryId: idSchema.optional().catch(undefined),
+  // Set by the Category filter so a main category also finds its subcategories' entries.
+  includeSubcategories: z.boolean().optional().catch(undefined),
   tagId: idSchema.optional().catch(undefined),
   from: calendarDateSchema
     .refine((value) => value >= "0001-01-01")

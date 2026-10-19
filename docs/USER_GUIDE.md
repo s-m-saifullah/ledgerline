@@ -105,6 +105,7 @@ A tag is a free-form label for an entry, such as `holiday` or `reimbursable`. An
 
 - **Adding tags:** in **Add**, open **More details**, and type in the **Tags** box. Tap one of your most used tags, or type a new name and choose **Create**. Press Enter to pick or create without saving the entry. The entry editor and the transfer form have the same box. A transfer's tags sit on both of its sides; its fee and bonus are separate entries and are tagged on their own.
 - **Names:** up to 40 characters, no commas or semicolons.
+- **Finding entries by category:** on **Transactions**, open **Filter entries** and choose a **Category**. A main category also finds the entries filed under its subcategories. (From Insights, **Directly in** a main category shows only its own entries.) **Clear filters** appears only while a filter is applied.
 - **Finding entries:** on **Transactions**, open **Filter entries** and choose a **Tag**. Tags show as small labels under each entry.
 - **Managing tags:** **More, Tags** lists every tag with how many entries use it. You can rename a tag (entries show the new name at once), archive it (it leaves the lists you pick from but stays on its entries) or delete it. Only a tag no entry uses can be deleted; archive the others.
 

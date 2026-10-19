@@ -1215,7 +1215,7 @@ describe("Transactions API", () => {
   });
   it("documents all six secured endpoints with keys, versions and problem responses", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.42");
+    expect(doc.info.version).toBe("0.1.43");
     const prefix = "/api/v1/ledgers/{ledgerId}/transactions";
     for (const [path, method] of [
       [prefix, "get"],
@@ -1504,6 +1504,80 @@ describe("Transactions API", () => {
       expect(
         await postedCategoryTotals(db, ledgerId, "2026-11-01", "2026-11-30"),
       ).toEqual(new Map());
+    });
+    it("matches a parent category's subcategories only when asked, in the list and the export", async () => {
+      const groceries = newId();
+      const fun = newId();
+      await db.insert(categories).values([
+        {
+          id: groceries,
+          ledgerId,
+          name: "Groceries",
+          kind: "expense",
+          parentId: categoryId,
+        },
+        { id: fun, ledgerId, name: "Fun", kind: "expense" },
+      ]);
+      const parent = await saved(input());
+      const child = await saved({ ...input(-200), categoryId: groceries });
+      const other = await saved({ ...input(-300), categoryId: fun });
+      const split = await saved({
+        ...splitInput(),
+        splits: [
+          {
+            categoryId: groceries,
+            amount: { amount: -50, currency: "USD" },
+            note: null,
+          },
+          {
+            categoryId: fun,
+            amount: { amount: -73, currency: "USD" },
+            note: null,
+          },
+        ],
+      });
+      const ids = async (query: string, cookie = ownerCookie) =>
+        (await read(`${base()}?${query}`, cookie))
+          .json()
+          .items.map((r: Transaction) => r.id)
+          .sort();
+      // By default a category matches only itself (Insights links rely on this).
+      expect(await ids(`categoryId=${categoryId}`)).toEqual([parent.id]);
+      expect(await ids(`categoryId=${groceries}`)).toEqual(
+        [child.id, split.id].sort(),
+      );
+      expect(
+        await ids(`categoryId=${categoryId}&includeSubcategories=true`),
+      ).toEqual([parent.id, child.id, split.id].sort());
+      // A subcategory has no children, so the flag changes nothing for it.
+      expect(
+        await ids(`categoryId=${groceries}&includeSubcategories=true`),
+      ).toEqual([child.id, split.id].sort());
+      expect(await ids(`categoryId=${fun}&includeSubcategories=true`)).toEqual(
+        [other.id, split.id].sort(),
+      );
+      // Another ledger's categories never match.
+      expect(
+        (
+          await read(
+            `${base(secondLedger)}?categoryId=${categoryId}&includeSubcategories=true`,
+          )
+        ).json().items,
+      ).toEqual([]);
+      expect(
+        (
+          await read(
+            `${base()}?categoryId=${categoryId}&includeSubcategories=nope`,
+          )
+        ).statusCode,
+      ).toBe(400);
+      const csv = await read(
+        `/api/v1/ledgers/${ledgerId}/exports/transactions.csv?categoryId=${categoryId}&includeSubcategories=true`,
+      );
+      expect(csv.statusCode).toBe(200);
+      const lines = csv.body.trim().split("\r\n");
+      // Header, the parent entry, the child entry and the split's two lines.
+      expect(lines).toHaveLength(5);
     });
     it("supports income and pending splits without double-counting or posting pending lines", async () => {
       const row = await saved({

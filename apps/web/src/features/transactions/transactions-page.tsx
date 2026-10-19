@@ -78,6 +78,9 @@ export function TransactionsPage() {
         .map((row) => [row.id, row]),
     ).values(),
   ];
+  const hasSubcategories =
+    !!draft.categoryId &&
+    !!categories.data?.some((item) => item.parentId === draft.categoryId);
   const filtersApplied = Object.values(filters).some(
     (value) => value !== undefined && value !== "",
   );
@@ -158,7 +161,11 @@ export function TransactionsPage() {
                 id="filter-category"
                 value={draft.categoryId ?? ""}
                 onChange={(event) =>
-                  setFilter("categoryId", event.target.value)
+                  setDraft((previous) => ({
+                    ...previous,
+                    categoryId: event.target.value || undefined,
+                    includeSubcategories: event.target.value ? true : undefined,
+                  }))
                 }
               >
                 <option value="">All categories</option>
@@ -168,6 +175,13 @@ export function TransactionsPage() {
                   </option>
                 ))}
               </NativeSelect>
+              {hasSubcategories && (
+                <p className="muted">
+                  {draft.includeSubcategories
+                    ? "Includes its subcategories."
+                    : "This category only, not its subcategories."}
+                </p>
+              )}
             </div>
             <div>
               <label htmlFor="filter-tag">Tag</label>
