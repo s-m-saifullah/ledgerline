@@ -1,6 +1,8 @@
 import {
   type CashFlowReport,
   cashFlowReportSchema,
+  type NetWorthReport,
+  netWorthReportSchema,
   type SpendingReport,
   spendingReportSchema,
 } from "@ledgerline/shared";
@@ -25,6 +27,18 @@ export async function getCashFlowReport(
 ): Promise<CashFlowReport> {
   return cashFlowReportSchema.parse(
     await api(`/ledgers/${ledgerId}/reports/cash-flow?to=${month}&months=12`, {
+      ...(signal ? { signal } : {}),
+    }),
+  );
+}
+
+export async function getNetWorthReport(
+  ledgerId: string,
+  month: string,
+  signal?: AbortSignal,
+): Promise<NetWorthReport> {
+  return netWorthReportSchema.parse(
+    await api(`/ledgers/${ledgerId}/reports/net-worth?to=${month}&months=12`, {
       ...(signal ? { signal } : {}),
     }),
   );

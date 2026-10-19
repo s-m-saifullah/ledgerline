@@ -2769,6 +2769,39 @@ button.budget-line:hover {
   color: var(--text);
   font-weight: 600;
 }
+.nw-bars {
+  position: relative;
+  display: block;
+  height: 120px;
+}
+.nw-bar {
+  position: absolute;
+  left: 50%;
+  width: 60%;
+  max-width: 16px;
+  transform: translateX(-50%);
+  background: var(--accent);
+  border-radius: 2px;
+}
+.nw-zero {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+.nw-partial {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--accent) 0 3px,
+    var(--accent-soft) 3px 6px
+  );
+  outline: 1px solid var(--accent);
+}
+.nw-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+}
 .flow-legend {
   display: flex;
   align-items: center;

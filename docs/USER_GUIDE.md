@@ -38,7 +38,8 @@ Open **Insights** to see where a month's money went.
 1. Pick a month with the arrows. The top shows what you **spent**, then the money in and the net for that month.
 2. **Spending by category** lists the categories largest first, each with its share of the month's spending. A category with subcategories has an arrow: tap it to see the subcategories and anything spent in the category itself. Tap a category without subcategories, or a subcategory, to open its entries for that month in Transactions.
 3. **Money in and out** shows the 12 months up to the chosen month as bars (teal for money in, grey for spending). **Show the figures** lists the same numbers as a table.
-4. Only cleared entries count, in your base currency, split entries by line, with transfers left out. The month's money in and spending match Home's. Amounts are hidden in privacy mode like everywhere else.
+4. **Net worth** shows the 12 month ends up to the chosen month, one bar each (the current month is as of today). Each month is worked out from your opening balances and cleared entries up to that day, with every foreign balance valued at the newest stored rate on or before that day, so it shows what you were worth then. If a currency had no stored rate yet, its accounts are left out of that month; the bar is hatched and a note names the currency (add an earlier rate in **Currencies** to fill it in). The latest figure matches Home's net worth. **Show the figures** lists the numbers.
+5. Money in and spending count only cleared entries, in your base currency, split entries by line, with transfers left out; the month's money in and spending match Home's. Amounts are hidden in privacy mode like everywhere else.
 
 ## Other currencies
 

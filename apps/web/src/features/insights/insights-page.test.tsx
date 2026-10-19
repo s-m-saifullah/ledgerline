@@ -1,10 +1,17 @@
 import {
   type CashFlowReport,
+  type NetWorthReport,
   newId,
   type SpendingReport,
 } from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -78,6 +85,22 @@ function flow(): CashFlowReport {
     })),
   };
 }
+function worth(over: Partial<NetWorthReport> = {}): NetWorthReport {
+  const months = Array.from({ length: 12 }, (_, i) =>
+    shiftMonth(month, i - 11),
+  );
+  return {
+    from: months[0] as string,
+    to: month,
+    months: months.map((m, i) => ({
+      month: m,
+      asOf: `${m}-28`,
+      netWorth: usd(100000 + i * 10000),
+      unconvertedCurrencies: i < 2 ? ["BDT"] : [],
+    })),
+    ...over,
+  };
+}
 let client: QueryClient;
 afterEach(() => {
   cleanup();
@@ -85,7 +108,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 function mount(
-  { report = spending(), cash = flow(), privacy = false } = {},
+  { report = spending(), cash = flow(), net = worth(), privacy = false } = {},
   fail = false,
 ) {
   const fetcher = vi.fn<typeof fetch>(async (url) => {
@@ -94,6 +117,8 @@ function mount(
       return new Response("{}", { status: 500 });
     if (target.includes("/reports/spending"))
       return new Response(JSON.stringify(report));
+    if (target.includes("/reports/net-worth"))
+      return new Response(JSON.stringify(net));
     if (target.includes("/reports/cash-flow"))
       return new Response(JSON.stringify(cash));
     return new Response(
@@ -197,10 +222,10 @@ describe("InsightsPage", () => {
 
   it("lists the chart's figures in a table", async () => {
     mount();
-    expect(await screen.findByText("Show the figures")).toBeTruthy();
-    const table = screen.getByRole("table");
+    expect(await screen.findAllByText("Show the figures")).toHaveLength(2);
+    const table = screen.getAllByRole("table")[0] as HTMLElement;
     expect(table.textContent).toContain("$2,500.00");
-    expect(screen.getAllByRole("row")).toHaveLength(13);
+    expect(within(table).getAllByRole("row")).toHaveLength(13);
   });
 
   it("removes the digits in privacy mode", async () => {
@@ -216,5 +241,51 @@ describe("InsightsPage", () => {
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByText("Couldn't load your insights.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  });
+
+  it("shows net worth over time with the figures and an incomplete-month note", async () => {
+    const fetcher = mount();
+    expect(
+      await screen.findByRole("img", { name: /Net worth at the end/ }),
+    ).toBeTruthy();
+    const first = shiftMonth(month, -11);
+    const bars = document.querySelectorAll(".nw-bar");
+    expect(bars).toHaveLength(12);
+    expect(document.querySelectorAll(".nw-partial.nw-bar")).toHaveLength(2);
+    const note = document.querySelector(".nw-note")?.textContent ?? "";
+    expect(note).toContain("incomplete");
+    expect(note).toContain("BDT (2 of 12 months)");
+    expect(
+      fetcher.mock.calls.some(([url]) =>
+        String(url).includes(`/reports/net-worth?to=${month}&months=12`),
+      ),
+    ).toBe(true);
+    const tables = screen.getAllByRole("table");
+    const table = tables[tables.length - 1] as HTMLElement;
+    expect(table.textContent).toContain("$2,100.00");
+    expect(table.textContent).toContain("without BDT");
+    expect(table.textContent).toContain(first.slice(0, 4));
+  });
+
+  it("draws negative net worth below a zero line and skips the note when complete", async () => {
+    mount({
+      net: worth({
+        months: worth().months.map((row, i) => ({
+          ...row,
+          netWorth: usd(i === 11 ? -5000 : 20000),
+          unconvertedCurrencies: [],
+        })),
+      }),
+    });
+    await screen.findByRole("img", { name: /Net worth at the end/ });
+    expect(document.querySelector(".nw-note")).toBeNull();
+    expect(document.querySelectorAll(".nw-zero").length).toBe(12);
+  });
+
+  it("removes the net worth digits in privacy mode", async () => {
+    mount({ privacy: true });
+    await screen.findByRole("img", { name: /Net worth at the end/ });
+    expect(document.body.textContent).not.toContain("2,100");
+    expect(document.body.textContent).not.toContain("1,000.00");
   });
 });

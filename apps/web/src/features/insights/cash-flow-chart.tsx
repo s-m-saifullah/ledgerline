@@ -1,7 +1,7 @@
 import type { CashFlowReport } from "@ledgerline/shared";
 import { Amount } from "../../components/amount-text";
 
-const shortMonth = (month: string) => {
+export const shortMonth = (month: string) => {
   const [year, index] = month.split("-").map(Number);
   const local = new Date(0);
   local.setFullYear(year ?? 1, (index ?? 1) - 1, 1);
