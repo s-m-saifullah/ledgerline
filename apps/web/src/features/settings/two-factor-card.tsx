@@ -64,7 +64,7 @@ export function TwoFactorCard() {
       )}
       {ready && step.name === "idle" && enabled && (
         <details className="two-factor-manage">
-          <summary className="two-factor-summary">Manage</summary>
+          <summary>Manage</summary>
           <div className="two-factor-actions">
             <button
               type="button"

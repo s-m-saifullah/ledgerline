@@ -56,7 +56,7 @@ export function CashFlowChart({
         <span className="flow-key flow-out" aria-hidden="true" /> Spending
       </p>
       <details className="flow-details">
-        <summary className="flow-summary">Show the figures</summary>
+        <summary>Show the figures</summary>
         <table className="flow-table">
           <caption className="sr-only">Money in, spending and net</caption>
           <thead>
