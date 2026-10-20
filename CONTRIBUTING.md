@@ -9,7 +9,7 @@ Thank you for helping. Ledgerline is a small, focused project, so a short conver
 - **Ledger scoping:** every financial row has `ledger_id` and every query goes through a ledger-scoped repository. Each endpoint needs an integration test proving another ledger's rows cannot be read or written.
 - **API:** REST under `/api/v1`, camelCase JSON, money as `{ amount, currency }`, ISO dates, UTC timestamps, cursor pagination, an `Idempotency-Key` on writes and RFC 9457 problem details for errors. Changing the contract needs a note in `docs/api-changes.md` and a regenerated `docs/openapi.json`.
 - **Privacy:** no analytics or trackers. Logs never contain amounts, payees or notes. Secrets live only in `.env`, never in Git; keep `.env.example` current.
-- **UI:** calm and mobile-first, one primary action per screen, large tabular amounts, 44 px touch targets, light and dark themes, WCAG AA contrast, full keyboard use. Red is only for overspending, errors and Delete actions.
+- **UI:** calm and mobile-first, one primary action per screen, large tabular amounts, 44 px touch targets, light and dark themes, WCAG AA contrast, full keyboard use. Red is only for overspending, errors and Delete actions. Collapsible sections use `details` and `summary` and take the shared disclosure style in `styles.css` (a chevron, a border or accent label, a hover and focus state, 44 px); do not restyle a `summary` one-off (ADR 0039).
 - **Decisions:** if a change alters the plan, add a short ADR in `docs/adr/`.
 
 ## Setup

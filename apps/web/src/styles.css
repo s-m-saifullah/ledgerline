@@ -1333,12 +1333,6 @@ kbd {
 .transaction-details {
   margin-top: 8px;
 }
-.transaction-details summary {
-  min-height: 44px;
-  padding-block: 12px;
-  cursor: pointer;
-  font-size: 13px;
-}
 .transaction-details .account-fields {
   margin-top: 8px;
 }
@@ -1583,12 +1577,6 @@ kbd {
 .transaction-filter-grid .theme-picker,
 .transaction-filter-grid .category-select select {
   width: 100%;
-}
-.transaction-filters summary {
-  cursor: pointer;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
 }
 .transaction-empty {
   padding: 28px;
@@ -2456,16 +2444,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
 .more-details {
   margin: 4px 0;
 }
-.more-details > summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-  color: var(--muted);
-}
-.more-details[open] > summary {
-  margin-bottom: 8px;
-}
 .more-details > .form-field {
   margin-bottom: 12px;
 }
@@ -2819,12 +2797,6 @@ button.budget-line:hover {
 .flow-legend .flow-key:first-child {
   margin-left: 0;
 }
-.flow-summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-}
 .flow-table {
   width: 100%;
   border-collapse: collapse;
@@ -3162,12 +3134,6 @@ button.budget-line:hover {
   flex: 1;
   min-width: 0;
 }
-.import-summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-}
 .import-recent {
   list-style: none;
   margin: 8px 0 0;
@@ -3312,14 +3278,6 @@ button.budget-line:hover {
   color: var(--text);
   font-weight: 500;
 }
-.two-factor-summary {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 14px;
-}
 .two-factor-qr {
   display: block;
   width: min(100%, 220px);
@@ -3364,4 +3322,70 @@ button.budget-line:hover {
 }
 .two-factor-links .quiet-button {
   text-decoration: underline;
+}
+
+/* Disclosures (ADR 0039): every details/summary shows it can be pressed. The section row is the default;
+   the in-form groups ("More details", the hourly helper) use the lighter inline variant below. */
+details > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  transition: transform 150ms ease-out;
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+details > summary:hover {
+  background: var(--accent-soft);
+}
+details[open] > summary {
+  margin-bottom: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  details > summary::before {
+    transition: none;
+  }
+}
+details.transaction-details > summary,
+details.more-details > summary {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+}
+details.transaction-details > summary:hover,
+details.more-details > summary:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+details.transaction-details[open] > summary,
+details.more-details[open] > summary {
+  margin-bottom: 8px;
 }

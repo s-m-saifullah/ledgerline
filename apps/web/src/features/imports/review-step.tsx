@@ -170,7 +170,7 @@ export function ReviewStep({ w }: { w: Wizard }) {
           )}
           {readyRows.length > 0 && (
             <details className="settings-card import-ready">
-              <summary className="import-summary">
+              <summary>
                 Show the {readyRows.length} ready{" "}
                 {readyRows.length === 1 ? "row" : "rows"}
               </summary>

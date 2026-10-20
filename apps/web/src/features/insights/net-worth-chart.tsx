@@ -74,7 +74,7 @@ export function NetWorthChart({
         </p>
       )}
       <details className="flow-details">
-        <summary className="flow-summary">Show the figures</summary>
+        <summary>Show the figures</summary>
         <table className="flow-table">
           <caption className="sr-only">Net worth at each month end</caption>
           <thead>
