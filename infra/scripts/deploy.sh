@@ -13,6 +13,8 @@ flock -n 9 || { echo 'Another deployment is running'; exit 1; }
 # Skip only on a fresh install, when no database container exists yet.
 if [[ -n "$(docker compose --env-file .env -f docker-compose.yml ps -q db 2>/dev/null)" ]]; then
   bash ./backup.sh || { echo 'Pre-deploy backup failed; nothing was deployed'; exit 1; }
+  # The off-site copy is best effort here: a failure is recorded in backups/offsite.status and never blocks a deploy.
+  bash ./offsite-upload.sh || echo 'Warning: the off-site copy of the pre-deploy backup failed; continuing'
 else
   echo 'No running database; skipping the pre-deploy backup (fresh install)'
 fi

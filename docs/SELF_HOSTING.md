@@ -66,7 +66,29 @@ Schedule both from the deploy user's crontab, for example daily and weekly:
 45 3 * * 0 /opt/ledgerline/scheduled-backup.sh drill >> /opt/ledgerline/backups/cron.log 2>&1
 ```
 
-`prune-backups.sh` keeps seven days and always the newest three. Dumps stay on the server, so also copy them somewhere else you control (encrypted off-site backups are planned). Before every release, and after any hotfix, take a backup and run the drill on it.
+`prune-backups.sh` keeps seven days and always the newest three. Dumps stay on the server unless you turn on the off-site copy below. Before every release, and after any hotfix, take a backup and run the drill on it.
+
+## Off-site encrypted backups
+
+A dump on the same server as the database does not survive losing the server. The off-site copy encrypts each backup before it leaves the server and stores it in a private bucket on S3-compatible storage (these steps use Backblaze B2; its free tier covers a small ledger). The server only holds your **public** key and a **write-only** bucket key, so it can add backups but cannot read, list or delete them, and someone who breaks into the server cannot read old backups or erase them. Design: [ADR 0037](adr/0037-offsite-encrypted-backups.md).
+
+**Set it up once**
+
+1. **Make the encryption key on your own computer** (not the server): install [age](https://github.com/FiloSottile/age) (`brew install age`) and run `age-keygen -o ledgerline-backup.key`. It prints a public key starting with `age1`. Keep the key file in **two** safe places (for example a password manager and a printed copy). If you lose it, every off-site backup is unreadable; nobody, including the server, can recover it.
+2. **Create a private bucket** in your Backblaze account (turn on its two-factor sign-in first) with a unique name. Leave Object Lock off. Add a lifecycle rule to hide files 90 days after upload and delete them one day later, so old copies expire without the server deleting anything.
+3. **Create a write-only key:** App Keys, Add a New Application Key, limited to that bucket, type **Write Only**. Copy the key ID and the key once into your password manager. Note the bucket's S3 endpoint and region (on the bucket page).
+4. **Put the settings on the server:** copy [infra/examples/offsite.env.example](../infra/examples/offsite.env.example) to `offsite.env` in the deploy directory, fill it in with the public key, endpoint, bucket and the write-only key, and set mode 0600 owned by the deploy user. Type the key into the file on the server yourself rather than pasting it into a chat or a script.
+5. **Take the first off-site copy:** `ssh my-server 'sudo -u ledgerline bash /opt/ledgerline/offsite-upload.sh'`. It builds a small tool image on first use, then prints `Off-site copy uploaded as ...`. From then on the daily `scheduled-backup.sh` and every release upload automatically.
+
+**Check it** (the server's newest result is in `backups/offsite.status`: `result=ok` and a recent `last_ok`). A failed upload is also printed in `backups/cron.log` and makes the daily job exit with an error; it never deletes or changes a local backup, and a failed upload during a release only warns.
+
+**Prove a restore works** on your own computer, now and then monthly. Make a **second, Read Only** key for the bucket and a file `restore.env` with `OFFSITE_S3_ENDPOINT`, `OFFSITE_S3_REGION`, `OFFSITE_BUCKET`, `OFFSITE_PREFIX`, `OFFSITE_KEY_ID` and `OFFSITE_APP_KEY` (the read-only key). Never put that key on the server. Then, with Docker running:
+
+```bash
+bash infra/scripts/offsite-restore.sh --config restore.env --identity ledgerline-backup.key
+```
+
+It downloads the newest archive, decrypts it, checks the checksum and runs the restore drill in a throwaway container, then deletes the decrypted files (they hold real data). It never touches a running database. Restoring into the running database still means a manual `pg_restore` that only you should authorise.
 
 ## Sharing the server with other services
 
