@@ -129,7 +129,7 @@ export function renderCategoryFields(ctx: QuickAddContext) {
       {errors.categoryId && <p className="field-error">Choose a category.</p>}
       <button
         type="button"
-        className="quiet-button inline-category-toggle"
+        className="text-button inline-category-toggle"
         onClick={() => setNewCategory((value) => !value)}
       >
         <Plus size={16} />
@@ -303,7 +303,7 @@ export function renderRetryAndErrors(ctx: QuickAddContext) {
       {error && !uncertain && (
         <button
           type="button"
-          className="quiet-button"
+          className="text-button"
           disabled={busy}
           onClick={async () => {
             setRefreshing(true);

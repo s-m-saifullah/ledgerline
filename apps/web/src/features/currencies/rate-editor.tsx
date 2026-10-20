@@ -147,7 +147,7 @@ export function RateEditor({
           ) : (
             <button
               type="button"
-              className="quiet-button danger-action"
+              className="secondary-button danger-action"
               disabled={busy}
               onClick={() => setConfirmRemove(true)}
             >

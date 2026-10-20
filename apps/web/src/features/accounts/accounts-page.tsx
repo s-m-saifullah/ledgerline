@@ -7,12 +7,14 @@ import {
 } from "@tanstack/react-query";
 import {
   Archive,
+  ArchiveRestore,
   Banknote,
   ChevronDown,
   CreditCard,
   Landmark,
   PiggyBank,
   Plus,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import { useContext, useState } from "react";
@@ -327,31 +329,34 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
                   </button>
                   <button
                     type="button"
-                    className="quiet-button danger-action"
+                    className="text-button danger-action"
                     aria-label={`Delete ${account.name}`}
                     disabled={!!dialog?.unconfirmed}
                     onClick={() => start({ kind: "delete", account })}
                   >
+                    <Trash2 size={16} aria-hidden="true" />
                     Delete
                   </button>
                   {account.archivedAt ? (
                     <button
                       type="button"
-                      className="quiet-button"
+                      className="text-button"
                       aria-label={`Unarchive ${account.name}`}
                       disabled={!!dialog?.unconfirmed}
                       onClick={() => start({ kind: "unarchive", account })}
                     >
+                      <ArchiveRestore size={16} aria-hidden="true" />
                       Unarchive
                     </button>
                   ) : (
                     <button
                       type="button"
-                      className="quiet-button"
+                      className="text-button"
                       aria-label={`Archive ${account.name}`}
                       disabled={!!dialog?.unconfirmed}
                       onClick={() => start({ kind: "archive", account })}
                     >
+                      <Archive size={16} aria-hidden="true" />
                       Archive
                     </button>
                   )}

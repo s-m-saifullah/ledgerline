@@ -1,4 +1,5 @@
 import type { Category } from "@ledgerline/shared";
+import { Trash2 } from "lucide-react";
 import { useContext } from "react";
 import { type UseFormReturn, useFieldArray } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
@@ -92,11 +93,12 @@ export function SplitFields({
               />
               <button
                 type="button"
-                className="quiet-button"
+                className="text-button danger-action"
                 disabled={fields.length <= 2}
                 aria-label={`Remove split ${index + 1}`}
                 onClick={() => remove(index)}
               >
+                <Trash2 size={16} aria-hidden="true" />
                 Remove line
               </button>
             </fieldset>

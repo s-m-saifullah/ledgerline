@@ -253,7 +253,7 @@ export function TransactionsPage() {
         {filtersApplied && (
           <button
             type="button"
-            className="quiet-button"
+            className="text-button"
             onClick={() => {
               setDraft({});
               void navigate({ to: "/transactions", search: {} });

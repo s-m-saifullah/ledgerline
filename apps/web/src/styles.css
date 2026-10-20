@@ -156,6 +156,29 @@ select {
   background: var(--accent-soft);
   color: var(--accent);
 }
+/* Text button (ADR 0039): the third step of the button ladder, after the filled and the bordered button.
+   Accent colour, underlined on hover and focus, an optional small icon. Delete variants stay red. */
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.text-button:hover:not(:disabled),
+.text-button:focus-visible {
+  text-decoration: underline;
+}
+.text-button.danger-action {
+  color: var(--danger);
+}
 .field-error {
   color: var(--danger);
   font-size: 14px;
@@ -920,7 +943,7 @@ kbd {
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
-.account-card-actions .quiet-button {
+.account-card-actions .text-button {
   padding: 10px 12px;
   font-size: 13px;
 }
@@ -3257,11 +3280,8 @@ button.budget-line:hover {
   flex-wrap: wrap;
   gap: 0 8px;
 }
-.tag-row-actions .quiet-button {
-  display: inline-flex;
-  align-items: center;
+.tag-row-actions .text-button {
   padding-inline: 8px;
-  text-decoration: none;
 }
 
 /* Two-factor sign-in (ADR 0038) */
@@ -3320,7 +3340,7 @@ button.budget-line:hover {
   margin-top: 16px;
   font-size: 14px;
 }
-.two-factor-links .quiet-button {
+.two-factor-links .text-button {
   text-decoration: underline;
 }
 
@@ -3388,4 +3408,10 @@ details.more-details > summary:hover {
 details.transaction-details[open] > summary,
 details.more-details[open] > summary {
   margin-bottom: 8px;
+}
+details.transaction-details > summary .muted,
+details.more-details > summary .muted {
+  color: var(--muted);
+  font-size: inherit;
+  line-height: inherit;
 }

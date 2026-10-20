@@ -114,14 +114,14 @@ export function ReviewStep({ w }: { w: Wizard }) {
               <div className="export-actions">
                 <button
                   type="button"
-                  className="quiet-button"
+                  className="text-button"
                   onClick={() => w.setAllDuplicates(true)}
                 >
                   Include all
                 </button>
                 <button
                   type="button"
-                  className="quiet-button"
+                  className="text-button"
                   onClick={() => w.setAllDuplicates(false)}
                 >
                   Include none
