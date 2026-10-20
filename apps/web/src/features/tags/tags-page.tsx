@@ -2,6 +2,7 @@ import { type Tag, tagNameSchema } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Archive, ArchiveRestore, List, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { BackToMore } from "../../components/back-to-more";
 import { EditorDialog } from "../../components/editor-dialog";
@@ -115,15 +116,16 @@ function LedgerTags({
         <Link
           to="/transactions"
           search={{ tagId: tag.id }}
-          className="quiet-button"
+          className="text-button"
         >
+          <List size={16} aria-hidden="true" />
           View entries
         </Link>
         {writable && (
           <>
             <button
               type="button"
-              className="quiet-button"
+              className="text-button"
               disabled={busy}
               onClick={() => {
                 setRenameText(tag.name);
@@ -131,11 +133,12 @@ function LedgerTags({
                 setDialog({ kind: "rename", tag });
               }}
             >
+              <Pencil size={16} aria-hidden="true" />
               Rename
             </button>
             <button
               type="button"
-              className="quiet-button"
+              className="text-button"
               disabled={busy}
               onClick={() =>
                 void run(
@@ -152,17 +155,23 @@ function LedgerTags({
                 )
               }
             >
+              {tag.archivedAt ? (
+                <ArchiveRestore size={16} aria-hidden="true" />
+              ) : (
+                <Archive size={16} aria-hidden="true" />
+              )}
               {tag.archivedAt ? "Unarchive" : "Archive"}
             </button>
             <button
               type="button"
-              className="quiet-button danger-action"
+              className="text-button danger-action"
               disabled={busy}
               onClick={() => {
                 setError("");
                 setDialog({ kind: "delete", tag });
               }}
             >
+              <Trash2 size={16} aria-hidden="true" />
               Delete
             </button>
           </>

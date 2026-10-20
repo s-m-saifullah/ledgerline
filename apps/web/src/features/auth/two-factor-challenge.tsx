@@ -81,7 +81,7 @@ export function TwoFactorChallenge({
       <p className="two-factor-links">
         <button
           type="button"
-          className="quiet-button"
+          className="text-button"
           onClick={() => {
             setUseBackup(!useBackup);
             setCode("");
@@ -90,7 +90,7 @@ export function TwoFactorChallenge({
         >
           {useBackup ? "Use my authenticator app" : "Use a backup code instead"}
         </button>
-        <button type="button" className="quiet-button" onClick={onBack}>
+        <button type="button" className="text-button" onClick={onBack}>
           Back to sign in
         </button>
       </p>

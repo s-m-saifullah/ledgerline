@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { NativeSelect } from "../../components/native-select";
 import { RecentImports } from "./recent-imports";
 import { saveTemplate } from "./template";
@@ -47,7 +48,8 @@ export function FileStep({ w }: { w: Wizard }) {
           </p>
         )}
         <div className="import-template">
-          <button type="button" className="quiet-button" onClick={saveTemplate}>
+          <button type="button" className="text-button" onClick={saveTemplate}>
+            <Download size={16} aria-hidden="true" />
             Download CSV template
           </button>
           <p className="muted import-note">

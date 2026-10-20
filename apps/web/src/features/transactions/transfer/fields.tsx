@@ -229,7 +229,7 @@ export function renderBonusFields(form: TransferFormContext) {
       {!baseline && toAccount && !bps && !bonusOn && (
         <button
           type="button"
-          className="quiet-button inline-category-toggle"
+          className="text-button inline-category-toggle"
           onClick={() => setValue("bonusOn", true)}
         >
           <Plus size={16} />
@@ -263,10 +263,11 @@ export function renderMoreCategories(form: TransferFormContext) {
           onToggle={(event) => setMoreOpen(event.currentTarget.open)}
         >
           <summary>
-            More
-            <span className="muted transfer-more-hint">
-              {" "}
-              fee {bonusOn || bps ? "and bonus " : ""}categories
+            <span>
+              More{" "}
+              <span className="muted transfer-more-hint">
+                fee {bonusOn || bps ? "and bonus " : ""}categories
+              </span>
             </span>
           </summary>
           <div className="account-fields">

@@ -269,7 +269,9 @@ export function renderMoreCategories(form: RuleFormContext) {
           onToggle={(event) => setMoreOpen(event.currentTarget.open)}
         >
           <summary>
-            More <span className="muted">fee and bonus categories</span>
+            <span>
+              More <span className="muted">fee and bonus categories</span>
+            </span>
           </summary>
           <div className="account-fields">
             <CategoryPicker
