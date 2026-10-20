@@ -5,10 +5,17 @@ export function readSmokeConfig(env) {
     throw new Error(
       "Set SMOKE_BASE_URL to the site address, for example https://ledgerline.example.com",
     );
+  // Optional: the authenticator key, only when the owner turned two-factor on (ADR 0038). Kept in the
+  // private local environment, never in the repository, and never printed.
+  const totpSecret = env.SMOKE_TOTP_SECRET?.trim() || undefined;
   const email = env.SMOKE_OWNER_EMAIL?.trim();
   const password = env.SMOKE_OWNER_PASSWORD;
   if (email && password)
-    return { baseURL, credentials: { kind: "direct", email, password } };
+    return {
+      baseURL,
+      totpSecret,
+      credentials: { kind: "direct", email, password },
+    };
   const target = env.SMOKE_SSH_TARGET?.trim();
   if (!target)
     throw new Error(
@@ -16,6 +23,7 @@ export function readSmokeConfig(env) {
     );
   return {
     baseURL,
+    totpSecret,
     credentials: {
       kind: "ssh",
       target,

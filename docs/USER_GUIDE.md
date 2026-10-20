@@ -134,6 +134,18 @@ Use **Import from CSV** (on Transactions under **Import and export**, in Setting
 
 The eye icon blurs every amount on screen. Ledgerline sends nothing to analytics or tracking services, and its logs never contain amounts, payees or notes.
 
+## Two-factor sign-in
+
+In **More, Settings, Two-factor sign-in** you can add a second step to signing in: a 6-digit code from an authenticator app on your phone (Google Authenticator, Authy, 1Password and others). It is optional and is turned on for your own account only.
+
+1. **Set up two-factor** asks for your password.
+2. Scan the QR code with your app (or tap **Open in my authenticator app**, or type the key by hand), then type the 6-digit code it shows. Two-factor switches on only once that code is right, so a mistake cannot lock you out.
+3. You are shown **ten backup codes**, once. Each one signs you in a single time if you lose your phone. Copy them somewhere safe, such as a password manager, tick **I saved these codes** and press **Done**.
+
+After that, signing in asks for the password and then a code. Choose **Use a backup code instead** if you do not have your phone. Too many wrong codes pause code checks for about 15 minutes. Under **Manage** you can make new backup codes (the old ones stop working) or turn two-factor off; both ask for your password again.
+
+If you lose both your phone and your backup codes, the server's operator can turn two-factor off for the owner account; see the [self-hosting guide](SELF_HOSTING.md). Keep your current session open until a fresh sign-in with a code has worked.
+
 ## Typing amounts from the cents
 
 In **More, Settings**, switch on **Type amounts from the cents** to type amounts the way many banking apps do: type digits only and the decimal point stays in place, so 1, 2, 3 reads 1.23. Backspace removes the last digit, and typing into a box that already has an amount adds digits to the end of it. A pasted amount is read as usual. The setting is saved on the device you are using, so turn it on for each phone or computer. It applies to every box where you type money, but not to exchange rates, percentages or hours. With the setting off, money boxes accept only digits and one decimal point, with as many decimals as the currency has.
