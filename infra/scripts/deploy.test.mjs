@@ -22,6 +22,7 @@ const skip = hasFlock
 function run({
   dbRunning,
   backupExit,
+  uploadExit = 0,
   repository = "ghcr.io/example-owner/ledgerline",
 }) {
   const dir = mkdtempSync(join(tmpdir(), "deploy-test-"));
@@ -39,6 +40,10 @@ function run({
     `#!/usr/bin/env bash\necho backup >> "${dir}/calls"\nexit ${backupExit}\n`,
   );
   writeFileSync(
+    join(dir, "offsite-upload.sh"),
+    `#!/usr/bin/env bash\necho offsite >> "${dir}/calls"\nexit ${uploadExit}\n`,
+  );
+  writeFileSync(
     join(bin, "docker"),
     `#!/usr/bin/env bash
 case "$*" in
@@ -52,6 +57,7 @@ esac
     join(bin, "docker"),
     join(bin, "curl"),
     join(dir, "backup.sh"),
+    join(dir, "offsite-upload.sh"),
   ])
     chmodSync(file, 0o755);
   const result = spawnSync("bash", ["deploy.sh", "v9.9.9"], {
@@ -108,4 +114,31 @@ test("a deploy without IMAGE_REPOSITORY stops before touching anything", () => {
   assert.match(result.stdout, /Set IMAGE_REPOSITORY/);
   assert.equal(calls, "");
   assert.equal(release, "API_IMAGE=old-api\nWEB_IMAGE=old-web\n");
+});
+test("the off-site copy runs after the backup and before the new images start", {
+  skip,
+}, () => {
+  const { result, calls } = run({ dbRunning: true, backupExit: 0 });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.ok(calls.indexOf("backup") < calls.indexOf("offsite"), calls);
+  assert.ok(calls.indexOf("offsite") < calls.indexOf("up -d"), calls);
+});
+test("a failed off-site copy only warns and never blocks the deploy", {
+  skip,
+}, () => {
+  const { result, calls, release } = run({
+    dbRunning: true,
+    backupExit: 0,
+    uploadExit: 1,
+  });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.match(result.stdout, /off-site copy of the pre-deploy backup failed/);
+  assert.match(release, /ledgerline-api:v9\.9\.9/);
+  assert.match(calls, /up -d/);
+});
+test("no off-site upload happens when the backup itself failed", {
+  skip,
+}, () => {
+  const { calls } = run({ dbRunning: true, backupExit: 1 });
+  assert.doesNotMatch(calls, /^offsite$/m);
 });

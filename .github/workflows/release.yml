@@ -100,7 +100,8 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           scp infra/compose/docker-compose.yml "$DEPLOY_USER@$VPS_HOST:$DEPLOY_DIR/docker-compose.yml"
-          scp infra/scripts/deploy.sh infra/scripts/backup.sh infra/scripts/restore-drill.sh infra/scripts/verify-queries.sh infra/scripts/prune-backups.sh infra/scripts/scheduled-backup.sh "$DEPLOY_USER@$VPS_HOST:$DEPLOY_DIR/"
+          scp infra/scripts/deploy.sh infra/scripts/backup.sh infra/scripts/restore-drill.sh infra/scripts/verify-queries.sh infra/scripts/prune-backups.sh infra/scripts/scheduled-backup.sh infra/scripts/offsite-upload.sh "$DEPLOY_USER@$VPS_HOST:$DEPLOY_DIR/"
+          scp infra/docker/offsite.Dockerfile "$DEPLOY_USER@$VPS_HOST:$DEPLOY_DIR/offsite.Dockerfile"
       - name: Pull private images and deploy
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
@@ -111,7 +112,8 @@ jobs:
         run: |
           printf '%s\n' "$REGISTRY_TOKEN" | ssh "$DEPLOY_USER@$VPS_HOST" "docker login ghcr.io -u '$REGISTRY_USER' --password-stdin"
           ssh "$DEPLOY_USER@$VPS_HOST" "trap 'docker logout ghcr.io >/dev/null' EXIT; IMAGE_REPOSITORY='$IMAGE_REPOSITORY' bash '$DEPLOY_DIR/deploy.sh' '$VERSION'"
-          ssh "$DEPLOY_USER@$VPS_HOST" "bash '$DEPLOY_DIR/backup.sh'; bash '$DEPLOY_DIR/restore-drill.sh' \"\$(ls -t '$DEPLOY_DIR'/backups/*.dump | head -n 1)\""
+          # The drill decides this step's result; the off-site copy of the post-deploy backup is best effort.
+          ssh "$DEPLOY_USER@$VPS_HOST" "bash '$DEPLOY_DIR/backup.sh'; bash '$DEPLOY_DIR/restore-drill.sh' \"\$(ls -t '$DEPLOY_DIR'/backups/*.dump | head -n 1)\"; drill=\$?; bash '$DEPLOY_DIR/offsite-upload.sh' || echo 'Warning: the off-site copy failed'; exit \$drill"
       - name: Verify HTTPS
         run: |
           if [ -z "$PUBLIC_URL" ]; then
