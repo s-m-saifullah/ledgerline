@@ -3297,3 +3297,71 @@ button.budget-line:hover {
   padding-inline: 8px;
   text-decoration: none;
 }
+
+/* Two-factor sign-in (ADR 0038) */
+.two-factor-step {
+  margin-top: 16px;
+}
+.two-factor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+.two-factor-notice {
+  color: var(--text);
+  font-weight: 500;
+}
+.two-factor-summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
+}
+.two-factor-qr {
+  display: block;
+  width: min(100%, 220px);
+  height: auto;
+  margin: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.two-factor-key {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.backup-codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.backup-code {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  color: var(--text);
+  text-align: center;
+}
+.two-factor-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+.two-factor-links .quiet-button {
+  text-decoration: underline;
+}

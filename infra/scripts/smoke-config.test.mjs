@@ -36,3 +36,23 @@ test("credentials come directly or over SSH, with generic defaults", () => {
     },
   );
 });
+test("an authenticator key is optional and trimmed", () => {
+  const base = {
+    SMOKE_BASE_URL: "https://ledgerline.example.com",
+    SMOKE_SSH_TARGET: "deploy-host",
+  };
+  assert.equal(readSmokeConfig(base).totpSecret, undefined);
+  assert.equal(
+    readSmokeConfig({ ...base, SMOKE_TOTP_SECRET: "  ABCD EFGH  " }).totpSecret,
+    "ABCD EFGH",
+  );
+  assert.equal(
+    readSmokeConfig({
+      ...base,
+      SMOKE_OWNER_EMAIL: "owner@example.com",
+      SMOKE_OWNER_PASSWORD: "secret",
+      SMOKE_TOTP_SECRET: "ABCDEFGH",
+    }).totpSecret,
+    "ABCDEFGH",
+  );
+});

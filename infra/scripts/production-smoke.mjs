@@ -5,11 +5,12 @@ import { parseEnv } from "node:util";
 import { chromium, expect } from "@playwright/test";
 import { compareHome, readHomeRates } from "./home-consistency.mjs";
 import { readSmokeConfig } from "./smoke-config.mjs";
+import { totpCode } from "./totp.mjs";
 
 // Settings come from SMOKE_* environment variables (see smoke-config.mjs); credentials are never printed.
 let browser;
 try {
-  const { baseURL, credentials } = readSmokeConfig(process.env);
+  const { baseURL, credentials, totpSecret } = readSmokeConfig(process.env);
   // Over SSH, read only the two owner lines from the server's private env file.
   const env =
     credentials.kind === "direct"
@@ -43,9 +44,19 @@ try {
   await page.getByLabel("Email address").fill(env.OWNER_EMAIL);
   await page.getByLabel("Password", { exact: true }).fill(env.OWNER_PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Home", exact: true }),
-  ).toBeVisible();
+  // With two-factor on, the password only leads to a code step (ADR 0038).
+  const home = page.getByRole("heading", { name: "Home", exact: true });
+  const codeStep = page.getByRole("heading", { name: "Two-factor code" });
+  await expect(home.or(codeStep)).toBeVisible();
+  if (await codeStep.isVisible()) {
+    if (!totpSecret)
+      throw new Error(
+        "Two-factor is on: set SMOKE_TOTP_SECRET to the authenticator key (kept in the private local environment)",
+      );
+    await page.getByLabel("6-digit code").fill(totpCode(totpSecret));
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
+  }
+  await expect(home).toBeVisible();
   const cookie = (await context.cookies()).find(
     (item) => item.name === "__Secure-better-auth.session_token",
   );

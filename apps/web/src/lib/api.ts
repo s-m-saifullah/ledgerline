@@ -72,7 +72,14 @@ export function prepareFinancialWrite<T>(
   };
   return () => api<T>(path, options);
 }
-export type Session = { user: { id: string; name: string; email: string } };
+export type Session = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    twoFactorEnabled?: boolean;
+  };
+};
 export const getSession = () => api<Session | null>("/auth/get-session");
 export const getLedgers = async () =>
   z.object({ items: z.array(ledgerSchema) }).parse(await api("/ledgers"));
