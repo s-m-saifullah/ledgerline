@@ -1,6 +1,6 @@
 # ADR 0037: Off-site encrypted backups
 
-Date: 2026-10-20. Status: proposed; the owner chose off-site backups as the first Phase 4 slice and delegated the tooling. Builds on [0001](0001-phase-0-backup-and-owner-bootstrap.md), which kept dumps on the server and left off-site copies for Phase 4.
+Date: 2026-10-20. Status: accepted (merged with PR #100); the owner chose off-site backups as the first Phase 4 slice and delegated the tooling. Builds on [0001](0001-phase-0-backup-and-owner-bootstrap.md), which kept dumps on the server and left off-site copies for Phase 4.
 
 ## Context
 
@@ -27,3 +27,10 @@ Backups and the restore drill exist, but every dump lives on the same server as 
 ## Tests
 
 On a scratch compose project with a local S3-compatible stand-in: encrypt, upload, download, decrypt, restore drill passes. Negative cases: wrong key, truncated archive, bad checksum, unreachable remote, missing settings (feature off, local backup unaffected), upload failure leaves local files intact and exits non-zero.
+
+## Amendments while building
+
+- **Settings live in `offsite.env`,** a separate private file (mode 0600) in the deploy directory, not in `.env`, so the application's own configuration stays untouched. `.env.example` documents the names.
+- **One tool image** (`infra/docker/offsite.Dockerfile`: pinned rclone with age) replaces two pinned containers. It is built on the server on first use. The upload talks to the bucket through its S3-compatible interface.
+- **A write-only key cannot check what it wrote,** so uploads skip rclone's HEAD requests (`--no-check-dest --s3-no-head`); the S3 upload itself still verifies the data it sends. A scratch test with a write-only stand-in key found this: rclone's default upload fails with 403 on such a key.
+- **Status file** `backups/offsite.status` holds `last_attempt`, `result` (`ok` or `failed`), `last_ok` and the archive name.
