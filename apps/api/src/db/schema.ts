@@ -38,8 +38,32 @@ export const user = pgTable("users", {
   image: text("image"),
   locale: text("locale").notNull().default("en-US"),
   baseCurrency: text("base_currency").notNull().default("USD"),
+  twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
   ...audit(),
 });
+/** Better Auth's two-factor plugin (ADR 0038): the secret and backup codes are stored encrypted. */
+export const twoFactor = pgTable(
+  "two_factor",
+  {
+    id: primaryId(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id),
+    secret: text("secret").notNull(),
+    backupCodes: text("backup_codes").notNull(),
+    verified: boolean("verified").notNull().default(true),
+    failedVerificationCount: integer("failed_verification_count")
+      .notNull()
+      .default(0),
+    lockedUntil: timestamp("locked_until", { withTimezone: true }),
+    ...audit(),
+  },
+  (table) => [
+    uniqueIndex("two_factor_user_live_idx")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 export const session = pgTable(
   "auth_sessions",
   {

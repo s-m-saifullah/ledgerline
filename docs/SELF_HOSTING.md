@@ -90,6 +90,16 @@ bash infra/scripts/offsite-restore.sh --config restore.env --identity ledgerline
 
 It downloads the newest archive, decrypts it, checks the checksum and runs the restore drill in a throwaway container, then deletes the decrypted files (they hold real data). It never touches a running database. Restoring into the running database still means a manual `pg_restore` that only you should authorise.
 
+## If two-factor locks you out
+
+Two-factor is optional and turned on per user in Settings ([ADR 0038](adr/0038-two-factor-totp.md)). When you turn it on you are shown ten one-time backup codes; keep them with your password. If you lose your authenticator and your backup codes, the server's administrator can turn it off for the owner account (this never touches financial data):
+
+```bash
+ssh -t my-server 'sudo -u ledgerline bash /opt/ledgerline/reset-two-factor.sh'
+```
+
+It asks you to type `RESET`, turns two-factor off for the owner, signs out every session and prints how many it changed; then sign in with the password and set two-factor up again. The same command is the way back if `BETTER_AUTH_SECRET` is ever changed, because the stored authenticator secrets are encrypted with it. Rolling back to a release older than 0.1.44 leaves the data alone but ignores two-factor, so sign-in becomes password-only until you roll forward again.
+
 ## Sharing the server with other services
 
 Give Ledgerline its own user, directory and compose project. If another service runs under an account with passwordless sudo, restrict it so it cannot reach this stack: see [ADR 0002](adr/0002-co-hosted-service-isolation.md) and the sample in `infra/examples/co-hosted-service-isolation.conf.example`. Do not add other users to the `docker` group.

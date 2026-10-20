@@ -85,3 +85,9 @@ INSERT INTO transaction_tags (id,ledger_id,transaction_id,tag_id,deleted_at) VAL
  ('00000000-0000-7000-8000-000000000913','00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000e2','00000000-0000-7000-8000-000000000901',NULL),
  ('00000000-0000-7000-8000-000000000914','00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000eb','00000000-0000-7000-8000-000000000902',NULL),
  ('00000000-0000-7000-8000-000000000915','00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000d1','00000000-0000-7000-8000-000000000903','2026-10-09 00:00:00+00');
+
+-- Two-factor (ADR 0038): one enrolled user with a verified secret, and a deleted secret kept for history on the first user (synthetic placeholders, not real encrypted values)
+INSERT INTO users (id,email,name,two_factor_enabled) VALUES ('00000000-0000-7000-8000-000000000002','enrolled@example.com','Enrolled',true);
+INSERT INTO two_factor (id,user_id,secret,backup_codes,verified,deleted_at) VALUES
+ ('00000000-0000-7000-8000-000000000a01','00000000-0000-7000-8000-000000000002','synthetic-secret','synthetic-codes',true,NULL),
+ ('00000000-0000-7000-8000-000000000a02','00000000-0000-7000-8000-000000000001','old-secret','old-codes',true,'2026-10-09 00:00:00+00');

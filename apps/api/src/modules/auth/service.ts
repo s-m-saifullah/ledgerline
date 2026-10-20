@@ -1,5 +1,6 @@
 import { newId } from "@ledgerline/shared";
 import { betterAuth } from "better-auth";
+import { twoFactor } from "better-auth/plugins";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { authAdapter } from "./adapter";
@@ -54,6 +55,23 @@ export function createAuth(db: Database, config: Config) {
       window: 60,
       max: config.NODE_ENV === "production" ? 30 : 1000,
     },
+    // Optional per-user TOTP (ADR 0038). No trusted-device cookie (the verify routes force it off), and
+    // the first code must verify before two-factor turns on, so a bad scan cannot lock anyone out.
+    plugins: [
+      twoFactor({ issuer: "Ledgerline", skipVerificationOnEnable: false }),
+      // Every table keeps its soft-delete column (the adapter in ./adapter turns deletes into updates), so
+      // Better Auth has to know the plugin's table has one too.
+      {
+        id: "two-factor-soft-delete",
+        schema: {
+          twoFactor: {
+            fields: {
+              deletedAt: { type: "date", required: false, input: false },
+            },
+          },
+        },
+      },
+    ],
     logger: { disabled: true },
   });
 }
