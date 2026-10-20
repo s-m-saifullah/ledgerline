@@ -46,6 +46,15 @@ import { tagRoutes } from "./modules/tags/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
 
+/** The two-factor routes the browser may call (ADR 0038); every other auth route stays disabled. */
+const twoFactorPaths = [
+  "/api/v1/auth/two-factor/enable",
+  "/api/v1/auth/two-factor/verify-totp",
+  "/api/v1/auth/two-factor/verify-backup-code",
+  "/api/v1/auth/two-factor/generate-backup-codes",
+  "/api/v1/auth/two-factor/disable",
+];
+
 export async function buildApp(
   db: Database,
   config: Config,
@@ -66,7 +75,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.43" },
+      info: { title: "Ledgerline API", version: "0.1.44" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -202,7 +211,7 @@ export async function buildApp(
   app.get("/api/v1/openapi.json", { schema: { hide: true } }, async () =>
     app.swagger(),
   );
-  // Expose only the three browser-session endpoints required by Phase 0.
+  // Expose only the browser-session endpoints (Phase 0) and the two-factor routes of ADR 0038.
   app.route({
     method: ["GET", "POST"],
     url: "/api/v1/auth/*",
@@ -212,9 +221,11 @@ export async function buildApp(
       const allowed =
         (request.method === "GET" && path === "/api/v1/auth/get-session") ||
         (request.method === "POST" &&
-          ["/api/v1/auth/sign-in/email", "/api/v1/auth/sign-out"].includes(
-            path,
-          ));
+          [
+            "/api/v1/auth/sign-in/email",
+            "/api/v1/auth/sign-out",
+            ...twoFactorPaths,
+          ].includes(path));
       if (!allowed)
         return reply
           .code(404)
@@ -239,7 +250,16 @@ export async function buildApp(
         new Request(new URL(request.url, config.APP_URL), {
           method: request.method,
           headers: fromNodeHeaders(request.headers),
-          ...(request.body ? { body: JSON.stringify(request.body) } : {}),
+          ...(request.body
+            ? {
+                // No trusted-device cookie (ADR 0038): the verify routes never get to set one.
+                body: JSON.stringify(
+                  path.startsWith("/api/v1/auth/two-factor/verify-")
+                    ? { ...(request.body as object), trustDevice: false }
+                    : request.body,
+                ),
+              }
+            : {}),
         }),
       );
       reply.code(response.status);
@@ -254,7 +274,9 @@ export async function buildApp(
             problem(
               response.status,
               "Authentication failed",
-              "Check your credentials and try again.",
+              response.status === 429
+                ? "Too many attempts. Wait a few minutes and try again."
+                : "Check your credentials and try again.",
             ),
           );
       return reply.send(await response.text());

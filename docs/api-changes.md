@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.44 — Two-factor sign-in (TOTP)
+
+Migration 0027 (ADR 0038): `users.two_factor_enabled` (default false) and a `two_factor` table; additive, so older code ignores both. Five more browser-session routes are reachable under `/api/v1/auth/` (they are hidden from the OpenAPI document, like the other auth routes): `POST two-factor/enable` (password; returns the setup link and ten backup codes, and does not turn two-factor on), `POST two-factor/verify-totp` (a code: finishes enrolment, or completes a sign-in), `POST two-factor/verify-backup-code`, `POST two-factor/generate-backup-codes` (password) and `POST two-factor/disable` (password). Every other auth route stays disabled. For a user who has turned two-factor on, `POST sign-in/email` answers `200 { "twoFactorRedirect": true }` with no session until a code or backup code is verified; users without it sign in exactly as before. The server never sets a trusted-device cookie. Repeated wrong codes lock code checks for the account for 15 minutes (`429`). A last-resort `reset-two-factor` command for the server's administrator is documented in `docs/SELF_HOSTING.md`.
+
 ## 0.1.43 — Category filter can include subcategories
 
 No migration. `GET /transactions` and `GET /exports/transactions.csv` accept `includeSubcategories=true` (the only accepted value) next to `categoryId`: the filter then also matches entries, and split lines, filed under that category's subcategories. Without it `categoryId` matches only that category, as before (Insights links to "directly in" a parent rely on this). A subcategory has no children, so the flag changes nothing for it; another ledger's categories never match.

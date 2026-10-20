@@ -70,6 +70,13 @@ psqlx "UPDATE transaction_tags SET deleted_at=NULL WHERE id='00000000-0000-7000-
 psqlx "UPDATE recurring_rules SET tag_ids=ARRAY['00000000-0000-7000-8000-000000000903'::uuid] WHERE id='00000000-0000-7000-8000-0000000007a1'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "rule carrying a deleted tag" "Restored rule tags failed validation" bash restore-drill.sh "$(latest)"
 psqlx "UPDATE recurring_rules SET tag_ids=ARRAY['00000000-0000-7000-8000-000000000901'::uuid] WHERE id='00000000-0000-7000-8000-0000000007a1'" >/dev/null
+# 9i. a user flagged as enrolled with no live secret, then a live verified secret for a user who is not flagged
+psqlx "UPDATE two_factor SET deleted_at='2026-10-09 00:00:00+00' WHERE id='00000000-0000-7000-8000-000000000a01'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "enrolled user without a secret" "Restored two factor links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE two_factor SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-000000000a01'" >/dev/null
+psqlx "UPDATE users SET two_factor_enabled=false WHERE id='00000000-0000-7000-8000-000000000002'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "secret for an unflagged user" "Restored two factor links failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE users SET two_factor_enabled=true WHERE id='00000000-0000-7000-8000-000000000002'" >/dev/null
 # 10. clean again, then concurrent writes during the backup must not break the drill
 bash backup.sh >/dev/null; bash restore-drill.sh "$(latest)" >/dev/null 2>&1 && echo "PASS  clean data restores after repairs" || echo "FAIL  clean data did not restore"
 ( for i in $(seq 1 150); do psqlx "INSERT INTO transactions (id,ledger_id,account_id,category_id,kind,date,amount,base_amount) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b1','00000000-0000-7000-8000-0000000000c1','expense','2026-10-09',-$i,-$i)" >/dev/null; done ) &
