@@ -5,7 +5,7 @@ import {
   syncTransactionSchema,
   syncTransactionTagSchema,
 } from "@ledgerline/shared";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import {
   transactionSplits,
@@ -19,6 +19,37 @@ import {
   type SyncPosition,
 } from "../../lib/sync-keyset";
 
+/** One stored entry as the sync wire shape. */
+export function toSyncTransaction(row: typeof transactions.$inferSelect) {
+  return syncTransactionSchema.parse({
+    id: row.id,
+    version: row.version,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    deletedAt: iso(row.deletedAt),
+    accountId: row.accountId,
+    categoryId: row.categoryId,
+    kind: row.kind,
+    isSplit: row.isSplit,
+    date: row.date,
+    time: row.time,
+    amount: { amount: row.amount, currency: row.currency },
+    payee: row.payee,
+    note: row.note,
+    transferId: row.transferId,
+    relatedTransferId: row.relatedTransferId,
+    feeTransferId: row.feeTransferId,
+    tipPaymentId: row.tipPaymentId,
+    importBatchId: row.importBatchId,
+    receivablePaymentId: row.receivablePaymentId,
+    receivableId: row.receivableId,
+    status: row.status,
+    fxRate: formatRate(parseRate(row.fxRate)),
+    // The base currency is USD for every ledger today (ADR 0020).
+    baseAmount: { amount: row.baseAmount, currency: "USD" },
+  });
+}
+
 /** Entries changed after `after`, deleted ones included, as the sync wire shape (ADR 0042). */
 export async function syncTransactions(
   db: DatabaseConnection,
@@ -28,35 +59,44 @@ export async function syncTransactions(
 ) {
   return mapPage(
     await changedRows(db, transactions, ledgerId, after, limit),
-    (row) =>
-      syncTransactionSchema.parse({
-        id: row.id,
-        version: row.version,
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-        deletedAt: iso(row.deletedAt),
-        accountId: row.accountId,
-        categoryId: row.categoryId,
-        kind: row.kind,
-        isSplit: row.isSplit,
-        date: row.date,
-        time: row.time,
-        amount: { amount: row.amount, currency: row.currency },
-        payee: row.payee,
-        note: row.note,
-        transferId: row.transferId,
-        relatedTransferId: row.relatedTransferId,
-        feeTransferId: row.feeTransferId,
-        tipPaymentId: row.tipPaymentId,
-        importBatchId: row.importBatchId,
-        receivablePaymentId: row.receivablePaymentId,
-        receivableId: row.receivableId,
-        status: row.status,
-        fxRate: formatRate(parseRate(row.fxRate)),
-        // The base currency is USD for every ledger today (ADR 0020).
-        baseAmount: { amount: row.baseAmount, currency: "USD" },
-      }),
+    toSyncTransaction,
   );
+}
+
+/** An entry, deleted or not, as the sync wire shape (empty when this ledger has none with that id). */
+export async function syncRowsForEntry(
+  db: DatabaseConnection,
+  ledgerId: string,
+  id: string,
+) {
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(and(eq(transactions.ledgerId, ledgerId), eq(transactions.id, id)));
+  return rows.map(toSyncTransaction);
+}
+
+/** A transfer's two legs and its bonus and fee entries, deleted or not, as the sync wire shape. */
+export async function syncRowsForTransfer(
+  db: DatabaseConnection,
+  ledgerId: string,
+  transferId: string,
+) {
+  const rows = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        eq(transactions.ledgerId, ledgerId),
+        or(
+          eq(transactions.transferId, transferId),
+          eq(transactions.relatedTransferId, transferId),
+          eq(transactions.feeTransferId, transferId),
+        ),
+      ),
+    )
+    .orderBy(transactions.id);
+  return rows.map(toSyncTransaction);
 }
 
 /** Split lines changed after `after`, in their entry's currency, as the sync wire shape. */

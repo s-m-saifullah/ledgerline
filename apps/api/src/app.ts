@@ -77,7 +77,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.47" },
+      info: { title: "Ledgerline API", version: "0.1.48" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),

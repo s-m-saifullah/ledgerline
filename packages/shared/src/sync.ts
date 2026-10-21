@@ -124,3 +124,68 @@ export const syncResponseSchema = z.object({
   serverTime: timestamp,
 });
 export type SyncResponse = z.infer<typeof syncResponseSchema>;
+
+// The push side (ADR 0042): the phone sends what was entered offline, one mutation at a time.
+
+export const syncMutationTypes = [
+  "transaction.create",
+  "transaction.update",
+  "transaction.delete",
+  "transfer.create",
+  "transfer.update",
+  "transfer.delete",
+] as const;
+
+export const syncMutationSchema = z.strictObject({
+  // A UUIDv7 made on the phone. It is also the idempotency key, and for a create it is the new entry's id
+  // (for a transfer, its `transferId`), so the phone can refer to the row before it has synced.
+  id: idSchema,
+  type: z.enum(syncMutationTypes),
+  // When the person made the change on the phone; capped at the time the server receives it.
+  editedAt: timestamp,
+  // The entry (or the transfer's `transferId`) an update or delete is about.
+  targetId: idSchema.optional(),
+  // The version of the row the phone last saw, for an update or delete.
+  baseVersion: versionSchema.optional(),
+  // A create sends the same fields as `POST /transactions` or `POST /transfers`. An entry update sends only the
+  // changed fields of `PATCH /transactions/{id}`; a transfer update sends every field of `PATCH /transfers/{id}`
+  // (the whole transfer is replaced). Neither sends `expectedVersion`: `baseVersion` stands in for it. A transfer
+  // delete may send `deleteBonus` and `deleteFee`.
+  body: z.record(z.string(), z.unknown()).default({}),
+});
+export const syncPushSchema = z
+  .strictObject({
+    mutations: z.array(syncMutationSchema).min(1).max(50),
+  })
+  .refine(
+    (body) =>
+      new Set(body.mutations.map((item) => item.id.toLowerCase())).size ===
+      body.mutations.length,
+    { path: ["mutations"], message: "Each mutation id may appear only once." },
+  );
+
+export const syncResultSchema = z.object({
+  id: idSchema,
+  // applied: done now. replayed: this mutation id was already applied (nothing happened again).
+  // superseded: the server's row is newer, so the change was not applied; `rows` holds the server's version.
+  // rejected: the change is not valid or not allowed; see `problem`.
+  status: z.enum(["applied", "replayed", "superseded", "rejected"]),
+  // The entry (or both legs of a transfer, with its bonus and fee) as the server now has them.
+  rows: z.array(syncTransactionSchema),
+  problem: z
+    .object({
+      status: z.number().int(),
+      title: z.string(),
+      detail: z.string(),
+      errors: z
+        .array(z.object({ field: z.string(), message: z.string() }))
+        .optional(),
+    })
+    .optional(),
+});
+export const syncPushResponseSchema = z.object({
+  results: z.array(syncResultSchema),
+});
+export type SyncPushResponse = z.infer<typeof syncPushResponseSchema>;
+export type SyncMutation = z.infer<typeof syncMutationSchema>;
+export type SyncResult = z.infer<typeof syncResultSchema>;

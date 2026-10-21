@@ -1,5 +1,7 @@
 import {
   syncParamsSchema,
+  syncPushResponseSchema,
+  syncPushSchema,
   syncQuerySchema,
   syncResponseSchema,
 } from "@ledgerline/shared";
@@ -7,13 +9,15 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
+import { ApiProblem } from "../../lib/problem";
 import { createActor, errors } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
+import { pushMutations } from "./push-service";
 import { getSyncPage } from "./service";
 
 export async function syncRoutes(
   instance: FastifyInstance,
-  { db, auth }: { db: Database; config: Config; auth: Auth },
+  { db, auth, config }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
   const actor = createActor(auth);
@@ -39,5 +43,35 @@ export async function syncRoutes(
         request.query.cursor,
         request.query.limit,
       ),
+  );
+  app.post(
+    "/api/v1/ledgers/:ledgerId/sync",
+    {
+      schema: {
+        summary: "Apply the Android app's offline changes",
+        description:
+          "Applies up to 50 mutations in order, each as its own idempotent write: the mutation `id` is the idempotency key, so a batch that is cut off and sent again changes nothing twice (`replayed`). Types: `transaction.create`, `transaction.update`, `transaction.delete`, `transfer.create`, `transfer.update`, `transfer.delete`. A create sends the fields of `POST /transactions` or `POST /transfers` as `body`, and its `id` becomes the new entry's id (a transfer's `transferId`); an update or delete names its `targetId` and the `baseVersion` the phone last saw (an entry update sends only the changed fields; a transfer update sends every field, as `PATCH /transfers/{id}` does). Last write wins per row: if the row is still at `baseVersion` the change applies; if it has changed, the later edit wins, comparing `editedAt` (capped at the time the server received it) with the row's last update, and a tie goes to the server. A change that loses is `superseded` and `rows` carries the server's version; editing a deleted row is `superseded`; deleting a deleted row is `applied`. A mutation that is not valid or not allowed is `rejected` with a `problem` and the rest still run. Each result's `rows` are the entry (or both legs of a transfer with its bonus and fee) as the server now has them. Viewers get `403` and a ledger the caller is not a member of `404` for the whole request; an invalid request body, an unknown type, more than 50 mutations or a repeated mutation id is `400`. Uses the `Origin` header like every write.",
+        tags: ["Sync"],
+        security: [{ sessionCookie: [] }, { bearerAuth: [] }],
+        params: syncParamsSchema,
+        body: syncPushSchema,
+        response: { 200: syncPushResponseSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const actorId = await actor(request);
+      if (request.headers.origin !== new URL(config.APP_URL).origin)
+        throw new ApiProblem(
+          403,
+          "Forbidden",
+          "Request origin is not allowed.",
+        );
+      return pushMutations(
+        db,
+        actorId,
+        request.params.ledgerId,
+        request.body.mutations,
+      );
+    },
   );
 }

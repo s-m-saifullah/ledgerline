@@ -374,7 +374,7 @@ export function transactionRepository(
     create: async (
       body: CreateTransaction,
       pricing: EntryPricing,
-      extra: { importBatchId?: string } = {},
+      extra: { importBatchId?: string; id?: string } = {},
     ) =>
       (
         await db

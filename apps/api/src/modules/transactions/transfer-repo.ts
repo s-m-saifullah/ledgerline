@@ -50,9 +50,12 @@ export function transferRepository(db: DatabaseConnection, ledgerId: string) {
         .orderBy(asc(transactions.id));
       return lock ? query.for("update") : query;
     },
-    create: (body: CreateTransfer, pricing: TransferPricing) => {
-      const transferId = newId(),
-        now = new Date();
+    create: (
+      body: CreateTransfer,
+      pricing: TransferPricing,
+      transferId = newId(),
+    ) => {
+      const now = new Date();
       return db
         .insert(transactions)
         .values([

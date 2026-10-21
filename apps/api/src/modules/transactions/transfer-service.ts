@@ -187,6 +187,7 @@ export async function getTransfer(
 export async function createTransferInContext(
   context: WriteContext,
   body: CreateTransfer,
+  transferId?: string,
 ) {
   const rows = await references(context, body);
   const pricing = await priceTransfer(context, {
@@ -198,7 +199,7 @@ export async function createTransferInContext(
     manualRate: body.fxRate,
   });
   const repo = transferRepository(context.tx, context.ledgerId);
-  const saved = await repo.create(body, pricing);
+  const saved = await repo.create(body, pricing, transferId);
   if (body.tagIds?.length)
     await assignTags(
       context.tx,
@@ -319,46 +320,50 @@ export function updateTransfer(
     identity,
     `PATCH transfers/${id.toLowerCase()}`,
     requestOf(body),
-    async (context) => {
-      const repo = transferRepository(context.tx, context.ledgerId);
-      const current = pair(await repo.find(id, true));
-      const version = nextVersion(current.from.version, body.expectedVersion);
-      const rows = await references(context, body, current);
-      const from = accountOf(rows, body.fromAccountId);
-      const pricing = await priceTransfer(context, {
-        from,
-        to: accountOf(rows, body.toAccountId),
-        amount: body.amount,
-        receivedAmount: body.receivedAmount,
-        date: body.date,
-        manualRate: body.fxRate,
-        // An edit keeps the transfer's saved rate unless it is changed by hand.
-        keepRate:
-          current.from.currency === from.currency
-            ? current.from.fxRate
-            : undefined,
-      });
-      const saved = await repo.update(id, body, version, pricing);
-      if (body.tagIds !== undefined)
-        await assignTags(
-          context.tx,
-          context.ledgerId,
-          saved.map((row) => row.id),
-          body.tagIds,
-        );
-      await check(context, rows);
-      // An edit leaves the bonus and the fee alone; they are ordinary entries from then on.
-      return {
-        status: 200,
-        body: dto(
-          saved,
-          await repo.bonus(id),
-          await repo.fee(id),
-          await tagsOf(context.tx, context.ledgerId, saved),
-        ),
-      };
-    },
+    (context) => updateTransferInContext(context, id, body),
   );
+}
+/** Edits a transfer inside a write that is already open. */
+export async function updateTransferInContext(
+  context: WriteContext,
+  id: string,
+  body: UpdateTransfer,
+) {
+  const repo = transferRepository(context.tx, context.ledgerId);
+  const current = pair(await repo.find(id, true));
+  const version = nextVersion(current.from.version, body.expectedVersion);
+  const rows = await references(context, body, current);
+  const from = accountOf(rows, body.fromAccountId);
+  const pricing = await priceTransfer(context, {
+    from,
+    to: accountOf(rows, body.toAccountId),
+    amount: body.amount,
+    receivedAmount: body.receivedAmount,
+    date: body.date,
+    manualRate: body.fxRate,
+    // An edit keeps the transfer's saved rate unless it is changed by hand.
+    keepRate:
+      current.from.currency === from.currency ? current.from.fxRate : undefined,
+  });
+  const saved = await repo.update(id, body, version, pricing);
+  if (body.tagIds !== undefined)
+    await assignTags(
+      context.tx,
+      context.ledgerId,
+      saved.map((row) => row.id),
+      body.tagIds,
+    );
+  await check(context, rows);
+  // An edit leaves the bonus and the fee alone; they are ordinary entries from then on.
+  return {
+    status: 200,
+    body: dto(
+      saved,
+      await repo.bonus(id),
+      await repo.fee(id),
+      await tagsOf(context.tx, context.ledgerId, saved),
+    ),
+  };
 }
 export function transferLifecycle(
   db: Database,
@@ -376,40 +381,47 @@ export function transferLifecycle(
     identity,
     `${restore ? "POST" : "DELETE"} transfers/${id.toLowerCase()}${restore ? "/restore" : ""}`,
     requestOf(body),
-    async (context) => {
-      const repo = transferRepository(context.tx, context.ledgerId);
-      const saved = await repo.find(id, true, restore),
-        current = pair(saved);
-      const version = nextVersion(current.from.version, body.expectedVersion);
-      if (restore && !current.from.deletedAt)
-        throw new ApiProblem(
-          409,
-          "Conflict",
-          "This transfer is already active.",
-        );
-      const rows = await references(context, dto(saved), current);
-      const deletedAt = restore ? null : new Date();
-      const updated = await repo.lifecycle(id, deletedAt, version);
-      // A bonus goes and comes back with its transfer (the same moment), only when asked to.
-      if (restore && current.from.deletedAt) {
-        await repo.bonusLifecycle(id, { restoreFrom: current.from.deletedAt });
-        await repo.feeLifecycle(id, { restoreFrom: current.from.deletedAt });
-      } else if (deletedAt) {
-        if (body.deleteBonus) await repo.bonusLifecycle(id, { deletedAt });
-        if (body.deleteFee) await repo.feeLifecycle(id, { deletedAt });
-      }
-      await check(context, rows);
-      return restore
-        ? {
-            status: 200,
-            body: dto(
-              updated,
-              await repo.bonus(id),
-              await repo.fee(id),
-              await tagsOf(context.tx, context.ledgerId, updated),
-            ),
-          }
-        : { status: 204, body: null };
-    },
+    (context) => transferLifecycleInContext(context, id, body, restore),
   );
+}
+/** Deletes or restores a transfer inside a write that is already open. */
+export async function transferLifecycleInContext(
+  context: WriteContext,
+  id: string,
+  body: {
+    expectedVersion: number;
+    deleteBonus?: boolean | undefined;
+    deleteFee?: boolean | undefined;
+  },
+  restore: boolean,
+) {
+  const repo = transferRepository(context.tx, context.ledgerId);
+  const saved = await repo.find(id, true, restore),
+    current = pair(saved);
+  const version = nextVersion(current.from.version, body.expectedVersion);
+  if (restore && !current.from.deletedAt)
+    throw new ApiProblem(409, "Conflict", "This transfer is already active.");
+  const rows = await references(context, dto(saved), current);
+  const deletedAt = restore ? null : new Date();
+  const updated = await repo.lifecycle(id, deletedAt, version);
+  // A bonus goes and comes back with its transfer (the same moment), only when asked to.
+  if (restore && current.from.deletedAt) {
+    await repo.bonusLifecycle(id, { restoreFrom: current.from.deletedAt });
+    await repo.feeLifecycle(id, { restoreFrom: current.from.deletedAt });
+  } else if (deletedAt) {
+    if (body.deleteBonus) await repo.bonusLifecycle(id, { deletedAt });
+    if (body.deleteFee) await repo.feeLifecycle(id, { deletedAt });
+  }
+  await check(context, rows);
+  return restore
+    ? {
+        status: 200,
+        body: dto(
+          updated,
+          await repo.bonus(id),
+          await repo.fee(id),
+          await tagsOf(context.tx, context.ledgerId, updated),
+        ),
+      }
+    : { status: 204, body: null };
 }
