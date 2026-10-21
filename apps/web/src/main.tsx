@@ -234,3 +234,8 @@ createRoot(root).render(
     </QueryClientProvider>
   </StrictMode>,
 );
+// The installable app's service worker (ADR 0041): production builds only, so development and tests are unaffected.
+if (import.meta.env.PROD && "serviceWorker" in navigator)
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+  });
