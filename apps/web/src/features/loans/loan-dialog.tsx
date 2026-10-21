@@ -412,7 +412,7 @@ export function LoanDialog({
           {kind === "waive" && (
             <div className="form-field">
               {categories.isError ? (
-                <p role="alert">Could not load categories.</p>
+                <p role="alert">Couldn't load categories.</p>
               ) : (
                 <CategoryPicker
                   categories={categories.data ?? []}
