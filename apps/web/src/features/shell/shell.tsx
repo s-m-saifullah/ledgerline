@@ -200,10 +200,11 @@ export function Shell({
       </aside>
       <div className="workspace">
         <header className="topbar">
-          <Link to="/" className="mobile-brand" aria-label="Ledgerline home">
+          <Link to="/" className="mobile-brand">
             <span className="brand-mark" aria-hidden="true">
               L<span>↗</span>
             </span>
+            <span className="sr-only">Ledgerline home</span>
           </Link>
           <div className="topbar-context">
             <span>Personal ledger</span>

@@ -31,6 +31,8 @@ export function renderCategoryRow(
     start,
     setNotice,
   } = form;
+  // A shown root is a level-2 heading; its children (and rows under a context heading) are level 3.
+  const Heading = child ? "h3" : "h2";
   const up = moveCategory(items, category, -1);
   const down = moveCategory(items, category, 1);
   const activeChildren = items.some(
@@ -48,9 +50,9 @@ export function renderCategoryRow(
       <div className="category-row-heading">
         <CategoryMark icon={category.icon} color={category.color} />
         <div>
-          <h3 id={`category-title-${category.id}`} title={category.name}>
+          <Heading id={`category-title-${category.id}`} title={category.name}>
             {category.name}
-          </h3>
+          </Heading>
           {category.archivedAt && (
             <span className="account-badge">Archived</span>
           )}

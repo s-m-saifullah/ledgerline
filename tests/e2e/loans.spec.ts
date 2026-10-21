@@ -198,9 +198,9 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
     page.locator(".client-card").filter({ hasText: "Sam" }),
   ).toContainText("Owes you");
   await page.goto("/");
-  await expect(
-    page.getByRole("link", { name: "Lent out. Open Loans" }),
-  ).toContainText("$40.00");
+  await expect(page.getByRole("link", { name: /^Lent out/ })).toContainText(
+    "$40.00",
+  );
   await page.goto("/accounts");
   await expect(page.getByText("Checking").first()).toBeVisible();
   await expect(page.locator("main")).not.toContainText("Sam");
