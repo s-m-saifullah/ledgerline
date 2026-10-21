@@ -18,6 +18,7 @@
     root * /srv
     try_files {path} /index.html
     header /index.html Cache-Control "no-store"
+    header /manifest.webmanifest Cache-Control "no-store"
     file_server
   }
 }
