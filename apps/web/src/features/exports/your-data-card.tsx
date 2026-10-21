@@ -31,7 +31,9 @@ export function YourDataCard() {
       </p>
       <div className="export-range">
         <div>
-          <label htmlFor="export-from">From date</label>
+          <label className="field-label" htmlFor="export-from">
+            From date
+          </label>
           <DateTimeInput
             label="From date"
             id="export-from"
@@ -43,7 +45,9 @@ export function YourDataCard() {
           />
         </div>
         <div>
-          <label htmlFor="export-to">To date</label>
+          <label className="field-label" htmlFor="export-to">
+            To date
+          </label>
           <DateTimeInput
             label="To date"
             id="export-to"

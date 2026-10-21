@@ -15,7 +15,9 @@ export function FileStep({ w }: { w: Wizard }) {
         </p>
         <div className="import-fields">
           <div>
-            <label htmlFor="import-account">Import into</label>
+            <label className="field-label" htmlFor="import-account">
+              Import into
+            </label>
             <NativeSelect
               id="import-account"
               value={w.accountId}
@@ -29,7 +31,9 @@ export function FileStep({ w }: { w: Wizard }) {
             </NativeSelect>
           </div>
           <div>
-            <label htmlFor="import-file">CSV file</label>
+            <label className="field-label" htmlFor="import-file">
+              CSV file
+            </label>
             <input
               id="import-file"
               type="file"

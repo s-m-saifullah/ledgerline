@@ -5,6 +5,7 @@ import {
 } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
+import { DialogDeleteButton } from "../../components/dialog-delete-button";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
 import { currencyName, rateSentence, today } from "../../lib/rate-format";
@@ -145,14 +146,11 @@ export function RateEditor({
               Yes, remove {currency.code}
             </button>
           ) : (
-            <button
-              type="button"
-              className="secondary-button danger-action"
+            <DialogDeleteButton
+              label="Remove currency"
               disabled={busy}
               onClick={() => setConfirmRemove(true)}
-            >
-              Remove currency
-            </button>
+            />
           )}
           <Button type="submit" disabled={busy}>
             {busy ? "Saving…" : "Save rate"}

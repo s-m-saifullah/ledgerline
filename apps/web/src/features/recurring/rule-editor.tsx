@@ -2,6 +2,7 @@ import type { Account, Category, RecurringRule } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DialogDeleteButton } from "../../components/dialog-delete-button";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
 import { defaultFeeText, parseFee } from "../transactions/fee";
@@ -299,14 +300,11 @@ export function RuleEditor({
                     Yes, delete it
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="secondary-button danger-action"
+                  <DialogDeleteButton
+                    label="Delete rule"
                     disabled={busy}
                     onClick={() => setConfirmDelete(true)}
-                  >
-                    Delete rule
-                  </button>
+                  />
                 ))}
               {rule && (
                 <button

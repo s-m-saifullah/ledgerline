@@ -185,7 +185,9 @@ function PasswordStep({
         void submit();
       }}
     >
-      <label htmlFor="two-factor-password">Your password</label>
+      <label className="field-label" htmlFor="two-factor-password">
+        Your password
+      </label>
       <input
         id="two-factor-password"
         ref={field}
@@ -272,7 +274,9 @@ function ScanStep({
           void submit();
         }}
       >
-        <label htmlFor="two-factor-setup-code">6-digit code from the app</label>
+        <label className="field-label" htmlFor="two-factor-setup-code">
+          6-digit code from the app
+        </label>
         <input
           id="two-factor-setup-code"
           value={code}

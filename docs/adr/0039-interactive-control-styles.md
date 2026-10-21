@@ -25,3 +25,9 @@ No API, data or behaviour change; labels and roles stay the same, so existing te
 ## Slices and checks
 
 1. The disclosure style (the twelve cases). 2. The text-button tier and the conversions. 3. The shared retry control. Each is web only. Checked by eye at 320, 390 and desktop in light and dark with a temporary screenshot spec that is deleted before committing, by keyboard (Enter and Space on every disclosure, visible focus), and with the existing unit and browser specs plus one new test that disclosures respond to the keyboard.
+
+## Amendment (2026-10-20): spacing and the editor footer
+
+- **Spacing rule, on the 4 px grid.** The focus ring stays 2 px wide but its offset drops from 4 px to 2 px, so it reaches 4 px beyond a control. A label sits at least 8 px above its field (a grid gap, or the `field-label` class where a form has none), a field 16 px above the next label or field, related buttons 12 px apart and the sections of a card 24 px apart. A browser spec opens the main forms at 320, 390 and desktop widths and fails when text sits closer than 8 px above a field.
+- **Editor footers on a phone.** The first step of delete in the five editor dialogs that have one (transaction, transfer, recurring rule, budget, currency rate) is a shared `DialogDeleteButton`: a 48 px trash icon on a phone, the text button on wider screens, with the label kept in the page for screen readers and tests. With a third button the footer is Close, the icon and the primary button on one row; with two it is the icon and the primary button. The icon only asks for confirmation; deleting still takes a second, confirming button, and entries can be undone afterwards.
+- **Charts.** The "Show the figures" row has 16 px above it under both Insights charts.

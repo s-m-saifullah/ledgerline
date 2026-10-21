@@ -11,6 +11,7 @@ import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { DialogDeleteButton } from "../../components/dialog-delete-button";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
@@ -425,14 +426,11 @@ export function TransferForm({
             ) : (
               <>
                 {baseline && (
-                  <button
-                    type="button"
-                    className="secondary-button danger-action"
+                  <DialogDeleteButton
+                    label="Delete transfer"
                     disabled={busy}
                     onClick={() => setConfirmDelete(true)}
-                  >
-                    Delete transfer
-                  </button>
+                  />
                 )}
                 <Button
                   type="submit"

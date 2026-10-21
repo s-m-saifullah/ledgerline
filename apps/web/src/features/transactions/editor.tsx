@@ -6,6 +6,7 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
 import { DateTimeInput } from "../../components/date-time-input";
+import { DialogDeleteButton } from "../../components/dialog-delete-button";
 import { EditorDialog } from "../../components/editor-dialog";
 import { NativeSelect } from "../../components/native-select";
 import { ApiError } from "../../lib/api";
@@ -422,14 +423,11 @@ export function TransactionEditor({
               </>
             ) : (
               <>
-                <button
-                  type="button"
-                  className="secondary-button danger-action"
+                <DialogDeleteButton
+                  label="Delete transaction"
                   disabled={busy}
                   onClick={() => setConfirmDelete(true)}
-                >
-                  Delete transaction
-                </button>
+                />
                 <Button type="submit" disabled={busy}>
                   {busy ? "Saving…" : "Save changes"}
                 </Button>
