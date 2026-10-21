@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.45 — Net worth history starts at the ledger's first data
+
+No migration (ADR 0036 amendment). `GET /reports/net-worth` gains `historyStart`, the `YYYY-MM` month of the ledger's first account (by creation) or oldest live entry of any status, whichever is earlier, or `null` when the ledger has neither. `months` now leaves out every month before `historyStart`, so it can hold fewer than the requested `months` points, or none when `to` is before the history starts; with `historyStart` null it holds only the `to` month. The points that remain are unchanged. Before this a new ledger showed up to 24 identical months of opening balances.
+
 ## 0.1.44 — Two-factor sign-in (TOTP)
 
 Migration 0027 (ADR 0038): `users.two_factor_enabled` (default false) and a `two_factor` table; additive, so older code ignores both. Five more browser-session routes are reachable under `/api/v1/auth/` (they are hidden from the OpenAPI document, like the other auth routes): `POST two-factor/enable` (password; returns the setup link and ten backup codes, and does not turn two-factor on), `POST two-factor/verify-totp` (a code: finishes enrolment, or completes a sign-in), `POST two-factor/verify-backup-code`, `POST two-factor/generate-backup-codes` (password) and `POST two-factor/disable` (password). Every other auth route stays disabled. For a user who has turned two-factor on, `POST sign-in/email` answers `200 { "twoFactorRedirect": true }` with no session until a code or backup code is verified; users without it sign in exactly as before. The server never sets a trusted-device cookie. Repeated wrong codes lock code checks for the account for 15 minutes (`429`). A last-resort `reset-two-factor` command for the server's administrator is documented in `docs/SELF_HOSTING.md`.

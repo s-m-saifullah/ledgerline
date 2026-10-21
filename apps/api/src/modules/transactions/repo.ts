@@ -501,6 +501,11 @@ export function transactionRepository(
         total: string;
       }>(sql`
       select account_id as "accountId",case when date<${from}::date then null else to_char(date,'YYYY-MM') end as month,sum(amount)::text as total from transactions where ledger_id=${ledgerId} and deleted_at is null and status='cleared' and date<=${to}::date group by 1,2`),
+    /** The YYYY-MM month of the oldest live entry of any status (null when there is none). */
+    firstEntryMonth: () =>
+      db.execute<{ month: string | null }>(
+        sql`select to_char(min(date),'YYYY-MM') as month from transactions where ledger_id=${ledgerId} and deleted_at is null`,
+      ),
     pendingCount: async () =>
       Number(
         (

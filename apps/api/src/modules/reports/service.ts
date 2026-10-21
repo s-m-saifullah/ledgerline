@@ -17,6 +17,7 @@ import { convertOrConflict } from "../transactions/pricing";
 import {
   accountTotalsByMonth,
   cashFlowByMonth,
+  firstEntryMonth,
 } from "../transactions/report-service";
 
 function safe(value: bigint) {
@@ -176,7 +177,9 @@ export async function getCashFlowReport(
  * Net worth at the end of each of the last `months` months (ADR 0036): every account's
  * opening balance plus its cleared, live entries dated on or before the point, valued at the
  * newest stored rate on or before that day. A currency with no such rate is left out of that
- * point and named. The current month's point (and any later one) is as of today.
+ * point and named. The current month's point (and any later one) is as of today. Months before
+ * the ledger's first account or entry are left out (`historyStart`), so a new ledger does not show
+ * a year of identical opening balances; with no accounts or entries only the last month remains.
  */
 export async function getNetWorthReport(
   db: Database,
@@ -210,47 +213,59 @@ export async function getNetWorthReport(
         accounts.map((row) => row.currency).filter((c) => c !== baseCurrency),
         last,
       );
+      const entryMonth = await firstEntryMonth(tx, ledgerId);
+      const starts = [
+        ...(entryMonth ? [entryMonth] : []),
+        ...accounts.map((row) => row.createdAt.toISOString().slice(0, 7)),
+      ].sort();
+      const historyStart = starts[0] ?? null;
       const running = new Map(
         accounts.map((row) => [row.id, totals.before.get(row.id) ?? 0n]),
       );
+      const points = list.map((month) => {
+        const day = asOf(month);
+        const unconverted = new Set<string>();
+        let total = 0n;
+        for (const account of accounts) {
+          const sum =
+            (running.get(account.id) ?? 0n) +
+            (totals.months.get(account.id)?.get(month) ?? 0n);
+          running.set(account.id, sum);
+          const balance = postedBalance(account.openingBalance, sum);
+          if (account.currency === baseCurrency) total += BigInt(balance);
+          else {
+            const rate = (rates.get(account.currency) ?? []).findLast(
+              (row) => row.date <= day,
+            );
+            // A zero balance adds nothing, so it never makes a month incomplete.
+            if (rate)
+              total += BigInt(
+                convertOrConflict(
+                  balance,
+                  rate.rate,
+                  account.currency,
+                  baseCurrency,
+                ),
+              );
+            else if (balance !== 0) unconverted.add(account.currency);
+          }
+        }
+        return {
+          month,
+          asOf: day,
+          netWorth: usd(total),
+          unconvertedCurrencies: [...unconverted].sort(),
+        };
+      });
       return {
         from: first,
         to,
-        months: list.map((month) => {
-          const day = asOf(month);
-          const unconverted = new Set<string>();
-          let total = 0n;
-          for (const account of accounts) {
-            const sum =
-              (running.get(account.id) ?? 0n) +
-              (totals.months.get(account.id)?.get(month) ?? 0n);
-            running.set(account.id, sum);
-            const balance = postedBalance(account.openingBalance, sum);
-            if (account.currency === baseCurrency) total += BigInt(balance);
-            else {
-              const rate = (rates.get(account.currency) ?? []).findLast(
-                (row) => row.date <= day,
-              );
-              // A zero balance adds nothing, so it never makes a month incomplete.
-              if (rate)
-                total += BigInt(
-                  convertOrConflict(
-                    balance,
-                    rate.rate,
-                    account.currency,
-                    baseCurrency,
-                  ),
-                );
-              else if (balance !== 0) unconverted.add(account.currency);
-            }
-          }
-          return {
-            month,
-            asOf: day,
-            netWorth: usd(total),
-            unconvertedCurrencies: [...unconverted].sort(),
-          };
-        }),
+        historyStart,
+        months: points.filter((point) =>
+          historyStart === null
+            ? point.month === to
+            : point.month >= historyStart,
+        ),
       };
     },
     { isolationLevel: "repeatable read" },

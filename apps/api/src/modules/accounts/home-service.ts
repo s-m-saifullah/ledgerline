@@ -37,5 +37,6 @@ export async function accountOpeningOverview(
     id: row.id,
     currency: row.currency,
     openingBalance: row.openingBalance,
+    createdAt: row.createdAt,
   }));
 }
