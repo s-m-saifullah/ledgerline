@@ -241,11 +241,7 @@ export function HomePage() {
                   </div>
                   <span className="muted">Cleared spending in {label}</span>
                 </article>
-                <Link
-                  to="/clients"
-                  className="stat-card home-link-card"
-                  aria-label="Owed to you. Open Clients"
-                >
+                <Link to="/clients" className="stat-card home-link-card">
                   <p>Owed to you</p>
                   <div className="amount">
                     <Amount cents={data.owed.total.amount} />
@@ -264,31 +260,26 @@ export function HomePage() {
                         : "At today's rates."}
                     </span>
                   )}
+                  <span className="sr-only">. Opens Clients.</span>
                 </Link>
                 {data.loans.lent.amount > 0 && (
-                  <Link
-                    to="/loans"
-                    className="stat-card home-link-card"
-                    aria-label="Lent out. Open Loans"
-                  >
+                  <Link to="/loans" className="stat-card home-link-card">
                     <p>Lent out</p>
                     <div className="amount">
                       <Amount cents={data.loans.lent.amount} />
                     </div>
                     <span className="muted">Owed back to you</span>
+                    <span className="sr-only">. Opens Loans.</span>
                   </Link>
                 )}
                 {data.loans.borrowed.amount > 0 && (
-                  <Link
-                    to="/loans"
-                    className="stat-card home-link-card"
-                    aria-label="You owe. Open Loans"
-                  >
+                  <Link to="/loans" className="stat-card home-link-card">
                     <p>You owe</p>
                     <div className="amount">
                       <Amount cents={data.loans.borrowed.amount} />
                     </div>
                     <span className="muted">Money you borrowed</span>
+                    <span className="sr-only">. Opens Loans.</span>
                   </Link>
                 )}
               </section>
