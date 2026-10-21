@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { LoadError } from "../../components/load-error";
 import { api, getLedgers, type Session } from "../../lib/api";
 import type { Preferences } from "../../lib/preferences";
 import { QuickAdd } from "../transactions/quick-add";
@@ -294,16 +295,11 @@ export function Shell({
         ))}
       </nav>
       {ledgers.isError && (
-        <p role="alert" className="shell-ledger-error">
-          Couldn't load your ledger.{" "}
-          <button
-            type="button"
-            className="quiet-button"
-            onClick={() => void ledgers.refetch()}
-          >
-            Try again
-          </button>
-        </p>
+        <LoadError
+          className="shell-ledger-error"
+          message="Couldn't load your ledger."
+          onRetry={() => void ledgers.refetch()}
+        />
       )}
       {ledger && (
         <QuickAdd

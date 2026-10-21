@@ -1424,6 +1424,8 @@ kbd {
   top: 80px;
   transform: translateX(-50%);
   z-index: 25;
+  width: max-content;
+  max-width: calc(100vw - 32px);
   padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -3414,4 +3416,15 @@ details.more-details > summary .muted {
   color: var(--muted);
   font-size: inherit;
   line-height: inherit;
+}
+
+/* A failed load with a way forward (ADR 0039): message and a bordered retry button, stacked on a phone. */
+.load-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.load-error-message {
+  margin: 0;
 }

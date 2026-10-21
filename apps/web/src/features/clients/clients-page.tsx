@@ -17,6 +17,7 @@ import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { ActionButton } from "../../components/action-button";
 import { Amount } from "../../components/amount";
 import { BackToMore } from "../../components/back-to-more";
+import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { formatTime12, localToday } from "../../lib/time";
@@ -135,12 +136,10 @@ export function ClientsPage() {
             All clients
           </button>
           {client.isError ? (
-            <p role="alert">
-              Could not load this client.{" "}
-              <button type="button" onClick={() => void client.refetch()}>
-                Try again
-              </button>
-            </p>
+            <LoadError
+              message="Couldn't load this client."
+              onRetry={() => void client.refetch()}
+            />
           ) : (
             client.data && (
               <section className="settings-card client-detail">
@@ -248,12 +247,10 @@ export function ClientsPage() {
             {services.isPending ? (
               <p role="status">Loading services…</p>
             ) : services.isError ? (
-              <p role="alert">
-                Could not load services.{" "}
-                <button type="button" onClick={() => void services.refetch()}>
-                  Try again
-                </button>
-              </p>
+              <LoadError
+                message="Couldn't load services."
+                onRetry={() => void services.refetch()}
+              />
             ) : (
               <>
                 {!services.data?.pages.some((p) => p.items.length) && (
@@ -292,12 +289,10 @@ export function ClientsPage() {
             {history.isPending ? (
               <p role="status">Loading history…</p>
             ) : history.isError ? (
-              <p role="alert">
-                Could not load history.{" "}
-                <button type="button" onClick={() => void history.refetch()}>
-                  Try again
-                </button>
-              </p>
+              <LoadError
+                message="Couldn't load history."
+                onRetry={() => void history.refetch()}
+              />
             ) : (
               <>
                 <ul className="client-rows" aria-label="Client history">
@@ -430,12 +425,10 @@ export function ClientsPage() {
           {clients.isPending ? (
             <p role="status">Loading clients…</p>
           ) : clients.isError ? (
-            <p role="alert">
-              Could not load clients.{" "}
-              <button type="button" onClick={() => void clients.refetch()}>
-                Try again
-              </button>
-            </p>
+            <LoadError
+              message="Couldn't load clients."
+              onRetry={() => void clients.refetch()}
+            />
           ) : (
             <>
               {rows.length === 0 && (
@@ -643,12 +636,10 @@ function ServiceRow({
           {payments.isPending ? (
             <p role="status">Loading payments…</p>
           ) : payments.isError ? (
-            <p role="alert">
-              Could not load payments.{" "}
-              <button type="button" onClick={() => void payments.refetch()}>
-                Try again
-              </button>
-            </p>
+            <LoadError
+              message="Couldn't load payments."
+              onRetry={() => void payments.refetch()}
+            />
           ) : (
             <>
               {!payments.data?.pages.some((p) => p.items.length) && (

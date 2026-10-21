@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { EditorDialog } from "../../components/editor-dialog";
+import { LoadError } from "../../components/load-error";
 import { Toast } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
@@ -279,7 +280,7 @@ export function ClientsWorkspace({
       }
     } catch (e) {
       if (loadSequence.current === sequence) {
-        setError(e instanceof Error ? e.message : "Could not load details.");
+        setError(e instanceof Error ? e.message : "Couldn't load details.");
         setConflict(true);
       }
     } finally {
@@ -329,7 +330,7 @@ export function ClientsWorkspace({
       })
       .catch((e) => {
         if (active && loadSequence.current === sequence) {
-          setError(e instanceof Error ? e.message : "Could not load payment.");
+          setError(e instanceof Error ? e.message : "Couldn't load payment.");
           setLoading(false);
           onLinkedOpened();
         }
@@ -472,18 +473,14 @@ export function ClientsWorkspace({
                 </p>
               )}
               {(accounts.isError || categories.isError) && paymentMode && (
-                <p role="alert">
-                  Could not load payment choices.{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void accounts.refetch();
-                      void categories.refetch();
-                    }}
-                  >
-                    Reload choices
-                  </button>
-                </p>
+                <LoadError
+                  message="Couldn't load payment choices."
+                  onRetry={() => {
+                    void accounts.refetch();
+                    void categories.refetch();
+                  }}
+                  retryLabel="Reload choices"
+                />
               )}
               <div className="form-actions">
                 <button

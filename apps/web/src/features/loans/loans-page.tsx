@@ -19,6 +19,7 @@ import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { Amount } from "../../components/amount";
 import { Amount as HomeAmount } from "../../components/amount-text";
 import { BackToMore } from "../../components/back-to-more";
+import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
@@ -147,12 +148,10 @@ export function LoansPage() {
             All people
           </button>
           {person.isError ? (
-            <p role="alert">
-              Could not load this person.{" "}
-              <button type="button" onClick={() => void person.refetch()}>
-                Try again
-              </button>
-            </p>
+            <LoadError
+              message="Couldn't load this person."
+              onRetry={() => void person.refetch()}
+            />
           ) : (
             detail && (
               <>
@@ -244,12 +243,10 @@ export function LoansPage() {
                   )}
                 </section>
                 {loans.isError ? (
-                  <p role="alert">
-                    Could not load the balance.{" "}
-                    <button type="button" onClick={() => void loans.refetch()}>
-                      Try again
-                    </button>
-                  </p>
+                  <LoadError
+                    message="Couldn't load the balance."
+                    onRetry={() => void loans.refetch()}
+                  />
                 ) : (
                   <PersonLoans
                     ledgerId={ledger.id}
@@ -330,12 +327,10 @@ export function LoansPage() {
           {people.isPending ? (
             <p role="status">Loading people…</p>
           ) : people.isError ? (
-            <p role="alert">
-              Could not load people.{" "}
-              <button type="button" onClick={() => void people.refetch()}>
-                Try again
-              </button>
-            </p>
+            <LoadError
+              message="Couldn't load people."
+              onRetry={() => void people.refetch()}
+            />
           ) : (
             <>
               {rows.length === 0 && (

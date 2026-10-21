@@ -336,7 +336,7 @@ export function CategoryMergeWorkspace({
           {!uncertain && (
             <button
               type="button"
-              className="quiet-button"
+              className="secondary-button"
               disabled={busy || blocked || !writable}
               onClick={reload}
             >
