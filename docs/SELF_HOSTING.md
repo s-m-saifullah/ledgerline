@@ -106,7 +106,7 @@ Give Ledgerline its own user, directory and compose project. If another service 
 
 ## Verifying a deployment
 
-`node infra/scripts/production-smoke.mjs` signs in over HTTPS, checks secure httpOnly cookies, the Home heading, sign-out and anonymous denial, and compares Home's totals with the accounts, clients and transactions it reads (GET requests only). Configure it with `SMOKE_BASE_URL` and either `SMOKE_OWNER_EMAIL` plus `SMOKE_OWNER_PASSWORD`, or `SMOKE_SSH_TARGET` to read the two owner lines from the server. If the owner turned on two-factor, also set `SMOKE_TOTP_SECRET` to the authenticator key (the text key shown at setup, kept in your private local environment and never in the repository); the check then types the current code itself. Add `--expect-version=<api version>` to assert the published API version. It prints no secrets or amounts.
+`node infra/scripts/production-smoke.mjs` signs in over HTTPS, checks secure httpOnly cookies, the Home heading, sign-out and anonymous denial, and compares Home's totals with the accounts, clients and transactions it reads (GET requests only). Configure it with `SMOKE_BASE_URL` and either `SMOKE_OWNER_EMAIL` plus `SMOKE_OWNER_PASSWORD`, or `SMOKE_SSH_TARGET` to read the two owner lines from the server. If the owner turned on two-factor, also set `SMOKE_TOTP_SECRET` to the authenticator key (the text key shown at setup, kept in your private local environment and never in the repository); the check then types the current code itself. Add `--expect-version=<api version>` to assert the published API version. Add `--expect-pwa` (releases from the installable-app change on) to check that the manifest and the service worker are served and never cached. It prints no secrets or amounts.
 
 ## Firewall
 

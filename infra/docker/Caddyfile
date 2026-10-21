@@ -14,11 +14,18 @@
   handle /api/* {
     reverse_proxy api:3001
   }
+  # The worker is never cached, and a missing one is a real 404 (not the app page), so a bad release cannot pin it.
+  handle /sw.js {
+    root * /srv
+    header Cache-Control "no-store"
+    file_server
+  }
   handle {
     root * /srv
     try_files {path} /index.html
-    header /index.html Cache-Control "no-store"
-    header /manifest.webmanifest Cache-Control "no-store"
+    # The app page is served for every route, so everything except the hashed /assets files is never cached.
+    @notAssets not path /assets/*
+    header @notAssets Cache-Control "no-store"
     file_server
   }
 }

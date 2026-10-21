@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { parseEnv } from "node:util";
 import { chromium, expect } from "@playwright/test";
 import { compareHome, readHomeRates } from "./home-consistency.mjs";
+import { pwaHeaderProblems } from "./pwa-headers.mjs";
 import { readSmokeConfig } from "./smoke-config.mjs";
 import { totpCode } from "./totp.mjs";
 
@@ -72,6 +73,21 @@ try {
     .find((argument) => argument.startsWith("--expect-version="))
     ?.slice("--expect-version=".length);
   if (expectedVersion) expect(spec.info.version).toBe(expectedVersion);
+  // Releases with the installable app (ADR 0041): the manifest and the worker are served and never cached.
+  if (process.argv.includes("--expect-pwa")) {
+    const seen = async (path) => {
+      const response = await page.request.get(path, {
+        failOnStatusCode: false,
+      });
+      return { status: response.status(), headers: response.headers() };
+    };
+    const problems = pwaHeaderProblems({
+      manifest: await seen("/manifest.webmanifest"),
+      worker: await seen("/sw.js"),
+    });
+    if (problems.length > 0)
+      throw new Error(`Installable app check failed: ${problems.join("; ")}`);
+  }
   const base = `/api/v1/ledgers/${ledgerItems[0].id}`;
   const readAll = async (path, query = "") => {
     const rows = [];
