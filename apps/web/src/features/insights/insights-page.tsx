@@ -119,7 +119,12 @@ export function InsightsPage() {
       {worth.data && (
         <>
           <h2 className="insight-heading">
-            Net worth, 12 months to {monthLabel(month)}
+            Net worth,{" "}
+            {worth.data.months.length === 12
+              ? `12 months to ${monthLabel(month)}`
+              : worth.data.months.length === 0
+                ? `to ${monthLabel(month)}`
+                : `since ${monthLabel(worth.data.months[0]?.month ?? month)}`}
           </h2>
           <NetWorthChart report={worth.data} selected={month} />
         </>

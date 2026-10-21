@@ -94,6 +94,8 @@ async function account(
     type: "bank",
     currency,
     openingBalance,
+    // Long-standing by default, so the hand-checked months are all inside the account's history.
+    createdAt: new Date("2020-01-01T00:00:00Z"),
     ...extra,
   });
   return id;
@@ -329,6 +331,7 @@ describe("net worth report", () => {
   });
 
   it("limits the months and rejects bad queries", async () => {
+    await account("Old", "USD", 100);
     expect((await report("to=2026-05")).months).toHaveLength(12);
     const full = await report("to=2026-05&months=24");
     expect(full.months).toHaveLength(24);
@@ -344,6 +347,52 @@ describe("net worth report", () => {
       expect((await get(`/reports/net-worth?${query}`)).statusCode, query).toBe(
         400,
       );
+  });
+
+  describe("history start", () => {
+    const monthsAgo = (count: number) => {
+      const now = new Date();
+      const index = now.getUTCFullYear() * 12 + now.getUTCMonth() - count;
+      return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+    };
+
+    it("leaves out months before the first account when there are no older entries", async () => {
+      await account("New", "USD", 5000, { createdAt: new Date() });
+      const data = await report(`to=${monthsAgo(0)}&months=12`);
+      expect(data.historyStart).toBe(monthsAgo(0));
+      expect(data.months.map((point) => point.month)).toEqual([monthsAgo(0)]);
+      expect(data.months[0]?.netWorth.amount).toBe(5000);
+    });
+
+    it("starts at an older entry, so imported history shows its months", async () => {
+      const id = await account("New", "USD", 5000, { createdAt: new Date() });
+      await entry(id, -1000, `${monthsAgo(3)}-10`);
+      const data = await report(`to=${monthsAgo(0)}&months=12`);
+      expect(data.historyStart).toBe(monthsAgo(3));
+      expect(data.months.map((point) => point.month)).toEqual([
+        monthsAgo(3),
+        monthsAgo(2),
+        monthsAgo(1),
+        monthsAgo(0),
+      ]);
+      expect(data.months.map((point) => point.netWorth.amount)).toEqual([
+        4000, 4000, 4000, 4000,
+      ]);
+    });
+
+    it("returns no months for a window that ends before the history starts", async () => {
+      await account("New", "USD", 5000, { createdAt: new Date() });
+      const data = await report(`to=${monthsAgo(6)}&months=3`);
+      expect(data.historyStart).toBe(monthsAgo(0));
+      expect(data.months).toEqual([]);
+    });
+
+    it("shows only the last month for a ledger with no accounts or entries", async () => {
+      const data = await report(`to=${monthsAgo(0)}&months=12`);
+      expect(data.historyStart).toBeNull();
+      expect(data.months.map((point) => point.month)).toEqual([monthsAgo(0)]);
+      expect(data.months[0]?.netWorth.amount).toBe(0);
+    });
   });
 
   it("returns 409 when the total leaves the exact integer range", async () => {

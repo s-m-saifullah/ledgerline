@@ -15,7 +15,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { currentMonth, shiftMonth } from "../../lib/month";
+import { currentMonth, monthLabel, shiftMonth } from "../../lib/month";
 import { PrivacyContext } from "../../lib/preferences";
 import { InsightsPage } from "./insights-page";
 
@@ -92,6 +92,7 @@ function worth(over: Partial<NetWorthReport> = {}): NetWorthReport {
   return {
     from: months[0] as string,
     to: month,
+    historyStart: months[0] as string,
     months: months.map((m, i) => ({
       month: m,
       asOf: `${m}-28`,
@@ -280,6 +281,48 @@ describe("InsightsPage", () => {
     await screen.findByRole("img", { name: /Net worth at the end/ });
     expect(document.querySelector(".nw-note")).toBeNull();
     expect(document.querySelectorAll(".nw-zero").length).toBe(12);
+  });
+
+  it("shows only the months since history started and says where it starts", async () => {
+    const all = worth();
+    mount({
+      net: worth({
+        historyStart: month,
+        months: all.months.slice(-2).map((row) => ({
+          ...row,
+          unconvertedCurrencies: [],
+        })),
+      }),
+    });
+    expect(
+      await screen.findByRole("img", {
+        name: "Net worth at the end of each of the last 2 months",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /^Net worth, since / }),
+    ).toBeTruthy();
+    expect(screen.getByText(/History starts in /).textContent).toContain(
+      monthLabel(month),
+    );
+    expect(
+      document.querySelectorAll('[aria-label^="Net worth"] .flow-month').length,
+    ).toBe(2);
+    // The two months sit at the right of the twelve-column grid, lined up with the chart above.
+    const first = document.querySelector<HTMLElement>(
+      '[aria-label^="Net worth"] .flow-month',
+    );
+    expect(first?.style.gridColumnStart).toBe("11");
+  });
+
+  it("shows only the history note when the window ends before history starts", async () => {
+    mount({
+      net: worth({ historyStart: shiftMonth(month, 3), months: [] }),
+    });
+    expect(await screen.findByText(/History starts in /)).toBeTruthy();
+    expect(
+      screen.queryByRole("img", { name: /Net worth at the end/ }),
+    ).toBeNull();
   });
 
   it("removes the net worth digits in privacy mode", async () => {

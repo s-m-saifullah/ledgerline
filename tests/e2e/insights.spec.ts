@@ -151,12 +151,16 @@ test("insights shows net worth over time and flags a month with no rate", async 
   );
   await page.goto("/insights");
   await expect(
-    page.getByRole("heading", { name: /^Net worth, 12 months to / }),
+    // The synthetic ledger has data from the previous month on, so earlier months are left out (ADR 0036).
+    page.getByRole("heading", { name: /^Net worth, since / }),
   ).toBeVisible();
   await expect(
     page.getByRole("img", { name: /Net worth at the end/ }),
   ).toBeVisible();
-  await expect(page.locator(".nw-note")).toContainText("EUR");
+  await expect(page.locator(".nw-note").first()).toContainText(
+    `History starts in ${monthName(previous)}`,
+  );
+  await expect(page.locator(".nw-note").last()).toContainText("EUR");
   await page.getByText("Show the figures").last().click();
   const table = page.getByRole("table").last();
   // 250000 - 1000 - 9000 - 5500 - 700 cents; the euro account has no rate, so it is left out.

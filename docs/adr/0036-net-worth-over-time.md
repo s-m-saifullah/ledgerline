@@ -21,3 +21,7 @@ Home shows net worth now, valuing each account balance at the newest stored rate
 
 - Each point carries `asOf`, the day it is valued: the month's last day, or today for the current month and any later one. Entries and rates dated after today are not used, so the latest point equals Home's figure unless something is dated in the future (Home counts those at once).
 - A currency counts as left out only when an account in it has a non-zero balance at that point and no rate on or before it. A zero balance adds nothing, so it never makes a month incomplete (Home lists such a currency; the report does not).
+
+## Amendment (2026-10-21): history starts at the first data
+
+Counting opening balances from the start of history made a new ledger show a year of identical bars (the owner had entered only October's data), which reads as "worth this a year ago". The report (API 0.1.45) now leaves out the months before the ledger's first account or oldest entry and says where history starts (`historyStart`); the screen shows only those months and a short note ("History starts in October 2026"). Valuation, missing-rate flags and the equality with Home's figure are unchanged. Importing older entries moves the start back, and the older months then appear.

@@ -48,6 +48,8 @@ export const netWorthReportQuerySchema = cashFlowReportQuerySchema;
 export const netWorthReportSchema = z.object({
   from: homeMonthSchema,
   to: homeMonthSchema,
+  // The first month with any account or entry; earlier months are left out of `months` (null: no accounts or entries yet).
+  historyStart: homeMonthSchema.nullable(),
   months: z.array(
     z.object({
       month: homeMonthSchema,

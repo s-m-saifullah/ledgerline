@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.44"
+    "version": "0.1.45"
   },
   "components": {
     "schemas": {
@@ -58816,6 +58816,17 @@
                       "type": "string",
                       "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])$"
                     },
+                    "historyStart": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "months": {
                       "type": "array",
                       "items": {
@@ -58871,6 +58882,7 @@
                   "required": [
                     "from",
                     "to",
+                    "historyStart",
                     "months"
                   ],
                   "additionalProperties": false

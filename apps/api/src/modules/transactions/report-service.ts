@@ -45,3 +45,12 @@ export async function accountTotalsByMonth(
   }
   return { before, months };
 }
+
+/** The YYYY-MM month of the ledger's oldest live entry, or null when it has none. */
+export async function firstEntryMonth(
+  db: DatabaseConnection,
+  ledgerId: string,
+) {
+  const result = await transactionRepository(db, ledgerId).firstEntryMonth();
+  return result.rows[0]?.month ?? null;
+}
