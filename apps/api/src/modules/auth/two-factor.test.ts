@@ -1,4 +1,3 @@
-import { createHmac } from "node:crypto";
 import { newId } from "@ledgerline/shared";
 import { eq, inArray, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -17,6 +16,7 @@ import {
   requireTestDatabase,
   seedUser,
   testConfig,
+  totp,
 } from "../../test-support/harness";
 import { resetTwoFactor } from "./reset-two-factor";
 
@@ -48,30 +48,6 @@ const people = Object.fromEntries(
   names.map((name) => [name, { id: newId(), email: `tf-${name}@example.com` }]),
 ) as Record<Name, { id: string; email: string }>;
 const everyone = Object.values(people);
-
-/** RFC 6238 code (SHA-1, 6 digits, 30 s) from the base32 secret in an otpauth URI. */
-function totp(totpURI: string, offsetSteps = 0) {
-  const secret = new URL(totpURI).searchParams.get("secret") ?? "";
-  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-  let bits = "";
-  for (const char of secret.toUpperCase().replace(/=+$/, ""))
-    bits += alphabet.indexOf(char).toString(2).padStart(5, "0");
-  const key = Buffer.from(
-    (bits.match(/.{8}/g) ?? []).map((byte) => Number.parseInt(byte, 2)),
-  );
-  const counter = Buffer.alloc(8);
-  counter.writeBigUInt64BE(
-    BigInt(Math.floor(Date.now() / 30000) + offsetSteps),
-  );
-  const digest = createHmac("sha1", key).update(counter).digest();
-  const at = (digest[digest.length - 1] as number) & 0x0f;
-  const value =
-    (((digest[at] as number) & 0x7f) << 24) |
-    (((digest[at + 1] as number) & 0xff) << 16) |
-    (((digest[at + 2] as number) & 0xff) << 8) |
-    ((digest[at + 3] as number) & 0xff);
-  return String(value % 1_000_000).padStart(6, "0");
-}
 
 // Each call comes from its own address so the plugin's per-address rate limit never hides what a test checks.
 let nextAddress = 1;

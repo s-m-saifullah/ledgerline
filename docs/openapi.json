@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.45"
+    "version": "0.1.46"
   },
   "components": {
     "schemas": {
@@ -61,6 +61,11 @@
       }
     },
     "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "The Android app's session token (the `set-auth-token` header of a sign-in that sends `X-Ledgerline-Client: android`). Send it as `Authorization: Bearer <token>` together with `Origin` set to the app address."
+      },
       "sessionCookie": {
         "type": "apiKey",
         "in": "cookie",

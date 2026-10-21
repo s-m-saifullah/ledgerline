@@ -1,6 +1,6 @@
 import { newId } from "@ledgerline/shared";
 import { betterAuth } from "better-auth";
-import { twoFactor } from "better-auth/plugins";
+import { bearer, twoFactor } from "better-auth/plugins";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { authAdapter } from "./adapter";
@@ -59,6 +59,9 @@ export function createAuth(db: Database, config: Config) {
     // the first code must verify before two-factor turns on, so a bad scan cannot lock anyone out.
     plugins: [
       twoFactor({ issuer: "Ledgerline", skipVerificationOnEnable: false }),
+      // Android signs in with the same routes and keeps the session token (ADR 0042). The app server only
+      // passes that token on to the app (see ./device-token), never to a browser.
+      bearer(),
       // Every table keeps its soft-delete column (the adapter in ./adapter turns deletes into updates), so
       // Better Auth has to know the plugin's table has one too.
       {

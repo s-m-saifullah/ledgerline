@@ -32,3 +32,9 @@ Web sign-in, the cookie session, two-factor and the recovery command; the allowl
 5. Signed-in devices (API and Settings card).
 
 Each slice is released with the next release (v0.5.3 also carries the net worth history fix). Slice 2 touches sign-in, so it gets a scratch check that the owner can still sign in, with and without two-factor, before it is released.
+
+## Amendment (2026-10-21): the app sends `Origin`, so the Origin rule does not change
+
+Building the bearer slice showed that the "no `Origin`" exception in the decision above is not needed and is weaker than it has to be: the app can simply send `Origin: <the app address>` on every request. A browser cannot forge `Origin`, and for a non-browser client it is not a security boundary (Better Auth's own mobile client sends one the same way). So the existing Origin checks (the auth routes and the financial write identity) stay exactly as they were, and nothing about cookie sessions is relaxed.
+
+What marks the app is a header, `X-Ledgerline-Client: android`. The bearer plugin adds the session token to a response whenever it sets the session cookie, which would hand it to a browser's JavaScript, so the server removes `set-auth-token` (and the matching expose-headers entry) from every response unless the request carries that header **and** is a sign-in, a two-factor code check or already carries a bearer token. A browser page that copies the header still gets no token from a plain request (for example the session refresh), so cookie sessions stay behind httpOnly. The OpenAPI document gains a `bearerAuth` scheme (API 0.1.46).
