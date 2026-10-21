@@ -402,6 +402,7 @@ export async function checkBalances(
 export async function createTransactionInContext(
   context: WriteContext,
   body: CreateTransaction,
+  extra: { id?: string } = {},
 ) {
   if (body.splits?.some((line) => line.id))
     throw new ApiProblem(
@@ -420,6 +421,7 @@ export async function createTransactionInContext(
     await transactionRepository(context.tx, context.ledgerId).create(
       body,
       pricing,
+      extra,
     ),
   );
   await splitRepository(context.tx, context.ledgerId).replace(
@@ -443,110 +445,122 @@ export function createTransaction(
     createTransactionInContext(context, body),
   );
 }
+/** The edit's fields without the version, and the version, split apart. */
+function editParts(body: UpdateTransaction) {
+  const { expectedVersion, ...input } = body;
+  const changes = Object.fromEntries(
+    Object.entries(input).filter(([, value]) => value !== undefined),
+  );
+  return { expectedVersion, changes };
+}
 export function updateTransaction(
   db: Database,
   identity: WriteIdentity,
   id: string,
   body: UpdateTransaction,
 ) {
-  const { expectedVersion, ...input } = body;
-  const changes = Object.fromEntries(
-    Object.entries(input).filter(([, value]) => value !== undefined),
-  );
+  const { expectedVersion, changes } = editParts(body);
   return write(
     db,
     identity,
     `PATCH transactions/${id.toLowerCase()}`,
     { expectedVersion, ...changes },
-    async (context) => {
-      const repo = transactionRepository(context.tx, context.ledgerId);
-      const current = required(await repo.find(id, true));
-      ordinary(current);
-      // A fee, bonus or tip stays one plain, unsplit entry of its kind (ADRs 0023, 0025, 0027).
-      if (
-        (current.feeTransferId ||
-          current.relatedTransferId ||
-          current.tipPaymentId) &&
-        ((changes.kind !== undefined && changes.kind !== current.kind) ||
-          (changes.splits !== undefined && changes.splits !== null))
-      )
-        throw new ApiProblem(
-          409,
-          "Conflict",
-          "A transfer's fee or bonus, or a payment's tip, keeps its kind and cannot be split.",
-        );
-      const version = nextVersion(current.version, expectedVersion);
-      const previous = await splitRepository(
-        context.tx,
-        context.ledgerId,
-      ).forParent(current);
-      const parsed = createTransactionSchema.safeParse({
-        accountId: current.accountId,
-        categoryId: current.categoryId,
-        kind: current.kind,
-        date: current.date,
-        time: current.time,
-        amount: { amount: current.amount, currency: current.currency },
-        status: current.status,
-        payee: current.payee,
-        note: current.note,
-        ...(current.isSplit
-          ? {
-              splits: previous.map((line) => ({
-                id: line.id,
-                categoryId: line.categoryId,
-                amount: { amount: line.amount, currency: current.currency },
-                note: line.note,
-              })),
-            }
-          : {}),
-        ...changes,
-        ...(body.splits === null ? { splits: undefined } : {}),
-      });
-      if (!parsed.success)
-        throw new ApiProblem(
-          400,
-          "Invalid request",
-          "Check the transaction fields.",
-          parsed.error.issues.map((issue) => ({
-            field: issue.path.join(".") || "transaction",
-            message: issue.message,
-          })),
-        );
-      const rows = await references(context, parsed.data, current, previous);
-      // An edit keeps the entry's saved rate unless it is changed by hand or the currency changes.
-      const pricing = await priceEntry(context, {
-        accountCurrency: accountOf(rows, parsed.data.accountId).currency,
-        amount: parsed.data.amount,
-        date: parsed.data.date,
-        manualRate: parsed.data.fxRate,
-        keepRate:
-          current.currency === parsed.data.amount.currency
-            ? current.fxRate
-            : undefined,
-      });
-      const row = requireVersionUpdate(
-        await repo.update(id, expectedVersion, parsed.data, version, pricing),
-      );
-      await splitRepository(context.tx, context.ledgerId).replace(
-        row,
-        parsed.data.splits ?? [],
-        previous,
-      );
-      if (parsed.data.tagIds !== undefined)
-        await assignTags(
-          context.tx,
-          context.ledgerId,
-          [row.id],
-          parsed.data.tagIds,
-        );
-      await checkBalances(context, rows);
-      return {
-        status: 200,
-        body: await dto(context.tx, context.ledgerId, row),
-      };
-    },
+    (context) => updateTransactionInContext(context, id, body),
   );
+}
+/** Edits an entry inside a write that is already open (the web route and the sync push share it). */
+export async function updateTransactionInContext(
+  context: WriteContext,
+  id: string,
+  body: UpdateTransaction,
+) {
+  const { expectedVersion, changes } = editParts(body);
+  const repo = transactionRepository(context.tx, context.ledgerId);
+  const current = required(await repo.find(id, true));
+  ordinary(current);
+  // A fee, bonus or tip stays one plain, unsplit entry of its kind (ADRs 0023, 0025, 0027).
+  if (
+    (current.feeTransferId ||
+      current.relatedTransferId ||
+      current.tipPaymentId) &&
+    ((changes.kind !== undefined && changes.kind !== current.kind) ||
+      (changes.splits !== undefined && changes.splits !== null))
+  )
+    throw new ApiProblem(
+      409,
+      "Conflict",
+      "A transfer's fee or bonus, or a payment's tip, keeps its kind and cannot be split.",
+    );
+  const version = nextVersion(current.version, expectedVersion);
+  const previous = await splitRepository(
+    context.tx,
+    context.ledgerId,
+  ).forParent(current);
+  const parsed = createTransactionSchema.safeParse({
+    accountId: current.accountId,
+    categoryId: current.categoryId,
+    kind: current.kind,
+    date: current.date,
+    time: current.time,
+    amount: { amount: current.amount, currency: current.currency },
+    status: current.status,
+    payee: current.payee,
+    note: current.note,
+    ...(current.isSplit
+      ? {
+          splits: previous.map((line) => ({
+            id: line.id,
+            categoryId: line.categoryId,
+            amount: { amount: line.amount, currency: current.currency },
+            note: line.note,
+          })),
+        }
+      : {}),
+    ...changes,
+    ...(body.splits === null ? { splits: undefined } : {}),
+  });
+  if (!parsed.success)
+    throw new ApiProblem(
+      400,
+      "Invalid request",
+      "Check the transaction fields.",
+      parsed.error.issues.map((issue) => ({
+        field: issue.path.join(".") || "transaction",
+        message: issue.message,
+      })),
+    );
+  const rows = await references(context, parsed.data, current, previous);
+  // An edit keeps the entry's saved rate unless it is changed by hand or the currency changes.
+  const pricing = await priceEntry(context, {
+    accountCurrency: accountOf(rows, parsed.data.accountId).currency,
+    amount: parsed.data.amount,
+    date: parsed.data.date,
+    manualRate: parsed.data.fxRate,
+    keepRate:
+      current.currency === parsed.data.amount.currency
+        ? current.fxRate
+        : undefined,
+  });
+  const row = requireVersionUpdate(
+    await repo.update(id, expectedVersion, parsed.data, version, pricing),
+  );
+  await splitRepository(context.tx, context.ledgerId).replace(
+    row,
+    parsed.data.splits ?? [],
+    previous,
+  );
+  if (parsed.data.tagIds !== undefined)
+    await assignTags(
+      context.tx,
+      context.ledgerId,
+      [row.id],
+      parsed.data.tagIds,
+    );
+  await checkBalances(context, rows);
+  return {
+    status: 200,
+    body: await dto(context.tx, context.ledgerId, row),
+  };
 }
 export function deleteTransaction(
   db: Database,
@@ -559,30 +573,36 @@ export function deleteTransaction(
     identity,
     `DELETE transactions/${id.toLowerCase()}`,
     body,
-    async (context) => {
-      const repo = transactionRepository(context.tx, context.ledgerId);
-      const current = required(await repo.find(id, true));
-      ordinary(current);
-      const version = nextVersion(current.version, body.expectedVersion);
-      const rows = await lockTransactionAccounts(context.tx, context.ledgerId, [
-        current.accountId,
-      ]);
-      const previous = await splitRepository(
-        context.tx,
-        context.ledgerId,
-      ).forParent(current);
-      const row = requireVersionUpdate(
-        await repo.remove(id, body.expectedVersion, version),
-      );
-      await splitRepository(context.tx, context.ledgerId).tombstone(
-        row,
-        previous,
-        row.deletedAt,
-      );
-      await checkBalances(context, rows);
-      return { status: 204, body: null };
-    },
+    (context) => deleteTransactionInContext(context, id, body),
   );
+}
+/** Deletes an entry inside a write that is already open. */
+export async function deleteTransactionInContext(
+  context: WriteContext,
+  id: string,
+  body: DeleteTransaction,
+) {
+  const repo = transactionRepository(context.tx, context.ledgerId);
+  const current = required(await repo.find(id, true));
+  ordinary(current);
+  const version = nextVersion(current.version, body.expectedVersion);
+  const rows = await lockTransactionAccounts(context.tx, context.ledgerId, [
+    current.accountId,
+  ]);
+  const previous = await splitRepository(
+    context.tx,
+    context.ledgerId,
+  ).forParent(current);
+  const row = requireVersionUpdate(
+    await repo.remove(id, body.expectedVersion, version),
+  );
+  await splitRepository(context.tx, context.ledgerId).tombstone(
+    row,
+    previous,
+    row.deletedAt,
+  );
+  await checkBalances(context, rows);
+  return { status: 204, body: null };
 }
 
 export function restoreTransaction(
