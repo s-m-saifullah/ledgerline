@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.46 — Bearer tokens for the Android app
+
+No migration (ADR 0042). The OpenAPI document gains a `bearerAuth` security scheme (HTTP bearer). The app signs in with the existing `POST /auth/sign-in/email` (and, with two-factor on, `POST /auth/two-factor/verify-totp` or `verify-backup-code`) sending the header `X-Ledgerline-Client: android`; the `set-auth-token` response header then carries its session token, which is an ordinary 7-day session extended on use. A two-factor user's password step returns no token; the token arrives with the successful code check. Every route that accepts the session cookie accepts `Authorization: Bearer <token>` instead. The `Origin` rule is unchanged: writes and the auth POST routes still need `Origin` equal to the app address, so the app sends it on every request. Browsers never receive `set-auth-token` (it is removed unless the request carries the app's header and is a sign-in, a code check or a bearer request). The browser auth routes are unchanged and no new auth route is opened.
+
 ## 0.1.45 — Net worth history starts at the ledger's first data
 
 No migration (ADR 0036 amendment). `GET /reports/net-worth` gains `historyStart`, the `YYYY-MM` month of the ledger's first account (by creation) or oldest live entry of any status, whichever is earlier, or `null` when the ledger has neither. `months` now leaves out every month before `historyStart`, so it can hold fewer than the requested `months` points, or none when `to` is before the history starts; with `historyStart` null it holds only the `to` month. The points that remain are unchanged. Before this a new ledger showed up to 24 identical months of opening balances.

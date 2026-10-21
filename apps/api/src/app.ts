@@ -24,6 +24,7 @@ import type { Database } from "./db/client";
 import { safeErrorFields } from "./lib/error-log";
 import { ApiProblem, problem } from "./lib/problem";
 import { accountRoutes } from "./modules/accounts/routes";
+import { mayReceiveDeviceToken } from "./modules/auth/device-token";
 import { createAuth } from "./modules/auth/service";
 import { budgetRoutes } from "./modules/budgets/routes";
 import { categoryRoutes } from "./modules/categories/routes";
@@ -75,7 +76,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.45" },
+      info: { title: "Ledgerline API", version: "0.1.46" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -93,6 +94,12 @@ export async function buildApp(
           },
         },
         securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            description:
+              "The Android app's session token (the `set-auth-token` header of a sign-in that sends `X-Ledgerline-Client: android`). Send it as `Authorization: Bearer <token>` together with `Origin` set to the app address.",
+          },
           sessionCookie: {
             type: "apiKey",
             in: "cookie",
@@ -263,8 +270,22 @@ export async function buildApp(
         }),
       );
       reply.code(response.status);
-      for (const [key, value] of response.headers)
-        if (key !== "set-cookie") reply.header(key, value);
+      // The bearer plugin adds the session token to the response whenever it sets the session cookie; only the
+      // Android app may see it (ADR 0042), so a browser's JavaScript never gets the token behind its cookie.
+      const sendToken = mayReceiveDeviceToken(
+        request.headers,
+        request.method,
+        path,
+      );
+      for (const [key, value] of response.headers) {
+        if (key === "set-cookie") continue;
+        if (
+          !sendToken &&
+          (key === "set-auth-token" || key === "access-control-expose-headers")
+        )
+          continue;
+        reply.header(key, value);
+      }
       const cookies = response.headers.getSetCookie();
       if (cookies.length) reply.header("set-cookie", cookies);
       if (response.status >= 400)

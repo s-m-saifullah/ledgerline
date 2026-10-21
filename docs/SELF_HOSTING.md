@@ -111,3 +111,7 @@ Give Ledgerline its own user, directory and compose project. If another service 
 ## Firewall
 
 Allow only 80, 443 and SSH. If your provider has its own network rules (a security list or cloud firewall), open the ports there and in the host firewall. Keep PostgreSQL and the API on the internal Docker network.
+
+## Android sign-in (bearer tokens)
+
+The Android app signs in with the same address as the web app and keeps a session token instead of a cookie (ADR 0042). Nothing needs configuring on the server. For each request the app sends `Origin` set to your `APP_URL`; to get a token it also sends `X-Ledgerline-Client: android` on the sign-in and, if two-factor is on, the code check, and reads the token from the `set-auth-token` response header. The token is a normal 7-day session extended on use, so signing out (or the Settings devices list, once it exists) ends it, and the recovery commands for the password and two-factor work exactly as before. A browser never receives the token.

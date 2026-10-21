@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { expect } from "vitest";
 import type { buildApp } from "../app";
 import { type Config, readConfig } from "../config";
@@ -77,4 +78,28 @@ export async function seedUser(
       ledgerId: input.ledgerId,
       role: input.role,
     });
+}
+
+/** RFC 6238 code (SHA-1, 6 digits, 30 s) from the base32 secret in an otpauth URI. */
+export function totp(totpURI: string, offsetSteps = 0) {
+  const secret = new URL(totpURI).searchParams.get("secret") ?? "";
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = "";
+  for (const char of secret.toUpperCase().replace(/=+$/, ""))
+    bits += alphabet.indexOf(char).toString(2).padStart(5, "0");
+  const key = Buffer.from(
+    (bits.match(/.{8}/g) ?? []).map((byte) => Number.parseInt(byte, 2)),
+  );
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(
+    BigInt(Math.floor(Date.now() / 30000) + offsetSteps),
+  );
+  const digest = createHmac("sha1", key).update(counter).digest();
+  const at = (digest[digest.length - 1] as number) & 0x0f;
+  const value =
+    (((digest[at] as number) & 0x7f) << 24) |
+    (((digest[at + 1] as number) & 0xff) << 16) |
+    (((digest[at + 2] as number) & 0xff) << 8) |
+    ((digest[at + 3] as number) & 0xff);
+  return String(value % 1_000_000).padStart(6, "0");
 }
