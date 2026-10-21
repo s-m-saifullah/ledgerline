@@ -81,7 +81,14 @@ select {
 }
 :focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 4px;
+  outline-offset: 2px;
+}
+/* Spacing rule (ADR 0039, 4 px grid): the focus ring reaches 4 px beyond a control, so a label sits at least
+   8 px above its field, a field 16 px above the next label or field, related buttons 12 px apart and the
+   sections of a card 24 px apart. Use a grid gap, or this class where a label has none. */
+.field-label {
+  display: block;
+  margin-bottom: 8px;
 }
 .muted {
   color: var(--muted);
@@ -3427,4 +3434,35 @@ details.more-details > summary .muted {
 }
 .load-error-message {
   margin: 0;
+}
+
+/* Chart figures (ADR 0039): space between a chart or its legend and the "Show the figures" row. */
+.flow-details {
+  margin-top: 16px;
+}
+
+/* Editor footers on a phone: Close, a trash icon for the first step of delete, and the primary button share
+   one row. The label stays for screen readers; the real delete is a second, confirming button. */
+.dialog-delete svg {
+  display: none;
+}
+@media (max-width: 700px) {
+  .dialog-delete svg {
+    display: block;
+  }
+  .dialog-delete {
+    width: 48px;
+    padding: 0;
+  }
+  .dialog-delete-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .account-dialog-actions:has(.dialog-delete):has(> :nth-child(3)) {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
 }

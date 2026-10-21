@@ -2,6 +2,7 @@ import { type BudgetLine, parseMinorUnits } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
 import { AmountInput } from "../../components/amount-input";
+import { DialogDeleteButton } from "../../components/dialog-delete-button";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError } from "../../lib/api";
 import { cleanAmountText, decimalFromCents } from "../../lib/money";
@@ -177,14 +178,11 @@ export function BudgetEditor({
                     Yes, remove it
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="secondary-button danger-action"
+                  <DialogDeleteButton
+                    label="Remove budget"
                     disabled={busy}
                     onClick={() => setConfirmRemove(true)}
-                  >
-                    Remove budget
-                  </button>
+                  />
                 ))}
               <Button type="submit" disabled={busy}>
                 {busy ? "Saving…" : "Save budget"}

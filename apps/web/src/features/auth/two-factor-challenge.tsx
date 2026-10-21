@@ -53,7 +53,7 @@ export function TwoFactorChallenge({
           void submit();
         }}
       >
-        <label htmlFor="two-factor-code">
+        <label className="field-label" htmlFor="two-factor-code">
           {useBackup ? "Backup code" : "6-digit code"}
         </label>
         <input

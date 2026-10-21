@@ -135,7 +135,9 @@ export function renderFeeField(form: TransferFormContext) {
     <>
       {!baseline && fromAccount && (
         <div className="transfer-fee">
-          <label htmlFor="transfer-fee">Fee (optional)</label>
+          <label className="field-label" htmlFor="transfer-fee">
+            Fee (optional)
+          </label>
           <input
             id="transfer-fee"
             type={privateMode ? "password" : "text"}
