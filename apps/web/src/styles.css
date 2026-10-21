@@ -626,6 +626,11 @@ kbd {
   right: 12px;
   top: 12px;
 }
+/* The heading or main region takes focus after a screen change (ADR 0040); it is not a control, so no ring. */
+#main-content:focus,
+#main-content h1:focus {
+  outline: none;
+}
 .sr-only {
   position: absolute;
   width: 1px;

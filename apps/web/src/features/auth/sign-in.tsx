@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signInSchema } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { ArrowRight, LockKeyhole } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { api } from "../../lib/api";
@@ -11,6 +11,9 @@ import { TwoFactorChallenge } from "./two-factor-challenge";
 export function SignIn({ onSuccess }: { onSuccess: () => Promise<void> }) {
   const [error, setError] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
+  useEffect(() => {
+    document.title = `${needsCode ? "Two-factor code" : "Sign in"} · Ledgerline`;
+  }, [needsCode]);
   const {
     register,
     handleSubmit,

@@ -36,6 +36,7 @@ import { useEffect, useRef, useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { api, getLedgers, type Session } from "../../lib/api";
 import type { Preferences } from "../../lib/preferences";
+import { usePageAnnouncement } from "../../lib/use-page-announcement";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
 
@@ -97,6 +98,7 @@ export function Shell({
                       ? "Settings"
                       : (destinations.find(({ to }) => to === pathname)
                           ?.label ?? "Home");
+  const pageAnnouncement = usePageAnnouncement(currentPage);
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -266,6 +268,9 @@ export function Shell({
             {error}
           </p>
         )}
+        <p className="sr-only" aria-live="polite">
+          {pageAnnouncement}
+        </p>
         <main id="main-content" className="main-content" tabIndex={-1}>
           <Outlet />
         </main>
