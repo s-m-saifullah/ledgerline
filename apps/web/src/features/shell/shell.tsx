@@ -36,6 +36,7 @@ import { useEffect, useRef, useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { api, getLedgers, type Session } from "../../lib/api";
 import type { Preferences } from "../../lib/preferences";
+import { useLiveChanges } from "../../lib/use-live-changes";
 import { usePageAnnouncement } from "../../lib/use-page-announcement";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
@@ -101,6 +102,7 @@ export function Shell({
   const pageAnnouncement = usePageAnnouncement(currentPage);
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
+  useLiveChanges(ledger?.id);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [addTrigger, setAddTrigger] = useState("add-transaction");
   const paletteToAdd = useRef(false);

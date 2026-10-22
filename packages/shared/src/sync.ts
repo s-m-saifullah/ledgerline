@@ -189,3 +189,10 @@ export const syncPushResponseSchema = z.object({
 export type SyncPushResponse = z.infer<typeof syncPushResponseSchema>;
 export type SyncMutation = z.infer<typeof syncMutationSchema>;
 export type SyncResult = z.infer<typeof syncResultSchema>;
+
+// Live updates for open web pages (ADR 0044): a marker that moves whenever any row of the ledger changes.
+export const changeMarkerSchema = z.object({
+  // Opaque: compare it with the last one; a different value means something in the ledger changed.
+  marker: z.string(),
+});
+export type ChangeMarker = z.infer<typeof changeMarkerSchema>;
