@@ -97,6 +97,33 @@ jobs:
           if ! git diff --quiet "$BASE_SHA" HEAD -- docs/openapi.json; then
             ! git diff --quiet "$BASE_SHA" HEAD -- docs/api-changes.md
           fi
+      # The Android app (ADR 0043) is built only when something it depends on changed (infra/scripts/ci-scope.mjs).
+      - uses: actions/setup-java@v6
+        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
+        with:
+          gradle-version: wrapper
+      - name: Install the Android SDK platform
+        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
+      - name: Build and test the Android app
+        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
+        working-directory: apps/android
+        run: ./gradlew --no-daemon --stacktrace :api-client:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease
+      - name: Keep the debug APK for sideloading
+        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ledgerline-android-debug
+          path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
       - run: pnpm exec playwright install --with-deps chromium
         if: steps.plan.outputs.full == 'true'
       - run: pnpm e2e

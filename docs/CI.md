@@ -25,6 +25,10 @@ The workflow still starts and reports a successful `check` job. Do not use workf
 
 `docs/openapi.json` is an API contract, so it requires the full suite. Code, dependencies, configuration, workflows, scripts, non-Markdown documentation assets and mixed changes also require the full suite. Classification considers the complete PR diff or pushed commit range, including deleted files and both sides of renames. An unavailable base, empty diff, unknown event or failed classification falls back to full checks; the last commit being documentation-only is insufficient.
 
+## The Android build
+
+The Android app ([ADR 0043](adr/0043-android-app.md)) is built inside the same single `check` job, not a second workflow. `infra/scripts/ci-scope.mjs` also writes an `android` output: it is true when a changed path is under `apps/android/` or is one of the files the build depends on (`docs/openapi.json`, which its API types are checked against, `packages/ui/src/tokens.css` and `infra/scripts/android-tokens.mjs`, which its colours come from, and `.github/workflows/ci.yml`), and always when the changed paths are unknown (the same fallbacks as the full suite, so releases include it). The steps run only when the full suite runs and `android` is true: Temurin 17, Gradle with the checked wrapper, the SDK platform, then the API and app unit tests (including the contract test), Android lint, and the debug and release builds. The debug-signed APK is kept for 14 days as the `ledgerline-android-debug` workflow artifact so it can be sideloaded; it contains no secrets (a release APK, signing and distribution are a later slice). Documentation-only changes never run it. A post-merge run that reuses a passed pull request check skips it with the rest of the suite.
+
 ## Releases and policy changes
 
 Release calls supply an explicit checkout ref and always run the full suite, even when the last commit changes only documentation. Preserve this rule and the locked Node 24 stack. Browser worker settings are unchanged by this optimization.

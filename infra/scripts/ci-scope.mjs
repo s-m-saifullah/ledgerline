@@ -5,7 +5,12 @@ import { pathToFileURL } from "node:url";
 
 const rootDocs = new Set(["AGENTS.md", "CLAUDE.md", "README.md"]);
 const sha = /^[0-9a-f]{40,64}$/i;
-const full = (reason) => ({ application: true, reason });
+// Without a reliable list of changed paths every check runs, the Android build included.
+const full = (reason, android = true) => ({
+  application: true,
+  android,
+  reason,
+});
 const git = (args) =>
   execFileSync("git", args, { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
 
@@ -13,6 +18,19 @@ export function isDocumentation(path) {
   return (
     rootDocs.has(path) || (path.startsWith("docs/") && path.endsWith(".md"))
   );
+}
+
+// What the Android build depends on besides apps/android: the API contract its types are checked against,
+// the design tokens its colours come from (and the script that converts them) and this workflow.
+const androidInputs = new Set([
+  "docs/openapi.json",
+  "packages/ui/src/tokens.css",
+  "infra/scripts/android-tokens.mjs",
+  ".github/workflows/ci.yml",
+]);
+
+export function affectsAndroid(path) {
+  return path.startsWith("apps/android/") || androidInputs.has(path);
 }
 
 export function classifyChanges({
@@ -46,9 +64,11 @@ export function classifyChanges({
     if (paths.length === 0 || !paths.every(isDocumentation))
       return full(
         "Application, configuration or contract changes require the full suite.",
+        paths.length === 0 || paths.some(affectsAndroid),
       );
     return {
       application: false,
+      android: false,
       base,
       reason:
         "Only allowlisted Markdown documentation changed; application checks skipped.",
@@ -73,7 +93,7 @@ if (
   } catch {
     result = full("Could not read CI context; running the full suite.");
   }
-  const output = `application=${result.application}\n${result.base ? `base=${result.base}\n` : ""}`;
+  const output = `application=${result.application}\nandroid=${result.android}\n${result.base ? `base=${result.base}\n` : ""}`;
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(process.env.GITHUB_OUTPUT, output);
   if (process.env.GITHUB_STEP_SUMMARY)
