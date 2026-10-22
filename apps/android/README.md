@@ -17,7 +17,7 @@ cd apps/android
 node ../../infra/scripts/android-tokens.mjs         # after changing packages/ui/src/tokens.css
 ```
 
-To try a build on a phone against a scratch server, connect it by USB with USB debugging on and run `adb reverse tcp:<port> tcp:<port>`, then use `http://localhost:<port>` as the address; the scratch server's `APP_URL` must be exactly that address.
+To try a build on a phone against a scratch server, connect it by USB with USB debugging on and run `adb reverse tcp:<port> tcp:<port>`, then use `http://localhost:<port>` as the address; the scratch server's `APP_URL` must be exactly that address. The tunnel runs over USB, so airplane mode does not take the app offline: remove the tunnel (`adb reverse --remove tcp:<port>`) to test offline behaviour. `adb` is in the SDK's `platform-tools` folder.
 
 ### Comparing the mirror with a scratch server
 
