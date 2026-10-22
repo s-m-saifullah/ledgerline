@@ -146,6 +146,10 @@ After that, signing in asks for the password and then a code. Choose **Use a bac
 
 If you lose both your phone and your backup codes, the server's operator can turn two-factor off for the owner account; see the [self-hosting guide](SELF_HOSTING.md). Keep your current session open until a fresh sign-in with a code has worked.
 
+## Installing the app and using it offline
+
+Your browser can install Ledgerline like an app (the install option in the address bar or the share menu). The installed app opens quickly and, with no connection, still opens from its saved shell. Your ledger itself is not kept in the browser: your figures live on your server, so without a connection you see "Couldn't reach your ledger" and **Try again** works once you are back online. This is on purpose, so nothing private sits in a browser cache. Working with your data offline is what the Android app is for.
+
 ## Signed-in devices
 
 In **More, Settings, Signed-in devices** you can see where you are signed in: each browser or phone with a readable name (such as "Chrome on macOS" or "Ledgerline Android app (Pixel 8)"), a **Current device** mark on the one you are using, and when each was last used (about once a day). Press **Sign out** beside a device you no longer use, or lose, and it is signed out at once: it must sign in again, with a code if two-factor is on. **Sign out all other devices** asks once and signs out everything except the one you are using. The ten most recently used show first; older ones sit under **Show older devices**. Nothing here lists a password, a token or an address.
