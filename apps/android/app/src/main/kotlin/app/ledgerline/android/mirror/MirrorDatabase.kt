@@ -18,4 +18,6 @@ import androidx.room.RoomDatabase
 )
 abstract class MirrorDatabase : RoomDatabase() {
     abstract fun dao(): MirrorDao
+
+    abstract fun reads(): MirrorReads
 }

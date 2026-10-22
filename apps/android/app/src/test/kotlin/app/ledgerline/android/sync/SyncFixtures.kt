@@ -42,7 +42,7 @@ class FakeLookup(var result: () -> String? = { "ledger-a" }) : LedgerLookup {
 class HoldableSource(var respond: (String?) -> SyncResponse) : PullSource {
     val asked = mutableListOf<String?>()
     var hold: CompletableDeferred<Unit>? = null
-    val entered = CompletableDeferred<Unit>()
+    var entered = CompletableDeferred<Unit>()
 
     override suspend fun pull(ledgerId: String, cursor: String?, limit: Int): SyncResponse {
         asked += cursor

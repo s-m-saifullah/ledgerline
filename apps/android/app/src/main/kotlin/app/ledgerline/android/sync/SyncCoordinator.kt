@@ -41,6 +41,10 @@ class SyncCoordinator @Inject constructor(
     private var lastPullAt: Long? = null
 
     private val _last = MutableStateFlow<PullResult?>(null)
+    private val _running = MutableStateFlow(false)
+
+    /** True while a pull started by the app (not the background job) is running. */
+    val running: StateFlow<Boolean> = _running.asStateFlow()
 
     /** The result of the latest pull, for the "last updated" and error lines. */
     val last: StateFlow<PullResult?> = _last.asStateFlow()
@@ -66,7 +70,7 @@ class SyncCoordinator @Inject constructor(
             SessionState.Locked -> scheduler.schedule()
             SessionState.Unlocked -> {
                 if (session.canLock()) scheduler.schedule() else scheduler.cancel()
-                pull(fullRefresh = needsFullRefresh)
+                shown { pull(fullRefresh = needsFullRefresh) }
             }
             SessionState.SignedOut -> {
                 scheduler.cancel()
@@ -87,11 +91,23 @@ class SyncCoordinator @Inject constructor(
         val at = lastPullAt
         if (session.state.value != SessionState.Unlocked) return
         if (at != null && clock.nowMillis() - at < ForegroundGapMillis) return
-        pull(fullRefresh = needsFullRefresh)
+        shown { pull(fullRefresh = needsFullRefresh) }
     }
 
     /** "Refresh everything". */
-    suspend fun refreshEverything() = pull(fullRefresh = true)
+    suspend fun refreshEverything() = shown { pull(fullRefresh = true) }
+
+    /** Pull to refresh: now, whatever the time since the last pull. */
+    suspend fun pullNow() = shown { pull(fullRefresh = needsFullRefresh) }
+
+    private suspend fun shown(block: suspend () -> PullResult): PullResult {
+        _running.value = true
+        try {
+            return block()
+        } finally {
+            _running.value = false
+        }
+    }
 
     /** One run of the periodic job. [attempt] counts the retries WorkManager has already made. */
     suspend fun backgroundPull(attempt: Int): BackgroundOutcome {

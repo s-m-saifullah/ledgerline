@@ -1,6 +1,6 @@
 # Ledgerline for Android
 
-A native client of the same API as the web app (design: [ADR 0043](../../docs/adr/0043-android-app.md), sync: [ADR 0042](../../docs/adr/0042-sync-and-bearer-tokens.md)). Kotlin, Jetpack Compose, Material 3, Hilt. Version 1 is built in slices; this folder currently holds the server-address screen and sign-in (password and two-factor code) and the lock (the session can be kept on the phone behind the fingerprint or screen lock) and the Room mirror, pulled on sign-in, on opening and every 15 minutes in the background (not yet shown on any screen).
+A native client of the same API as the web app (design: [ADR 0043](../../docs/adr/0043-android-app.md), sync: [ADR 0042](../../docs/adr/0042-sync-and-bearer-tokens.md)). Kotlin, Jetpack Compose, Material 3, Hilt. Version 1 is built in slices; this folder currently holds the server-address screen and sign-in (password and two-factor code) and the lock (the session can be kept on the phone behind the fingerprint or screen lock) and the read-only Accounts and Transactions screens over a Room mirror of the ledger, pulled on sign-in, on opening and every 15 minutes in the background.
 
 - `app/`: the application (`app.ledgerline.android`, minimum Android 11).
 - `api-client/`: the API types and the Retrofit interface, written by hand and checked against `docs/openapi.json` by a contract test.
@@ -18,5 +18,17 @@ node ../../infra/scripts/android-tokens.mjs         # after changing packages/ui
 ```
 
 To try a build on a phone against a scratch server, connect it by USB with USB debugging on and run `adb reverse tcp:<port> tcp:<port>`, then use `http://localhost:<port>` as the address; the scratch server's `APP_URL` must be exactly that address.
+
+### Comparing the mirror with a scratch server
+
+`MirrorMatchesServerTest` pulls a real server's ledger with the app's own engine and compares every balance and entry with the API, before and after it changes rows. It **writes** to the ledger, so point it only at a scratch server with synthetic data, never production:
+
+```bash
+LEDGERLINE_COMPARE_ORIGIN=http://localhost:3101 LEDGERLINE_COMPARE_EMAIL=owner@example.com \
+LEDGERLINE_COMPARE_PASSWORD=... LEDGERLINE_COMPARE_TOTP='<secret or otpauth:// URI>' \
+./gradlew :app:testDebugUnitTest --tests '*MirrorMatchesServerTest' --rerun
+```
+
+Without `LEDGERLINE_COMPARE_ORIGIN` the test is skipped (as in CI). `LEDGERLINE_COMPARE_TOTP` is needed only when the account has two-factor on.
 
 A debug build may be pointed at a server over plain HTTP (to try a scratch server); a release build accepts only `https://`. Never commit a keystore, `local.properties` or a real server address.
