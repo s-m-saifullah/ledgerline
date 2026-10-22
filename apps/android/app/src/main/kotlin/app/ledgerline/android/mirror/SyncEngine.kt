@@ -9,7 +9,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import retrofit2.HttpException
 import java.io.IOException
@@ -64,8 +63,9 @@ sealed interface PullResult {
 class SyncEngine @Inject constructor(
     private val source: PullSource,
     private val store: MirrorStore,
+    lock: SyncLock,
 ) {
-    private val oneAtATime = Mutex()
+    private val oneAtATime = lock.mutex
 
     suspend fun pull(ledgerId: String): PullResult = oneAtATime.withLock {
         guarded {

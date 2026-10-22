@@ -1,8 +1,6 @@
 package app.ledgerline.android.mirror
 
 import androidx.room.withTransaction
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -76,9 +74,25 @@ class MirrorStore @Inject constructor(private val database: MirrorDatabase) {
         }
     }
 
-    /** Deletes every mirrored row and cursor (sign out). */
+    /** Deletes every mirrored row and cursor (sign out). The outbox is not touched: unsent changes are only ever
+     * deleted when the owner says so. */
     suspend fun wipe() {
-        withContext(Dispatchers.IO) { database.clearAllTables() }
+        database.withTransaction {
+            dao.wipeAccounts()
+            dao.wipeCategories()
+            dao.wipeTags()
+            dao.wipeCurrencies()
+            dao.wipeExchangeRates()
+            dao.wipeTransactions()
+            dao.wipeTransactionSplits()
+            dao.wipeTransactionTags()
+            dao.wipeSyncCursors()
+        }
+    }
+
+    /** Entries the push returned, applied by version like a page but without moving the cursor. Call inside a transaction. */
+    internal suspend fun applyTransactionRows(ledgerId: String, rows: List<TransactionRow>) {
+        dao.putTransactions(newer(rows, { it.id }, { it.version }) { dao.transactionVersions(ledgerId, it) })
     }
 
     private suspend fun <T> newer(

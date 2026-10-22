@@ -39,6 +39,55 @@ class ContractTest {
     }
 
     @Test
+    fun syncPushRequestMatches() = assertMatches(
+        SchemaContract.differences(
+            SyncPush.serializer().descriptor,
+            SchemaContract.request("/api/v1/ledgers/{ledgerId}/sync", "post"),
+            request = true,
+        ),
+    )
+
+    @Test
+    fun syncPushResponseMatches() = assertMatches(
+        SchemaContract.differences(
+            SyncPushResponse.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/sync", "post", "200"),
+        ),
+    )
+
+    @Test
+    fun aMutationLeavesOutEmptyOptionalFieldsInsteadOfSendingNull() {
+        val create = ApiJson.encodeToString(SyncMutation.serializer(), SyncMutation("m", "transaction.create", "2026-10-22T10:00:00.000Z"))
+        assertEquals("""{"id":"m","type":"transaction.create","editedAt":"2026-10-22T10:00:00.000Z"}""", create)
+        val update = ApiJson.encodeToString(
+            SyncMutation.serializer(),
+            SyncMutation("m", "transaction.update", "t", targetId = "x", baseVersion = 3, body = Json.parseToJsonElement("""{"payee":null}""").jsonObject),
+        )
+        assertEquals("""{"id":"m","type":"transaction.update","editedAt":"t","targetId":"x","baseVersion":3,"body":{"payee":null}}""", update)
+    }
+
+    @Test
+    fun theCheckerAcceptsANullDefaultOnlyForAnOptionalProperty() {
+        val optional = Json.parseToJsonElement("""{"type":"object","properties":{"targetId":{"type":"string"}},"required":[]}""").jsonObject
+        assertEquals(emptyList<String>(), SchemaContract.differences(OptionalTarget.serializer().descriptor, optional))
+        val required = Json.parseToJsonElement("""{"type":"object","properties":{"targetId":{"type":"string"}},"required":["targetId"]}""").jsonObject
+        assertTrue(SchemaContract.differences(OptionalTarget.serializer().descriptor, required).toString(), SchemaContract.differences(OptionalTarget.serializer().descriptor, required).any { it.contains("required") })
+    }
+
+    @Test
+    fun aContractDefaultMakesARequestPropertyOptionalButNotAResponseProperty() {
+        val schema = Json.parseToJsonElement("""{"type":"object","properties":{"status":{"type":"string","default":"ok"}},"required":["status"]}""").jsonObject
+        assertEquals(emptyList<String>(), SchemaContract.differences(HealthWithDefault.serializer().descriptor, schema, request = true))
+        assertTrue(SchemaContract.differences(HealthWithDefault.serializer().descriptor, schema).single().contains("required"))
+    }
+
+    @Test
+    fun theCheckerWantsAMapForAFreeFormObject() {
+        val schema = Json.parseToJsonElement("""{"type":"object","properties":{"body":{"type":"object","additionalProperties":{}}},"required":["body"]}""").jsonObject
+        assertTrue(SchemaContract.differences(BodyAsText.serializer().descriptor, schema).any { it.contains("free-form") })
+    }
+
+    @Test
     fun problemMatches() = assertMatches(
         SchemaContract.differences(Problem.serializer().descriptor, SchemaContract.response("/api/v1/ledgers", "get", "401")),
     )
@@ -100,6 +149,12 @@ class ContractTest {
 
     @Serializable
     private data class Drifted(val extra: String)
+
+    @Serializable
+    private data class OptionalTarget(val targetId: String? = null)
+
+    @Serializable
+    private data class BodyAsText(val body: String)
 
     @Serializable
     private data class HealthWithDefault(val status: String = "ok")

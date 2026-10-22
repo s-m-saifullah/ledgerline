@@ -8,6 +8,7 @@ import app.ledgerline.android.mirror.MirrorStore
 import app.ledgerline.android.mirror.PullResult
 import app.ledgerline.android.mirror.PullSource
 import app.ledgerline.android.mirror.SyncEngine
+import app.ledgerline.android.mirror.SyncLock
 import app.ledgerline.api.SessionToken
 import app.ledgerline.api.SignInResult
 import app.ledgerline.api.appUserAgent
@@ -115,7 +116,7 @@ class MirrorMatchesServerTest {
 
         val context = ApplicationProvider.getApplicationContext<Context>()
         val first = Room.inMemoryDatabaseBuilder(context, MirrorDatabase::class.java).allowMainThreadQueries().build()
-        val engine = SyncEngine(source, MirrorStore(first))
+        val engine = SyncEngine(source, MirrorStore(first), SyncLock())
         assertEquals(true, (engine.pull(ledgerId) as PullResult.Updated).fullRefresh)
         checkAgainstApi(first, "after the first full pull")
 
@@ -134,7 +135,7 @@ class MirrorMatchesServerTest {
         checkAgainstApi(first, "after an incremental pull")
 
         val fresh = Room.inMemoryDatabaseBuilder(context, MirrorDatabase::class.java).allowMainThreadQueries().build()
-        assertEquals(true, (SyncEngine(source, MirrorStore(fresh)).pull(ledgerId) as PullResult.Updated).fullRefresh)
+        assertEquals(true, (SyncEngine(source, MirrorStore(fresh), SyncLock()).pull(ledgerId) as PullResult.Updated).fullRefresh)
         sameRows(first, fresh)
         checkAgainstApi(fresh, "after a fresh full pull")
         first.close()
