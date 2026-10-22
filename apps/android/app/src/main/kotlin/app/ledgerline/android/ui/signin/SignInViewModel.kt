@@ -93,8 +93,9 @@ class SignInViewModel @Inject constructor(
             when (result) {
                 is SignInResult.SignedIn -> {
                     challenge = null
-                    _state.value = SignInUiState(email = current.email)
+                    // The session first, then the form: anything that sees the form finished must see the session.
                     session.signedIn(result.token)
+                    _state.value = SignInUiState(email = current.email)
                 }
                 is SignInResult.NeedsCode -> {
                     challenge = result.challenge
