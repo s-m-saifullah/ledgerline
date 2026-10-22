@@ -15,15 +15,25 @@ permissions:
 concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
+# The suites run side by side and one final job, `check`, is the single required result (docs/CI.md):
+#   scope    what changed, so which suites must run (and the quick documentation checks)
+#   unit     lint, typecheck, unit and integration tests, build, API contract
+#   e2e      the browser tests, in two shards on separate runners
+#   android  the Android app
+#   check    passes only when every job that had to run passed
 jobs:
-  check:
+  scope:
     runs-on: ubuntu-latest
-    # statuses: records which source tree a passing pull request tested; pull-requests: lets the
-    # post-merge run look that up. Neither can change code or settings.
+    # pull-requests and statuses (read): the post-merge run looks up the pull request that already passed.
     permissions:
       contents: read
       pull-requests: read
-      statuses: write
+      statuses: read
+    outputs:
+      full: ${{ steps.plan.outputs.full }}
+      web: ${{ steps.plan.outputs.web }}
+      android: ${{ steps.plan.outputs.android }}
+      tree: ${{ steps.tree.outputs.tree }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,46 +60,50 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: node infra/scripts/tested-tree.mjs check
       - id: plan
-        name: Decide whether the full suite runs
+        name: Decide which suites run
         run: |
+          full=false
           if [ "${{ steps.scope.outputs.application }}" = "true" ] && [ "${{ steps.tested.outputs.skip }}" != "true" ]; then
-            echo "full=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "full=false" >> "$GITHUB_OUTPUT"
+            full=true
           fi
+          echo "full=$full" >> "$GITHUB_OUTPUT"
+          echo "web=$([ "$full" = "true" ] && [ "${{ steps.scope.outputs.web }}" = "true" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "android=$([ "$full" = "true" ] && [ "${{ steps.scope.outputs.android }}" = "true" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
       - name: Check documentation whitespace
         if: steps.scope.outputs.application == 'false'
         env:
           DIFF_BASE: ${{ steps.scope.outputs.base }}
         run: git diff --check "$DIFF_BASE" HEAD --
+      - id: tree
+        name: Note the source tree these checks start from
+        run: echo "tree=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+
+  unit:
+    needs: scope
+    if: needs.scope.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout_ref || github.ref }}
       - uses: pnpm/action-setup@v6
-        if: steps.plan.outputs.full == 'true'
       - uses: actions/setup-node@v7
-        if: steps.plan.outputs.full == 'true'
         with:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-        if: steps.plan.outputs.full == 'true'
       - id: database
-        if: steps.plan.outputs.full == 'true'
         run: |
           cp .env.example .env
           pnpm db:up
       - run: pnpm lint
-        if: steps.plan.outputs.full == 'true'
       - run: pnpm typecheck
-        if: steps.plan.outputs.full == 'true'
       - run: pnpm test
-        if: steps.plan.outputs.full == 'true'
       - run: pnpm build
-        if: steps.plan.outputs.full == 'true'
       - run: pnpm openapi
-        if: steps.plan.outputs.full == 'true'
       - run: git diff --exit-code docs/openapi.json
-        if: steps.plan.outputs.full == 'true'
       - name: Require contract version notes
-        if: steps.plan.outputs.full == 'true' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -97,43 +111,117 @@ jobs:
           if ! git diff --quiet "$BASE_SHA" HEAD -- docs/openapi.json; then
             ! git diff --quiet "$BASE_SHA" HEAD -- docs/api-changes.md
           fi
-      # The Android app (ADR 0043) is built only when something it depends on changed (infra/scripts/ci-scope.mjs).
+      - if: always() && steps.database.outcome != 'skipped' && steps.database.outcome != ''
+        run: pnpm db:down
+
+  e2e:
+    needs: scope
+    if: needs.scope.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/2', '2/2']
+    name: e2e (${{ matrix.shard }})
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout_ref || github.ref }}
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: database
+        run: |
+          cp .env.example .env
+          pnpm db:up
+      # The browser download is cached by lockfile; the system libraries are still installed every time.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm e2e --shard=${{ matrix.shard }}
+      - name: Keep the failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-failures-${{ strategy.job-index }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+      - if: always() && steps.database.outcome != 'skipped' && steps.database.outcome != ''
+        run: pnpm db:down
+
+  # The Android app (ADR 0043) is built only when something it depends on changed (infra/scripts/ci-scope.mjs).
+  android:
+    needs: scope
+    if: needs.scope.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout_ref || github.ref }}
       - uses: actions/setup-java@v6
-        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
         with:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v6
-        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
         with:
           gradle-version: wrapper
       - name: Install the Android SDK platform
-        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
       - name: Build and test the Android app
-        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
         working-directory: apps/android
         run: ./gradlew --no-daemon --stacktrace :api-client:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease
       - name: Keep the debug APK for sideloading
-        if: steps.plan.outputs.full == 'true' && steps.scope.outputs.android == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: ledgerline-android-debug
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-      - run: pnpm exec playwright install --with-deps chromium
-        if: steps.plan.outputs.full == 'true'
-      - run: pnpm e2e
-        if: steps.plan.outputs.full == 'true'
+
+  # The one required result. It runs even when a suite failed, so a failure is reported instead of skipped.
+  check:
+    needs: [scope, unit, e2e, android]
+    if: always()
+    runs-on: ubuntu-latest
+    # statuses: records which source tree a passing pull request tested; pull-requests: lets the
+    # post-merge run look that up. Neither can change code or settings.
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.checkout_ref || github.ref }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - name: Every suite that had to run passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          EXPECT_UNIT: ${{ needs.scope.outputs.web }}
+          EXPECT_E2E: ${{ needs.scope.outputs.web }}
+          EXPECT_ANDROID: ${{ needs.scope.outputs.android }}
+        run: node infra/scripts/ci-gate.mjs
       - name: Record the tested source tree
-        if: github.event_name == 'pull_request' && steps.plan.outputs.full == 'true'
+        if: github.event_name == 'pull_request' && needs.scope.outputs.full == 'true'
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node infra/scripts/tested-tree.mjs record
-      - if: always() && steps.database.outcome != 'skipped' && steps.database.outcome != ''
-        run: pnpm db:down
+          SCOPE_TREE: ${{ needs.scope.outputs.tree }}
+        run: |
+          # Only vouch for the tree the suites started from; if the base moved meanwhile, record nothing.
+          if [ "$(git rev-parse 'HEAD^{tree}')" != "$SCOPE_TREE" ]; then
+            echo "::notice::The source tree changed while the checks ran; nothing recorded, so the merge run repeats them."
+            exit 0
+          fi
+          node infra/scripts/tested-tree.mjs record

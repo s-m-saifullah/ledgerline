@@ -12,7 +12,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { affectsAndroid, classifyChanges } from "./ci-scope.mjs";
+import {
+  affectsAndroid,
+  affectsWebOrApi,
+  classifyChanges,
+} from "./ci-scope.mjs";
 
 const base = "a".repeat(40);
 const head = "b".repeat(40);
@@ -122,6 +126,39 @@ test("when the changed paths are unknown the Android build runs too", () => {
     true,
   );
 });
+test("the web and API suites run unless only documentation or Android files changed", () => {
+  for (const path of [
+    "apps/web/src/main.tsx",
+    "apps/api/src/app.ts",
+    "packages/shared/src/money.ts",
+    "docs/openapi.json",
+    "packages/ui/src/tokens.css",
+    "infra/scripts/android-tokens.mjs",
+    ".github/workflows/ci.yml",
+    "pnpm-lock.yaml",
+    "tests/e2e/a11y.spec.ts",
+  ])
+    assert.equal(classify([path]).web, true, path);
+  for (const path of [
+    "apps/android/app/build.gradle.kts",
+    "apps/android/gradle/libs.versions.toml",
+    "docs/PLAN.md",
+    "README.md",
+  ])
+    assert.equal(classify([path]).web, false, path);
+  assert.equal(
+    classify(["apps/android/x.kt", "docs/PLAN.md"]).web,
+    false,
+    "Android and documentation together",
+  );
+  assert.equal(classify(["apps/android/x.kt", "apps/web/a.ts"]).web, true);
+  assert.equal(affectsWebOrApi("apps/android/README.md"), false);
+});
+test("when the changed paths are unknown the web and API suites run too", () => {
+  assert.equal(classify([]).web, true);
+  assert.equal(classify(["README.md"], { forceFull: true }).web, true);
+  assert.equal(classify(["README.md"], { head: "bad" }).web, true);
+});
 test("documentation-only changes skip the Android build", () => {
   assert.equal(classify(["docs/PLAN.md", "README.md"]).android, false);
 });
@@ -224,7 +261,7 @@ test("CLI emits a completed documentation decision and forces release checks", (
   execFileSync(process.execPath, [script], { cwd: f.directory, env });
   assert.equal(
     readFileSync(outputFile, "utf8"),
-    `application=false\nandroid=false\nbase=${f.initial}\n`,
+    `application=false\nandroid=false\nweb=false\nbase=${f.initial}\n`,
   );
   assert.match(readFileSync(summaryFile, "utf8"), /application checks skipped/);
   writeFileSync(outputFile, "");
@@ -234,6 +271,6 @@ test("CLI emits a completed documentation decision and forces release checks", (
   });
   assert.equal(
     readFileSync(outputFile, "utf8"),
-    "application=true\nandroid=true\n",
+    "application=true\nandroid=true\nweb=true\n",
   );
 });
