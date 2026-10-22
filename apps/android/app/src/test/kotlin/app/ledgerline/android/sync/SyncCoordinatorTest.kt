@@ -13,6 +13,11 @@ import app.ledgerline.android.mirror.changes
 import app.ledgerline.android.mirror.httpError
 import app.ledgerline.android.mirror.page
 import app.ledgerline.android.mirror.toRows
+import app.ledgerline.android.outbox.FakeServer
+import app.ledgerline.android.outbox.OutboxStore
+import app.ledgerline.android.outbox.PushEngine
+import app.ledgerline.android.outbox.json
+import app.ledgerline.android.outbox.outboxFor
 import app.ledgerline.android.session.SessionEnd
 import app.ledgerline.android.session.SessionManager
 import app.ledgerline.android.session.SessionState
@@ -54,10 +59,16 @@ class SyncCoordinatorTest {
     @After
     fun close() = database.close()
 
+    private val server = FakeServer()
+    private lateinit var outbox: OutboxStore
+
     private fun build(protector: FakeTokenProtector): Pair<SessionManager, SyncCoordinator> {
         val session = SessionManager(protector, clock)
-        val engine = SyncEngine(source, MirrorStore(database), SyncLock())
-        return session to SyncCoordinator(session, SyncRunner(engine, lookup, choice, session), engine, scheduler, choice, clock)
+        val lock = SyncLock()
+        val engine = SyncEngine(source, MirrorStore(database), lock)
+        outbox = outboxFor(database)
+        val runner = SyncRunner(engine, PushEngine(server, outbox, lock), lookup, choice, session)
+        return session to SyncCoordinator(session, runner, engine, scheduler, choice, clock)
     }
 
     private suspend fun rows() = database.dao().allAccounts("ledger-a")
@@ -201,6 +212,7 @@ class SyncCoordinatorTest {
         sync.onState(session.state.value)
         session.skipProtect()
         source.hold = CompletableDeferred()
+        source.entered = CompletableDeferred()
         val pulling = launch { sync.onState(session.state.value) }
         source.entered.await()
         session.endSession(null)
@@ -259,6 +271,97 @@ class SyncCoordinatorTest {
         pulling.join()
         assertEquals(1, source.asked.size)
         assertEquals(false, sync.running.value)
+    }
+
+    @Test
+    fun everySyncSendsTheOutboxBeforeItPulls() = runBlocking {
+        val events = mutableListOf<String>()
+        val (_, sync) = signedInAndKept()
+        server.answer = { events += "push"; null }
+        source.respond = { events += "pull"; page(changes(accounts = listOf(account(1))), cursor = "c2") }
+        val entryId = outbox.createEntry("ledger-a", json("payee" to "Offline"))
+        sync.pullNow()
+        assertEquals(listOf("push", "pull"), events)
+        assertEquals(listOf(entryId), server.applied)
+        assertEquals(0, outbox.unsentCount())
+    }
+
+    @Test
+    fun aRefusedTokenWhileSendingEndsTheSessionKeepsTheOutboxAndSkipsThePull() = runBlocking {
+        val (session, sync) = signedInAndKept()
+        source.asked.clear()
+        outbox.createEntry("ledger-a", json("payee" to "Offline"))
+        server.fail = httpError(401)
+        assertEquals(PullResult.SignedOut, sync.pullNow())
+        assertTrue(source.asked.isEmpty())
+        assertEquals(SessionEnd.Expired, session.ended.value)
+        sync.onState(session.state.value)
+        assertEquals(1, outbox.unsentCount())
+        assertEquals(1, rows().size)
+    }
+
+    @Test
+    fun noConnectionWhileSendingSkipsThePull() = runBlocking {
+        val (_, sync) = signedInAndKept()
+        source.asked.clear()
+        outbox.createEntry("ledger-a", json("payee" to "Offline"))
+        server.fail = IOException("offline")
+        assertEquals(PullResult.Offline, sync.pullNow())
+        assertTrue(source.asked.isEmpty())
+        assertEquals(1, outbox.unsentCount())
+    }
+
+    @Test
+    fun aServerErrorWhileSendingStillLetsThePullRun() = runBlocking {
+        val (_, sync) = signedInAndKept()
+        source.asked.clear()
+        outbox.createEntry("ledger-a", json("payee" to "Offline"))
+        server.fail = httpError(500)
+        assertTrue(sync.pullNow() is PullResult.Updated)
+        assertEquals(1, source.asked.size)
+        assertEquals(1, outbox.unsentCount())
+    }
+
+    @Test
+    fun aSavedChangeIsSentAtOnceWhenUnlockedAndQueuedForTheNetworkWhenKept() = runBlocking {
+        val (session, sync) = signedInAndKept()
+        outbox.createEntry("ledger-a", json("payee" to "Now"))
+        sync.changed()
+        assertEquals(1, scheduler.sendsQueued)
+        assertEquals(1, server.applied.size)
+
+        session.lock()
+        sync.onState(session.state.value)
+        outbox.createEntry("ledger-a", json("payee" to "Later"))
+        sync.changed()
+        assertEquals(2, scheduler.sendsQueued)
+        assertEquals(1, server.applied.size)
+        assertEquals(BackgroundOutcome.Done, sync.backgroundPull(0))
+        assertEquals(2, server.applied.size)
+    }
+
+    @Test
+    fun aSessionNotKeptSendsWhileOpenButQueuesNothingForLater() = runBlocking {
+        val (session, sync) = build(FakeTokenProtector())
+        session.signedIn(token)
+        sync.onState(session.state.value)
+        session.skipProtect()
+        sync.onState(session.state.value)
+        outbox.createEntry("ledger-a", json("payee" to "Now"))
+        sync.changed()
+        assertEquals(0, scheduler.sendsQueued)
+        assertEquals(1, server.applied.size)
+    }
+
+    @Test
+    fun signingOutKeepsUnsentChanges() = runBlocking {
+        val (session, sync) = signedInAndKept()
+        server.fail = IOException("offline")
+        outbox.createEntry("ledger-a", json("payee" to "Offline"))
+        session.endSession(null)
+        sync.onState(session.state.value)
+        assertTrue(rows().isEmpty())
+        assertEquals(1, outbox.unsentCount())
     }
 
     @Test

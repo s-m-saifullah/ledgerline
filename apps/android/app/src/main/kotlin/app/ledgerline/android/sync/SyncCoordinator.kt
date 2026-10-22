@@ -94,6 +94,15 @@ class SyncCoordinator @Inject constructor(
         shown { pull(fullRefresh = needsFullRefresh) }
     }
 
+    /**
+     * A change was saved to the outbox: send it now if the app can, and queue a send for when there is a network
+     * in case it cannot (only a session kept on the phone can send while the app is closed).
+     */
+    suspend fun changed() {
+        if (session.canLock()) scheduler.sendSoon()
+        if (session.state.value == SessionState.Unlocked) shown { pull(fullRefresh = needsFullRefresh) }
+    }
+
     /** "Refresh everything". */
     suspend fun refreshEverything() = shown { pull(fullRefresh = true) }
 

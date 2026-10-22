@@ -7,9 +7,14 @@ import kotlinx.coroutines.CompletableDeferred
 class FakeScheduler : SyncScheduler {
     var scheduled = 0
     var cancelled = 0
+    var sendsQueued = 0
 
     override fun schedule() {
         scheduled++
+    }
+
+    override fun sendSoon() {
+        sendsQueued++
     }
 
     override fun cancel() {
