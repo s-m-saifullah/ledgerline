@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { classifyChanges } from "./ci-scope.mjs";
+import { affectsAndroid, classifyChanges } from "./ci-scope.mjs";
 
 const base = "a".repeat(40);
 const head = "b".repeat(40);
@@ -90,6 +90,40 @@ test("missing or invalid comparison, empty diff and git failures run full checks
     }).application,
     true,
   );
+});
+
+test("the Android build runs only for its own inputs", () => {
+  for (const path of [
+    "apps/android/app/build.gradle.kts",
+    "apps/android/gradle/libs.versions.toml",
+    "docs/openapi.json",
+    "packages/ui/src/tokens.css",
+    "infra/scripts/android-tokens.mjs",
+    ".github/workflows/ci.yml",
+  ])
+    assert.equal(classify([path]).android, true, path);
+  for (const path of [
+    "apps/web/src/main.tsx",
+    "apps/api/src/app.ts",
+    "docs/PLAN.md",
+    "apps/androidish/file.ts",
+    "pnpm-lock.yaml",
+  ])
+    assert.equal(classify([path]).android, false, path);
+  assert.equal(classify(["apps/web/a.ts", "apps/android/x.kt"]).android, true);
+  assert.equal(affectsAndroid("apps/android/README.md"), true);
+});
+test("when the changed paths are unknown the Android build runs too", () => {
+  assert.equal(classify([]).android, true);
+  assert.equal(classify(["README.md"], { forceFull: true }).android, true);
+  assert.equal(classify(["README.md"], { head: "bad" }).android, true);
+  assert.equal(
+    classify(["README.md"], { eventName: "workflow_dispatch" }).android,
+    true,
+  );
+});
+test("documentation-only changes skip the Android build", () => {
+  assert.equal(classify(["docs/PLAN.md", "README.md"]).android, false);
 });
 
 function fixture(t) {
@@ -190,7 +224,7 @@ test("CLI emits a completed documentation decision and forces release checks", (
   execFileSync(process.execPath, [script], { cwd: f.directory, env });
   assert.equal(
     readFileSync(outputFile, "utf8"),
-    `application=false\nbase=${f.initial}\n`,
+    `application=false\nandroid=false\nbase=${f.initial}\n`,
   );
   assert.match(readFileSync(summaryFile, "utf8"), /application checks skipped/);
   writeFileSync(outputFile, "");
@@ -198,5 +232,8 @@ test("CLI emits a completed documentation decision and forces release checks", (
     cwd: f.directory,
     env: { ...env, FORCE_FULL_CHECKS: "true" },
   });
-  assert.equal(readFileSync(outputFile, "utf8"), "application=true\n");
+  assert.equal(
+    readFileSync(outputFile, "utf8"),
+    "application=true\nandroid=true\n",
+  );
 });
