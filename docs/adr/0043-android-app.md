@@ -1,4 +1,4 @@
-# ADR 0043: The Android app (Phase 5, slices 1 to 3)
+# ADR 0043: The Android app (Phase 5)
 
 Date: 2026-10-22. Status: accepted by the owner in chat (including the application id and installing a JDK and the Android command-line SDK locally). Phase 5. Builds on [0042](0042-sync-and-bearer-tokens.md) (bearer tokens, pull, push, devices), [0038](0038-two-factor-totp.md) (two-factor), [0041](0041-pwa.md) (the web app stays online-only; the phone is the offline client) and the Android path in `docs/PLAN.md`.
 
@@ -141,3 +141,7 @@ The editor's view model belongs to the activity (the app has no navigation libra
 ## Amendment (2026-10-22): the convergence check (slice 4, PR 5)
 
 `MirrorMatchesServerTest.offlineChangesConvergeWithTheServer` drives the app's own outbox, push and pull against a live scratch server (opt-in, like the comparison): offline on the phone it records a new tagged entry, a new transfer, a transfer edit, an entry edit and an entry delete, while the web edits the same entries before and after them. The first batch reaches the server but its reply is thrown away, and the batch is sent again. It then checks that each new entry and transfer exists exactly once, that the later edit won each conflict (the phone's later edit applied; the phone's earlier edit and its delete came back superseded and wait in the attention list), that nothing is left unsent, that the mirror matches the API, that Keep mine then wins against the web's version, and that the mirror equals a fresh full pull row for row. It passed against the scratch server on 2026-10-22; clearing superseded results instead of keeping them makes it fail. The owner then checked slice 4 on the phone and it passed. Airplane mode does not cut a phone off a scratch server reached through `adb reverse` (the tunnel runs over USB), so the phone was taken offline by removing the tunnel (`adb reverse --remove`), with airplane mode added for the background send, whose job waits for a real network.
+
+## Amendment (2026-10-22): the Android build has its own CI job
+
+The CI decision above (the Android steps join the single `check` job) was replaced when CI was restructured: the build and tests run in their own `android` job, side by side with the other suites, and the one required `check` gates it. When it runs is unchanged in spirit (Android paths, the contract, the colour sources and the workflow; never for documentation-only changes). See [CI.md](../CI.md).
