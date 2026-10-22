@@ -137,11 +137,8 @@ jobs:
         run: |
           cp .env.example .env
           pnpm db:up
-      # The browser download is cached by lockfile; the system libraries are still installed every time.
-      - uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      # No browser cache: a pull request can read only caches saved on itself or on main, and main skips
+      # this suite, so it never hit; the download takes seconds (docs/CI.md).
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm e2e --shard=${{ matrix.shard }}
       - name: Keep the failure screenshots
