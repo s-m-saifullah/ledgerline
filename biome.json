@@ -12,6 +12,7 @@
       "!apps/android/**/build",
       "!apps/android/.gradle",
       "!apps/android/.kotlin",
+      "!apps/android/app/schemas",
       "!pnpm-lock.yaml",
       "!playwright-report",
       "!test-results",

@@ -49,7 +49,14 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Robolectric runs the real Room database on the JVM for the mirror tests.
+        unitTests.isIncludeAndroidResources = true
     }
+}
+
+ksp {
+    // The mirror's schema is committed so a later change can be checked and migrated.
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 kotlin {
@@ -69,9 +76,14 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.lifecycle.process)
     implementation(libs.biometric)
+    implementation(libs.room.runtime)
+    implementation(libs.work.runtime)
+    ksp(libs.room.compiler)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
 }
