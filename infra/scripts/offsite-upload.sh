@@ -11,7 +11,7 @@ cd "${LEDGERLINE_DIR:-/opt/ledgerline}"
 config="${OFFSITE_CONFIG:-offsite.env}"
 if [[ ! -f "$config" ]]; then echo 'Off-site upload is not configured; skipping'; exit 0; fi
 status=backups/offsite.status
-tool_image="ledgerline-offsite:rclone1.70.3-age1.2"
+tool_image="ledgerline-offsite:rclone1.75.2-age1.3"
 work=''
 cleanup() { if [[ -n "$work" ]]; then rm -rf "$work"; fi; }
 trap cleanup EXIT
