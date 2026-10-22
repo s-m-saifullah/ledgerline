@@ -21,5 +21,7 @@ dependencies {
     api(libs.retrofit.kotlinx.serialization)
     api(libs.okhttp)
     api(libs.kotlinx.serialization.json)
+    api(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
 }

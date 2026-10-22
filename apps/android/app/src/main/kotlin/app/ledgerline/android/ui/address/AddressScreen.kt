@@ -2,11 +2,9 @@ package app.ledgerline.android.ui.address
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
@@ -31,9 +29,9 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.R
 import app.ledgerline.android.server.AddressProblem
 
-/** First screen: where is your server? One primary action. */
+/** Where is your server? One primary action. [onCancel] is shown only when an address is already saved. */
 @Composable
-fun AddressScreen(viewModel: AddressViewModel = hiltViewModel()) {
+fun AddressScreen(canCancel: Boolean, onDone: () -> Unit, viewModel: AddressViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -43,65 +41,33 @@ fun AddressScreen(viewModel: AddressViewModel = hiltViewModel()) {
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            when {
-                !state.loaded -> Unit
-                state.savedOrigin != null && !state.editing -> SavedAddress(
-                    origin = state.savedOrigin.orEmpty(),
-                    onChange = viewModel::startEditing,
-                )
-                else -> AddressForm(
-                    input = state.input,
-                    problem = state.problem,
-                    onInput = viewModel::onInput,
-                    onSubmit = viewModel::submit,
-                )
+            Text(stringResource(R.string.address_title), style = MaterialTheme.typography.headlineSmall)
+            Text(
+                stringResource(R.string.address_intro),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedTextField(
+                value = state.input,
+                onValueChange = viewModel::onInput,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.address_label)) },
+                placeholder = { Text(stringResource(R.string.address_hint)) },
+                singleLine = true,
+                isError = state.problem != null,
+                supportingText = state.problem?.let { { Text(stringResource(it.messageRes())) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { viewModel.submit(onDone) }),
+            )
+            Button(onClick = { viewModel.submit(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.address_continue))
+            }
+            if (canCancel) {
+                TextButton(onClick = onDone, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.cancel))
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun AddressForm(
-    input: String,
-    problem: AddressProblem?,
-    onInput: (String) -> Unit,
-    onSubmit: () -> Unit,
-) {
-    Text(stringResource(R.string.address_title), style = MaterialTheme.typography.headlineSmall)
-    Text(
-        stringResource(R.string.address_intro),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    OutlinedTextField(
-        value = input,
-        onValueChange = onInput,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(stringResource(R.string.address_label)) },
-        placeholder = { Text(stringResource(R.string.address_hint)) },
-        singleLine = true,
-        isError = problem != null,
-        supportingText = problem?.let { { Text(stringResource(it.messageRes())) } },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { onSubmit() }),
-    )
-    Button(onClick = onSubmit, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-        Text(stringResource(R.string.address_continue))
-    }
-}
-
-@Composable
-private fun SavedAddress(origin: String, onChange: () -> Unit) {
-    Text(stringResource(R.string.address_saved_title), style = MaterialTheme.typography.headlineSmall)
-    Text(origin, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-    Text(
-        stringResource(R.string.address_saved_body),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(8.dp))
-    TextButton(onClick = onChange, modifier = Modifier.heightIn(min = 48.dp)) {
-        Text(stringResource(R.string.address_change))
     }
 }
 

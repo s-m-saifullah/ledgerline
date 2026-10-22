@@ -9,43 +9,36 @@ import app.ledgerline.android.server.ServerAddressStore
 import app.ledgerline.android.server.parseServerAddress
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class AddressUiState(
-    /** Null while the saved address is still being read. */
-    val savedOrigin: String? = null,
-    val loaded: Boolean = false,
-    val editing: Boolean = false,
-    val input: String = "",
-    val problem: AddressProblem? = null,
-)
+data class AddressUiState(val input: String = "", val problem: AddressProblem? = null)
 
 @HiltViewModel
-class AddressViewModel @Inject constructor(
-    private val store: ServerAddressStore,
-) : ViewModel() {
-    private val draft = MutableStateFlow(AddressUiState())
+class AddressViewModel @Inject constructor(private val store: ServerAddressStore) : ViewModel() {
+    private val _state = MutableStateFlow(AddressUiState())
+    val state: StateFlow<AddressUiState> = _state.asStateFlow()
 
-    val state: StateFlow<AddressUiState> = combine(store.origin, draft) { saved, draft ->
-        draft.copy(savedOrigin = saved, loaded = true)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddressUiState())
+    init {
+        // Start from the saved address when the owner is changing it.
+        viewModelScope.launch {
+            store.origin.first()?.let { saved -> _state.update { if (it.input.isEmpty()) it.copy(input = saved) else it } }
+        }
+    }
 
-    fun onInput(text: String) = draft.update { it.copy(input = text, problem = null) }
+    fun onInput(text: String) = _state.update { it.copy(input = text, problem = null) }
 
-    fun startEditing() = draft.update { it.copy(editing = true, input = state.value.savedOrigin.orEmpty(), problem = null) }
-
-    fun submit() {
-        when (val result = parseServerAddress(draft.value.input, BuildConfig.ALLOW_CLEARTEXT)) {
-            is AddressResult.Refused -> draft.update { it.copy(problem = result.problem) }
+    /** [onSaved] runs once the address is stored. */
+    fun submit(onSaved: () -> Unit) {
+        when (val result = parseServerAddress(_state.value.input, BuildConfig.ALLOW_CLEARTEXT)) {
+            is AddressResult.Refused -> _state.update { it.copy(problem = result.problem) }
             is AddressResult.Valid -> viewModelScope.launch {
                 store.save(result.origin)
-                draft.update { it.copy(editing = false, input = "", problem = null) }
+                onSaved()
             }
         }
     }
