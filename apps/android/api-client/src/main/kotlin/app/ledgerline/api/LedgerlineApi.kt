@@ -1,7 +1,9 @@
 package app.ledgerline.api
 
 import kotlinx.serialization.json.Json
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -23,6 +25,10 @@ interface LedgerlineApi {
         @Query("cursor") cursor: String?,
         @Query("limit") limit: Int,
     ): SyncResponse
+
+    /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
+    @POST("api/v1/ledgers/{ledgerId}/sync")
+    suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse
 }
 
 /** A newer server may add fields; the app ignores what it does not know. The contract test is strict. */

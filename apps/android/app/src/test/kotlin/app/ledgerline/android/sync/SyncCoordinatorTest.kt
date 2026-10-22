@@ -7,6 +7,7 @@ import app.ledgerline.android.mirror.MirrorDatabase
 import app.ledgerline.android.mirror.MirrorStore
 import app.ledgerline.android.mirror.PullResult
 import app.ledgerline.android.mirror.SyncEngine
+import app.ledgerline.android.mirror.SyncLock
 import app.ledgerline.android.mirror.account
 import app.ledgerline.android.mirror.changes
 import app.ledgerline.android.mirror.httpError
@@ -55,7 +56,7 @@ class SyncCoordinatorTest {
 
     private fun build(protector: FakeTokenProtector): Pair<SessionManager, SyncCoordinator> {
         val session = SessionManager(protector, clock)
-        val engine = SyncEngine(source, MirrorStore(database))
+        val engine = SyncEngine(source, MirrorStore(database), SyncLock())
         return session to SyncCoordinator(session, SyncRunner(engine, lookup, choice, session), engine, scheduler, choice, clock)
     }
 

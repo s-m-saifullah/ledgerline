@@ -142,4 +142,37 @@ interface MirrorDao {
 
     @Query("DELETE FROM sync_cursors WHERE ledgerId != :ledgerId")
     suspend fun clearCursorsOfOtherLedgers(ledgerId: String)
+    @Query("DELETE FROM accounts")
+    suspend fun wipeAccounts()
+
+    @Query("DELETE FROM categories")
+    suspend fun wipeCategories()
+
+    @Query("DELETE FROM tags")
+    suspend fun wipeTags()
+
+    @Query("DELETE FROM currencies")
+    suspend fun wipeCurrencies()
+
+    @Query("DELETE FROM exchange_rates")
+    suspend fun wipeExchangeRates()
+
+    @Query("DELETE FROM transactions")
+    suspend fun wipeTransactions()
+
+    @Query("DELETE FROM transaction_splits")
+    suspend fun wipeTransactionSplits()
+
+    @Query("DELETE FROM transaction_tags")
+    suspend fun wipeTransactionTags()
+
+    @Query("DELETE FROM sync_cursors")
+    suspend fun wipeSyncCursors()
+
+    @Query("SELECT version FROM transactions WHERE ledgerId = :ledgerId AND id = :id")
+    suspend fun transactionVersion(ledgerId: String, id: String): Int?
+
+    /** A transfer's version is its outgoing leg's (the leg with the negative amount), as the push compares it. */
+    @Query("SELECT version FROM transactions WHERE ledgerId = :ledgerId AND transferId = :transferId AND kind = 'transfer' AND amount < 0 LIMIT 1")
+    suspend fun transferVersion(ledgerId: String, transferId: String): Int?
 }

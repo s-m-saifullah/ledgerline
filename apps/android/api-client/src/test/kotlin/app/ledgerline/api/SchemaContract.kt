@@ -35,12 +35,26 @@ object SchemaContract {
         return response["content"]!!.jsonObject["application/json"]!!.jsonObject["schema"]!!.jsonObject
     }
 
+    /** The JSON schema of the request body of one operation. */
+    fun request(path: String, method: String): JsonObject {
+        val paths = document["paths"]!!.jsonObject
+        val operation = checkNotNull(paths[path]?.jsonObject?.get(method)?.jsonObject) { "$method $path is not in the contract" }
+        val body = checkNotNull(operation["requestBody"]?.jsonObject) { "$method $path has no request body" }
+        return body["content"]!!.jsonObject["application/json"]!!.jsonObject["schema"]!!.jsonObject
+    }
+
     fun component(name: String): JsonObject =
         checkNotNull(document["components"]!!.jsonObject["schemas"]!!.jsonObject[name]?.jsonObject) { "no schema $name" }
 
-    fun differences(descriptor: SerialDescriptor, schema: JsonObject, at: String = descriptor.serialName): List<String> {
+    /** [request] is true for a body the app sends, where a contract default makes a property optional. */
+    fun differences(
+        descriptor: SerialDescriptor,
+        schema: JsonObject,
+        at: String = descriptor.serialName,
+        request: Boolean = false,
+    ): List<String> {
         val problems = mutableListOf<String>()
-        compare(descriptor, schema, at, problems)
+        compare(descriptor, schema, at, problems, request, optionalInContract = false)
         return problems
     }
 
@@ -62,18 +76,28 @@ object SchemaContract {
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private fun compare(descriptor: SerialDescriptor, rawSchema: JsonObject, at: String, problems: MutableList<String>) {
+    private fun compare(
+        descriptor: SerialDescriptor,
+        rawSchema: JsonObject,
+        at: String,
+        problems: MutableList<String>,
+        request: Boolean = false,
+        optionalInContract: Boolean = false,
+    ) {
         val (schema, nullable) = unwrapNullable(rawSchema)
-        if (descriptor.isNullable != nullable) {
+        // An optional property the contract never makes null is a nullable Kotlin property with a null default: absent
+        // in a reply decodes to null, and null is left out when the app sends it.
+        val omittedWhenNull = optionalInContract && descriptor.isNullable && !nullable
+        if (descriptor.isNullable != nullable && !omittedWhenNull) {
             problems += "$at: nullable is ${descriptor.isNullable} in Kotlin but $nullable in the contract"
         }
         when (val type = schema["type"]?.jsonPrimitive?.contentOrNull) {
-            "object" -> compareObject(descriptor, schema, at, problems)
+            "object" -> compareObject(descriptor, schema, at, problems, request)
             "array" -> {
                 if (descriptor.kind != StructureKind.LIST) {
                     problems += "$at: the contract has an array"
                 } else {
-                    compare(descriptor.getElementDescriptor(0), schema["items"]!!.jsonObject, "$at[]", problems)
+                    compare(descriptor.getElementDescriptor(0), schema["items"]!!.jsonObject, "$at[]", problems, request)
                 }
             }
             "string" -> {
@@ -102,7 +126,12 @@ object SchemaContract {
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private fun compareObject(descriptor: SerialDescriptor, schema: JsonObject, at: String, problems: MutableList<String>) {
+    private fun compareObject(descriptor: SerialDescriptor, schema: JsonObject, at: String, problems: MutableList<String>, request: Boolean) {
+        // A free-form object (only `additionalProperties`) is a JSON object or map in Kotlin.
+        if (schema["properties"] == null && schema["additionalProperties"] != null) {
+            if (descriptor.kind != StructureKind.MAP) problems += "$at: the contract has a free-form object"
+            return
+        }
         if (descriptor.kind != StructureKind.CLASS) {
             problems += "$at: the contract has an object"
             return
@@ -116,10 +145,12 @@ object SchemaContract {
                 problems += "$at.$name: in the contract but not in Kotlin"
                 continue
             }
-            if ((name in required) == descriptor.isElementOptional(index)) {
+            // In a request a contract default makes the property optional; in a response the server always sends it.
+            val optionalHere = name !in required || (request && property.jsonObject.containsKey("default"))
+            if (!optionalHere == descriptor.isElementOptional(index)) {
                 problems += "$at.$name: required is ${name in required} in the contract but Kotlin has ${if (descriptor.isElementOptional(index)) "a default" else "no default"}"
             }
-            compare(descriptor.getElementDescriptor(index), property.jsonObject, "$at.$name", problems)
+            compare(descriptor.getElementDescriptor(index), property.jsonObject, "$at.$name", problems, request, optionalHere)
         }
         for (name in names.keys - properties.keys) problems += "$at.$name: in Kotlin but not in the contract"
     }

@@ -35,7 +35,7 @@ class MirrorTest {
     @After
     fun close() = database.close()
 
-    private fun engine(vararg steps: (String?) -> app.ledgerline.api.SyncResponse) = ScriptedSource(*steps).let { it to SyncEngine(it, store) }
+    private fun engine(vararg steps: (String?) -> app.ledgerline.api.SyncResponse) = ScriptedSource(*steps).let { it to SyncEngine(it, store, SyncLock()) }
 
     private val dao get() = database.dao()
 

@@ -1,6 +1,7 @@
 package app.ledgerline.api
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /**
  * The pull of `GET /ledgers/{id}/sync` (ADR 0042): each table as its own stored rows. A row with `deletedAt` set is a
@@ -151,4 +152,43 @@ data class SyncTransactionTag(
     val deletedAt: String?,
     val transactionId: String,
     val tagId: String,
+)
+
+/**
+ * The push of `POST /ledgers/{id}/sync` (ADR 0042): changes made on the phone, at most 50 per request. Optional
+ * fields are left out when null (they are never sent as null), because the contract does not allow null there.
+ */
+@Serializable
+data class SyncPush(val mutations: List<SyncMutation>)
+
+@Serializable
+data class SyncMutation(
+    /** A UUIDv7 made on the phone: the idempotency key, and for a create the new entry's id (a transfer's id). */
+    val id: String,
+    val type: String,
+    val editedAt: String,
+    val targetId: String? = null,
+    val baseVersion: Int? = null,
+    val body: JsonObject = JsonObject(emptyMap()),
+)
+
+@Serializable
+data class SyncPushResponse(val results: List<SyncPushResult>)
+
+@Serializable
+data class SyncPushResult(
+    val id: String,
+    /** applied, replayed, superseded or rejected. */
+    val status: String,
+    /** The entry (or a transfer's legs, bonus and fee) as the server now has them. */
+    val rows: List<SyncTransaction>,
+    val problem: SyncPushProblem? = null,
+)
+
+@Serializable
+data class SyncPushProblem(
+    val status: Long,
+    val title: String,
+    val detail: String,
+    val errors: List<FieldError>? = null,
 )
