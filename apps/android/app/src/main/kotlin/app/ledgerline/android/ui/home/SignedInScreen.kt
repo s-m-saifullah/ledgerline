@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.NavigationBarItem
@@ -53,6 +56,8 @@ import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.overlay.AttentionItem
 import app.ledgerline.android.overlay.AttentionReason
+import app.ledgerline.android.ui.editor.EditorScreen
+import app.ledgerline.android.ui.editor.EditorTarget
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.format.formatMoney
 import app.ledgerline.android.ui.format.formatUpdated
@@ -67,13 +72,18 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     var showAttention by rememberSaveable { mutableStateOf(false) }
+    var editing by rememberSaveable { mutableStateOf<String?>(null) }
     val line by viewModel.syncLine.collectAsState()
     val signingOut by viewModel.signingOut.collectAsState()
     val confirmSignOut by viewModel.confirmSignOut.collectAsState()
     confirmSignOut?.let { waiting -> SignOutQuestion(waiting, viewModel) }
+    editing?.let { target ->
+        EditorScreen(EditorTarget.decode(target), onClose = { editing = null })
+        return
+    }
     if (showAttention) {
         BackHandler { showAttention = false }
-        AttentionScreen(viewModel, onBack = { showAttention = false })
+        AttentionScreen(viewModel, onBack = { showAttention = false }, onFix = { editing = EditorTarget.Fix(it).encode() })
         return
     }
     Scaffold(
@@ -115,6 +125,12 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
                 },
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { editing = EditorTarget.New().encode() }) {
+                Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add))
+            }
+        },
+        floatingActionButtonPosition = FabPosition.Center,
         bottomBar = {
             NavigationBar {
                 NavigationBarItem(
@@ -138,7 +154,14 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             val openAttention = { showAttention = true }
-            if (tab == 0) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention)
+            val openEntry = { line: EntryLine ->
+                editing = if (line.kind == "transfer" && line.transferId != null) {
+                    EditorTarget.Transfer(line.transferId).encode()
+                } else {
+                    EditorTarget.Entry(line.id).encode()
+                }
+            }
+            if (tab == 0) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention, openEntry)
         }
     }
 }
@@ -254,7 +277,7 @@ private fun AccountRow(account: AccountBalance) {
 }
 
 @Composable
-private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit) {
+private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit, openEntry: (EntryLine) -> Unit) {
     val state by viewModel.entries.collectAsState()
     val canShowMore by viewModel.canShowMore.collectAsState()
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
@@ -265,7 +288,7 @@ private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttent
                 if (current.items.isEmpty()) {
                     item { Text(stringResource(R.string.entries_empty), modifier = Modifier.padding(16.dp)) }
                 }
-                items(current.items, key = { it.line.id }) { EntryRow(it.line, it.unsent) }
+                items(current.items, key = { it.line.id }) { EntryRow(it.line, it.unsent) { openEntry(it.line) } }
                 if (canShowMore) {
                     item {
                         TextButton(
@@ -280,7 +303,7 @@ private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttent
 }
 
 @Composable
-private fun EntryRow(entry: EntryLine, unsent: Boolean) {
+private fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
     val title = entry.payee?.takeIf { it.isNotBlank() }
         ?: when {
             entry.kind == "transfer" -> stringResource(R.string.entry_transfer)
@@ -301,6 +324,7 @@ private fun EntryRow(entry: EntryLine, unsent: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onOpen)
             .heightIn(min = 64.dp)
             .padding(horizontal = 16.dp, vertical = 10.dp)
             .clearAndSetSemantics { contentDescription = described },
@@ -359,7 +383,7 @@ private fun SignOutQuestion(waiting: Int, viewModel: SignedInViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit) {
+private fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit, onFix: (String) -> Unit) {
     val items by viewModel.attention.collectAsState()
     Scaffold(
         topBar = {
@@ -375,13 +399,13 @@ private fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit) {
             if (items.isEmpty()) {
                 item { Text(stringResource(R.string.attention_empty), modifier = Modifier.padding(16.dp)) }
             }
-            items(items, key = { it.id }) { item -> AttentionRow(item, viewModel) }
+            items(items, key = { it.id }) { item -> AttentionRow(item, viewModel, onFix) }
         }
     }
 }
 
 @Composable
-private fun AttentionRow(item: AttentionItem, viewModel: SignedInViewModel) {
+private fun AttentionRow(item: AttentionItem, viewModel: SignedInViewModel, onFix: (String) -> Unit) {
     val what = stringResource(
         when (item.type) {
             "transaction.create" -> R.string.change_new_entry
@@ -403,6 +427,11 @@ private fun AttentionRow(item: AttentionItem, viewModel: SignedInViewModel) {
         Text(reason, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (item.reason == AttentionReason.Rejected) {
+                if (!item.type.endsWith(".delete")) {
+                    OutlinedButton(onClick = { onFix(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.attention_edit))
+                    }
+                }
                 OutlinedButton(onClick = { viewModel.discard(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.attention_discard))
                 }

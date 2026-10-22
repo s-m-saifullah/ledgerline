@@ -113,6 +113,8 @@ class OutboxStore @Inject constructor(
 
     suspend fun needingAttention(): List<OutboxRow> = outbox.needingAttention()
 
+    suspend fun find(id: String): OutboxRow? = outbox.find(id)
+
     /** Superseded and rejected changes, for the Needs your attention list. */
     val attention: Flow<List<OutboxRow>> = outbox.observeNeedingAttention()
 
