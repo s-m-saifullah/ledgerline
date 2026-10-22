@@ -7,6 +7,7 @@ import {
 } from "../../lib/preferences";
 import { YourDataCard } from "../exports/your-data-card";
 import { TimeZoneCard } from "../ledger/time-zone-card";
+import { DevicesCard } from "./devices-card";
 import { TwoFactorCard } from "./two-factor-card";
 
 export function SettingsPage() {
@@ -82,6 +83,7 @@ export function SettingsPage() {
       </section>
       <TimeZoneCard />
       <TwoFactorCard />
+      <DevicesCard />
       <YourDataCard />
     </>
   );

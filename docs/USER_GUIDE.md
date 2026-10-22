@@ -146,6 +146,10 @@ After that, signing in asks for the password and then a code. Choose **Use a bac
 
 If you lose both your phone and your backup codes, the server's operator can turn two-factor off for the owner account; see the [self-hosting guide](SELF_HOSTING.md). Keep your current session open until a fresh sign-in with a code has worked.
 
+## Signed-in devices
+
+In **More, Settings, Signed-in devices** you can see where you are signed in: each browser or phone with a readable name (such as "Chrome on macOS" or "Ledgerline Android app (Pixel 8)"), a **Current device** mark on the one you are using, and when each was last used (about once a day). Press **Sign out** beside a device you no longer use, or lose, and it is signed out at once: it must sign in again, with a code if two-factor is on. **Sign out all other devices** asks once and signs out everything except the one you are using. The ten most recently used show first; older ones sit under **Show older devices**. Nothing here lists a password, a token or an address.
+
 ## Typing amounts from the cents
 
 In **More, Settings**, switch on **Type amounts from the cents** to type amounts the way many banking apps do: type digits only and the decimal point stays in place, so 1, 2, 3 reads 1.23. Backspace removes the last digit, and typing into a box that already has an amount adds digits to the end of it. A pasted amount is read as usual. The setting is saved on the device you are using, so turn it on for each phone or computer. It applies to every box where you type money, but not to exchange rates, percentages or hours. With the setting off, money boxes accept only digits and one decimal point, with as many decimals as the currency has.

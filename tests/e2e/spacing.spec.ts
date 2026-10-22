@@ -29,6 +29,10 @@ test.afterAll(async () => {
 async function fieldGaps(page: Page) {
   return page.evaluate(() => {
     const visible = (element: Element) => {
+      // The content of a closed disclosure is not on screen, whatever box the browser still reports for it.
+      const closed = element.closest("details:not([open])");
+      if (closed && element.closest("summary")?.parentElement !== closed)
+        return false;
       const box = element.getBoundingClientRect();
       const style = getComputedStyle(element);
       return (

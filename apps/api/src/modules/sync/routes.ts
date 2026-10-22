@@ -9,8 +9,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
-import { createActor, errors } from "../../lib/route-helpers";
+import { createActor, errors, requireAppOrigin } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { pushMutations } from "./push-service";
 import { getSyncPage } from "./service";
@@ -60,12 +59,7 @@ export async function syncRoutes(
     },
     async (request) => {
       const actorId = await actor(request);
-      if (request.headers.origin !== new URL(config.APP_URL).origin)
-        throw new ApiProblem(
-          403,
-          "Forbidden",
-          "Request origin is not allowed.",
-        );
+      requireAppOrigin(request, config.APP_URL);
       return pushMutations(
         db,
         actorId,
