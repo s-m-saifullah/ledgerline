@@ -2,6 +2,10 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.50 — Change marker for live updates
+
+No migration (ADR 0044). `GET /api/v1/ledgers/{ledgerId}/changes` in the `Sync` group returns `{ marker }`, an opaque string that moves whenever any row of the ledger changes (an insert, an update, a soft delete or a hard delete in any ledger table, and the ledger's own settings and members), whoever made the change. It says nothing about what changed: compare it with the last one and reload when it differs. Read in one read-only snapshot from per-table row counts and newest updates; sent with `Cache-Control: no-store`. Works with the session cookie or a bearer token; viewers can read; a ledger the caller is not a member of is `404`. The web app polls it every 15 seconds while a page is visible.
+
 ## 0.1.49 — Signed-in devices
 
 No migration (ADR 0042). Three routes in the new `Sessions` group, for the caller's own sessions (cookie or bearer token): `GET /api/v1/sessions` lists the active, unexpired ones, newest use first (at most 100, and always the one making the request), each with `id`, `current` (the session making the request), `device` (a readable name from the User-Agent, such as "Chrome on macOS" or "Ledgerline Android app (Pixel 8)", or "Unknown device"), `createdAt`, `lastUsedAt` (about once a day) and `expiresAt`; it never returns tokens or addresses. `DELETE /api/v1/sessions/{sessionId}` signs one other device out (its token stops working at once; `204`); the session making the request is `409`, and an id that is not one of the caller's active sessions is `404`. `DELETE /api/v1/sessions` signs every other device out (`204`, safe to repeat). The two `DELETE` routes need `Origin` equal to the app address like every write; no idempotency key is used. The Android app should send `User-Agent: Ledgerline-Android/<version> (<model>)` so its device is named.
