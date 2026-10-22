@@ -170,4 +170,4 @@ A phase is done only when its features have tests, it is deployed through CI, th
 
 ## Android path
 
-The native app is a new client of the same API: Kotlin, Jetpack Compose and Material 3 themed with the Ledgerline tokens; Hilt; Retrofit with a client generated from `openapi.json`; Room as an offline mirror; WorkManager for sync (`GET/POST /api/v1/sync`, last write wins per row); token in the Android Keystore with biometric unlock.
+The native app is a new client of the same API: Kotlin, Jetpack Compose and Material 3 themed with the Ledgerline tokens; Hilt; Retrofit with a client generated from `openapi.json`; Room as an offline mirror; WorkManager for sync (`GET/POST /api/v1/ledgers/{ledgerId}/sync`, last write wins per row; see [ADR 0042](adr/0042-sync-and-bearer-tokens.md) and [ADR 0043](adr/0043-android-app.md)); token in the Android Keystore with biometric unlock.
