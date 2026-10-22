@@ -27,7 +27,7 @@ class ApiPullSource @Inject constructor(
 ) : PullSource {
     override suspend fun pull(ledgerId: String, cursor: String?, limit: Int): SyncResponse {
         val origin = addressStore.origin.first() ?: throw IOException("No server address is saved.")
-        return clients.forOrigin(origin).api.sync(ledgerId, cursor, limit)
+        return clients.forSync(origin).api.sync(ledgerId, cursor, limit)
     }
 }
 
@@ -48,6 +48,9 @@ sealed interface PullResult {
     /** The server could not be reached; try again later. Nothing changed. */
     data object Offline : PullResult
 
+    /** The server does not know this ledger (404, or no longer a member): the choice must be made again. */
+    data object NotFound : PullResult
+
     /** Anything else (a server error, a reply the app cannot read). Nothing changed. */
     data object Failed : PullResult
 }
@@ -65,34 +68,22 @@ class SyncEngine @Inject constructor(
     private val oneAtATime = Mutex()
 
     suspend fun pull(ledgerId: String): PullResult = oneAtATime.withLock {
-        try {
+        guarded {
             val stored = store.cursor(ledgerId)
             if (stored == null) refresh(ledgerId) else incremental(ledgerId, stored.cursor)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: HttpException) {
-            if (e.code() == 401) PullResult.SignedOut else PullResult.Failed
-        } catch (_: IOException) {
-            PullResult.Offline
-        } catch (_: Exception) {
-            PullResult.Failed
         }
     }
 
     /** Forces a full refresh, for "Refresh everything" and after signing in. */
     suspend fun refreshEverything(ledgerId: String): PullResult = oneAtATime.withLock {
-        try {
-            refresh(ledgerId)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: HttpException) {
-            if (e.code() == 401) PullResult.SignedOut else PullResult.Failed
-        } catch (_: IOException) {
-            PullResult.Offline
-        } catch (_: Exception) {
-            PullResult.Failed
-        }
+        guarded { refresh(ledgerId) }
     }
+
+    /**
+     * Deletes the whole mirror (sign-out). It waits for a pull in progress, so a page that is being written cannot
+     * land after the wipe.
+     */
+    suspend fun wipe() = oneAtATime.withLock { store.wipe() }
 
     private suspend fun incremental(ledgerId: String, start: String): PullResult {
         var cursor = start
@@ -132,4 +123,34 @@ class SyncEngine @Inject constructor(
         const val PageSize = 500
         const val MaxPages = 10_000
     }
+}
+
+/** What a call to the server came to: its value, or the [PullResult] that says why it did not finish. */
+sealed interface Attempt<out T> {
+    data class Done<T>(val value: T) : Attempt<T>
+    data class Stopped(val result: PullResult) : Attempt<Nothing>
+}
+
+/** Runs [block] and turns the failures a pull can have into a [PullResult]; cancellation passes through. */
+suspend fun <T> attempt(block: suspend () -> T): Attempt<T> = try {
+    Attempt.Done(block())
+} catch (e: CancellationException) {
+    throw e
+} catch (e: HttpException) {
+    Attempt.Stopped(
+        when (e.code()) {
+            401 -> PullResult.SignedOut
+            404 -> PullResult.NotFound
+            else -> PullResult.Failed
+        },
+    )
+} catch (_: IOException) {
+    Attempt.Stopped(PullResult.Offline)
+} catch (_: Exception) {
+    Attempt.Stopped(PullResult.Failed)
+}
+
+suspend fun guarded(block: suspend () -> PullResult): PullResult = when (val done = attempt(block)) {
+    is Attempt.Done -> done.value
+    is Attempt.Stopped -> done.result
 }

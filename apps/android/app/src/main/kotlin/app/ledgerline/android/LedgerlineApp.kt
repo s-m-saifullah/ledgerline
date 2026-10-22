@@ -5,7 +5,11 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import app.ledgerline.android.session.SessionManager
+import app.ledgerline.android.sync.SyncCoordinator
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -13,14 +17,21 @@ class LedgerlineApp : Application() {
     @Inject
     lateinit var session: SessionManager
 
+    @Inject
+    lateinit var sync: SyncCoordinator
+
     override fun onCreate() {
         super.onCreate()
+        sync.start(CoroutineScope(SupervisorJob() + Dispatchers.Default))
         // The whole app going to the background (not a screen change) starts the lock timer.
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStop(owner: LifecycleOwner) = session.appWentToBackground()
 
-                override fun onStart(owner: LifecycleOwner) = session.appCameToForeground()
+                override fun onStart(owner: LifecycleOwner) {
+                    session.appCameToForeground()
+                    sync.appCameToForeground()
+                }
             },
         )
     }

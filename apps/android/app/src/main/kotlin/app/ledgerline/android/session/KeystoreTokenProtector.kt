@@ -101,6 +101,17 @@ class KeystoreTokenProtector @Inject constructor(
             is Confirmation.Failed -> return UnlockOutcome.Failed(result.lockedOut, result.detail)
             Confirmation.Done -> Unit
         }
+        return openStored(encrypted, iv)
+    }
+
+    override fun readForSync(): SessionToken? {
+        val encrypted = prefs.getString(StoredToken, null)?.let { Base64.decode(it, Base64.NO_WRAP) } ?: return null
+        val iv = prefs.getString(StoredIv, null)?.let { Base64.decode(it, Base64.NO_WRAP) } ?: return null
+        if (protection() != Protection.Available) return null
+        return (openStored(encrypted, iv) as? UnlockOutcome.Unlocked)?.token
+    }
+
+    private fun openStored(encrypted: ByteArray, iv: ByteArray): UnlockOutcome {
         return try {
             val key = key() ?: return UnlockOutcome.KeyLost
             val cipher = Cipher.getInstance(Transformation).apply {

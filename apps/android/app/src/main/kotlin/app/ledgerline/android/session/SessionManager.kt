@@ -116,6 +116,17 @@ class SessionManager @Inject constructor(
         sessionState.value = SessionState.SignedOut
     }
 
+    /**
+     * The token the background sync may use: the open one, or else the stored one read without a prompt. Only the
+     * sync (a pull, a ledger lookup) calls this; every screen and request made by the owner uses [token].
+     */
+    fun tokenForSync(): SessionToken? = tokenState.value ?: protector.readForSync()
+
+    /** The server refused the token (401): ends the session once, and does nothing after a sign-out. */
+    fun tokenRejected() {
+        if (sessionState.value != SessionState.SignedOut) endSession(SessionEnd.Expired)
+    }
+
     fun noticeShown() {
         endState.value = null
     }

@@ -30,6 +30,8 @@ class FakeTokenProtector(
     var protectResult: app.ledgerline.android.session.ProtectOutcome? = null
     var unlockResult: app.ledgerline.android.session.UnlockOutcome? = null
     var discardCount = 0
+    var unlockPrompts = 0
+    var syncReads = 0
 
     override fun protection() = protection
 
@@ -41,9 +43,16 @@ class FakeTokenProtector(
         return result
     }
 
-    override suspend fun unlock(): app.ledgerline.android.session.UnlockOutcome =
-        unlockResult ?: stored?.let { app.ledgerline.android.session.UnlockOutcome.Unlocked(it) }
+    override fun readForSync(): app.ledgerline.api.SessionToken? {
+        syncReads++
+        return if (protection == app.ledgerline.android.session.Protection.Available) stored else null
+    }
+
+    override suspend fun unlock(): app.ledgerline.android.session.UnlockOutcome {
+        unlockPrompts++
+        return unlockResult ?: stored?.let { app.ledgerline.android.session.UnlockOutcome.Unlocked(it) }
             ?: app.ledgerline.android.session.UnlockOutcome.KeyLost
+    }
 
     override fun discard() {
         stored = null
