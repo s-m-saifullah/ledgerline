@@ -1,6 +1,6 @@
 # Ledgerline
 
-Self-hosted personal finance web app, deployed with Docker. A native Android app comes later and uses the same API.
+Self-hosted personal finance web app, deployed with Docker. A native Android app (Phase 5, in progress, `apps/android`) uses the same API.
 
 - Scope, data model and design: `docs/PLAN.md`; first-phase rules: `docs/PHASE_1_PLAN.md`
 - Progress and next steps: `docs/PROGRESS.md`: read it at the start of every session and update it when a piece of work lands
@@ -13,7 +13,7 @@ Self-hosted personal finance web app, deployed with Docker. A native Android app
 - Start every feature with a plan and get approval before large changes.
 - Branches: `feat/<short-name>` or `fix/<short-name>`. Small, focused commits with clear messages. Open a pull request to `main`; never push directly to `main`.
 - If something in `docs/PLAN.md` turns out to be wrong, propose the change, record it in an ADR and update the plan.
-- Follow `docs/CI.md`: one `check` job per pull request, no duplicate feature-push and PR checks. Documentation-only changes need content, link and whitespace review; code, configuration, OpenAPI and release changes keep the full suite.
+- Follow `docs/CI.md`: one required `check` job per pull request (it gates parallel jobs: scope, unit, e2e shards, android), no duplicate feature-push and PR checks. Documentation-only changes need content, link and whitespace review; code, configuration, OpenAPI and release changes keep the full suite.
 - Never commit secrets, real financial data, personal details or real hostnames. Use placeholders such as `ledgerline.example.com` and `you@example.com`.
 - Local-only notes (real hostnames, personal workflow, trial logs) may live in an untracked `.private/` folder. Never commit it or copy its contents into the repository, a pull request, an issue or a commit message.
 
@@ -24,14 +24,14 @@ Self-hosted personal finance web app, deployed with Docker. A native Android app
 - API (`apps/api`): Node.js 24 LTS, Fastify, Zod schemas to OpenAPI 3.1, Drizzle ORM + drizzle-kit migrations, PostgreSQL 18, Better Auth, pg-boss for jobs.
 - Shared (`packages/shared`): Zod schemas, types, money and date helpers. `packages/ui`: tokens and shared components. `packages/config`: tsconfig and Biome presets.
 - Quality: Biome (lint and format), Vitest, Testing Library, Playwright.
-- Android later (`apps/android`): Kotlin, Jetpack Compose, Material 3, Hilt, Retrofit (client generated from `openapi.json`), Room, WorkManager.
+- Android (`apps/android`, ADR 0043): Kotlin, Jetpack Compose, Material 3, Hilt, Retrofit with hand-written API types checked against `openapi.json` by a contract test (the generated client was unusable), Room, WorkManager, Keystore plus BiometricPrompt. Minimum Android 11.
 
 ## Repository layout
 
 ```text
 apps/web            React SPA
 apps/api            Fastify API + background jobs
-apps/android        Kotlin app (later)
+apps/android        Kotlin app (Phase 5, in progress): app + api-client
 packages/shared     Zod schemas, types, money/date helpers
 packages/ui         design tokens + shared React components
 packages/config     tsconfig and Biome presets
