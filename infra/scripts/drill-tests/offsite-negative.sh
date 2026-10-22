@@ -16,7 +16,7 @@ admin_put() { # local file, remote name
   ( set -a; source "${ADMIN_ENV:?}"; set +a
     docker run --rm -v "$PWD":/data:ro -e RCLONE_CONFIG_A_TYPE=s3 -e RCLONE_CONFIG_A_PROVIDER=Other \
       -e RCLONE_CONFIG_A_ENDPOINT="$OFFSITE_S3_ENDPOINT" -e RCLONE_CONFIG_A_ACCESS_KEY_ID="$OFFSITE_KEY_ID" \
-      -e RCLONE_CONFIG_A_SECRET_ACCESS_KEY="$OFFSITE_APP_KEY" ledgerline-offsite:rclone1.70.3-age1.2 \
+      -e RCLONE_CONFIG_A_SECRET_ACCESS_KEY="$OFFSITE_APP_KEY" ledgerline-offsite:rclone1.75.2-age1.3 \
       rclone -q copyto "/data/$1" "a:$OFFSITE_BUCKET/ledgerline/$2" )
 }
 recipient=$(sed -n 's/^OFFSITE_AGE_RECIPIENT=//p' offsite.env)
@@ -46,7 +46,7 @@ bash offsite-upload.sh >/dev/null 2>&1
 good=$(sed -n 's/^archive=//p' backups/offsite.status)
 mkdir -p dl && docker run --rm -v "$PWD/dl":/data -e RCLONE_CONFIG_A_TYPE=s3 -e RCLONE_CONFIG_A_PROVIDER=Other \
   -e RCLONE_CONFIG_A_ENDPOINT=http://host.docker.internal:8333 -e RCLONE_CONFIG_A_ACCESS_KEY_ID=READKEY \
-  -e RCLONE_CONFIG_A_SECRET_ACCESS_KEY=readsecret123 ledgerline-offsite:rclone1.70.3-age1.2 \
+  -e RCLONE_CONFIG_A_SECRET_ACCESS_KEY=readsecret123 ledgerline-offsite:rclone1.75.2-age1.3 \
   rclone -q copyto "a:scratch-bucket/ledgerline/$good" "/data/$good" >/dev/null 2>&1
 head -c 1000 "dl/$good" > dl/trunc.tar.age
 admin_put dl/trunc.tar.age ledgerline-20261020T235959Z-8.tar.age 2>/dev/null

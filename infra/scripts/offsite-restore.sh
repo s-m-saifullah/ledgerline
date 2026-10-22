@@ -22,7 +22,7 @@ while [[ $# -gt 0 ]]; do
 done
 [[ -f "$config" && -f "$identity" ]] || { echo 'Usage: offsite-restore.sh --config restore.env --identity private.key [--name archive] [--keep]'; exit 1; }
 identity=$(cd "$(dirname "$identity")" && pwd)/$(basename "$identity")
-tool_image="ledgerline-offsite:rclone1.70.3-age1.2"
+tool_image="ledgerline-offsite:rclone1.75.2-age1.3"
 work=$(mktemp -d "${TMPDIR:-/tmp}/ledgerline-offsite-restore.XXXXXX")
 cleanup() { if [[ "$keep" == true ]]; then echo "Kept the decrypted files in $work (real data; delete them when done)"; else rm -rf "$work"; fi; }
 trap cleanup EXIT
