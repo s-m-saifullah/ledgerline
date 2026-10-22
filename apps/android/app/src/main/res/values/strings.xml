@@ -47,10 +47,28 @@
     <string name="code_error_missing">Enter the code.</string>
     <string name="code_error_wrong">That code is not right or has expired. Check it, or go back and sign in again.</string>
 
-    <string name="home_title">You are signed in</string>
-    <string name="home_loading">Loading your ledgers…</string>
-    <string name="home_failed">Could not load your ledgers.</string>
-    <string name="home_ledgers">Your ledgers</string>
+    <string name="accounts_title">Accounts</string>
+    <string name="accounts_empty">No accounts yet. Add them in the web app.</string>
+    <string name="accounts_archived">Archived</string>
+    <plurals name="accounts_pending_plural">
+        <item quantity="one">%d pending entry not counted</item>
+        <item quantity="other">%d pending entries not counted</item>
+    </plurals>
+    <string name="entries_title">Transactions</string>
+    <string name="entries_empty">No transactions yet.</string>
+    <string name="entries_show_more">Show more</string>
+    <string name="entry_transfer">Transfer</string>
+    <string name="entry_split">Split</string>
+    <string name="entry_untitled">Entry</string>
+    <string name="entry_pending">Pending</string>
+    <string name="mirror_waiting">Getting your ledger…</string>
+    <string name="sync_updated">Updated %1$s</string>
+    <string name="sync_running">Updating…</string>
+    <string name="sync_offline">Offline. Nothing is saved on this phone yet.</string>
+    <string name="sync_offline_saved">Offline. Showing what was saved: %1$s</string>
+    <string name="sync_failed">Could not update. Showing what was saved.</string>
+    <string name="refresh_everything">Refresh everything</string>
+    <string name="menu_more">More options</string>
     <string name="sign_out">Sign out</string>
     <string name="lock_now">Lock now</string>
 

@@ -38,7 +38,7 @@ class MainActivity : FragmentActivity() {
                     is RootState.SignIn -> SignInScreen(origin = current.origin, onChangeAddress = root::changeAddress)
                     RootState.Locked -> LockedScreen()
                     RootState.Offer -> KeepSignedInScreen()
-                    is RootState.SignedIn -> SignedInScreen(origin = current.origin)
+                    is RootState.SignedIn -> SignedInScreen()
                 }
             }
         }

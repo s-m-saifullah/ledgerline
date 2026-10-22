@@ -22,4 +22,7 @@ object MirrorModule {
 
     @Provides
     fun dao(database: MirrorDatabase): MirrorDao = database.dao()
+
+    @Provides
+    fun reads(database: MirrorDatabase): MirrorReads = database.reads()
 }

@@ -245,6 +245,22 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun pullToRefreshPullsNowWhateverTheGapAndShowsItIsRunning() = runBlocking {
+        val (_, sync) = signedInAndKept()
+        source.asked.clear()
+        clock.now = 1_000
+        source.hold = CompletableDeferred()
+        source.entered = CompletableDeferred()
+        val pulling = launch { sync.pullNow() }
+        source.entered.await()
+        assertTrue(sync.running.value)
+        source.hold!!.complete(Unit)
+        pulling.join()
+        assertEquals(1, source.asked.size)
+        assertEquals(false, sync.running.value)
+    }
+
+    @Test
     fun aLedgerTheServerNoLongerKnowsClearsTheChoiceSoTheNextPullLooksAgain() = runBlocking {
         val (_, sync) = signedInAndKept()
         source.respond = { throw httpError(404) }
