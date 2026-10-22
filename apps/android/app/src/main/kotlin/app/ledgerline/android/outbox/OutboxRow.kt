@@ -93,6 +93,9 @@ interface OutboxDao {
     @Query("SELECT * FROM outbox WHERE ledgerId = :ledgerId AND state = 'pending' ORDER BY seq")
     fun observePending(ledgerId: String): Flow<List<OutboxRow>>
 
+    @Query("SELECT * FROM outbox WHERE ledgerId = :ledgerId AND state = 'pending' ORDER BY seq")
+    suspend fun pendingAll(ledgerId: String): List<OutboxRow>
+
     @Query("SELECT * FROM outbox ORDER BY seq")
     suspend fun all(): List<OutboxRow>
 

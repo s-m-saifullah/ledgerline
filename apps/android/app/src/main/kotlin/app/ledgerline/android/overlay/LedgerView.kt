@@ -52,16 +52,30 @@ class LedgerView @Inject constructor(
             }
         }
 
-    /** One entry as it will be once sent, for the edit form; null when it is gone or being deleted. */
-    suspend fun entry(ledgerId: String, id: String, changes: List<OutboxRow>): ShownEntry? {
-        val row = reads.liveByIds(ledgerId, listOf(id)).firstOrNull()
-        val mirror = listOfNotNull(row?.shown(reads.liveTagLinks(ledgerId, listOf(id)).map { it.tagId }))
-        return Overlay.apply(mirror, changes)[id]
-    }
+    /**
+     * Entries and transfer legs as they will be once every pending change is sent, for the edit form ([changes]
+     * defaults to all pending changes of the ledger). Missing or null: gone or being deleted.
+     */
+    suspend fun current(
+        ledgerId: String,
+        entryIds: List<String> = emptyList(),
+        transferIds: List<String> = emptyList(),
+        changes: List<OutboxRow>? = null,
+    ): Map<String, ShownEntry?> = overlay(ledgerId, changes ?: outbox.pendingAll(ledgerId), entryIds, transferIds).second
 
-    private suspend fun overlay(ledgerId: String, changes: List<OutboxRow>): Pair<List<ShownEntry>, Map<String, ShownEntry?>> {
-        val entryIds = changes.filter { it.kind == "transaction" }.map { it.entityId }.distinct()
-        val transferIds = changes.filter { it.kind == "transfer" }.map { it.entityId }.distinct()
+    /** The mirrored version alone (no pending change), for working out what an edit changes. */
+    suspend fun mirrored(ledgerId: String, entryId: String): ShownEntry? =
+        reads.liveByIds(ledgerId, listOf(entryId)).firstOrNull()
+            ?.let { it.shown(reads.liveTagLinks(ledgerId, listOf(entryId)).map { link -> link.tagId }) }
+
+    private suspend fun overlay(
+        ledgerId: String,
+        changes: List<OutboxRow>,
+        alsoEntries: List<String> = emptyList(),
+        alsoTransfers: List<String> = emptyList(),
+    ): Pair<List<ShownEntry>, Map<String, ShownEntry?>> {
+        val entryIds = (changes.filter { it.kind == "transaction" }.map { it.entityId } + alsoEntries).distinct()
+        val transferIds = (changes.filter { it.kind == "transfer" }.map { it.entityId } + alsoTransfers).distinct()
         val rows = (
             entryIds.chunked(Chunk).flatMap { reads.liveByIds(ledgerId, it) } +
                 transferIds.chunked(Chunk).flatMap { reads.liveByTransfer(ledgerId, it) }

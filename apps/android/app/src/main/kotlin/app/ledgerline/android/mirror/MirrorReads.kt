@@ -103,6 +103,10 @@ interface MirrorReads {
     @Query("SELECT * FROM transactions WHERE ledgerId = :ledgerId AND deletedAt IS NULL AND transferId IN (:transferIds)")
     suspend fun liveByTransfer(ledgerId: String, transferIds: List<String>): List<TransactionRow>
 
+    /** Live bonus and fee entries of a transfer: such a transfer is edited on the web. */
+    @Query("SELECT COUNT(*) FROM transactions WHERE ledgerId = :ledgerId AND deletedAt IS NULL AND (relatedTransferId = :transferId OR feeTransferId = :transferId)")
+    suspend fun transferExtras(ledgerId: String, transferId: String): Int
+
     /** Live tag links to live tags. */
     @Query(
         """SELECT l.transactionId, l.tagId FROM transaction_tags l
