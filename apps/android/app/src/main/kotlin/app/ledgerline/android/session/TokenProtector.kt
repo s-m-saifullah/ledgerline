@@ -41,6 +41,13 @@ interface TokenProtector {
     /** Asks the owner to confirm, then returns the stored token. */
     suspend fun unlock(): UnlockOutcome
 
+    /**
+     * Opens the stored token without asking the owner, for the background sync only (ADR 0043: the app-level lock
+     * guards the screens and the stored copy, and the key itself needs no confirmation). Null when nothing is
+     * stored, the copy cannot be opened, or the phone no longer has a screen lock (then the next unlock signs out).
+     */
+    fun readForSync(): SessionToken?
+
     /** Deletes the stored token and its key. Safe to call when nothing is stored. */
     fun discard()
 }

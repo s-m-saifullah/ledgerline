@@ -13,6 +13,21 @@ import javax.inject.Singleton
 class ClientsProvider @Inject constructor(private val session: SessionManager) {
     private var cached: Pair<String, LedgerlineClients>? = null
 
+    private var cachedSync: Pair<String, LedgerlineClients>? = null
+
+    /** Clients for the background sync: they may use the stored token while the app is locked (ADR 0043). */
+    @Synchronized
+    fun forSync(origin: String): LedgerlineClients {
+        cachedSync?.takeIf { it.first == origin }?.let { return it.second }
+        val clients = createClients(
+            origin = origin,
+            userAgent = appUserAgent(BuildConfig.VERSION_NAME, Build.MODEL.orEmpty()),
+            token = { session.tokenForSync()?.value },
+        )
+        cachedSync = origin to clients
+        return clients
+    }
+
     @Synchronized
     fun forOrigin(origin: String): LedgerlineClients {
         cached?.takeIf { it.first == origin }?.let { return it.second }
