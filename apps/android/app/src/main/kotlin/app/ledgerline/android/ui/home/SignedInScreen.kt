@@ -59,6 +59,7 @@ import app.ledgerline.android.overlay.AttentionReason
 import app.ledgerline.android.ui.editor.EditorScreen
 import app.ledgerline.android.ui.editor.EditorTarget
 import app.ledgerline.android.ui.format.formatEntryDate
+import java.util.UUID
 import app.ledgerline.android.ui.format.formatMoney
 import app.ledgerline.android.ui.format.formatUpdated
 
@@ -77,13 +78,16 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
     val signingOut by viewModel.signingOut.collectAsState()
     val confirmSignOut by viewModel.confirmSignOut.collectAsState()
     confirmSignOut?.let { waiting -> SignOutQuestion(waiting, viewModel) }
-    editing?.let { target ->
-        EditorScreen(EditorTarget.decode(target), onClose = { editing = null })
+    editing?.let { opened ->
+        // "<session>|<target>": every opening of the editor gets its own session.
+        val (session, target) = opened.split("|", limit = 2)
+        EditorScreen(EditorTarget.decode(target), session, onClose = { editing = null })
         return
     }
+    val edit = { target: EditorTarget -> editing = "${UUID.randomUUID()}|${target.encode()}" }
     if (showAttention) {
         BackHandler { showAttention = false }
-        AttentionScreen(viewModel, onBack = { showAttention = false }, onFix = { editing = EditorTarget.Fix(it).encode() })
+        AttentionScreen(viewModel, onBack = { showAttention = false }, onFix = { edit(EditorTarget.Fix(it)) })
         return
     }
     Scaffold(
@@ -126,7 +130,7 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { editing = EditorTarget.New().encode() }) {
+            FloatingActionButton(onClick = { edit(EditorTarget.New()) }) {
                 Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add))
             }
         },
@@ -155,11 +159,13 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
         ) {
             val openAttention = { showAttention = true }
             val openEntry = { line: EntryLine ->
-                editing = if (line.kind == "transfer" && line.transferId != null) {
-                    EditorTarget.Transfer(line.transferId).encode()
-                } else {
-                    EditorTarget.Entry(line.id).encode()
-                }
+                edit(
+                    if (line.kind == "transfer" && line.transferId != null) {
+                        EditorTarget.Transfer(line.transferId)
+                    } else {
+                        EditorTarget.Entry(line.id)
+                    },
+                )
             }
             if (tab == 0) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention, openEntry)
         }

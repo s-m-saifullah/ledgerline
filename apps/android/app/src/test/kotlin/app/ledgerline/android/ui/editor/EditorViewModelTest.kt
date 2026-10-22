@@ -122,9 +122,11 @@ class EditorViewModelTest {
 
     private fun editor() = EditorViewModel(database.reads(), database.dao(), LedgerView(database.reads(), database.dao(), database.outbox()), outbox, sync, memory, clock)
 
-    private suspend fun EditorViewModel.opened(target: EditorTarget): EditorState {
-        open(target)
-        return withTimeout(5_000) { state.first { it != null }!! }
+    private var sessions = 0
+
+    private suspend fun EditorViewModel.opened(target: EditorTarget, session: String = "s${++sessions}"): EditorState {
+        open(target, session)
+        return withTimeout(5_000) { state.first { it != null && it.session == session }!! }
     }
 
     private suspend fun EditorViewModel.saved() = withTimeout(5_000) { state.first { it?.done == true || it?.errors?.isNotEmpty() == true }!! }
@@ -155,6 +157,37 @@ class EditorViewModelTest {
             row.body,
         )
         assertEquals(id(2), memory.lastAccount)
+    }
+
+    @Test
+    fun theSameEditorOpenedAgainStartsFreshAfterASave() = runBlocking {
+        val vm = editor()
+        vm.opened(EditorTarget.New())
+        vm.update { it.copy(amount = "1") }
+        vm.save()
+        assertTrue(vm.saved().done)
+        val again = vm.opened(EditorTarget.New())
+        assertEquals(false, again.done)
+        assertEquals("", again.form.amount)
+        vm.update { it.copy(amount = "2") }
+        vm.save()
+        assertTrue(vm.saved().done)
+        assertEquals(2, rows().size)
+    }
+
+    @Test
+    fun aRotationKeepsTheFormAndAnEntryCanBeOpenedTwice() = runBlocking {
+        val vm = editor()
+        vm.opened(EditorTarget.Entry(id(10)), session = "one")
+        vm.update { it.copy(payee = "Typed") }
+        vm.open(EditorTarget.Entry(id(10)), "one")
+        assertEquals("Typed", vm.state.value!!.form.payee)
+        vm.save()
+        assertTrue(vm.saved().done)
+        // Opened again: a fresh form showing the saved (not yet sent) edit, not the finished one.
+        val again = vm.opened(EditorTarget.Entry(id(10)), session = "two")
+        assertEquals(false, again.done)
+        assertEquals("Typed", again.form.payee)
     }
 
     @Test
