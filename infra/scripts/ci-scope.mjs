@@ -5,10 +5,11 @@ import { pathToFileURL } from "node:url";
 
 const rootDocs = new Set(["AGENTS.md", "CLAUDE.md", "README.md"]);
 const sha = /^[0-9a-f]{40,64}$/i;
-// Without a reliable list of changed paths every check runs, the Android build included.
-const full = (reason, android = true) => ({
+// Without a reliable list of changed paths every check runs: the web and API suites and the Android build.
+const full = (reason, { android = true, web = true } = {}) => ({
   application: true,
   android,
+  web,
   reason,
 });
 const git = (args) =>
@@ -31,6 +32,11 @@ const androidInputs = new Set([
 
 export function affectsAndroid(path) {
   return path.startsWith("apps/android/") || androidInputs.has(path);
+}
+
+// The web, API and browser suites cannot be affected by documentation or by files that only the Android build uses.
+export function affectsWebOrApi(path) {
+  return !isDocumentation(path) && !path.startsWith("apps/android/");
 }
 
 export function classifyChanges({
@@ -64,11 +70,15 @@ export function classifyChanges({
     if (paths.length === 0 || !paths.every(isDocumentation))
       return full(
         "Application, configuration or contract changes require the full suite.",
-        paths.length === 0 || paths.some(affectsAndroid),
+        {
+          android: paths.length === 0 || paths.some(affectsAndroid),
+          web: paths.length === 0 || paths.some(affectsWebOrApi),
+        },
       );
     return {
       application: false,
       android: false,
+      web: false,
       base,
       reason:
         "Only allowlisted Markdown documentation changed; application checks skipped.",
@@ -93,7 +103,7 @@ if (
   } catch {
     result = full("Could not read CI context; running the full suite.");
   }
-  const output = `application=${result.application}\nandroid=${result.android}\n${result.base ? `base=${result.base}\n` : ""}`;
+  const output = `application=${result.application}\nandroid=${result.android}\nweb=${result.web}\n${result.base ? `base=${result.base}\n` : ""}`;
   if (process.env.GITHUB_OUTPUT)
     appendFileSync(process.env.GITHUB_OUTPUT, output);
   if (process.env.GITHUB_STEP_SUMMARY)
