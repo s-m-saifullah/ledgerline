@@ -28,6 +28,7 @@
     <string name="signin_server_line">Server: %1$s</string>
     <string name="signin_notice_expired">Your session ended, so please sign in again.</string>
     <string name="signin_notice_server_not_reached">You are signed out on this phone. The server could not be reached, so this phone stays listed under Settings, Signed-in devices until you remove it there.</string>
+    <string name="signin_notice_key_lost">Your phone\'s screen lock or fingerprints changed, so Ledgerline could not open your saved sign-in and signed you out on this phone. Sign in again. The old sign-in stays listed under Settings, Signed-in devices until you remove it there or it expires.</string>
     <string name="signin_error_missing">Enter your email and password.</string>
     <string name="signin_error_credentials">The email or password is not right.</string>
     <string name="signin_error_rate_limited">Too many attempts. Wait a minute and try again.</string>
@@ -51,4 +52,22 @@
     <string name="home_failed">Could not load your ledgers.</string>
     <string name="home_ledgers">Your ledgers</string>
     <string name="sign_out">Sign out</string>
+    <string name="lock_now">Lock now</string>
+
+    <string name="lock_title">Ledgerline is locked</string>
+    <string name="lock_body">Confirm it is you with your fingerprint or screen lock to open your ledger.</string>
+    <string name="lock_unlock">Unlock</string>
+    <string name="lock_sign_in_again">Sign in again instead</string>
+    <string name="lock_prompt_unlock">Unlock Ledgerline</string>
+    <string name="lock_prompt_protect">Keep Ledgerline signed in on this phone</string>
+    <string name="lock_error_failed">That did not work. Try again, or sign in again with your password.</string>
+    <string name="lock_error_locked_out">Too many attempts. Wait a little, then try again, or sign in again with your password.</string>
+
+    <string name="keep_title">Stay signed in on this phone?</string>
+    <string name="keep_body">Ledgerline can keep you signed in, protected by your fingerprint or screen lock, so you do not need your password and code each time. Without it you sign in again every time you open the app.</string>
+    <string name="keep_body_no_lock">This phone has no fingerprint or screen lock set up, so Ledgerline cannot keep you signed in safely. You will sign in again each time you open the app.</string>
+    <string name="keep_body_unavailable">This phone cannot protect a saved sign-in, so you will sign in again each time you open the app.</string>
+    <string name="keep_button">Use fingerprint or screen lock</string>
+    <string name="keep_not_now">Not now</string>
+    <string name="keep_continue">Continue</string>
 </resources>

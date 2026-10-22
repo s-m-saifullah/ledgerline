@@ -3,7 +3,8 @@ package app.ledgerline.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.server.ServerAddressStore
-import app.ledgerline.android.session.SessionStore
+import app.ledgerline.android.session.SessionManager
+import app.ledgerline.android.session.SessionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,25 +22,31 @@ sealed interface RootState {
 
     data class SignIn(val origin: String) : RootState
 
+    data object Locked : RootState
+
+    data object Offer : RootState
+
     data class SignedIn(val origin: String) : RootState
 }
 
 @HiltViewModel
 class RootViewModel @Inject constructor(
     private val addressStore: ServerAddressStore,
-    session: SessionStore,
+    session: SessionManager,
 ) : ViewModel() {
     private val changingAddress = MutableStateFlow(false)
 
     val state: StateFlow<RootState> = combine(
         addressStore.origin,
-        session.token,
+        session.state,
         changingAddress,
-    ) { origin, token, changing ->
+    ) { origin, session, changing ->
         when {
             origin == null -> RootState.Address(canCancel = false)
             changing -> RootState.Address(canCancel = true)
-            token == null -> RootState.SignIn(origin)
+            session == SessionState.SignedOut -> RootState.SignIn(origin)
+            session == SessionState.Locked -> RootState.Locked
+            session == SessionState.Offer -> RootState.Offer
             else -> RootState.SignedIn(origin)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RootState.Loading)
