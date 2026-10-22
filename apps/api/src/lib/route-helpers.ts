@@ -31,3 +31,9 @@ export function createActor(auth: Auth) {
     return session.user.id;
   };
 }
+
+/** Refuses a write whose Origin is not the app's own address (the same rule on every route that changes data). */
+export function requireAppOrigin(request: FastifyRequest, appUrl: string) {
+  if (request.headers.origin !== new URL(appUrl).origin)
+    throw new ApiProblem(403, "Forbidden", "Request origin is not allowed.");
+}

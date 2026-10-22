@@ -26,6 +26,7 @@ import { ApiProblem, problem } from "./lib/problem";
 import { accountRoutes } from "./modules/accounts/routes";
 import { mayReceiveDeviceToken } from "./modules/auth/device-token";
 import { createAuth } from "./modules/auth/service";
+import { sessionRoutes } from "./modules/auth/sessions-routes";
 import { budgetRoutes } from "./modules/budgets/routes";
 import { categoryRoutes } from "./modules/categories/routes";
 import {
@@ -77,7 +78,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.48" },
+      info: { title: "Ledgerline API", version: "0.1.49" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -371,6 +372,7 @@ export async function buildApp(
   await app.register(homeRoutes, { db, config, auth });
   await app.register(reportRoutes, { db, config, auth });
   await app.register(syncRoutes, { db, config, auth });
+  await app.register(sessionRoutes, { db, config, auth });
   await app.register(exportRoutes, { db, config, auth });
   await app.register(importRoutes, { db, config, auth });
   await app.register(tagRoutes, { db, config, auth });

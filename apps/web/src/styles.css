@@ -3302,6 +3302,45 @@ button.budget-line:hover {
   padding-inline: 8px;
 }
 
+/* Signed-in devices (ADR 0042) */
+.device-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: 44px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.device-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.device-older {
+  margin-top: 16px;
+}
+.device-older .device-list {
+  margin-top: 16px;
+}
+.device-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+.device-info .muted {
+  flex-basis: 100%;
+  font-size: 12px;
+}
 /* Two-factor sign-in (ADR 0038) */
 .two-factor-step {
   margin-top: 16px;
