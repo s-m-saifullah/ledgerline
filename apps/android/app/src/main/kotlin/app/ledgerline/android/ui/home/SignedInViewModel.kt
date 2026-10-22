@@ -3,8 +3,12 @@ package app.ledgerline.android.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.AccountBalance
-import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.mirror.MirrorReads
+import app.ledgerline.android.outbox.OutboxStore
+import app.ledgerline.android.overlay.AttentionItem
+import app.ledgerline.android.overlay.LedgerView
+import app.ledgerline.android.overlay.ShownLine
+import app.ledgerline.android.overlay.attentionItem
 import app.ledgerline.android.mirror.PullResult
 import app.ledgerline.android.server.ServerAddressStore
 import app.ledgerline.android.session.ClientsProvider
@@ -52,6 +56,8 @@ class SignedInViewModel @Inject constructor(
     private val clients: ClientsProvider,
     private val session: SessionManager,
     private val sync: SyncCoordinator,
+    private val view: LedgerView,
+    private val outbox: OutboxStore,
     reads: MirrorReads,
 ) : ViewModel() {
     private val ledger: Flow<String?> = reads.mirroredLedger()
@@ -59,13 +65,13 @@ class SignedInViewModel @Inject constructor(
 
     val accounts: StateFlow<Mirrored<AccountBalance>> = ledger
         .flatMapLatest { id ->
-            if (id == null) flowOf(Mirrored.Waiting) else reads.accountBalances(id, includeHidden = false).map { Mirrored.Ready(it) }
+            if (id == null) flowOf(Mirrored.Waiting) else view.accounts(id).map { Mirrored.Ready(it) }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Mirrored.Waiting)
 
-    val entries: StateFlow<Mirrored<EntryLine>> = combine(ledger, entryLimit) { id, limit -> id to limit }
+    val entries: StateFlow<Mirrored<ShownLine>> = combine(ledger, entryLimit) { id, limit -> id to limit }
         .flatMapLatest { (id, limit) ->
-            if (id == null) flowOf(Mirrored.Waiting) else reads.entryLines(id, limit).map { Mirrored.Ready(it) }
+            if (id == null) flowOf(Mirrored.Waiting) else view.entries(id, limit).map { Mirrored.Ready(it) }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Mirrored.Waiting)
 
@@ -81,8 +87,34 @@ class SignedInViewModel @Inject constructor(
     ) { updated, running, last -> SyncLine(updated, running, syncProblem(last)) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncLine(null, false, null))
 
+    /** Changes waiting to be sent. */
+    val unsent: StateFlow<Int> = outbox.unsent.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    /** Changes the server did not take, for the owner to decide. */
+    val attention: StateFlow<List<AttentionItem>> = outbox.attention
+        .map { rows -> rows.map(::attentionItem) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val _signingOut = MutableStateFlow(false)
     val signingOut: StateFlow<Boolean> = _signingOut.asStateFlow()
+
+    /** Set while sign-out waits for the owner to decide about changes the server does not have. */
+    private val _confirmSignOut = MutableStateFlow<Int?>(null)
+    val confirmSignOut: StateFlow<Int?> = _confirmSignOut.asStateFlow()
+
+    fun keepMine(id: String) {
+        viewModelScope.launch {
+            if (outbox.keepMine(id)) sync.changed()
+        }
+    }
+
+    fun keepTheirs(id: String) {
+        viewModelScope.launch { outbox.keepTheirs(id) }
+    }
+
+    fun discard(id: String) {
+        viewModelScope.launch { outbox.discard(id) }
+    }
 
     fun refresh() {
         viewModelScope.launch { sync.pullNow() }
@@ -101,7 +133,34 @@ class SignedInViewModel @Inject constructor(
 
     fun lock() = session.lock()
 
+    /** Sign out; first asks when changes made on the phone are not on the server yet. */
     fun signOut() {
+        viewModelScope.launch {
+            val waiting = outbox.notOnServerCount()
+            if (waiting > 0) _confirmSignOut.value = waiting else endSession()
+        }
+    }
+
+    fun cancelSignOut() {
+        _confirmSignOut.value = null
+    }
+
+    /** Send now from the sign-out question: try to send, then ask again only if something is still waiting. */
+    fun sendBeforeSigningOut() {
+        _confirmSignOut.value = null
+        viewModelScope.launch { sync.pullNow() }
+    }
+
+    /** The owner confirmed: delete the changes the server does not have, then sign out. */
+    fun signOutDeletingUnsent() {
+        _confirmSignOut.value = null
+        viewModelScope.launch {
+            outbox.clearAll()
+            endSession()
+        }
+    }
+
+    private fun endSession() {
         if (_signingOut.value) return
         _signingOut.value = true
         viewModelScope.launch {

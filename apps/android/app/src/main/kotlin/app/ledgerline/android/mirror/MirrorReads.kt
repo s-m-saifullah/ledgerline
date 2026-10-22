@@ -33,7 +33,11 @@ data class EntryLine(
     val categoryName: String?,
     /** Live tags on the entry, by name, separated by ", ". */
     val tagNames: String?,
+    val transferId: String?,
+    val createdAt: String,
 )
+
+data class TagLink(val transactionId: String, val tagId: String)
 
 private const val AccountBalancesSql = """
     SELECT a.id, a.name, a.type, a.currency, a.archivedAt, a.contactId,
@@ -60,7 +64,8 @@ private const val EntryLinesSql = """
                 WHERE l.ledgerId = t.ledgerId AND l.transactionId = t.id AND l.deletedAt IS NULL
                 ORDER BY g.name COLLATE NOCASE
             )
-        ) AS tagNames
+        ) AS tagNames,
+        t.transferId, t.createdAt
     FROM transactions t
     LEFT JOIN accounts a ON a.ledgerId = t.ledgerId AND a.id = t.accountId
     LEFT JOIN categories c ON c.ledgerId = t.ledgerId AND c.id = t.categoryId
@@ -91,4 +96,18 @@ interface MirrorReads {
 
     @Query(EntryLinesSql)
     suspend fun entryLinesNow(ledgerId: String, limit: Int): List<EntryLine>
+
+    @Query("SELECT * FROM transactions WHERE ledgerId = :ledgerId AND deletedAt IS NULL AND id IN (:ids)")
+    suspend fun liveByIds(ledgerId: String, ids: List<String>): List<TransactionRow>
+
+    @Query("SELECT * FROM transactions WHERE ledgerId = :ledgerId AND deletedAt IS NULL AND transferId IN (:transferIds)")
+    suspend fun liveByTransfer(ledgerId: String, transferIds: List<String>): List<TransactionRow>
+
+    /** Live tag links to live tags. */
+    @Query(
+        """SELECT l.transactionId, l.tagId FROM transaction_tags l
+        JOIN tags g ON g.ledgerId = l.ledgerId AND g.id = l.tagId AND g.deletedAt IS NULL
+        WHERE l.ledgerId = :ledgerId AND l.deletedAt IS NULL AND l.transactionId IN (:ids)""",
+    )
+    suspend fun liveTagLinks(ledgerId: String, ids: List<String>): List<TagLink>
 }

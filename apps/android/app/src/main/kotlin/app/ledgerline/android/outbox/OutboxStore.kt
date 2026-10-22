@@ -119,6 +119,9 @@ class OutboxStore @Inject constructor(
     /** Changes not sent yet (or sent without a known result). */
     val unsent: Flow<Int> = outbox.observeUnsentCount()
 
+    /** Every change the server does not have: unsent, superseded or rejected (what a sign-out would delete). */
+    suspend fun notOnServerCount(): Int = outbox.notOnServerCount()
+
     suspend fun unsentCount(): Int = outbox.unsentCount()
 
     /**

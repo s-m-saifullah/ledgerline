@@ -86,6 +86,13 @@ interface OutboxDao {
     @Query("SELECT COUNT(*) FROM outbox WHERE state = 'pending'")
     fun observeUnsentCount(): Flow<Int>
 
+    /** Every change the server does not have yet, settled or not: what a sign-out would delete. */
+    @Query("SELECT COUNT(*) FROM outbox")
+    suspend fun notOnServerCount(): Int
+
+    @Query("SELECT * FROM outbox WHERE ledgerId = :ledgerId AND state = 'pending' ORDER BY seq")
+    fun observePending(ledgerId: String): Flow<List<OutboxRow>>
+
     @Query("SELECT * FROM outbox ORDER BY seq")
     suspend fun all(): List<OutboxRow>
 

@@ -69,6 +69,39 @@
     <string name="sync_failed">Could not update. Showing what was saved.</string>
     <string name="refresh_everything">Refresh everything</string>
     <string name="menu_more">More options</string>
+    <string name="entry_not_sent">Not sent yet</string>
+    <plurals name="unsent_count">
+        <item quantity="one">%d change not sent yet</item>
+        <item quantity="other">%d changes not sent yet</item>
+    </plurals>
+    <plurals name="attention_banner">
+        <item quantity="one">%d change needs your attention</item>
+        <item quantity="other">%d changes need your attention</item>
+    </plurals>
+    <string name="attention_title">Needs your attention</string>
+    <string name="attention_empty">Nothing needs your attention.</string>
+    <string name="attention_changed_elsewhere">Changed on another device, so your change was not applied.</string>
+    <string name="attention_deleted_elsewhere">Deleted on another device, so your change was not applied.</string>
+    <string name="attention_rejected">The server did not accept it: %1$s</string>
+    <string name="attention_keep_mine">Keep mine</string>
+    <string name="attention_keep_theirs">Keep the other</string>
+    <string name="attention_discard">Discard</string>
+    <string name="change_new_entry">New entry</string>
+    <string name="change_edit_entry">Edit</string>
+    <string name="change_delete_entry">Delete</string>
+    <string name="change_new_transfer">New transfer</string>
+    <string name="change_edit_transfer">Transfer edit</string>
+    <string name="change_delete_transfer">Transfer delete</string>
+    <plurals name="signout_unsent_title">
+        <item quantity="one">%d change is not on the server</item>
+        <item quantity="other">%d changes are not on the server</item>
+    </plurals>
+    <string name="signout_unsent_body">Signing out deletes them from this phone. Send them first, or delete them on purpose.</string>
+    <string name="signout_send_now">Send now</string>
+    <plurals name="signout_delete_unsent">
+        <item quantity="one">Sign out and delete %d change</item>
+        <item quantity="other">Sign out and delete %d changes</item>
+    </plurals>
     <string name="sign_out">Sign out</string>
     <string name="lock_now">Lock now</string>
 

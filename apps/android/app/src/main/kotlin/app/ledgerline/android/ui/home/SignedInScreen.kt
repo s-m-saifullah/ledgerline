@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -19,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,6 +51,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
+import app.ledgerline.android.overlay.AttentionItem
+import app.ledgerline.android.overlay.AttentionReason
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.format.formatMoney
 import app.ledgerline.android.ui.format.formatUpdated
@@ -61,8 +66,16 @@ private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var menuOpen by rememberSaveable { mutableStateOf(false) }
+    var showAttention by rememberSaveable { mutableStateOf(false) }
     val line by viewModel.syncLine.collectAsState()
     val signingOut by viewModel.signingOut.collectAsState()
+    val confirmSignOut by viewModel.confirmSignOut.collectAsState()
+    confirmSignOut?.let { waiting -> SignOutQuestion(waiting, viewModel) }
+    if (showAttention) {
+        BackHandler { showAttention = false }
+        AttentionScreen(viewModel, onBack = { showAttention = false })
+        return
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -124,7 +137,8 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
             onRefresh = viewModel::refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
-            if (tab == 0) AccountsList(viewModel, line) else EntriesList(viewModel, line)
+            val openAttention = { showAttention = true }
+            if (tab == 0) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention)
         }
     }
 }
@@ -156,6 +170,28 @@ private fun SyncStatus(line: SyncLine, onRetry: () -> Unit) {
     }
 }
 
+/** The top of each list: the sync line, the unsent count and the way to changes that need the owner. */
+@Composable
+private fun ListHeader(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit) {
+    val unsent by viewModel.unsent.collectAsState()
+    val attention by viewModel.attention.collectAsState()
+    SyncStatus(line, viewModel::refresh)
+    if (unsent > 0) {
+        Text(
+            pluralStringResource(R.plurals.unsent_count, unsent, unsent),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+    }
+    if (attention.isNotEmpty()) {
+        OutlinedButton(
+            onClick = openAttention,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).heightIn(min = 48.dp),
+        ) { Text(pluralStringResource(R.plurals.attention_banner, attention.size, attention.size)) }
+    }
+}
+
 @Composable
 private fun Waiting() {
     Text(
@@ -167,10 +203,10 @@ private fun Waiting() {
 }
 
 @Composable
-private fun AccountsList(viewModel: SignedInViewModel, line: SyncLine) {
+private fun AccountsList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit) {
     val state by viewModel.accounts.collectAsState()
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item { SyncStatus(line, viewModel::refresh) }
+        item { ListHeader(viewModel, line, openAttention) }
         when (val current = state) {
             Mirrored.Waiting -> item { Waiting() }
             is Mirrored.Ready -> {
@@ -218,18 +254,18 @@ private fun AccountRow(account: AccountBalance) {
 }
 
 @Composable
-private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine) {
+private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit) {
     val state by viewModel.entries.collectAsState()
     val canShowMore by viewModel.canShowMore.collectAsState()
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item { SyncStatus(line, viewModel::refresh) }
+        item { ListHeader(viewModel, line, openAttention) }
         when (val current = state) {
             Mirrored.Waiting -> item { Waiting() }
             is Mirrored.Ready -> {
                 if (current.items.isEmpty()) {
                     item { Text(stringResource(R.string.entries_empty), modifier = Modifier.padding(16.dp)) }
                 }
-                items(current.items, key = { it.id }) { EntryRow(it) }
+                items(current.items, key = { it.line.id }) { EntryRow(it.line, it.unsent) }
                 if (canShowMore) {
                     item {
                         TextButton(
@@ -244,7 +280,7 @@ private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine) {
 }
 
 @Composable
-private fun EntryRow(entry: EntryLine) {
+private fun EntryRow(entry: EntryLine, unsent: Boolean) {
     val title = entry.payee?.takeIf { it.isNotBlank() }
         ?: when {
             entry.kind == "transfer" -> stringResource(R.string.entry_transfer)
@@ -260,7 +296,8 @@ private fun EntryRow(entry: EntryLine) {
         .joinToString(" · ")
     val amount = formatMoney(entry.amount, entry.currency)
     val pending = if (entry.status == "pending") stringResource(R.string.entry_pending) else null
-    val described = listOfNotNull(title, amount, pending, details).joinToString(", ")
+    val notSent = if (unsent) stringResource(R.string.entry_not_sent) else null
+    val described = listOfNotNull(title, amount, pending, notSent, details).joinToString(", ")
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -283,6 +320,101 @@ private fun EntryRow(entry: EntryLine) {
             Text(amount, style = MaterialTheme.typography.titleMedium.tabular())
             if (pending != null) {
                 Text(pending, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (notSent != null) {
+                Text(notSent, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+    }
+    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+}
+
+/** Sign out with changes the server does not have: send them first, or delete them on purpose. */
+@Composable
+private fun SignOutQuestion(waiting: Int, viewModel: SignedInViewModel) {
+    AlertDialog(
+        onDismissRequest = viewModel::cancelSignOut,
+        title = { Text(pluralStringResource(R.plurals.signout_unsent_title, waiting, waiting)) },
+        text = { Text(stringResource(R.string.signout_unsent_body)) },
+        confirmButton = {
+            TextButton(onClick = viewModel::sendBeforeSigningOut, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.signout_send_now))
+            }
+        },
+        dismissButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = viewModel::cancelSignOut, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.cancel))
+                }
+                TextButton(onClick = viewModel::signOutDeletingUnsent, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(
+                        pluralStringResource(R.plurals.signout_delete_unsent, waiting, waiting),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit) {
+    val items by viewModel.attention.collectAsState()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.attention_title)) },
+                navigationIcon = {
+                    TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.back)) }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
+            if (items.isEmpty()) {
+                item { Text(stringResource(R.string.attention_empty), modifier = Modifier.padding(16.dp)) }
+            }
+            items(items, key = { it.id }) { item -> AttentionRow(item, viewModel) }
+        }
+    }
+}
+
+@Composable
+private fun AttentionRow(item: AttentionItem, viewModel: SignedInViewModel) {
+    val what = stringResource(
+        when (item.type) {
+            "transaction.create" -> R.string.change_new_entry
+            "transaction.update" -> R.string.change_edit_entry
+            "transaction.delete" -> R.string.change_delete_entry
+            "transfer.create" -> R.string.change_new_transfer
+            "transfer.update" -> R.string.change_edit_transfer
+            else -> R.string.change_delete_transfer
+        },
+    )
+    val amount = if (item.amount != null && item.currency != null) formatMoney(item.amount, item.currency) else null
+    val reason = when (item.reason) {
+        AttentionReason.ChangedElsewhere -> stringResource(R.string.attention_changed_elsewhere)
+        AttentionReason.DeletedElsewhere -> stringResource(R.string.attention_deleted_elsewhere)
+        AttentionReason.Rejected -> stringResource(R.string.attention_rejected, item.detail ?: "")
+    }
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(listOfNotNull(what, item.payee, amount).joinToString(" · "), style = MaterialTheme.typography.titleMedium.tabular())
+        Text(reason, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (item.reason == AttentionReason.Rejected) {
+                OutlinedButton(onClick = { viewModel.discard(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.attention_discard))
+                }
+            } else {
+                if (item.canKeepMine) {
+                    OutlinedButton(onClick = { viewModel.keepMine(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Text(stringResource(R.string.attention_keep_mine))
+                    }
+                }
+                OutlinedButton(onClick = { viewModel.keepTheirs(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.attention_keep_theirs))
+                }
             }
         }
     }
