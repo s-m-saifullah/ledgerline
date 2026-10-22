@@ -41,6 +41,22 @@ class SyncSchedulerTest {
     }
 
     @Test
+    fun aSendIsQueuedOnceForWhenThereIsANetwork() {
+        val scheduler = WorkSyncScheduler(context)
+        scheduler.sendSoon()
+        scheduler.sendSoon()
+        val sends = WorkManager.getInstance(context).getWorkInfosForUniqueWork(WorkSyncScheduler.SendName).get()
+            .filter { it.state == WorkInfo.State.ENQUEUED }
+        assertEquals(1, sends.size)
+        assertEquals(NetworkType.CONNECTED, sends.single().constraints.requiredNetworkType)
+        scheduler.cancel()
+        assertTrue(
+            WorkManager.getInstance(context).getWorkInfosForUniqueWork(WorkSyncScheduler.SendName).get()
+                .all { it.state == WorkInfo.State.CANCELLED },
+        )
+    }
+
+    @Test
     fun cancellingRemovesTheJob() {
         val scheduler = WorkSyncScheduler(context)
         scheduler.schedule()

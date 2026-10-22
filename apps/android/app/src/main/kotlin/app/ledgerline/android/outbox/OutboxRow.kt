@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
 
 /**
  * One change made on the phone and not yet settled with the server (ADR 0043, slice 4). [id] is the mutation id (a
@@ -78,6 +79,12 @@ interface OutboxDao {
 
     @Query("SELECT * FROM outbox WHERE state != 'pending' ORDER BY seq")
     suspend fun needingAttention(): List<OutboxRow>
+
+    @Query("SELECT * FROM outbox WHERE state != 'pending' ORDER BY seq")
+    fun observeNeedingAttention(): Flow<List<OutboxRow>>
+
+    @Query("SELECT COUNT(*) FROM outbox WHERE state = 'pending'")
+    fun observeUnsentCount(): Flow<Int>
 
     @Query("SELECT * FROM outbox ORDER BY seq")
     suspend fun all(): List<OutboxRow>

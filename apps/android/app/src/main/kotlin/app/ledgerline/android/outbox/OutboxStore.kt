@@ -12,6 +12,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -111,6 +112,12 @@ class OutboxStore @Inject constructor(
     }
 
     suspend fun needingAttention(): List<OutboxRow> = outbox.needingAttention()
+
+    /** Superseded and rejected changes, for the Needs your attention list. */
+    val attention: Flow<List<OutboxRow>> = outbox.observeNeedingAttention()
+
+    /** Changes not sent yet (or sent without a known result). */
+    val unsent: Flow<Int> = outbox.observeUnsentCount()
 
     suspend fun unsentCount(): Int = outbox.unsentCount()
 
