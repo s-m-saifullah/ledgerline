@@ -67,6 +67,8 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.lifecycle.process)
+    implementation(libs.biometric)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)

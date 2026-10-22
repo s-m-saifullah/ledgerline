@@ -10,7 +10,7 @@ import javax.inject.Singleton
 
 /** The HTTP clients for the saved server address; rebuilt only when the address changes. */
 @Singleton
-class ClientsProvider @Inject constructor(private val session: SessionStore) {
+class ClientsProvider @Inject constructor(private val session: SessionManager) {
     private var cached: Pair<String, LedgerlineClients>? = null
 
     @Synchronized

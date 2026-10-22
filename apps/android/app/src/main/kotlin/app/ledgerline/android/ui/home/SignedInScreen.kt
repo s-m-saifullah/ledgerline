@@ -57,6 +57,11 @@ fun SignedInScreen(origin: String, viewModel: SignedInViewModel = hiltViewModel(
                     }
                 }
             }
+            if (viewModel.canLock) {
+                TextButton(onClick = viewModel::lock, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.lock_now))
+                }
+            }
             OutlinedButton(
                 onClick = viewModel::signOut,
                 enabled = !signingOut,

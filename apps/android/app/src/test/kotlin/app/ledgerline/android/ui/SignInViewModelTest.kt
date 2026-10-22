@@ -1,7 +1,9 @@
 package app.ledgerline.android.ui
 
 import app.ledgerline.android.session.ClientsProvider
-import app.ledgerline.android.session.InMemorySessionStore
+import app.ledgerline.android.session.SessionManager
+import app.ledgerline.android.testing.FakeClock
+import app.ledgerline.android.testing.FakeTokenProtector
 import app.ledgerline.android.testing.FakeServerAddressStore
 import app.ledgerline.android.ui.signin.SignInProblem
 import app.ledgerline.android.ui.signin.SignInStep
@@ -27,7 +29,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class SignInViewModelTest {
     private lateinit var server: MockWebServer
-    private lateinit var session: InMemorySessionStore
+    private lateinit var session: SessionManager
     private lateinit var model: SignInViewModel
 
     @Before
@@ -35,7 +37,7 @@ class SignInViewModelTest {
         Dispatchers.setMain(UnconfinedTestDispatcher())
         server = MockWebServer()
         server.start()
-        session = InMemorySessionStore()
+        session = SessionManager(FakeTokenProtector(), FakeClock())
         val origin = server.url("/").toString().trimEnd('/')
         model = SignInViewModel(FakeServerAddressStore(origin), ClientsProvider(session), session)
     }
@@ -124,7 +126,7 @@ class SignInViewModelTest {
 
     @Test
     fun theEndedNoticeIsShownOnceAndCanBeDismissed() {
-        session.clear(app.ledgerline.android.session.SessionEnd.Expired)
+        session.endSession(app.ledgerline.android.session.SessionEnd.Expired)
         assertNotNull(model.ended.value)
         model.dismissNotice()
         assertNull(model.ended.value)

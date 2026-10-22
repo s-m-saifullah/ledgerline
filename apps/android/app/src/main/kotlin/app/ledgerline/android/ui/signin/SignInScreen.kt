@@ -60,6 +60,7 @@ fun SignInScreen(origin: String, onChangeAddress: () -> Unit, viewModel: SignInV
                         when (reason) {
                             SessionEnd.Expired -> R.string.signin_notice_expired
                             SessionEnd.ServerNotReached -> R.string.signin_notice_server_not_reached
+                            SessionEnd.KeyLost -> R.string.signin_notice_key_lost
                         },
                     ),
                     style = MaterialTheme.typography.bodyMedium,

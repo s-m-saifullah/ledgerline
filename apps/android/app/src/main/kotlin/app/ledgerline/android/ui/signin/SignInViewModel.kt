@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.server.ServerAddressStore
 import app.ledgerline.android.session.ClientsProvider
 import app.ledgerline.android.session.SessionEnd
-import app.ledgerline.android.session.SessionStore
+import app.ledgerline.android.session.SessionManager
 import app.ledgerline.api.Challenge
 import app.ledgerline.api.SignInFailure
 import app.ledgerline.api.SignInResult
@@ -36,7 +36,7 @@ data class SignInUiState(
 class SignInViewModel @Inject constructor(
     private val addressStore: ServerAddressStore,
     private val clients: ClientsProvider,
-    private val session: SessionStore,
+    private val session: SessionManager,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SignInUiState())
     val state: StateFlow<SignInUiState> = _state.asStateFlow()
@@ -94,7 +94,7 @@ class SignInViewModel @Inject constructor(
                 is SignInResult.SignedIn -> {
                     challenge = null
                     _state.value = SignInUiState(email = current.email)
-                    session.set(result.token)
+                    session.signedIn(result.token)
                 }
                 is SignInResult.NeedsCode -> {
                     challenge = result.challenge
