@@ -8,6 +8,7 @@ import kotlinx.serialization.descriptors.StructureKind
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -43,8 +44,17 @@ object SchemaContract {
         return problems
     }
 
-    /** `anyOf: [X, { type: null }]` is how the contract writes a nullable value. */
+    /** `anyOf: [X, { type: null }]` and `type: ["string", "null"]` are how the contract writes a nullable value. */
     private fun unwrapNullable(schema: JsonObject): Pair<JsonObject, Boolean> {
+        val types = schema["type"] as? JsonArray
+        if (types != null) {
+            val names = types.map { it.jsonPrimitive.content }
+            val nonNull = names.filter { it != "null" }
+            if (nonNull.size == 1 && nonNull.size < names.size) {
+                return JsonObject(schema + ("type" to JsonPrimitive(nonNull.single()))) to true
+            }
+            return schema to false
+        }
         val options = schema["anyOf"]?.jsonArray ?: return schema to false
         val nonNull = options.map { it.jsonObject }.filter { it["type"]?.jsonPrimitive?.contentOrNull != "null" }
         if (nonNull.size == 1 && nonNull.size < options.size) return nonNull.single() to true
