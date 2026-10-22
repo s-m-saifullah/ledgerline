@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "app.ledgerline.android"
-        minSdk = 29
+        minSdk = 30
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
@@ -41,6 +41,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    lint {
+        // aapt2 only finds the adaptive icon in a folder with a version qualifier (mipmap-anydpi-v26), which
+        // lint calls obsolete at minSdk 30.
+        disable += "ObsoleteSdkInt"
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -60,7 +66,10 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.datastore.preferences)
+    implementation(libs.lifecycle.runtime.compose)
     ksp(libs.hilt.compiler)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
 }

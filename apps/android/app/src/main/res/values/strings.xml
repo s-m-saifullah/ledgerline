@@ -1,16 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Ledgerline</string>
+
+    <string name="cancel">Cancel</string>
+    <string name="back">Back</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="try_again">Try again</string>
+
     <string name="address_title">Connect to your ledger</string>
     <string name="address_intro">Enter the address of your own Ledgerline server. Nothing leaves your phone until you sign in.</string>
     <string name="address_label">Server address</string>
     <string name="address_hint">ledgerline.example.com</string>
     <string name="address_continue">Continue</string>
+    <string name="address_change">Change server address</string>
     <string name="address_error_empty">Enter the address of your server.</string>
     <string name="address_error_invalid">That does not look like a server address.</string>
     <string name="address_error_cleartext">The address must start with https://, so your sign-in stays private.</string>
     <string name="address_error_extras">Enter only the server address, without a path, query or user name.</string>
-    <string name="address_saved_title">Server address saved</string>
-    <string name="address_saved_body">Sign-in comes in the next update. Your address is stored only on this phone.</string>
-    <string name="address_change">Change address</string>
+
+    <string name="signin_title">Sign in</string>
+    <string name="signin_email">Email</string>
+    <string name="signin_password">Password</string>
+    <string name="signin_show">Show</string>
+    <string name="signin_hide">Hide</string>
+    <string name="signin_button">Sign in</string>
+    <string name="signin_working">Signing in…</string>
+    <string name="signin_server_line">Server: %1$s</string>
+    <string name="signin_notice_expired">Your session ended, so please sign in again.</string>
+    <string name="signin_notice_server_not_reached">You are signed out on this phone. The server could not be reached, so this phone stays listed under Settings, Signed-in devices until you remove it there.</string>
+    <string name="signin_error_missing">Enter your email and password.</string>
+    <string name="signin_error_credentials">The email or password is not right.</string>
+    <string name="signin_error_rate_limited">Too many attempts. Wait a minute and try again.</string>
+    <string name="signin_error_address">The server did not accept this address. Check that it is exactly the address you use for the web app.</string>
+    <string name="signin_error_server">The server had a problem. Try again in a moment.</string>
+    <string name="signin_error_network">Could not reach the server. Check your connection and the address.</string>
+    <string name="signin_error_unexpected">Something unexpected came back from the server. Check the address and try again.</string>
+
+    <string name="code_title">Enter your code</string>
+    <string name="code_intro">Open your authenticator app and enter the six-digit code for Ledgerline.</string>
+    <string name="code_intro_backup">Enter one of your backup codes. Each one works only once.</string>
+    <string name="code_label">Six-digit code</string>
+    <string name="code_label_backup">Backup code</string>
+    <string name="code_button">Verify</string>
+    <string name="code_use_backup">Use a backup code instead</string>
+    <string name="code_error_missing">Enter the code.</string>
+    <string name="code_error_wrong">That code is not right or has expired. Check it, or go back and sign in again.</string>
+
+    <string name="home_title">You are signed in</string>
+    <string name="home_loading">Loading your ledgers…</string>
+    <string name="home_failed">Could not load your ledgers.</string>
+    <string name="home_ledgers">Your ledgers</string>
+    <string name="sign_out">Sign out</string>
 </resources>
