@@ -14,6 +14,7 @@ import app.ledgerline.android.overlay.Overlay
 import app.ledgerline.android.overlay.ShownEntry
 import app.ledgerline.android.sync.SyncCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,7 +43,8 @@ class EditorViewModel @Inject constructor(
     /** Null while loading. */
     val state: StateFlow<EditorState?> = _state.asStateFlow()
 
-    private var opened = false
+    private var session: String? = null
+    private var loading: Job? = null
     private var ledgerId = ""
     private lateinit var target: EditorTarget
     private var accounts: List<AccountRow> = emptyList()
@@ -53,11 +55,25 @@ class EditorViewModel @Inject constructor(
     private var currentTo: ShownEntry? = null
     private var fixRow: OutboxRow? = null
 
-    fun open(target: EditorTarget) {
-        if (opened) return
-        opened = true
+    /**
+     * Opens the editor for [target]. The view model outlives one opening (it belongs to the activity), so each
+     * opening has its own [session]: a new one starts from scratch, and the same one (a rotation) keeps the form.
+     */
+    fun open(target: EditorTarget, session: String) {
+        if (session == this.session) return
+        this.session = session
+        loading?.cancel()
+        _state.value = null
+        current = null
+        currentTo = null
+        fixRow = null
         this.target = target
-        viewModelScope.launch { _state.value = load(target) }
+        loading = viewModelScope.launch { _state.value = load(target).copy(session = session) }
+    }
+
+    /** Applies a finished save or delete only if the owner is still in the same opening of the editor. */
+    private fun finish(state: EditorState) {
+        if (state.session == session) _state.value = state
     }
 
     private suspend fun load(target: EditorTarget): EditorState {
@@ -134,7 +150,7 @@ class EditorViewModel @Inject constructor(
             )
         }
         if (form.accountId != before.accountId && form.toAccountId == form.accountId) form = form.copy(toAccountId = null)
-        _state.value = stateFor(form, now.isNew, now.tags, now.readOnly, now.canDelete).copy(errors = emptySet())
+        _state.value = stateFor(form, now.isNew, now.tags, now.readOnly, now.canDelete).copy(errors = emptySet(), session = now.session)
     }
 
     fun save() {
@@ -164,13 +180,13 @@ class EditorViewModel @Inject constructor(
         _state.value = now.copy(saving = true, errors = emptySet())
         viewModelScope.launch {
             val saved = runCatching { write(form, account, currency, minor) }
-            _state.value = if (saved.isSuccess) {
+            finish(if (saved.isSuccess) {
                 memory.remember(account.id, form.mode.kind(), form.categoryId)
                 sync.changed()
                 now.copy(saving = false, done = true)
             } else {
                 now.copy(saving = false, errors = setOf(FormError.CouldNotSave))
-            }
+            })
         }
     }
 
@@ -187,7 +203,7 @@ class EditorViewModel @Inject constructor(
                 }
             }
             if (deleted.isSuccess) sync.changed()
-            _state.value = now.copy(saving = false, done = deleted.isSuccess, errors = if (deleted.isSuccess) emptySet() else setOf(FormError.CouldNotSave))
+            finish(now.copy(saving = false, done = deleted.isSuccess, errors = if (deleted.isSuccess) emptySet() else setOf(FormError.CouldNotSave)))
         }
     }
 

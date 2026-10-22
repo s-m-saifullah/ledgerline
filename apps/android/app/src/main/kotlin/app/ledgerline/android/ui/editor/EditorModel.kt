@@ -77,6 +77,8 @@ data class EditorState(
     val errors: Set<FormError> = emptySet(),
     val saving: Boolean = false,
     val done: Boolean = false,
+    /** The opening of the editor this state belongs to; a later opening never sees an earlier one's state. */
+    val session: String = "",
 )
 
 /** The account and categories used last, so a new entry is mostly filled in already. */

@@ -59,9 +59,11 @@ import java.time.ZoneOffset
 /** Add, edit or delete an entry or a transfer. Saving works offline: the change waits in the outbox until sent. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditorScreen(target: EditorTarget, onClose: () -> Unit, viewModel: EditorViewModel = hiltViewModel(key = target.encode())) {
-    LaunchedEffect(target) { viewModel.open(target) }
-    val state by viewModel.state.collectAsState()
+fun EditorScreen(target: EditorTarget, session: String, onClose: () -> Unit, viewModel: EditorViewModel = hiltViewModel(key = "editor")) {
+    LaunchedEffect(session) { viewModel.open(target, session) }
+    val latest by viewModel.state.collectAsState()
+    // Only this opening's state counts: the view model may still hold the last opening's (for example a finished save).
+    val state = latest?.takeIf { it.session == session }
     BackHandler(onBack = onClose)
     LaunchedEffect(state?.done) { if (state?.done == true) onClose() }
     val title = when {
