@@ -8,6 +8,16 @@ import app.ledgerline.android.mirror.MirrorStore
 import app.ledgerline.android.mirror.PullResult
 import app.ledgerline.android.mirror.PullSource
 import app.ledgerline.android.mirror.SyncEngine
+import app.ledgerline.android.outbox.OutboxRow
+import app.ledgerline.android.outbox.OutboxStore
+import app.ledgerline.android.outbox.PushEngine
+import app.ledgerline.android.outbox.PushResult
+import app.ledgerline.android.outbox.PushSource
+import app.ledgerline.android.outbox.WallClock
+import app.ledgerline.android.ui.editor.EntryValues
+import app.ledgerline.android.ui.editor.TransferValues
+import app.ledgerline.android.ui.editor.entryCreateBody
+import app.ledgerline.android.ui.editor.transferBody
 import app.ledgerline.android.mirror.SyncLock
 import app.ledgerline.api.SessionToken
 import app.ledgerline.api.SignInResult
@@ -36,6 +46,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -139,6 +150,100 @@ class MirrorMatchesServerTest {
         sameRows(first, fresh)
         checkAgainstApi(fresh, "after a fresh full pull")
         first.close()
+        fresh.close()
+    }
+
+    /**
+     * Offline changes made through the app's own outbox converge with the server, including competing web edits, a
+     * batch whose reply is lost, and Keep mine. Runs with the comparison above (same switch, same scratch server).
+     */
+    @Test
+    fun offlineChangesConvergeWithTheServer() = runBlocking {
+        assumeTrue("set LEDGERLINE_COMPARE_ORIGIN to run the scratch comparison", origin != null)
+        withContext(Dispatchers.IO) { converge() }
+    }
+
+    private suspend fun converge() {
+        val base = checkNotNull(origin)
+        // The sign-in route allows a few attempts per ten seconds; the other test signed in moments ago.
+        Thread.sleep(11_000)
+        token = signIn(base)
+        val clients = createClients(base, appUserAgent("compare", "jvm"), { token.value })
+        ledgerId = clients.api.ledgers().items.first().id
+        val run = UUID.randomUUID().toString().take(6)
+        val today = LocalDate.now().toString()
+        val checking = post("accounts", obj { put("name", "Converge $run checking"); put("type", "bank"); put("openingBalance", money(50_000)) })
+        val cash = post("accounts", obj { put("name", "Converge $run cash"); put("type", "cash"); put("openingBalance", money(0)) })
+        val food = post("categories", obj { put("name", "Converge $run food"); put("kind", "expense") })
+        val tag = post("tags", obj { put("name", "converge-$run") })
+        val lostToWeb = post("transactions", entry(checking.id, food.id, "expense", -1_000, "Phone loses $run"))
+        val wonByPhone = post("transactions", entry(checking.id, food.id, "expense", -2_000, "Phone wins $run"))
+        val deleteLoses = post("transactions", entry(checking.id, food.id, "expense", -3_000, "Delete loses $run"))
+        val transfer = post("transfers", obj { put("fromAccountId", checking.id); put("toAccountId", cash.id); put("amount", money(4_000)); put("date", today) })
+
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val db = Room.inMemoryDatabaseBuilder(context, MirrorDatabase::class.java).allowMainThreadQueries().build()
+        val lock = SyncLock()
+        val pull = SyncEngine(PullSource { ledger, cursor, limit -> clients.api.sync(ledger, cursor, limit) }, MirrorStore(db), lock)
+        val outbox = OutboxStore(db, MirrorStore(db), WallClock { java.time.Instant.now() })
+        var loseNextReply = false
+        val pushSource = PushSource { ledger, body ->
+            val reply = clients.api.push(ledger, body)
+            if (loseNextReply) {
+                loseNextReply = false
+                throw java.io.IOException("the reply was lost after the server applied the batch")
+            }
+            reply
+        }
+        val push = PushEngine(pushSource, outbox, lock)
+        assertEquals(true, (pull.pull(ledgerId) as PullResult.Updated).fullRefresh)
+
+        // Offline on the phone, with competing edits on the web around it.
+        val newEntry = outbox.createEntry(ledgerId, entryCreateBody(EntryValues("expense", cash.id, food.id, today, -650, "USD", "Offline $run", null, listOf(tag.id))))
+        val newTransfer = outbox.createTransfer(ledgerId, transferBody(TransferValues(cash.id, checking.id, 125, "USD", today, null, "Offline transfer $run")))
+        outbox.updateTransfer(ledgerId, transfer.id, transferBody(TransferValues(checking.id, cash.id, 4_500, "USD", today, null, "edited offline")))
+        outbox.updateEntry(ledgerId, lostToWeb.id, obj { put("payee", "Phone version $run") })
+        outbox.deleteEntry(ledgerId, deleteLoses.id)
+        Thread.sleep(50)
+        patch("transactions/${lostToWeb.id}", obj { put("expectedVersion", lostToWeb.version); put("payee", "Web version $run") })
+        patch("transactions/${deleteLoses.id}", obj { put("expectedVersion", deleteLoses.version); put("note", "edited on the web") })
+        patch("transactions/${wonByPhone.id}", obj { put("expectedVersion", wonByPhone.version); put("payee", "Web first $run") })
+        Thread.sleep(50)
+        outbox.updateEntry(ledgerId, wonByPhone.id, obj { put("payee", "Phone later $run") })
+
+        // Back online: the first batch reaches the server but its reply is lost, so it is sent again.
+        loseNextReply = true
+        assertEquals(PushResult.Stopped(PullResult.Offline), push.send(ledgerId))
+        assertTrue(push.send(ledgerId) is PushResult.Sent)
+        assertTrue(pull.pull(ledgerId) is PullResult.Updated)
+
+        val byId = list("transactions").associateBy { it.id }
+        assertEquals("each offline entry exists once", 1, byId.values.count { it.text("payee") == "Offline $run" })
+        assertEquals("the new transfer has its two legs once", 2, byId.values.count { it.text("transferId") == newTransfer })
+        assertTrue(newEntry in byId)
+        assertEquals("Web version $run", byId.getValue(lostToWeb.id).text("payee"))
+        assertEquals("Phone later $run", byId.getValue(wonByPhone.id).text("payee"))
+        assertTrue("the losing delete left the entry", deleteLoses.id in byId)
+        assertEquals(setOf(-4_500L, 4_500L), byId.values.filter { it.text("transferId") == transfer.id }.map { it.money("amount") }.toSet())
+        val attention = outbox.needingAttention()
+        assertEquals(setOf(lostToWeb.id, deleteLoses.id), attention.map { it.entityId }.toSet())
+        assertTrue(attention.all { it.state == OutboxRow.Superseded })
+        assertEquals(0, outbox.unsentCount())
+        checkAgainstApi(db, "after the offline changes")
+
+        // Keep mine for the edit that lost: it is sent again against the server's version and now wins.
+        assertTrue(outbox.keepMine(attention.single { it.entityId == lostToWeb.id }.id))
+        assertTrue(push.send(ledgerId) is PushResult.Sent)
+        assertTrue(pull.pull(ledgerId) is PullResult.Updated)
+        assertEquals("Phone version $run", list("transactions").single { it.id == lostToWeb.id }.text("payee"))
+        outbox.keepTheirs(attention.single { it.entityId == deleteLoses.id }.id)
+        assertEquals(0, db.outbox().all().size)
+        checkAgainstApi(db, "after Keep mine")
+
+        val fresh = Room.inMemoryDatabaseBuilder(context, MirrorDatabase::class.java).allowMainThreadQueries().build()
+        assertEquals(true, (SyncEngine(PullSource { ledger, cursor, limit -> clients.api.sync(ledger, cursor, limit) }, MirrorStore(fresh), SyncLock()).pull(ledgerId) as PullResult.Updated).fullRefresh)
+        sameRows(db, fresh)
+        db.close()
         fresh.close()
     }
 
