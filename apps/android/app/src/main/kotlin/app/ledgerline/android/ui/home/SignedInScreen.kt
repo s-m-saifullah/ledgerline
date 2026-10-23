@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -43,14 +42,14 @@ import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.ui.budgets.BudgetsContent
 import app.ledgerline.android.ui.budgets.BudgetsViewModel
-import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.LinkButton
-import app.ledgerline.android.ui.design.PageHeader
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.editor.EditorScreen
 import app.ledgerline.android.ui.editor.EditorTarget
 import app.ledgerline.android.ui.format.formatUpdated
+import app.ledgerline.android.ui.insights.InsightsContent
+import app.ledgerline.android.ui.insights.InsightsViewModel
 import app.ledgerline.android.ui.more.MoreScreen
 import java.util.UUID
 
@@ -76,10 +75,13 @@ fun SignedInScreen(
     viewModel: SignedInViewModel = hiltViewModel(),
     home: HomeViewModel = hiltViewModel(),
     budgets: BudgetsViewModel = hiltViewModel(),
+    insights: InsightsViewModel = hiltViewModel(),
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var showAttention by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
+    // What is open on Insights (a category's subcategories, a chart's figures); a list, so it can be saved.
+    var openInsights by rememberSaveable { mutableStateOf(listOf<String>()) }
     val line by viewModel.syncLine.collectAsState()
     val unsent by viewModel.unsent.collectAsState()
     val attention by viewModel.attention.collectAsState()
@@ -140,7 +142,26 @@ fun SignedInScreen(
                 val state by budgets.budgets.collectAsState()
                 BudgetsContent(month.toString(), state, budgets::previous, budgets::next, budgets::retry)
             }
-            Tab.Insights -> Later(R.string.insights_title, R.string.later_insights, inside)
+            Tab.Insights -> PullToRefreshBox(
+                isRefreshing = line.running,
+                onRefresh = {
+                    viewModel.refresh()
+                    insights.retry()
+                },
+                modifier = inside,
+            ) {
+                val month by insights.month.collectAsState()
+                val state by insights.insights.collectAsState()
+                InsightsContent(
+                    month.toString(),
+                    state,
+                    open = openInsights.toSet(),
+                    onToggle = { key -> openInsights = if (key in openInsights) openInsights - key else openInsights + key },
+                    onPrevious = insights::previous,
+                    onNext = insights::next,
+                    onRetry = insights::retry,
+                )
+            }
             Tab.More -> MoreScreen(viewModel, { showAttention = true }, ListBottomSpace, inside)
         }
     }
@@ -214,19 +235,6 @@ private fun barLabelSize(labels: List<String>): TextUnit {
 @Composable
 private fun BarLabel(text: String, size: TextUnit) {
     Text(text, style = MaterialTheme.typography.labelMedium.copy(fontSize = size), maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
-}
-
-/** A screen that arrives in a later part of slice 5: its header and a card that points to the web app. */
-@Composable
-internal fun Later(title: Int, text: Int, modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = ListBottomSpace)) {
-        item { PageHeader(stringResource(title), eyebrow = stringResource(R.string.eyebrow_ledger)) }
-        item {
-            LedgerCard {
-                Text(stringResource(text), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
 }
 
 /** The sync line, the unsent count and how many changes wait for the owner: what [SyncHeader] shows. */

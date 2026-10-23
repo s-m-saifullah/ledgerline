@@ -24,6 +24,11 @@ import app.ledgerline.android.ui.home.MonthCard
 import app.ledgerline.android.ui.home.homeSummary
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.insights.CashFlowChart
+import app.ledgerline.android.ui.insights.InsightsContent
+import app.ledgerline.android.ui.insights.NetWorthChart
+import app.ledgerline.android.ui.insights.insights
+import app.ledgerline.api.Money
 import app.ledgerline.android.ui.budgets.LineCard
 import app.ledgerline.android.ui.budgets.budgetLine
 import app.ledgerline.android.ui.budgets.budgetMonth
@@ -99,6 +104,20 @@ class PrivacyTest {
 
     @Test
     fun aBudgetLineHidesWhatIsOverAndWhatCarriedIn() = check { LineCard(budgetLine("Fun", 0, 246912, carriedIn = 123456)) }
+
+    @Test
+    fun insightsHideWhatWasSpentAndEachCategory() = check {
+        InsightsContent("2026-10", Online.Ready(insights(spent = 123456)), open = setOf("c-food"), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
+    }
+
+    @Test
+    fun theCashFlowFiguresHideEveryAmount() = check { CashFlowChart(insights(spent = 123456).cashFlow, "2026-10", open = true, onToggle = {}) }
+
+    @Test
+    fun theNetWorthFiguresHideEveryAmount() = check {
+        val report = insights().netWorth
+        NetWorthChart(report.copy(months = report.months.map { it.copy(netWorth = Money(123456, "USD")) }), "2026-10", open = true, onToggle = {})
+    }
 
     @Test
     fun aBudgetLineHidesWhatWasOverspentBefore() = check { LineCard(budgetLine("Fun", 246912, 0, carriedIn = -123456)) }
