@@ -150,6 +150,11 @@
     <string name="editor_no_category">No category</string>
     <string name="editor_date">Date: %1$s</string>
     <string name="editor_date_ok">OK</string>
+    <string name="editor_time">Time: %1$s</string>
+    <string name="editor_time_add">Add a time (optional)</string>
+    <string name="editor_time_help">Local time on the selected date. Leave blank if unknown.</string>
+    <string name="editor_time_now">Now</string>
+    <string name="editor_time_clear">Clear time</string>
     <string name="editor_payee">Payee</string>
     <string name="editor_tags">Tags</string>
     <string name="editor_note">Note</string>

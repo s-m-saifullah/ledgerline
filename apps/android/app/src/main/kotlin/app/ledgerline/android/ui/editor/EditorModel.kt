@@ -61,6 +61,8 @@ data class EditorForm(
     val payee: String,
     val note: String,
     val tagIds: List<String>,
+    /** "HH:mm", or null: empty for a new entry, as on the web. */
+    val time: String? = null,
 )
 
 data class EditorState(

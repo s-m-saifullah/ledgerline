@@ -215,7 +215,7 @@ class EditorViewModel @Inject constructor(
         val payee = form.payee.trim().ifEmpty { null }
         val note = form.note.trim().ifEmpty { null }
         if (isTransfer) {
-            val values = TransferValues(account.id, form.toAccountId!!, minor, currency, form.date, current?.time, note)
+            val values = TransferValues(account.id, form.toAccountId!!, minor, currency, form.date, form.time, note)
             if (creating) {
                 outbox.createTransfer(ledgerId, transferBody(values))
             } else {
@@ -226,7 +226,7 @@ class EditorViewModel @Inject constructor(
             return
         }
         val kind = form.mode.kind()
-        val values = EntryValues(kind, account.id, form.categoryId, form.date, if (kind == "expense") -minor else minor, currency, payee, note, form.tagIds)
+        val values = EntryValues(kind, account.id, form.categoryId, form.date, if (kind == "expense") -minor else minor, currency, payee, note, form.tagIds, form.time)
         if (creating) {
             outbox.createEntry(ledgerId, entryCreateBody(values))
         } else {
@@ -282,6 +282,7 @@ class EditorViewModel @Inject constructor(
         toAccountId = null,
         categoryId = entry.categoryId,
         date = entry.date,
+        time = entry.time,
         payee = entry.payee.orEmpty(),
         note = entry.note.orEmpty(),
         tagIds = entry.tagIds,
@@ -294,6 +295,7 @@ class EditorViewModel @Inject constructor(
         toAccountId = to.accountId,
         categoryId = null,
         date = from.date,
+        time = from.time,
         payee = "",
         note = from.note.orEmpty(),
         tagIds = emptyList(),

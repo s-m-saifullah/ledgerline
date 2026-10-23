@@ -100,7 +100,7 @@ class EditorViewModelTest {
                 ),
                 tags = listOf(tag(30, name = "work")),
                 transactions = listOf(
-                    entry(10, accountN = 1, amount = -1_000, payee = "Grocer").copy(categoryId = id(20)),
+                    entry(10, accountN = 1, amount = -1_000, payee = "Grocer").copy(categoryId = id(20), time = "18:20"),
                     entry(11, accountN = 1, amount = -3_000, payee = "Split").copy(isSplit = true),
                     entry(12, accountN = 1, amount = -100, payee = "Fee").copy(feeTransferId = "t2"),
                     entry(40, accountN = 1, amount = -500, kind = "transfer", payee = null).copy(transferId = "t1", time = "08:30"),
@@ -153,7 +153,7 @@ class EditorViewModelTest {
         val row = rows().single()
         assertEquals("transaction.create", row.type)
         assertEquals(
-            """{"accountId":"${id(2)}","categoryId":"${id(20)}","kind":"expense","date":"2026-10-22","amount":{"amount":-1250,"currency":"USD"},"status":"cleared","payee":"Cafe","note":null,"tagIds":["${id(30)}"]}""",
+            """{"accountId":"${id(2)}","categoryId":"${id(20)}","kind":"expense","date":"2026-10-22","time":null,"amount":{"amount":-1250,"currency":"USD"},"status":"cleared","payee":"Cafe","note":null,"tagIds":["${id(30)}"]}""",
             row.body,
         )
         assertEquals(id(2), memory.lastAccount)
@@ -233,6 +233,26 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun aNewEntryHasNoTimeUntilTheOwnerAddsOne() = runBlocking {
+        val vm = editor()
+        assertNull(vm.opened(EditorTarget.New()).form.time)
+        vm.update { it.copy(amount = "4", time = "07:45") }
+        vm.save()
+        vm.saved()
+        assertTrue(rows().single().body.contains(""""date":"2026-10-22","time":"07:45","""))
+    }
+
+    @Test
+    fun anEntrysTimeShowsWhenOpenedAndClearingItSendsNull() = runBlocking {
+        val vm = editor()
+        assertEquals("18:20", vm.opened(EditorTarget.Entry(id(10))).form.time)
+        vm.update { it.copy(time = null) }
+        vm.save()
+        vm.saved()
+        assertEquals("""{"time":null}""", rows().single().body)
+    }
+
+    @Test
     fun savingAnUnchangedEntrySendsNothing() = runBlocking {
         val vm = editor()
         vm.opened(EditorTarget.Entry(id(10)))
@@ -287,6 +307,7 @@ class EditorViewModelTest {
         assertEquals(EntryMode.Transfer, state.form.mode)
         assertEquals(id(1) to id(2), state.form.accountId to state.form.toAccountId)
         assertEquals("5.00", state.form.amount)
+        assertEquals("08:30", state.form.time)
         vm.update { it.copy(amount = "7.25") }
         vm.save()
         vm.saved()
@@ -297,6 +318,16 @@ class EditorViewModelTest {
             """{"fromAccountId":"${id(1)}","toAccountId":"${id(2)}","amount":{"amount":725,"currency":"USD"},"date":"2026-10-20","time":"08:30","note":null}""",
             row.body,
         )
+    }
+
+    @Test
+    fun aTransfersNewTimeIsSent() = runBlocking {
+        val vm = editor()
+        vm.opened(EditorTarget.Entry(id(41)))
+        vm.update { it.copy(time = "21:10") }
+        vm.save()
+        vm.saved()
+        assertTrue(rows().single().body.contains(""""time":"21:10""""))
     }
 
     @Test
