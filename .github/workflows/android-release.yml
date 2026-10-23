@@ -12,6 +12,9 @@ concurrency:
 jobs:
   version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
     outputs:
       name: ${{ steps.rule.outputs.name }}
       code: ${{ steps.rule.outputs.code }}
@@ -31,17 +34,14 @@ jobs:
         run: |
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
-  checks:
-    needs: version
-    permissions:
-      contents: read
-      pull-requests: read
-      statuses: write
-    uses: ./.github/workflows/ci.yml
-    with:
-      checkout_ref: ${{ github.ref }}
+      # The suite is not run again on the tag: main's own check has tested this commit (or reused its pull request's
+      # passing run of the same tree), and the Android job there builds and tests the app on every Android change.
+      - name: Main's check must have passed on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: infra/scripts/main-check-passed.sh "$GITHUB_SHA"
   release:
-    needs: [version, checks]
+    needs: version
     runs-on: ubuntu-latest
     # The owner approves here; the key secrets are visible to this job only after that.
     environment: android-release
