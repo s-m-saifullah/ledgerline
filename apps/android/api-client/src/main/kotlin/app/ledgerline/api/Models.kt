@@ -129,3 +129,43 @@ data class TransactionSplitResponse(
 
 @Serializable
 data class TagRef(val id: String, val name: String, val archived: Boolean)
+
+/** A month of budgets (slice 5): one line per expense category, read online and never stored on the phone. */
+@Serializable
+data class BudgetMonth(val month: String, val items: List<BudgetLine>, val totals: BudgetTotals)
+
+/** A category's month: its budget (null when it has none), what rolled in, what was spent and what is left. */
+@Serializable
+data class BudgetLine(
+    val categoryId: String,
+    val name: String,
+    val icon: String?,
+    val color: String?,
+    val archived: Boolean,
+    val budget: Budget?,
+    val carriedIn: Money,
+    val spent: Money,
+    val left: Money?,
+)
+
+@Serializable
+data class Budget(
+    val id: String,
+    val ledgerId: String,
+    val categoryId: String,
+    val month: String,
+    val amount: Money,
+    val rollover: Boolean,
+    val version: Int,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Serializable
+data class BudgetTotals(
+    val budgeted: Money,
+    val carriedIn: Money,
+    val spent: Money,
+    val left: Money,
+    val unbudgetedSpent: Money,
+)

@@ -31,7 +31,7 @@ Ledgerline is a self-hosted personal finance tracker: one place to record money 
 | API | Node.js 24 LTS, Fastify, Zod schemas to OpenAPI 3.1, Drizzle ORM + drizzle-kit migrations, PostgreSQL 18, Better Auth, pg-boss for jobs |
 | Quality | Biome (lint and format), Vitest, Testing Library, Playwright |
 | Deploy | Docker Compose, Caddy, GitHub Actions, GitHub Container Registry |
-| Android (later) | Kotlin, Jetpack Compose, Material 3, Hilt, Retrofit (client generated from `openapi.json`), Room, WorkManager |
+| Android | Kotlin, Jetpack Compose, Material 3, Hilt, Retrofit with hand-written API types checked against `openapi.json` (ADR 0043), Room, WorkManager |
 
 Redis, Kubernetes and microservices are left out: one person's finance data fits comfortably in one PostgreSQL instance.
 
@@ -40,7 +40,7 @@ Redis, Kubernetes and microservices are left out: one person's finance data fits
 A modular monolith: one API process split into feature modules with clear boundaries.
 
 ```text
- Web app (React SPA)              Android app (later)
+ Web app (React SPA)              Android app
             │ HTTPS                        │ HTTPS
             ▼                              ▼
  ┌──────────── Linux server · Docker ──────────────────────────┐
@@ -54,7 +54,7 @@ A modular monolith: one API process split into feature modules with clear bounda
 ```text
 apps/web            React SPA
 apps/api            Fastify API + background jobs
-apps/android        Kotlin app (later)
+apps/android        Kotlin app (Phase 5)
 packages/shared     Zod schemas, types, money and date helpers
 packages/ui         design tokens + shared React components
 packages/config     tsconfig and Biome presets
@@ -170,4 +170,4 @@ A phase is done only when its features have tests, it is deployed through CI, th
 
 ## Android path
 
-The native app is a new client of the same API: Kotlin, Jetpack Compose and Material 3 themed with the Ledgerline tokens; Hilt; Retrofit with API types written by hand and checked against `openapi.json` by a contract test (the generator was unusable, ADR 0043); Room as an offline mirror; WorkManager for sync (`GET/POST /api/v1/ledgers/{ledgerId}/sync`, last write wins per row; see [ADR 0042](adr/0042-sync-and-bearer-tokens.md) and [ADR 0043](adr/0043-android-app.md)); the token is stored encrypted under a Keystore key behind a fingerprint or screen-lock prompt, with a 60-second background lock (an app-level lock, ADR 0043). Built so far: skeleton and server address, sign-in with two-factor, the lock, the read-only mirror (Accounts and Transactions) and offline expenses, income and same-currency transfers with an optional time through an outbox (conflicts wait for the owner), the bottom bar, More with privacy mode and screenshots blocked by default, and Home's month read online, all in the web's design ([ADR 0045](adr/0045-one-design-for-web-and-android.md)); next (slice 5, ADR 0043): Budgets, Insights and Clients read online, Settings with privacy mode and screenshots blocked by default, and a release APK signed by a GitHub workflow behind the owner's approval, with its key backed up off-site.
+The native app is a new client of the same API: Kotlin, Jetpack Compose and Material 3 themed with the Ledgerline tokens; Hilt; Retrofit with API types written by hand and checked against `openapi.json` by a contract test (the generator was unusable, ADR 0043); Room as an offline mirror; WorkManager for sync (`GET/POST /api/v1/ledgers/{ledgerId}/sync`, last write wins per row; see [ADR 0042](adr/0042-sync-and-bearer-tokens.md) and [ADR 0043](adr/0043-android-app.md)); the token is stored encrypted under a Keystore key behind a fingerprint or screen-lock prompt, with a 60-second background lock (an app-level lock, ADR 0043). Built so far: skeleton and server address, sign-in with two-factor, the lock, the read-only mirror (Accounts and Transactions) and offline expenses, income and same-currency transfers with an optional time through an outbox (conflicts wait for the owner), the bottom bar, More with privacy mode and screenshots blocked by default, and Home's month and Budgets read online, all in the web's design ([ADR 0045](adr/0045-one-design-for-web-and-android.md)); next (slice 5, ADR 0043): Insights and Clients read online, and a release APK signed by a GitHub workflow behind the owner's approval, with its key backed up off-site.

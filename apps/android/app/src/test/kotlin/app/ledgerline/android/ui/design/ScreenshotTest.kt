@@ -7,6 +7,9 @@ import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.overlay.ShownLine
+import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.budgets.budgetLine
+import app.ledgerline.android.ui.budgets.budgetMonth
 import app.ledgerline.android.ui.home.HomeContent
 import app.ledgerline.android.ui.home.Later
 import app.ledgerline.android.ui.home.ListBottomSpace
@@ -100,7 +103,35 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     }
 
     @Test
-    fun budgets() = shot("budgets", Tab.Budgets) { Later(app.ledgerline.android.R.string.budgets_title, app.ledgerline.android.R.string.later_budgets) }
+    fun budgets() = shot("budgets", Tab.Budgets) {
+        val month = budgetMonth(
+            items = listOf(
+                budgetLine("Food", 30000, 12883, carriedIn = 30000),
+                budgetLine("Fun", 1000, 16252),
+                budgetLine("Home and garden with a long category name", 25000, 6299),
+                budgetLine("Transport", 15000, 21000, carriedIn = -2500),
+                budgetLine("Health", null, 1000),
+                budgetLine("Gifts", null, 0),
+            ),
+        )
+        BudgetsContent("2026-10", Online.Ready(month), {}, {}, {})
+    }
+
+    @Test
+    fun budgetsOver() = shot("budgets-over", Tab.Budgets) {
+        BudgetsContent("2026-10", Online.Ready(budgetMonth(items = listOf(budgetLine("Fun", 1000, 123456789)))), {}, {}, {})
+    }
+
+    @Test
+    fun budgetsNone() = shot("budgets-none", Tab.Budgets) {
+        BudgetsContent("2026-11", Online.Ready(budgetMonth("2026-11", listOf(budgetLine("Food", null, 0), budgetLine("Fun", null, 4200)))), {}, {}, {})
+    }
+
+    @Test
+    fun budgetsOffline() = shot("budgets-offline", Tab.Budgets) { BudgetsContent("2026-10", Online.Offline, {}, {}, {}) }
+
+    @Test
+    fun insights() = shot("insights", Tab.Insights) { Later(app.ledgerline.android.R.string.insights_title, app.ledgerline.android.R.string.later_insights) }
 
     @Test
     fun more() = shot("more", Tab.More) {

@@ -23,6 +23,10 @@ import app.ledgerline.android.ui.home.EntryRow
 import app.ledgerline.android.ui.home.MonthCard
 import app.ledgerline.android.ui.home.homeSummary
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.budgets.LineCard
+import app.ledgerline.android.ui.budgets.budgetLine
+import app.ledgerline.android.ui.budgets.budgetMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -85,6 +89,19 @@ class PrivacyTest {
 
     @Test
     fun theMonthOnHomeHidesEveryAmount() = check { MonthCard(Online.Ready(homeSummary(123456)), onRetry = {}) }
+
+    @Test
+    fun budgetsHideTheTotalsAndEveryLine() = check {
+        // Every amount on the screen is 1,234.56: the totals, spent, the budget, what is left, and spent without a budget.
+        val line = budgetLine("Food", 246912, 123456)
+        BudgetsContent("2026-10", Online.Ready(budgetMonth(items = listOf(line, budgetLine("Fun", null, 123456)))), {}, {}, {})
+    }
+
+    @Test
+    fun aBudgetLineHidesWhatIsOverAndWhatCarriedIn() = check { LineCard(budgetLine("Fun", 0, 246912, carriedIn = 123456)) }
+
+    @Test
+    fun aBudgetLineHidesWhatWasOverspentBefore() = check { LineCard(budgetLine("Fun", 246912, 0, carriedIn = -123456)) }
 
     /** With privacy off the amount is there (so the check can see it); with privacy on it is nowhere. */
     private fun check(row: @Composable () -> Unit) {
