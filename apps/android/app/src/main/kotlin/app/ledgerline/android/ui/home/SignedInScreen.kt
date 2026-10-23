@@ -75,7 +75,7 @@ private val ListBottomSpace = 96.dp
 /** The signed-in app: the mirrored accounts and entries, entries made offline, and More. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
+fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel(), home: HomeViewModel = hiltViewModel()) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var showAttention by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
@@ -119,7 +119,14 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
     ) { padding ->
         val inside = Modifier.fillMaxSize().padding(padding)
         when (tab) {
-            Tab.Home, Tab.Transactions -> PullToRefreshBox(isRefreshing = line.running, onRefresh = viewModel::refresh, modifier = inside) {
+            Tab.Home, Tab.Transactions -> PullToRefreshBox(
+                isRefreshing = line.running,
+                onRefresh = {
+                    viewModel.refresh()
+                    if (tab == Tab.Home) home.retry()
+                },
+                modifier = inside,
+            ) {
                 val openEntry = { line: EntryLine ->
                     edit(
                         if (line.kind == "transfer" && line.transferId != null) {
@@ -129,7 +136,12 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
                         },
                     )
                 }
-                if (tab == Tab.Home) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention, openEntry)
+                if (tab == Tab.Home) {
+                    val month by home.month.collectAsState()
+                    AccountsList(viewModel, line, openAttention) { MonthCard(month, home::retry) }
+                } else {
+                    EntriesList(viewModel, line, openAttention, openEntry)
+                }
             }
             Tab.Budgets -> Box(inside) { Later(R.string.later_budgets) }
             Tab.Insights -> Box(inside) { Later(R.string.later_insights) }
@@ -209,10 +221,11 @@ private fun Waiting() {
 }
 
 @Composable
-private fun AccountsList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit) {
+private fun AccountsList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit, month: @Composable () -> Unit) {
     val state by viewModel.accounts.collectAsState()
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = ListBottomSpace)) {
         item { ListHeader(viewModel, line, openAttention) }
+        item { month() }
         when (val current = state) {
             Mirrored.Waiting -> item { Waiting() }
             is Mirrored.Ready -> {
