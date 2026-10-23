@@ -127,6 +127,7 @@
     <string name="insights_charts_hidden">The bars are hidden while amounts are hidden.</string>
 
     <string name="loading">Loading…</string>
+    <string name="clear_search">Clear search</string>
     <string name="load_more_failed">Couldn\'t load more. Try again.</string>
     <string name="back_more">More</string>
     <string name="more_clients_title">Clients</string>

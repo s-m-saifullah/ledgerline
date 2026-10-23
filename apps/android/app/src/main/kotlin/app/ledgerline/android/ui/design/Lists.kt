@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -88,6 +89,14 @@ fun SearchField(label: String, value: String, onChange: (String) -> Unit) {
             value = value,
             onValueChange = { onChange(it.take(200)) },
             singleLine = true,
+            // A cross at the right end clears the field; it shows only while there is something to clear.
+            trailingIcon = if (value.isEmpty()) null else {
+                {
+                    IconButton(onClick = { onChange("") }) {
+                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.clear_search), modifier = Modifier.size(20.dp))
+                    }
+                }
+            },
             shape = MaterialTheme.shapes.small,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),

@@ -220,6 +220,11 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     }
 
     @Test
+    fun clientsSearch() = shot("clients-search", Tab.More) {
+        ClientsListContent("north", "all", Online.Ready(Paged(listOf(northwind), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    @Test
     fun clientsEmpty() = shot("clients-empty", Tab.More) {
         ClientsListContent("zzz", "all", Online.Ready(Paged(emptyList<Contact>(), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
     }
