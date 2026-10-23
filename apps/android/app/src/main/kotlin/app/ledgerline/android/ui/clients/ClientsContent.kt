@@ -28,6 +28,7 @@ import app.ledgerline.android.ui.design.ChoiceField
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.LoadMore
 import app.ledgerline.android.ui.design.MutedLine
+import app.ledgerline.android.ui.design.narrowingRoom
 import app.ledgerline.android.ui.design.PageHeader
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -110,6 +111,7 @@ internal fun ClientsListContent(
                 }
             }
         }
+        narrowingRoom(narrowed = text.isNotEmpty() || status != "all")
     }
 }
 

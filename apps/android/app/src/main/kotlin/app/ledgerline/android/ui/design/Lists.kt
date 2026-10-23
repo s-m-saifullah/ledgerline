@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
@@ -150,4 +152,13 @@ fun LoadMore(label: String, loading: Boolean, failed: Boolean, onClick: () -> Un
 @Composable
 fun MutedLine(text: String) {
     Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = ScreenMargin))
+}
+
+/**
+ * Room at the end of a list that is being narrowed by a search or a filter: as tall as the visible area, so a shorter
+ * result never leaves the list shorter than the scroll position needs. Without it, filtering while scrolled (the
+ * keyboard open) pulled the scroll back and slid the search field down under the owner's fingers.
+ */
+fun LazyListScope.narrowingRoom(narrowed: Boolean) {
+    if (narrowed) item(key = "narrowing-room") { Spacer(Modifier.fillParentMaxHeight()) }
 }
