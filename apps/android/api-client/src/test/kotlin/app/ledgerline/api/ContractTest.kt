@@ -88,6 +88,14 @@ class ContractTest {
     }
 
     @Test
+    fun homeMatches() = assertMatches(
+        SchemaContract.differences(
+            HomeSummary.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/home", "get", "200"),
+        ),
+    )
+
+    @Test
     fun problemMatches() = assertMatches(
         SchemaContract.differences(Problem.serializer().descriptor, SchemaContract.response("/api/v1/ledgers", "get", "401")),
     )

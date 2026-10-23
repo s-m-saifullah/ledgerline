@@ -26,6 +26,10 @@ interface LedgerlineApi {
         @Query("limit") limit: Int,
     ): SyncResponse
 
+    /** The month on Home (slice 5): read online, never stored on the phone. [month] is YYYY-MM. */
+    @GET("api/v1/ledgers/{ledgerId}/home")
+    suspend fun home(@Path("ledgerId") ledgerId: String, @Query("month") month: String): HomeSummary
+
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")
     suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse

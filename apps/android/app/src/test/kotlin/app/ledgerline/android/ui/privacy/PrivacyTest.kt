@@ -20,6 +20,9 @@ import app.ledgerline.android.overlay.AttentionReason
 import app.ledgerline.android.ui.home.AccountRow
 import app.ledgerline.android.ui.home.AttentionRow
 import app.ledgerline.android.ui.home.EntryRow
+import app.ledgerline.android.ui.home.MonthCard
+import app.ledgerline.android.ui.home.homeSummary
+import app.ledgerline.android.online.Online
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -79,6 +82,9 @@ class PrivacyTest {
             onKeepTheirs = {},
         )
     }
+
+    @Test
+    fun theMonthOnHomeHidesEveryAmount() = check { MonthCard(Online.Ready(homeSummary(123456)), onRetry = {}) }
 
     /** With privacy off the amount is there (so the check can see it); with privacy on it is nowhere. */
     private fun check(row: @Composable () -> Unit) {

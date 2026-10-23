@@ -35,3 +35,97 @@ data class LedgerSummary(
     val version: Int,
     val role: String,
 )
+
+/** `GET /ledgers/{ledgerId}/home?month=YYYY-MM`: the web's Home, read online by the phone's Home (slice 5). */
+@Serializable
+data class HomeSummary(
+    val month: String,
+    val monthStart: String,
+    val monthEnd: String,
+    val inHand: Money,
+    val netWorth: Money,
+    val liabilitiesOwed: Money,
+    val loans: HomeLoans,
+    val accounts: List<HomeAccount>,
+    val otherActive: HomeGroup,
+    val archived: HomeGroup,
+    val moneyIn: Money,
+    val moneyOut: Money,
+    val owed: HomeOwed,
+    val pendingCount: Long,
+    val latest: List<HomeLatest>,
+    val setup: HomeSetup,
+    val unconvertedCurrencies: List<String>,
+)
+
+@Serializable
+data class HomeLoans(val lent: Money, val borrowed: Money)
+
+@Serializable
+data class HomeAccount(val id: String, val name: String, val type: String, val balance: Money, val baseBalance: Money?)
+
+@Serializable
+data class HomeGroup(val count: Long, val balance: Money)
+
+@Serializable
+data class HomeOwed(
+    val total: Money,
+    val personCount: Long,
+    val otherCurrencies: List<String>,
+    val unconvertedCurrencies: List<String>,
+)
+
+@Serializable
+data class HomeLatest(
+    val transaction: TransactionResponse,
+    val accountName: String,
+    val categoryLabel: String?,
+    val counterpartAccountName: String?,
+)
+
+@Serializable
+data class HomeSetup(val hasActiveAccount: Boolean, val hasCategory: Boolean)
+
+/** A transaction as the REST API returns it (not the sync's stored row). */
+@Serializable
+data class TransactionResponse(
+    val accountId: String,
+    val categoryId: String?,
+    val kind: String,
+    val date: String,
+    val time: String?,
+    val amount: Money,
+    val status: String,
+    val payee: String?,
+    val note: String?,
+    val id: String,
+    val ledgerId: String,
+    val fxRate: String,
+    val baseAmount: Money,
+    val transferId: String?,
+    val relatedTransferId: String?,
+    val feeTransferId: String?,
+    val tipPaymentId: String?,
+    val receivablePaymentId: String?,
+    val receivableId: String?,
+    val isSplit: Boolean,
+    val splits: List<TransactionSplitResponse>,
+    val tags: List<TagRef>,
+    val version: Int,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Serializable
+data class TransactionSplitResponse(
+    val id: String,
+    val categoryId: String,
+    val amount: Money,
+    val note: String?,
+    val version: Int,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Serializable
+data class TagRef(val id: String, val name: String, val archived: Boolean)
