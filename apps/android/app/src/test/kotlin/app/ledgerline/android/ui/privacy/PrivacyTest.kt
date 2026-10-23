@@ -114,7 +114,7 @@ class PrivacyTest {
     }
 
     @Test
-    fun theMonthOnHomeHidesEveryAmount() = check { MonthCard(Online.Ready(homeSummary(123456)), onRetry = {}) }
+    fun theMonthOnHomeHidesEveryAmount() = check { MonthCard(Online.Ready(homeSummary(123456)), onRetry = {}, onOpenPending = {}) }
 
     @Test
     fun budgetsHideTheTotalsAndEveryLine() = check {
@@ -128,7 +128,7 @@ class PrivacyTest {
 
     @Test
     fun insightsHideWhatWasSpentAndEachCategory() = check {
-        InsightsContent("2026-10", Online.Ready(insights(spent = 123456)), open = setOf("c-food"), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
+        InsightsContent("2026-10", Online.Ready(insights(spent = 123456)), open = setOf("c-food"), onToggle = {}, onOpenCategory = {}, onPrevious = {}, onNext = {}, onRetry = {})
     }
 
     @Test

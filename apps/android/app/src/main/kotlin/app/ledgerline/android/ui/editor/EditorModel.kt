@@ -55,9 +55,15 @@ data class Choice(val id: String, val label: String, val currency: String = "", 
 
 /**
  * The categories of one kind in the web's order: each main category with its subcategories under it, by their sort
- * order. Archived ones are left out unless one is the current choice, which then shows as archived.
+ * order. Archived ones are left out unless one is the current choice (which then shows as archived) or [includeArchived]
+ * asks for them all, as a filter does: an archived category still has entries.
  */
-internal fun categoryChoices(categories: List<CategoryRow>, kind: String, selectedId: String?): List<Choice> {
+internal fun categoryChoices(
+    categories: List<CategoryRow>,
+    kind: String,
+    selectedId: String?,
+    includeArchived: Boolean = false,
+): List<Choice> {
     val ofKind = categories.filter { it.kind == kind }
     val ids = ofKind.map { it.id }.toSet()
     val order = compareBy<CategoryRow>({ it.sortOrder }, { it.id })
@@ -67,7 +73,7 @@ internal fun categoryChoices(categories: List<CategoryRow>, kind: String, select
     return roots.flatMap { root ->
         (listOf(root) + children[root.id].orEmpty().sortedWith(order)).mapNotNull { category ->
             val archived = category.archivedAt != null || root.archivedAt != null
-            if (archived && category.id != selectedId) return@mapNotNull null
+            if (archived && !includeArchived && category.id != selectedId) return@mapNotNull null
             val label = if (category.id != root.id) "${root.name} › ${category.name}" else category.name
             Choice(category.id, label, archived = archived)
         }

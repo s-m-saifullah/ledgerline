@@ -3,6 +3,11 @@ package app.ledgerline.android.ui.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import app.ledgerline.android.ui.design.ScreenMargin
+import app.ledgerline.android.ui.design.LinkButton
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import app.ledgerline.android.R
@@ -18,17 +23,17 @@ import app.ledgerline.api.HomeSummary
 
 /** This month, above the mirrored accounts: the web's In hand hero and stat cards, with the same words. */
 @Composable
-internal fun MonthCard(state: Online<HomeSummary>, onRetry: () -> Unit) {
+internal fun MonthCard(state: Online<HomeSummary>, onRetry: () -> Unit, onOpenPending: () -> Unit) {
     when (state) {
         Online.Loading -> LedgerCard { Muted(stringResource(R.string.home_loading)) }
         Online.Offline -> RetryNote(stringResource(R.string.home_offline), onRetry)
         Online.Failed -> RetryNote(stringResource(R.string.home_failed), onRetry)
-        is Online.Ready -> if (state.value.setup.hasActiveAccount) Month(state.value)
+        is Online.Ready -> if (state.value.setup.hasActiveAccount) Month(state.value, onOpenPending)
     }
 }
 
 @Composable
-private fun Month(home: HomeSummary) {
+private fun Month(home: HomeSummary, onOpenPending: () -> Unit) {
     val label = monthLabel(home.month)
     Column(verticalArrangement = Arrangement.spacedBy(CardGap)) {
         HeroCard(
@@ -42,6 +47,10 @@ private fun Month(home: HomeSummary) {
                 home.pendingCount.toInt().takeIf { it > 0 }?.let { pluralStringResource(R.plurals.home_pending, it, it) },
             ),
         )
+        if (home.pendingCount > 0) {
+            // Neither app could list them before the Transactions filters: this opens the pending ones.
+            LinkButton(stringResource(R.string.home_show_pending), onOpenPending, modifier = Modifier.padding(horizontal = ScreenMargin - 12.dp))
+        }
         StatCard(stringResource(R.string.home_money_in), money(home.moneyIn.amount, home.moneyIn.currency), stringResource(R.string.home_money_in_detail, label))
         StatCard(stringResource(R.string.home_money_out), money(home.moneyOut.amount, home.moneyOut.currency), stringResource(R.string.home_money_out_detail, label))
         val clients = home.owed.personCount.toInt()

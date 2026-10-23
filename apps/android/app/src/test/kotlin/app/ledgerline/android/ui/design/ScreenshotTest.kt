@@ -47,6 +47,8 @@ import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
 import app.ledgerline.android.settings.ThemeChoice
 import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.mirror.EntryFilters
+import app.ledgerline.android.ui.home.FilterOptions
 import app.ledgerline.android.ui.editor.ComboField
 import app.ledgerline.android.ui.editor.TagPicker
 import app.ledgerline.android.ui.settings.SettingsActions
@@ -121,15 +123,39 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             owed = HomeOwed(Money(0, "USD"), 0, emptyList(), emptyList()),
             loans = homeSummary().loans.copy(lent = Money(0, "USD"), borrowed = Money(1250000, "USD")),
         )
-        HomeContent(header, Online.Ready(month), {}, Mirrored.Ready(accounts))
+        HomeContent(header, Online.Ready(month), {}, Mirrored.Ready(accounts), onOpenPending = {})
     }
 
     @Test
-    fun homeOffline() = shot("home-offline", Tab.Home) { HomeContent(header, Online.Offline, {}, Mirrored.Ready(accounts.take(2))) }
+    fun homeOffline() = shot("home-offline", Tab.Home) { HomeContent(header, Online.Offline, {}, Mirrored.Ready(accounts.take(2)), onOpenPending = {}) }
 
     @Test
     fun transactions() = shot("transactions", Tab.Transactions) {
-        TransactionsContent(header, Mirrored.Ready(entries), canShowMore = true, onShowMore = {}, onOpen = {})
+        TransactionsContent(header, Mirrored.Ready(entries), canShowMore = true, onShowMore = {}, EntryFilters(), filterOptions, false, {}, {}, onOpen = {})
+    }
+
+    private val filterOptions = FilterOptions(
+        accounts = listOf(Choice("a1", "Everyday checking"), Choice("a2", "Wallet")),
+        categories = listOf(Choice("c1", "Eating out"), Choice("c2", "Health")),
+        tags = listOf(Choice("t1", "work"), Choice("t2", "trip")),
+    )
+
+    /** The filters open with several set, as after Home's pending note or an Insights row. */
+    @Test
+    fun transactionsFiltered() = shot("transactions-filtered", Tab.Transactions) {
+        val filters = EntryFilters(text = "cafe", accountId = "a1", categoryId = "c1", from = "2026-10-01", to = "2026-10-31", status = "pending")
+        TransactionsContent(header, Mirrored.Ready(entries.take(1)), canShowMore = false, onShowMore = {}, filters, filterOptions, true, {}, {}, onOpen = {})
+    }
+
+    @Test
+    fun transactionsNoMatch() = shot("transactions-no-match", Tab.Transactions) {
+        TransactionsContent(header, Mirrored.Ready(emptyList()), canShowMore = false, onShowMore = {}, EntryFilters(text = "zzz"), filterOptions, false, {}, {}, onOpen = {})
+    }
+
+    @Test
+    fun transactionsBadRange() = shot("transactions-bad-range", Tab.Transactions) {
+        val filters = EntryFilters(from = "2026-10-31", to = "2026-10-01")
+        TransactionsContent(header, Mirrored.Ready(emptyList()), canShowMore = false, onShowMore = {}, filters, filterOptions, true, {}, {}, onOpen = {})
     }
 
     @Test
@@ -162,7 +188,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun insightsPage() = shot("insights", Tab.Insights) {
-        InsightsContent("2026-10", Online.Ready(insights(worthMonths = 8)), open = setOf("c-food"), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
+        InsightsContent("2026-10", Online.Ready(insights(worthMonths = 8)), open = setOf("c-food"), onToggle = {}, onOpenCategory = {}, onPrevious = {}, onNext = {}, onRetry = {})
     }
 
     /** The charts with their figures open, net worth with a month below zero and one missing a rate. */
@@ -205,7 +231,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun insightsOffline() = shot("insights-offline", Tab.Insights) {
-        InsightsContent("2026-10", Online.Offline, open = emptySet(), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
+        InsightsContent("2026-10", Online.Offline, open = emptySet(), onToggle = {}, onOpenCategory = {}, onPrevious = {}, onNext = {}, onRetry = {})
     }
 
     private val northwind = contact("Northwind Design", owed = 63000, oldest = "2026-09-21", phone = "555-0101", email = "accounts@northwind.example.com", note = "Invoices go out on the first of the month.")

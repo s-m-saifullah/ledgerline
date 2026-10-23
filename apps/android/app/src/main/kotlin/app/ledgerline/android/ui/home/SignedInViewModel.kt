@@ -3,6 +3,7 @@ package app.ledgerline.android.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.AccountBalance
+import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.outbox.OutboxStore
 import app.ledgerline.android.overlay.AttentionItem
@@ -69,9 +70,30 @@ class SignedInViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Mirrored.Waiting)
 
-    val entries: StateFlow<Mirrored<ShownLine>> = combine(ledger, entryLimit) { id, limit -> id to limit }
-        .flatMapLatest { (id, limit) ->
-            if (id == null) flowOf(Mirrored.Waiting) else view.entries(id, limit).map { Mirrored.Ready(it) }
+    private val _filters = MutableStateFlow(EntryFilters())
+
+    /** What Transactions is narrowed to; kept while the app runs, so a tab switch does not lose it. */
+    val filters: StateFlow<EntryFilters> = _filters.asStateFlow()
+
+    /** The accounts, categories and tags the filters offer. */
+    val filterOptions: StateFlow<FilterOptions> = ledger
+        .flatMapLatest { id ->
+            if (id == null) {
+                flowOf(FilterOptions())
+            } else {
+                combine(reads.accountBalances(id, includeHidden = false), reads.liveCategories(id), reads.liveTags(id), ::filterOptions)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FilterOptions())
+
+    val entries: StateFlow<Mirrored<ShownLine>> = combine(ledger, entryLimit, _filters) { id, limit, filters -> Triple(id, limit, filters) }
+        .flatMapLatest { (id, limit, filters) ->
+            when {
+                id == null -> flowOf(Mirrored.Waiting)
+                // As on the web, an end date before the start date shows a message and no entries until it is corrected.
+                filters.rangeInvalid -> flowOf(Mirrored.Ready(emptyList()))
+                else -> view.entries(id, limit, filters).map { Mirrored.Ready(it) }
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Mirrored.Waiting)
 
@@ -128,6 +150,14 @@ class SignedInViewModel @Inject constructor(
         entryLimit.value += PageOfEntries
     }
 
+    /** Narrows Transactions; the list starts again from its first page. */
+    fun setFilters(filters: EntryFilters) {
+        entryLimit.value = PageOfEntries
+        _filters.value = filters
+    }
+
+    fun clearFilters() = setFilters(EntryFilters())
+
     /** Whether the session is kept on the phone, so it can be locked instead of ended. */
     val canLock: Boolean get() = session.canLock()
 
@@ -167,6 +197,8 @@ class SignedInViewModel @Inject constructor(
             val origin = addressStore.origin.first()
             val ended = origin?.let { clients.forOrigin(it).auth.signOut() } ?: false
             _signingOut.value = false
+            // The next sign-in starts on an unfiltered list.
+            _filters.value = EntryFilters()
             session.endSession(if (ended) null else SessionEnd.ServerNotReached)
         }
     }

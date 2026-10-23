@@ -1,9 +1,12 @@
 package app.ledgerline.android.overlay
 
 import app.ledgerline.android.mirror.AccountBalance
+import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.mirror.MirrorDao
 import app.ledgerline.android.mirror.MirrorReads
+import app.ledgerline.android.mirror.ShownFilterFields
+import app.ledgerline.android.mirror.entryLines
 import app.ledgerline.android.outbox.OutboxDao
 import app.ledgerline.android.outbox.OutboxRow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,20 +40,37 @@ class LedgerView @Inject constructor(
             balances.map { it.copy(balance = it.balance + (change[it.id] ?: 0)) }
         }
 
-    /** The newest [limit] entries, with unsent ones marked. */
-    fun entries(ledgerId: String, limit: Int): Flow<List<ShownLine>> =
+    /**
+     * The newest [limit] entries that pass [filters], with unsent ones marked. The mirror's SQL applies the filters; the
+     * entries a pending change touches are rebuilt and judged by the same rules in code ([EntryFilters.matches]), so an
+     * unsent entry shows when it matches and one edited out of the filter drops out at once.
+     */
+    fun entries(ledgerId: String, limit: Int, filters: EntryFilters = EntryFilters()): Flow<List<ShownLine>> =
         outbox.observePending(ledgerId).flatMapLatest { changes ->
             // Read a few more than shown: the ones a change touches are replaced by their rebuilt version.
             val touched = changes.size * 2
-            reads.entryLines(ledgerId, limit + touched).map { lines ->
+            val source = if (filters.applied) reads.entryLines(ledgerId, limit + touched, filters) else reads.entryLines(ledgerId, limit + touched)
+            source.map { lines ->
                 if (changes.isEmpty()) return@map lines.take(limit).map { ShownLine(it, unsent = false) }
                 val (_, shown) = overlay(ledgerId, changes)
-                val rebuilt = lines(ledgerId, shown.values.filterNotNull())
+                val family = categoryFamily(ledgerId, filters)
+                val passing = shown.values.filterNotNull().filter { !filters.applied || filters.matches(it.filterFields(), family) }
+                val rebuilt = lines(ledgerId, passing)
                 (lines.filter { it.id !in shown.keys }.map { ShownLine(it, unsent = false) } + rebuilt)
                     .sortedWith(compareBy(NewestFirst) { it.asShown() })
                     .take(limit)
             }
         }
+
+    /** The chosen category and, when asked for, its subcategories; null when there is no category filter. */
+    private suspend fun categoryFamily(ledgerId: String, filters: EntryFilters): Set<String>? {
+        val id = filters.categoryId ?: return null
+        return dao.allCategories(ledgerId)
+            .filter { it.id == id || (filters.includeSubcategories && it.parentId == id) }
+            .map { it.id }.toSet() + id
+    }
+
+    private fun ShownEntry.filterFields() = ShownFilterFields(accountId, categoryId, tagIds, date, kind, status, payee, note)
 
     /**
      * Entries and transfer legs as they will be once every pending change is sent, for the edit form ([changes]
