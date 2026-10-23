@@ -35,3 +35,40 @@ LEDGERLINE_COMPARE_PASSWORD=... LEDGERLINE_COMPARE_TOTP='<secret or otpauth:// U
 Without `LEDGERLINE_COMPARE_ORIGIN` the test is skipped (as in CI). `LEDGERLINE_COMPARE_TOTP` is needed only when the account has two-factor on.
 
 The debug build installs as "Ledgerline debug" (`app.ledgerline.android.debug`), next to the release build; a debug app installed before that change has the release id (`app.ledgerline.android`) and must be uninstalled once (`adb uninstall app.ledgerline.android`; it holds only scratch data, so send or discard any unsent change first). A debug build may be pointed at a server over plain HTTP (to try a scratch server); a release build accepts only `https://`. Never commit a keystore, `local.properties` or a real server address.
+
+## Releasing the app (signed APK)
+
+A tag `android-vX.Y.Z` on a commit that is on `main` starts the Android release workflow (`.github/workflows/android-release.yml`, [ADR 0043](../../docs/adr/0043-android-app.md), [CI.md](../../docs/CI.md)). It runs the full checks, waits for your approval in the `android-release` environment, builds the release APK signed with your key, verifies the signature and publishes a GitHub Release with the APK and its SHA-256. The version name is `X.Y.Z` and the version code `X*10000 + Y*100 + Z` (`infra/scripts/android-version.mjs`; minor and patch stay below 100), so every later release can be installed over the earlier one. Pull requests and the debug build never see the key: the release build stays unsigned unless `LEDGERLINE_KEYSTORE_FILE`, `LEDGERLINE_KEYSTORE_PASSWORD`, `LEDGERLINE_KEY_ALIAS` and `LEDGERLINE_KEY_PASSWORD` are all set.
+
+### One-time setup (the owner)
+
+1. **Create the key** on your own computer, with long random passwords from your password manager. A lost key means no update can ever be installed over the app (uninstall and reinstall, after sending every change), so do the backup in step 2 before anything else.
+
+   ```bash
+   keytool -genkeypair -v -keystore ledgerline-release.jks -storetype PKCS12 -alias ledgerline \
+     -keyalg RSA -keysize 4096 -validity 10950
+   keytool -list -v -keystore ledgerline-release.jks -alias ledgerline | grep 'SHA256:'   # the certificate fingerprint
+   ```
+
+2. **Back it up** encrypted with your age public key, as the off-site backups are, and keep a copy in the password manager. Put the keystore and a text file with its alias and both passwords in one archive, then prove the backup works by restoring it into a temporary folder and comparing the fingerprint:
+
+   ```bash
+   tar -cf ledgerline-android-key.tar ledgerline-release.jks ledgerline-release-passwords.txt
+   age -r <your age public key> -o ledgerline-android-key.tar.age ledgerline-android-key.tar
+   age -d -i <your age identity file> ledgerline-android-key.tar.age | tar -xf - -C "$(mktemp -d)"   # then keytool -list on the copy
+   ```
+
+   Delete the unencrypted tar and the password file afterwards.
+3. **Create the environment.** In the repository settings add an environment `android-release` with you as the required reviewer, and limit it to the tags `android-v*`. Do not reuse `production`.
+4. **Add the secrets** to that environment (not to the repository): `ANDROID_KEYSTORE_BASE64` (the keystore, base64), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`. For example `base64 -i ledgerline-release.jks | gh secret set ANDROID_KEYSTORE_BASE64 --env android-release`, and `gh secret set <NAME> --env android-release` (it prompts, so nothing lands in the shell history) for the rest.
+5. **Pin the certificate.** Add the fingerprint as the repository variable `ANDROID_CERT_SHA256` (`gh variable set ANDROID_CERT_SHA256 --body '<fingerprint>'`). The workflow then refuses an APK signed with any other key. After the first release, write the fingerprint here too, so a downloaded APK can be checked against it: `apksigner verify --print-certs ledgerline-android-X.Y.Z.apk`.
+
+### Releasing
+
+```bash
+git switch main && git pull
+git tag -a android-v0.1.0 -m "Ledgerline for Android 0.1.0"
+git push origin android-v0.1.0
+```
+
+Approve the run in the Actions tab when the checks have passed. On the phone, download the APK from the GitHub Release, compare its SHA-256 with the release notes, and install it over the app. The debug build ("Ledgerline debug") can stay installed beside it. A server release is not needed.
