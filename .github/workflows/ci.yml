@@ -175,6 +175,18 @@ jobs:
       - name: Build and test the Android app
         working-directory: apps/android
         run: ./gradlew --no-daemon --stacktrace :api-client:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease
+      # The release workflow's signature check, run here against a throwaway key on this runner's own build tools, so a
+      # difference in apksigner's output shows up in a pull request and not after a release tag.
+      - name: Check the release signature step with a throwaway key
+        working-directory: apps/android
+        run: |
+          set -euo pipefail
+          password="$(openssl rand -hex 16)"
+          keytool -genkeypair -keystore "$RUNNER_TEMP/throwaway.jks" -storetype PKCS12 -alias throwaway -keyalg RSA \
+            -keysize 2048 -validity 2 -storepass "$password" -keypass "$password" -dname "CN=Throwaway"
+          LEDGERLINE_KEYSTORE_FILE="$RUNNER_TEMP/throwaway.jks" LEDGERLINE_KEYSTORE_PASSWORD="$password" \
+            LEDGERLINE_KEY_ALIAS=throwaway LEDGERLINE_KEY_PASSWORD="$password" ./gradlew --no-daemon :app:assembleRelease
+          ../../infra/scripts/android-verify-apk.sh app/build/outputs/apk/release/app-release.apk
       - name: Keep the debug APK for sideloading
         uses: actions/upload-artifact@v7
         with:
