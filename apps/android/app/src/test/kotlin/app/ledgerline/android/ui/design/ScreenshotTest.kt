@@ -7,7 +7,25 @@ import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.overlay.ShownLine
+import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.clients.ClientActions
+import app.ledgerline.android.ui.clients.ClientContent
+import app.ledgerline.android.ui.clients.ClientsListActions
+import app.ledgerline.android.ui.clients.ClientsListContent
+import app.ledgerline.android.ui.clients.contact
+import app.ledgerline.android.ui.clients.event
+import app.ledgerline.android.ui.clients.homeLoans
+import app.ledgerline.android.ui.clients.loan
+import app.ledgerline.android.ui.clients.payment
+import app.ledgerline.android.ui.clients.person
+import app.ledgerline.android.ui.clients.service
+import app.ledgerline.android.ui.loans.LoansListActions
+import app.ledgerline.android.ui.loans.LoansListContent
+import app.ledgerline.android.ui.loans.PersonActions
+import app.ledgerline.android.ui.loans.PersonContent
+import app.ledgerline.api.Contact
+import app.ledgerline.api.Service
 import app.ledgerline.android.ui.budgets.budgetLine
 import app.ledgerline.android.ui.budgets.budgetMonth
 import app.ledgerline.android.ui.home.HomeContent
@@ -183,11 +201,87 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         InsightsContent("2026-10", Online.Offline, open = emptySet(), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
     }
 
+    private val northwind = contact("Northwind Design", owed = 63000, oldest = "2026-09-21", phone = "555-0101", email = "accounts@northwind.example.com", note = "Invoices go out on the first of the month.")
+    private val logo = service("Logo refresh, round two", 45000, date = "2026-10-02", time = "14:30", due = "2026-10-10")
+    private val audit = service("Website audit", 30000, received = 12000, date = "2026-09-21", due = "2026-10-21")
+    private val colours = service("Brand colours and type", 20000, received = 20000, date = "2026-09-02")
+    private val photos = service("Menu photography with a rather long description", 8000, received = 5000, date = "2026-08-14", writtenOff = 3000, reason = "Rounded down as a thank-you")
+    private val auditPayment = payment(audit, 12000, date = "2026-10-05", tip = 1000, note = "Paid by card")
+
+    @Test
+    fun clients() = shot("clients", Tab.More) {
+        val rows = listOf(
+            northwind,
+            contact("Harbor Cafe"),
+            contact("Overseas Print Shop", owed = 98000, oldest = "2026-10-01", balances = listOf(Money(80000, "EUR"), Money(18000, "USD")), unconverted = listOf("EUR")),
+            contact("Willow Lane Studio with a long name", owed = 123456789, oldest = "2026-07-04", archived = true),
+        )
+        ClientsListContent("", "all", Online.Ready(Paged(rows, hasMore = true)), ClientsListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    @Test
+    fun clientsSearch() = shot("clients-search", Tab.More) {
+        ClientsListContent("north", "all", Online.Ready(Paged(listOf(northwind), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    @Test
+    fun clientsEmpty() = shot("clients-empty", Tab.More) {
+        ClientsListContent("zzz", "all", Online.Ready(Paged(emptyList<Contact>(), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    @Test
+    fun clientsOffline() = shot("clients-offline", Tab.More) { ClientsListContent("", "all", Online.Offline, ClientsListActions({}, {}, {}, {}, {}, {})) }
+
+    @Test
+    fun client() = shot("client", Tab.More) {
+        ClientContent(
+            Online.Ready(northwind),
+            Online.Ready(Paged(listOf(logo, audit, colours, photos), hasMore = true)),
+            Online.Loading,
+            mapOf("website-audit" to Online.Ready(listOf(auditPayment))),
+            today = "2026-10-23",
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}),
+        )
+    }
+
+    @Test
+    fun clientHistory() = shot("client-history", Tab.More) {
+        val events = listOf(
+            event("paymentCreated", audit, auditPayment, createdAt = "2026-10-23T09:09:00.000Z"),
+            event("paymentEdited", audit, auditPayment, before = payment(audit, 10000), createdAt = "2026-10-22T09:09:00.000Z"),
+            event("writtenOff", photos, createdAt = "2026-10-21T09:09:00.000Z"),
+            event("created", logo, createdAt = "2026-10-02T09:09:00.000Z"),
+        )
+        ClientContent(
+            Online.Ready(northwind.copy(oldestOpenServiceDate = null, phone = null, email = null, note = null)),
+            Online.Ready(Paged(emptyList<Service>(), hasMore = false)),
+            Online.Ready(Paged(events, hasMore = false)),
+            emptyMap(),
+            today = "2026-10-23",
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}),
+        )
+    }
+
+    @Test
+    fun loans() = shot("loans", Tab.More) {
+        val rows = listOf(person("Sam Rivera", "USD" to 20000L), person("Jo Chen", "USD" to -15000L, "EUR" to 4000L), person("Casey Morgan"), person("Alex Settled", "USD" to 0L))
+        LoansListContent(Online.Ready(homeLoans(20000, 15000)), "", "active", Online.Ready(Paged(rows, hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    @Test
+    fun loan() = shot("loan", Tab.More) {
+        PersonContent(
+            Online.Ready(contact("Jo Chen", origin = "loan")),
+            Online.Ready(listOf(loan("USD", -15000, opening = -5000), loan("EUR", 4000), loan("GBP", 0))),
+            PersonActions({}, {}, {}),
+        )
+    }
+
     @Test
     fun more() = shot("more", Tab.More) {
         MoreContent(
             MoreState(hideAmounts = false, allowScreenshots = false, unsent = 0, attention = 2, canLock = true, signingOut = false),
-            MoreActions({}, {}, {}, {}, {}, {}),
+            MoreActions({}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
         )
     }

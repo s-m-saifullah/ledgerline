@@ -44,6 +44,57 @@ interface LedgerlineApi {
     @GET("api/v1/ledgers/{ledgerId}/reports/net-worth")
     suspend fun netWorth(@Path("ledgerId") ledgerId: String, @Query("to") to: String, @Query("months") months: Int): NetWorthReport
 
+    /** Clients (slice 5): [kind] is `clients`, [status] `all`, `active` or `archived`; read online, never stored. */
+    @GET("api/v1/ledgers/{ledgerId}/contacts")
+    suspend fun contacts(
+        @Path("ledgerId") ledgerId: String,
+        @Query("kind") kind: String,
+        @Query("status") status: String,
+        @Query("text") text: String?,
+        @Query("cursor") cursor: String?,
+        @Query("limit") limit: Int,
+    ): ContactList
+
+    @GET("api/v1/ledgers/{ledgerId}/contacts/{contactId}")
+    suspend fun contact(@Path("ledgerId") ledgerId: String, @Path("contactId") contactId: String): Contact
+
+    @GET("api/v1/ledgers/{ledgerId}/receivables")
+    suspend fun services(
+        @Path("ledgerId") ledgerId: String,
+        @Query("contactId") contactId: String,
+        @Query("cursor") cursor: String?,
+        @Query("limit") limit: Int,
+    ): ServiceList
+
+    @GET("api/v1/ledgers/{ledgerId}/receivables/{receivableId}/payments")
+    suspend fun payments(
+        @Path("ledgerId") ledgerId: String,
+        @Path("receivableId") receivableId: String,
+        @Query("cursor") cursor: String?,
+        @Query("limit") limit: Int,
+    ): PaymentList
+
+    @GET("api/v1/ledgers/{ledgerId}/contacts/{contactId}/history")
+    suspend fun history(
+        @Path("ledgerId") ledgerId: String,
+        @Path("contactId") contactId: String,
+        @Query("cursor") cursor: String?,
+        @Query("limit") limit: Int,
+    ): HistoryList
+
+    /** Loans (slice 5): the people you lend to or borrow from, and one person's loans. */
+    @GET("api/v1/ledgers/{ledgerId}/loans")
+    suspend fun loanPeople(
+        @Path("ledgerId") ledgerId: String,
+        @Query("status") status: String,
+        @Query("text") text: String?,
+        @Query("cursor") cursor: String?,
+        @Query("limit") limit: Int,
+    ): LoanPersonList
+
+    @GET("api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans")
+    suspend fun loans(@Path("ledgerId") ledgerId: String, @Path("contactId") contactId: String): LoanList
+
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")
     suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse

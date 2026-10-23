@@ -48,7 +48,9 @@ import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.editor.EditorScreen
 import app.ledgerline.android.ui.editor.EditorTarget
 import app.ledgerline.android.ui.format.formatUpdated
+import app.ledgerline.android.ui.clients.ClientsScreen
 import app.ledgerline.android.ui.insights.InsightsContent
+import app.ledgerline.android.ui.loans.LoansScreen
 import app.ledgerline.android.ui.insights.InsightsViewModel
 import app.ledgerline.android.ui.more.MoreScreen
 import java.util.UUID
@@ -82,6 +84,8 @@ fun SignedInScreen(
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     // What is open on Insights (a category's subcategories, a chart's figures); a list, so it can be saved.
     var openInsights by rememberSaveable { mutableStateOf(listOf<String>()) }
+    // What More has open: "clients", "loans" or nothing (More itself).
+    var moreOpen by rememberSaveable { mutableStateOf<String?>(null) }
     val line by viewModel.syncLine.collectAsState()
     val unsent by viewModel.unsent.collectAsState()
     val attention by viewModel.attention.collectAsState()
@@ -101,7 +105,7 @@ fun SignedInScreen(
     }
     val status = SyncStatus(line, unsent, attention.size)
     val header: @Composable () -> Unit = { SyncHeader(status, onRetry = viewModel::refresh, onOpenAttention = { showAttention = true }) }
-    SignedInFrame(tab, onSelect = { tab = it }, onAdd = { edit(EditorTarget.New()) }) { inside ->
+    SignedInFrame(tab, onSelect = { if (it == Tab.More) moreOpen = null; tab = it }, onAdd = { edit(EditorTarget.New()) }) { inside ->
         when (tab) {
             Tab.Home, Tab.Transactions -> PullToRefreshBox(
                 isRefreshing = line.running,
@@ -162,7 +166,11 @@ fun SignedInScreen(
                     onRetry = insights::retry,
                 )
             }
-            Tab.More -> MoreScreen(viewModel, { showAttention = true }, ListBottomSpace, inside)
+            Tab.More -> when (moreOpen) {
+                "clients" -> ClientsScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
+                "loans" -> LoansScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
+                else -> MoreScreen(viewModel, { showAttention = true }, { moreOpen = "clients" }, { moreOpen = "loans" }, ListBottomSpace, inside)
+            }
         }
     }
 }

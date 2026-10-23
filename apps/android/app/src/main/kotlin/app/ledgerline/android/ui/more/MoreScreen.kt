@@ -32,6 +32,7 @@ import app.ledgerline.android.settings.PhoneSettings
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.CardTitle
 import app.ledgerline.android.ui.design.LedgerCard
+import app.ledgerline.android.ui.design.NavCard
 import app.ledgerline.android.ui.design.PageHeader
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.home.SignedInViewModel
@@ -68,10 +69,20 @@ class MoreActions(
     val refreshEverything: () -> Unit,
     val lock: () -> Unit,
     val signOut: () -> Unit,
+    val openClients: () -> Unit,
+    val openLoans: () -> Unit,
 )
 
 @Composable
-fun MoreScreen(signedIn: SignedInViewModel, openAttention: () -> Unit, bottomSpace: Dp, modifier: Modifier = Modifier, more: MoreViewModel = hiltViewModel()) {
+fun MoreScreen(
+    signedIn: SignedInViewModel,
+    openAttention: () -> Unit,
+    openClients: () -> Unit,
+    openLoans: () -> Unit,
+    bottomSpace: Dp,
+    modifier: Modifier = Modifier,
+    more: MoreViewModel = hiltViewModel(),
+) {
     val hide by more.privacyMode.collectAsState()
     val screenshots by more.allowScreenshots.collectAsState()
     val unsent by signedIn.unsent.collectAsState()
@@ -79,7 +90,7 @@ fun MoreScreen(signedIn: SignedInViewModel, openAttention: () -> Unit, bottomSpa
     val signingOut by signedIn.signingOut.collectAsState()
     MoreContent(
         MoreState(hide, screenshots, unsent, attention.size, signedIn.canLock, signingOut),
-        MoreActions(more::setPrivacyMode, more::setAllowScreenshots, openAttention, signedIn::refreshEverything, signedIn::lock, signedIn::signOut),
+        MoreActions(more::setPrivacyMode, more::setAllowScreenshots, openAttention, signedIn::refreshEverything, signedIn::lock, signedIn::signOut, openClients, openLoans),
         bottomSpace,
         modifier,
     )
@@ -97,6 +108,8 @@ fun MoreContent(state: MoreState, actions: MoreActions, bottomSpace: Dp, modifie
                 subtitle = stringResource(R.string.more_subtitle),
             )
         }
+        item { NavCard(R.drawable.ic_wallet, stringResource(R.string.more_clients_title), stringResource(R.string.more_clients_detail), actions.openClients) }
+        item { NavCard(R.drawable.ic_hand_coins, stringResource(R.string.more_loans_title), stringResource(R.string.more_loans_detail), actions.openLoans) }
         item {
             LedgerCard {
                 CardTitle(stringResource(R.string.settings_privacy), stringResource(R.string.settings_this_phone))

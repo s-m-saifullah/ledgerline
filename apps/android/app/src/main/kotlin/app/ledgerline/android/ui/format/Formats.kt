@@ -71,3 +71,11 @@ fun sharePercent(part: Long, whole: Long, locale: Locale = Locale.getDefault()):
     // Rounded once, half up, to a tenth of a percent (three decimals of the fraction), as the web's toFixed(1).
     return format.format(BigDecimal.valueOf(part).divide(BigDecimal.valueOf(whole), 3, RoundingMode.HALF_UP))
 }
+
+/** "2:30 PM" (or "14:30", by the phone's language) for a service's `HH:mm` time. */
+fun formatServiceTime(time: String, locale: Locale = Locale.getDefault()): String =
+    java.time.LocalTime.parse(time).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+
+/** A moment from the server (UTC) as the phone's local date and time, as the web's `toLocaleString`. */
+fun formatMoment(serverTime: String, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
+    Instant.parse(serverTime).atZone(zone).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(locale))

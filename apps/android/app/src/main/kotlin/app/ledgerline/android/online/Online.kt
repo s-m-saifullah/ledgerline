@@ -51,3 +51,11 @@ class OnlineReader @Inject constructor(
         }
     }
 }
+
+/** The same state with its answer changed, for a screen that shows part of what it read or reshapes it. */
+fun <T, R> Online<T>.map(change: (T) -> R): Online<R> = when (this) {
+    Online.Loading -> Online.Loading
+    Online.Offline -> Online.Offline
+    Online.Failed -> Online.Failed
+    is Online.Ready -> Online.Ready(change(value))
+}

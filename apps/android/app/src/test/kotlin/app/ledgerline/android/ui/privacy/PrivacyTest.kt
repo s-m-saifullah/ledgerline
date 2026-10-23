@@ -3,16 +3,19 @@ package app.ledgerline.android.ui.privacy
 import android.app.Application
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.unit.dp
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.overlay.AttentionItem
@@ -23,7 +26,25 @@ import app.ledgerline.android.ui.home.EntryRow
 import app.ledgerline.android.ui.home.MonthCard
 import app.ledgerline.android.ui.home.homeSummary
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.clients.ClientActions
+import app.ledgerline.android.ui.clients.ClientCard
+import app.ledgerline.android.ui.clients.ClientContent
+import app.ledgerline.android.ui.clients.ClientsListActions
+import app.ledgerline.android.ui.clients.ClientsListContent
+import app.ledgerline.android.ui.clients.contact
+import app.ledgerline.android.ui.clients.event
+import app.ledgerline.android.ui.clients.homeLoans
+import app.ledgerline.android.ui.clients.loan
+import app.ledgerline.android.ui.clients.payment
+import app.ledgerline.android.ui.clients.person
+import app.ledgerline.android.ui.clients.service
+import app.ledgerline.android.ui.loans.LoansListActions
+import app.ledgerline.android.ui.loans.LoansListContent
+import app.ledgerline.android.ui.loans.PersonActions
+import app.ledgerline.android.ui.loans.PersonCard
+import app.ledgerline.android.ui.loans.PersonContent
 import app.ledgerline.android.ui.insights.CashFlowChart
 import app.ledgerline.android.ui.insights.InsightsContent
 import app.ledgerline.android.ui.insights.NetWorthChart
@@ -117,6 +138,50 @@ class PrivacyTest {
     fun theNetWorthFiguresHideEveryAmount() = check {
         val report = insights().netWorth
         NetWorthChart(report.copy(months = report.months.map { it.copy(netWorth = Money(123456, "USD")) }), "2026-10", open = true, onToggle = {})
+    }
+
+    /** Every amount is 1,234.56, so one check sees them all; a frame tall enough that a list composes every row. */
+    private val tall = Modifier.requiredHeight(6000.dp)
+
+    @Test
+    fun aClientCardHidesWhatTheyOweIncludingTheValueAtTodaysRates() = check {
+        ClientCard(
+            contact("Northwind", owed = 123456, oldest = "2026-09-21", balances = listOf(Money(123456, "USD"), Money(123456, "EUR"))),
+            onClick = {},
+        )
+    }
+
+    @Test
+    fun aClientsScreenHidesWhatIsOwedServicesPaymentsTipsAndHistory() = check {
+        val audit = service("Website audit", 123456, received = 123456, due = "2026-10-21")
+        val corrected = payment(audit, 123456, tip = 123456, note = "Paid by card")
+        ClientContent(
+            Online.Ready(contact("Northwind", owed = 123456, oldest = "2026-09-21", phone = "555-0101")),
+            Online.Ready(Paged(listOf(audit, service("Logo", 123456, writtenOff = 123456, reason = "A thank-you")), hasMore = false)),
+            Online.Ready(Paged(listOf(event("paymentEdited", audit, corrected, before = corrected)), hasMore = false)),
+            mapOf("website-audit" to Online.Ready(listOf(corrected))),
+            today = "2026-10-23",
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}),
+            modifier = tall,
+        )
+    }
+
+    @Test
+    fun theClientsListHidesEveryBalance() = check {
+        ClientsListContent("", "all", Online.Ready(Paged(listOf(contact("Northwind", owed = 123456), contact("Harbor", owed = 123456)), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}), tall)
+    }
+
+    @Test
+    fun aPersonCardHidesWhatTheyOweYou() = check { PersonCard(person("Sam", "USD" to 123456L), onClick = {}) }
+
+    @Test
+    fun aPersonScreenHidesTheirBalanceAndWhatStoodBefore() = check {
+        PersonContent(Online.Ready(contact("Sam", origin = "loan")), Online.Ready(listOf(loan("USD", 123456, opening = 123456))), PersonActions({}, {}, {}), tall)
+    }
+
+    @Test
+    fun theLoansListHidesWhatIsLentOutAndOwed() = check {
+        LoansListContent(Online.Ready(homeLoans(123456, 123456)), "", "active", Online.Ready(Paged(listOf(person("Sam", "USD" to 123456L)), hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}), tall)
     }
 
     @Test
