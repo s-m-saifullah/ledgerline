@@ -9,7 +9,10 @@ import app.ledgerline.api.ContactList
 import app.ledgerline.api.HistoryList
 import app.ledgerline.api.PaymentList
 import app.ledgerline.api.ServiceList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -90,16 +93,22 @@ class ClientsViewModelTest {
     }
 
     @Test
-    fun aSearchAndAStatusAreSentAndAnotherViewShowsLoading() {
+    fun aSearchAndAStatusAreSentAndTheRowsStayOnScreenUntilTheNewOnesArrive() {
         harness.pulled("2026-10-22T10:00:00.000Z")
         model.clients.rows()
 
-        harness.delayMillis = 1_000
+        // Typing must not swap the list for a Loading card between keystrokes.
+        val shown = mutableListOf<Online<Paged<Contact>>>()
+        val watcher = CoroutineScope(Dispatchers.Unconfined).launch { model.clients.collect { shown += it } }
+        harness.delayMillis = 300
         model.search("north")
-        assertEquals(Online.Loading, model.clients.value)
-        model.clients.rows()
+        harness.until { clientRequests().any { r -> "text=north" in r } }
         model.filter("archived")
-        model.clients.settled { (it as? Online.Ready) != null && clientRequests().any { r -> "status=archived" in r } }
+        harness.until { clientRequests().any { r -> "status=archived" in r } }
+        Thread.sleep(600)
+        watcher.cancel()
+        assertTrue(shown.toString(), shown.none { it == Online.Loading })
+        assertEquals(2, (model.clients.value as Online.Ready).value.items.size)
         assertTrue(clientRequests().any { "status=all" in it && "text=north" in it })
         assertTrue(clientRequests().any { "status=archived" in it && "text=north" in it })
     }

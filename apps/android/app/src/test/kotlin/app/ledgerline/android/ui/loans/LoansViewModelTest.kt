@@ -14,7 +14,10 @@ import app.ledgerline.api.HomeSummary
 import app.ledgerline.api.LoanList
 import app.ledgerline.api.LoanPerson
 import app.ledgerline.api.LoanPersonList
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -81,13 +84,20 @@ class LoansViewModelTest {
     }
 
     @Test
-    fun aSearchAndAStatusAreSent() {
+    fun aSearchAndAStatusAreSentAndThePeopleStayOnScreenUntilTheNewOnesArrive() {
         harness.pulled("2026-10-22T10:00:00.000Z")
         model.people.rows()
+
+        val shown = mutableListOf<Online<Paged<LoanPerson>>>()
+        val watcher = CoroutineScope(Dispatchers.Unconfined).launch { model.people.collect { shown += it } }
+        harness.delayMillis = 300
         model.search("sam")
-        model.people.settled { personRequests().any { r -> "text=sam" in r } }
+        harness.until { personRequests().any { r -> "text=sam" in r } }
         model.filter("all")
-        model.people.settled { personRequests().any { r -> "status=all" in r && "text=sam" in r } }
+        harness.until { personRequests().any { r -> "status=all" in r && "text=sam" in r } }
+        Thread.sleep(600)
+        watcher.cancel()
+        assertTrue(shown.toString(), shown.none { it == Online.Loading })
         assertTrue(personRequests().any { "status=active" in it && "text=sam" in it })
     }
 

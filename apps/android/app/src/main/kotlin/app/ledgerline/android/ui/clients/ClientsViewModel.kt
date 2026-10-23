@@ -62,7 +62,9 @@ class ClientsViewModel @Inject constructor(
     private val query = combine(_text.debounce { if (it.isEmpty()) 0L else searchDelayMillis }, _status, ::ClientsQuery)
     private val ofClient = reads.readings(_selected.filterNotNull(), retries)
 
-    private val list = PagedRead(viewModelScope, reads.readings(query, retries), { it.view() }) { reading, cursor ->
+    // A search or status change is the same list: its rows stay on screen until the new first page arrives, so typing
+    // does not flash a Loading card between keystrokes. Only another ledger shows Loading.
+    private val list = PagedRead(viewModelScope, reads.readings(query, retries), { it.ledger }) { reading, cursor ->
         val (text, status) = reading.params
         reader.read { contacts(reading.ledger, "clients", status, text.ifEmpty { null }, cursor, PageSize) }.map { Page(it.items, it.nextCursor) }
     }

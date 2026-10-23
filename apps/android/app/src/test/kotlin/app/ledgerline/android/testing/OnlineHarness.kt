@@ -93,6 +93,11 @@ class OnlineHarness {
         targets.toList()
     }
 
+    /** Waits until [condition] holds, polling: for what a state flow cannot tell (a request that returns the same rows). */
+    fun until(condition: () -> Boolean) = runBlocking {
+        withTimeout(5_000) { while (!condition()) delay(10) }
+    }
+
     /** True when nothing arrives in half a second: for "nothing is read until..." checks. */
     fun quiet(): Boolean = server.takeRequest(500, TimeUnit.MILLISECONDS) == null
 }
