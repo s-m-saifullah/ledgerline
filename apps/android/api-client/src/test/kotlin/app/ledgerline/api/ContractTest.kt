@@ -128,6 +128,62 @@ class ContractTest {
     )
 
     @Test
+    fun contactsMatch() = assertMatches(
+        SchemaContract.differences(
+            ContactList.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/contacts", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun contactMatches() = assertMatches(
+        SchemaContract.differences(
+            Contact.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/contacts/{contactId}", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun servicesMatch() = assertMatches(
+        SchemaContract.differences(
+            ServiceList.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/receivables", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun paymentsMatch() = assertMatches(
+        SchemaContract.differences(
+            PaymentList.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/receivables/{receivableId}/payments", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun historyMatches() = assertMatches(
+        SchemaContract.differences(
+            HistoryList.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/contacts/{contactId}/history", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun loanPeopleMatch() = assertMatches(
+        SchemaContract.differences(
+            LoanPersonList.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/loans", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun loansMatch() = assertMatches(
+        SchemaContract.differences(
+            LoanList.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans", "get", "200"),
+        ),
+    )
+
+    @Test
     fun problemMatches() = assertMatches(
         SchemaContract.differences(Problem.serializer().descriptor, SchemaContract.response("/api/v1/ledgers", "get", "401")),
     )

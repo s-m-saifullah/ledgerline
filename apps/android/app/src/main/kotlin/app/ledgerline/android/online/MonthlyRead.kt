@@ -8,9 +8,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transformLatest
@@ -38,10 +35,7 @@ class MonthlyRead<T>(
     private var last: Online<T> = Online.Loading
 
     val state: StateFlow<Online<T>> = run {
-        // Room re-runs a watched query on every write to its table, so repeats of the same ledger and pull are dropped.
-        val pulled = reads.mirroredLedger().distinctUntilChanged().flatMapLatest { ledger ->
-            if (ledger == null) flowOf(null) else reads.cursorOf(ledger).map { ledger to it?.serverTime }
-        }.distinctUntilChanged()
+        val pulled = reads.pulls()
         combine(pulled, _month, retries) { ledger, month, _ -> ledger?.first to month.toString() }
             .transformLatest { (ledger, month) ->
                 if (ledger == null) return@transformLatest
