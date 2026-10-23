@@ -66,7 +66,7 @@ fun SignInScreen(origin: String, onChangeAddress: () -> Unit, viewModel: SignInV
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
-                TextButton(onClick = viewModel::dismissNotice, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::dismissNotice, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.dismiss))
                 }
             }
@@ -93,7 +93,7 @@ fun SignInScreen(origin: String, onChangeAddress: () -> Unit, viewModel: SignInV
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (state.step == SignInStep.Password) {
-                TextButton(onClick = onChangeAddress, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = onChangeAddress, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.address_change))
                 }
             }
@@ -123,7 +123,7 @@ private fun PasswordStep(state: SignInUiState, viewModel: SignInViewModel) {
         enabled = !state.submitting,
         visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
-            TextButton(onClick = { showPassword = !showPassword }, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(shape = MaterialTheme.shapes.small, onClick = { showPassword = !showPassword }, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(if (showPassword) R.string.signin_hide else R.string.signin_show))
             }
         },
@@ -131,6 +131,7 @@ private fun PasswordStep(state: SignInUiState, viewModel: SignInViewModel) {
         keyboardActions = KeyboardActions(onDone = { viewModel.submit() }),
     )
     Button(
+        shape = MaterialTheme.shapes.small,
         onClick = viewModel::submit,
         enabled = !state.submitting,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
@@ -159,6 +160,7 @@ private fun CodeStep(state: SignInUiState, viewModel: SignInViewModel) {
         keyboardActions = KeyboardActions(onDone = { viewModel.submit() }),
     )
     Button(
+        shape = MaterialTheme.shapes.small,
         onClick = viewModel::submit,
         enabled = !state.submitting,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
@@ -167,7 +169,7 @@ private fun CodeStep(state: SignInUiState, viewModel: SignInViewModel) {
         Switch(checked = state.useBackupCode, onCheckedChange = viewModel::onUseBackupCode, enabled = !state.submitting)
         Text(stringResource(R.string.code_use_backup), style = MaterialTheme.typography.bodyMedium)
     }
-    TextButton(onClick = viewModel::backToPassword, enabled = !state.submitting, modifier = Modifier.heightIn(min = 48.dp)) {
+    TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::backToPassword, enabled = !state.submitting, modifier = Modifier.heightIn(min = 48.dp)) {
         Text(stringResource(R.string.back))
     }
 }
