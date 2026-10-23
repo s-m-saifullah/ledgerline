@@ -161,6 +161,7 @@ class EditorViewModelTest {
 
     @Test
     fun theSameEditorOpenedAgainStartsFreshAfterASave() = runBlocking {
+        memory.categories["expense"] = id(20)
         val vm = editor()
         vm.opened(EditorTarget.New())
         vm.update { it.copy(amount = "1") }
@@ -205,6 +206,7 @@ class EditorViewModelTest {
 
     @Test
     fun mistakesAreShownAndNothingIsSaved() = runBlocking {
+        memory.categories["expense"] = id(20)
         val vm = editor()
         vm.opened(EditorTarget.New())
         vm.save()
@@ -213,6 +215,44 @@ class EditorViewModelTest {
         vm.save()
         assertEquals(setOf(FormError.AmountTooPrecise), vm.saved().errors)
         assertTrue(rows().isEmpty())
+    }
+
+    @Test
+    fun anExpenseOrIncomeNeedsACategoryAsOnTheWeb() = runBlocking {
+        val vm = editor()
+        val state = vm.opened(EditorTarget.New())
+        assertNull(state.form.categoryId)
+        vm.update { it.copy(amount = "5") }
+        vm.save()
+        assertEquals(setOf(FormError.CategoryMissing), vm.saved().errors)
+        assertTrue(rows().isEmpty())
+        // Choosing one clears the error and saves.
+        vm.update { it.copy(categoryId = id(20)) }
+        assertTrue(vm.state.value!!.errors.isEmpty())
+        vm.save()
+        assertTrue(vm.saved().done)
+        assertEquals(1, rows().size)
+    }
+
+    @Test
+    fun aTransferNeedsNoCategory() = runBlocking {
+        val vm = editor()
+        vm.opened(EditorTarget.New())
+        // Switching kind clears the second account, so it is chosen in a second step, as on screen.
+        vm.update { it.copy(mode = EntryMode.Transfer, accountId = id(1), amount = "10") }
+        vm.update { it.copy(toAccountId = id(2)) }
+        vm.save()
+        assertTrue(vm.saved().done)
+    }
+
+    @Test
+    fun anOlderEntryWithoutACategoryAsksForOneBeforeItCanBeSavedAgain() = runBlocking {
+        val created = outbox.createEntry(ledger, entryCreateBody(EntryValues("expense", id(1), null, "2026-10-22", -500, "USD", "Cafe", null, emptyList())))
+        val vm = editor()
+        assertNull(vm.opened(EditorTarget.Entry(created)).form.categoryId)
+        vm.update { it.copy(payee = "Cafe 2") }
+        vm.save()
+        assertEquals(setOf(FormError.CategoryMissing), vm.saved().errors)
     }
 
     @Test
@@ -234,6 +274,7 @@ class EditorViewModelTest {
 
     @Test
     fun aNewEntryHasNoTimeUntilTheOwnerAddsOne() = runBlocking {
+        memory.categories["expense"] = id(20)
         val vm = editor()
         assertNull(vm.opened(EditorTarget.New()).form.time)
         vm.update { it.copy(amount = "4", time = "07:45") }
@@ -272,7 +313,7 @@ class EditorViewModelTest {
 
     @Test
     fun editingAnUnsentEntryChangesItsCreate() = runBlocking {
-        val created = outbox.createEntry(ledger, entryCreateBody(EntryValues("expense", id(1), null, "2026-10-22", -500, "USD", "Cafe", null, emptyList())))
+        val created = outbox.createEntry(ledger, entryCreateBody(EntryValues("expense", id(1), id(20), "2026-10-22", -500, "USD", "Cafe", null, emptyList())))
         val vm = editor()
         assertEquals("5.00", vm.opened(EditorTarget.Entry(created)).form.amount)
         vm.update { it.copy(amount = "6") }
@@ -348,7 +389,7 @@ class EditorViewModelTest {
 
     @Test
     fun aRejectedNewEntryCanBeCorrectedAndSentAgainAsANewChange() = runBlocking {
-        val created = outbox.createEntry(ledger, entryCreateBody(EntryValues("expense", id(1), null, "2026-10-22", -500, "USD", "Cafe", null, emptyList())))
+        val created = outbox.createEntry(ledger, entryCreateBody(EntryValues("expense", id(1), id(20), "2026-10-22", -500, "USD", "Cafe", null, emptyList())))
         val batch = outbox.takeBatch(ledger)
         outbox.settle(ledger, batch, listOf(rejected(created)))
         val vm = editor()

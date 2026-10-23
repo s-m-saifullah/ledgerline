@@ -1,6 +1,7 @@
 package app.ledgerline.android.ui.editor
 
 import android.content.Context
+import app.ledgerline.android.mirror.CategoryRow
 import androidx.core.content.edit
 import dagger.Binds
 import dagger.Module
@@ -46,10 +47,35 @@ enum class ReadOnly { Split, Linked, TransferExtras, Gone }
 
 enum class FormError {
     AmountMissing, AmountInvalid, AmountTooPrecise, AmountZero, AmountTooLarge,
-    AccountMissing, ToAccountMissing, SameAccount, CouldNotSave,
+    AccountMissing, ToAccountMissing, SameAccount, CategoryMissing, CouldNotSave,
 }
 
-data class Choice(val id: String, val label: String, val currency: String = "")
+/** One entry of a list the owner picks from; [archived] ones are offered only while they are the current choice. */
+data class Choice(val id: String, val label: String, val currency: String = "", val archived: Boolean = false)
+
+/**
+ * The categories of one kind in the web's order: each main category with its subcategories under it, by their sort
+ * order. Archived ones are left out unless one is the current choice, which then shows as archived.
+ */
+internal fun categoryChoices(categories: List<CategoryRow>, kind: String, selectedId: String?): List<Choice> {
+    val ofKind = categories.filter { it.kind == kind }
+    val ids = ofKind.map { it.id }.toSet()
+    val order = compareBy<CategoryRow>({ it.sortOrder }, { it.id })
+    // A subcategory whose main category is gone is listed as a main one rather than lost.
+    val roots = ofKind.filter { it.parentId == null || it.parentId !in ids }.sortedWith(order)
+    val children = ofKind.filter { it.parentId in ids }.groupBy { it.parentId }
+    return roots.flatMap { root ->
+        (listOf(root) + children[root.id].orEmpty().sortedWith(order)).mapNotNull { category ->
+            val archived = category.archivedAt != null || root.archivedAt != null
+            if (archived && category.id != selectedId) return@mapNotNull null
+            val label = if (category.id != root.id) "${root.name} › ${category.name}" else category.name
+            Choice(category.id, label, archived = archived)
+        }
+    }
+}
+
+/** The most tags one entry can have (the server's limit, as the web's picker). */
+const val MaxTagsPerEntry = 10
 
 data class EditorForm(
     val mode: EntryMode,
