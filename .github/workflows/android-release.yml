@@ -1,0 +1,122 @@
+name: Android release
+# Started by a tag android-vX.Y.Z (ADR 0043, slice 5). The signing key lives only in the android-release environment,
+# whose required reviewer is the owner, so no pull request or other workflow can read it.
+on:
+  push:
+    tags: ['android-v*']
+permissions:
+  contents: read
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.rule.outputs.name }}
+      code: ${{ steps.rule.outputs.code }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+      - id: rule
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node infra/scripts/android-version.mjs "$TAG" >> "$GITHUB_OUTPUT"
+      - name: The tag must be on main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+  checks:
+    needs: version
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    uses: ./.github/workflows/ci.yml
+    with:
+      checkout_ref: ${{ github.ref }}
+  release:
+    needs: [version, checks]
+    runs-on: ubuntu-latest
+    # The owner approves here; the key secrets are visible to this job only after that.
+    environment: android-release
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.version.outputs.name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: wrapper
+      - name: Install the Android SDK platform
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0"
+      - name: Build the signed release APK
+        working-directory: apps/android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          LEDGERLINE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          LEDGERLINE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          LEDGERLINE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          LEDGERLINE_VERSION_NAME: ${{ needs.version.outputs.name }}
+          LEDGERLINE_VERSION_CODE: ${{ needs.version.outputs.code }}
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_BASE64 LEDGERLINE_KEYSTORE_PASSWORD LEDGERLINE_KEY_ALIAS LEDGERLINE_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then echo "::error::Signing secret for $name is missing from the android-release environment"; exit 1; fi
+          done
+          export LEDGERLINE_KEYSTORE_FILE="$RUNNER_TEMP/ledgerline-release.jks"
+          (umask 077; printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$LEDGERLINE_KEYSTORE_FILE")
+          ./gradlew --no-daemon --stacktrace :app:assembleRelease
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ledgerline-release.jks"
+      - name: Verify the signature
+        id: verify
+        env:
+          EXPECTED_CERT_SHA256: ${{ vars.ANDROID_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          apk=apps/android/app/build/outputs/apk/release/app-release.apk
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          "$apksigner" verify --verbose "$apk"
+          cert="$("$apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d ' \n')"
+          if [ -z "$cert" ]; then echo "::error::The APK is not signed"; exit 1; fi
+          if [ -n "$EXPECTED_CERT_SHA256" ] && [ "$cert" != "$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')" ]; then
+            echo "::error::The APK is signed with a different key than the repository variable ANDROID_CERT_SHA256"; exit 1
+          fi
+          echo "cert=$cert" >> "$GITHUB_OUTPUT"
+          mkdir release
+          cp "$apk" "release/ledgerline-android-$VERSION.apk"
+          (cd release && sha256sum "ledgerline-android-$VERSION.apk" > "ledgerline-android-$VERSION.apk.sha256")
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          CERT: ${{ steps.verify.outputs.cert }}
+        run: |
+          set -euo pipefail
+          sum="$(cut -d' ' -f1 "release/ledgerline-android-$VERSION.apk.sha256")"
+          {
+            echo "Signed release APK of Ledgerline for Android $VERSION."
+            echo
+            echo "- APK SHA-256: \`$sum\`"
+            echo "- Signing certificate SHA-256: \`$CERT\`"
+            echo
+            echo "Install it over the existing app; Android accepts it only with the same key and a higher version code."
+          } > "$RUNNER_TEMP/notes.md"
+          gh release create "$TAG" "release/ledgerline-android-$VERSION.apk" "release/ledgerline-android-$VERSION.apk.sha256" \
+            --verify-tag --title "Ledgerline for Android $VERSION" --notes-file "$RUNNER_TEMP/notes.md" --latest=false

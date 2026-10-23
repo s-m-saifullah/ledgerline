@@ -16,8 +16,9 @@ android {
         applicationId = "app.ledgerline.android"
         minSdk = 30
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        // A release workflow sets both from its tag (infra/scripts/android-version.mjs); other builds keep these.
+        versionCode = System.getenv("LEDGERLINE_VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("LEDGERLINE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "0.1.0"
         // The API version of the contract the app's types were checked against, shown in More.
         val contract = JsonSlurper().parse(rootProject.file("../../docs/openapi.json")) as Map<*, *>
         buildConfigField("String", "API_VERSION", "\"${(contract["info"] as Map<*, *>)["version"]}\"")
@@ -27,6 +28,24 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // The release key comes only from the environment (the android-release workflow, ADR 0043); with any of the four
+    // missing the release build stays unsigned, as in pull requests and on a developer's machine.
+    val keystoreFile = System.getenv("LEDGERLINE_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+    val keystorePassword = System.getenv("LEDGERLINE_KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+    val keyAlias = System.getenv("LEDGERLINE_KEY_ALIAS")?.takeIf { it.isNotBlank() }
+    val keyPassword = System.getenv("LEDGERLINE_KEY_PASSWORD")?.takeIf { it.isNotEmpty() }
+    val releaseSigning =
+        if (keystoreFile != null && keystorePassword != null && keyAlias != null && keyPassword != null) {
+            signingConfigs.create("release") {
+                storeFile = file(keystoreFile)
+                storePassword = keystorePassword
+                this.keyAlias = keyAlias
+                this.keyPassword = keyPassword
+            }
+        } else {
+            null
+        }
 
     buildTypes {
         debug {
@@ -40,6 +59,7 @@ android {
             buildConfigField("boolean", "ALLOW_CLEARTEXT", "false")
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = releaseSigning
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
