@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryLine
+import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.budgets.BudgetsViewModel
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.PageHeader
@@ -70,7 +72,11 @@ internal val ListBottomSpace = 96.dp
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel(), home: HomeViewModel = hiltViewModel()) {
+fun SignedInScreen(
+    viewModel: SignedInViewModel = hiltViewModel(),
+    home: HomeViewModel = hiltViewModel(),
+    budgets: BudgetsViewModel = hiltViewModel(),
+) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var showAttention by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
@@ -121,7 +127,19 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel(), home: HomeVie
                     }
                 }
             }
-            Tab.Budgets -> Later(R.string.budgets_title, R.string.later_budgets, inside)
+            Tab.Budgets -> PullToRefreshBox(
+                isRefreshing = line.running,
+                onRefresh = {
+                    viewModel.refresh()
+                    budgets.retry()
+                },
+                modifier = inside,
+            ) {
+                // Collecting the budgets is what reads them, so they are read only while this tab is open.
+                val month by budgets.month.collectAsState()
+                val state by budgets.budgets.collectAsState()
+                BudgetsContent(month.toString(), state, budgets::previous, budgets::next, budgets::retry)
+            }
             Tab.Insights -> Later(R.string.insights_title, R.string.later_insights, inside)
             Tab.More -> MoreScreen(viewModel, { showAttention = true }, ListBottomSpace, inside)
         }

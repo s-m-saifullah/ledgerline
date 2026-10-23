@@ -96,6 +96,14 @@ class ContractTest {
     )
 
     @Test
+    fun budgetsMatch() = assertMatches(
+        SchemaContract.differences(
+            BudgetMonth.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/budgets", "get", "200"),
+        ),
+    )
+
+    @Test
     fun problemMatches() = assertMatches(
         SchemaContract.differences(Problem.serializer().descriptor, SchemaContract.response("/api/v1/ledgers", "get", "401")),
     )

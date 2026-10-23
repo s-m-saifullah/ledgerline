@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -46,9 +47,9 @@ fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 val ScreenMargin = 16.dp
 val CardGap = 12.dp
 
-/** `.eyebrow` + `h1` + subtitle: the top of a page, scrolling with it. */
+/** `.eyebrow` + `h1` + subtitle: the top of a page, scrolling with it. [below] holds a control such as the month switcher. */
 @Composable
-fun PageHeader(title: String, eyebrow: String? = null, subtitle: String? = null) {
+fun PageHeader(title: String, eyebrow: String? = null, subtitle: String? = null, below: (@Composable () -> Unit)? = null) {
     Column(modifier = Modifier.fillMaxWidth().padding(start = ScreenMargin, end = ScreenMargin, top = 24.dp, bottom = 16.dp)) {
         if (eyebrow != null) {
             Text(
@@ -67,6 +68,7 @@ fun PageHeader(title: String, eyebrow: String? = null, subtitle: String? = null)
                 modifier = Modifier.padding(top = 8.dp),
             )
         }
+        below?.invoke()
     }
 }
 
@@ -125,7 +127,14 @@ fun HeroCard(label: String, amount: ShownMoney, notes: List<String>) {
  * narrow for both (the web's phone grid does the same), so an amount is never broken across lines.
  */
 @Composable
-fun StatCard(label: String, amount: ShownMoney, detail: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+fun StatCard(
+    label: String,
+    amount: ShownMoney,
+    detail: String,
+    modifier: Modifier = Modifier,
+    amountColor: Color = Color.Unspecified,
+    onClick: (() -> Unit)? = null,
+) {
     val described = listOf(label, amount.spoken, detail).joinToString(", ")
     LedgerCard(
         modifier = modifier
@@ -135,7 +144,7 @@ fun StatCard(label: String, amount: ShownMoney, detail: String, modifier: Modifi
     ) {
         BoxWithConstraints {
             val figure = @Composable {
-                Text(amount.text, style = MaterialTheme.typography.displaySmall.tabular(), maxLines = 1, softWrap = false)
+                Text(amount.text, style = MaterialTheme.typography.displaySmall.tabular(), color = amountColor, maxLines = 1, softWrap = false)
             }
             val words = @Composable { modifier: Modifier ->
                 Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -183,7 +192,7 @@ fun AmountRow(
     under: String?,
     described: String,
     divider: Boolean,
-    underColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    underColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     extra: (@Composable ColumnScope.() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {

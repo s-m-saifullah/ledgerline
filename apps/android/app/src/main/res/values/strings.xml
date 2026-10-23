@@ -51,7 +51,6 @@
     <string name="budgets_title">Budgets</string>
     <string name="insights_title">Insights</string>
     <string name="more_title">More</string>
-    <string name="later_budgets">Budgets are coming to the app. Until then, open them in the web app.</string>
     <string name="later_insights">Insights are coming to the app. Until then, open them in the web app.</string>
     <string name="amount_hidden">Amount hidden</string>
     <string name="settings_privacy">Privacy</string>
@@ -65,6 +64,27 @@
     <string name="settings_about">About</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_api">Built for API %1$s</string>
+
+    <string name="budgets_loading">Loading your budgets…</string>
+    <string name="budgets_offline">Budgets need a connection.</string>
+    <string name="budgets_failed">Your budgets could not be loaded.</string>
+    <string name="month_previous">Previous month</string>
+    <string name="month_next">Next month</string>
+    <string name="budgets_left_this_month">Left this month</string>
+    <string name="budgets_totals">Budgeted %1$s · Spent %2$s</string>
+    <string name="budgets_totals_carried">Budgeted %1$s · Spent %2$s · Carried in %3$s</string>
+    <string name="budgets_none">No budgets for %1$s yet.</string>
+    <string name="budgets_none_detail">Nothing has been budgeted for this month. Budgets are set in the web app.</string>
+    <string name="budgets_no_categories">Add an expense category in the web app, then budget it there.</string>
+    <string name="budgets_unbudgeted">Spent without a budget: %1$s</string>
+    <string name="budget_left">%1$s left</string>
+    <string name="budget_over">%1$s over</string>
+    <string name="budget_none">No budget</string>
+    <string name="budget_spent_of">Spent %1$s of %2$s</string>
+    <string name="budget_carried_over">Carried over %1$s</string>
+    <string name="budget_overspent">Overspent %1$s</string>
+    <string name="budget_spent">Spent %1$s</string>
+    <string name="budget_nothing_spent">Nothing spent</string>
 
     <string name="home_loading">Loading this month…</string>
     <string name="home_offline">This month needs a connection.</string>

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -36,9 +37,10 @@ class HomeViewModel @Inject constructor(
     val month: StateFlow<Online<HomeSummary>> = _month.asStateFlow()
 
     init {
-        val pulled = reads.mirroredLedger().flatMapLatest { ledger ->
+        // Room re-runs a watched query on every write to its table, so repeats of the same ledger and pull are dropped.
+        val pulled = reads.mirroredLedger().distinctUntilChanged().flatMapLatest { ledger ->
             if (ledger == null) flowOf(null) else reads.cursorOf(ledger).map { ledger to it?.serverTime }
-        }
+        }.distinctUntilChanged()
         viewModelScope.launch {
             combine(pulled, retries) { ledger, _ -> ledger?.first }.collectLatest { ledger ->
                 if (ledger != null) load(ledger)
