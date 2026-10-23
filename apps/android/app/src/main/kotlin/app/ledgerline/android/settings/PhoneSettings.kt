@@ -13,6 +13,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** The theme choice, as the web's Appearance setting: the phone's own light or dark mode, or one fixed. */
+enum class ThemeChoice {
+    Light,
+    Dark,
+    System,
+    ;
+
+    /** Whether the app is drawn dark, given whether the phone itself is in dark mode. */
+    fun isDark(systemDark: Boolean): Boolean = when (this) {
+        Light -> false
+        Dark -> true
+        System -> systemDark
+    }
+}
+
 /**
  * Choices kept on this phone only, like the web app's preferences (ADR 0043, slice 5). They stay through
  * sign-out because they belong to the phone, not to the session. Read synchronously, so the screenshot rule
@@ -25,9 +40,19 @@ interface PhoneSettings {
     /** Screenshots, screen recording and the recents preview may show the app. Off by default (FLAG_SECURE). */
     val allowScreenshots: StateFlow<Boolean>
 
+    /** Light, dark or the phone's own. System by default. */
+    val theme: StateFlow<ThemeChoice>
+
+    /** Typed digits fill in from the right of the amount box (1, 2, 3 reads 1.23). Off by default, as on the web. */
+    val centsFirst: StateFlow<Boolean>
+
     fun setPrivacyMode(on: Boolean)
 
     fun setAllowScreenshots(allow: Boolean)
+
+    fun setTheme(choice: ThemeChoice)
+
+    fun setCentsFirst(on: Boolean)
 }
 
 @Singleton
@@ -35,9 +60,15 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
     private val prefs = context.getSharedPreferences("phone-settings", Context.MODE_PRIVATE)
     private val _privacyMode = MutableStateFlow(prefs.getBoolean(PrivacyMode, false))
     private val _allowScreenshots = MutableStateFlow(prefs.getBoolean(AllowScreenshots, false))
+    private val _theme = MutableStateFlow(
+        ThemeChoice.entries.find { it.name == prefs.getString(Theme, null) } ?: ThemeChoice.System,
+    )
+    private val _centsFirst = MutableStateFlow(prefs.getBoolean(CentsFirst, false))
 
     override val privacyMode: StateFlow<Boolean> = _privacyMode.asStateFlow()
     override val allowScreenshots: StateFlow<Boolean> = _allowScreenshots.asStateFlow()
+    override val theme: StateFlow<ThemeChoice> = _theme.asStateFlow()
+    override val centsFirst: StateFlow<Boolean> = _centsFirst.asStateFlow()
 
     override fun setPrivacyMode(on: Boolean) {
         prefs.edit(commit = true) { putBoolean(PrivacyMode, on) }
@@ -49,9 +80,21 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
         _allowScreenshots.value = allow
     }
 
+    override fun setTheme(choice: ThemeChoice) {
+        prefs.edit(commit = true) { putString(Theme, choice.name) }
+        _theme.value = choice
+    }
+
+    override fun setCentsFirst(on: Boolean) {
+        prefs.edit(commit = true) { putBoolean(CentsFirst, on) }
+        _centsFirst.value = on
+    }
+
     private companion object {
         const val PrivacyMode = "privacyMode"
         const val AllowScreenshots = "allowScreenshots"
+        const val Theme = "theme"
+        const val CentsFirst = "centsFirst"
     }
 }
 

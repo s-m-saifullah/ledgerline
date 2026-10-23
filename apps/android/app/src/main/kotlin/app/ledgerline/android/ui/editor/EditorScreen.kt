@@ -126,6 +126,7 @@ private fun ReadOnlyNotice(reason: ReadOnly, onClose: () -> Unit) {
 private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
     val form = state.form
     val amountFocus = remember { FocusRequester() }
+    val centsFirst = LocalCentsFirst.current
     var pickingDate by rememberSaveable { mutableStateOf(false) }
     var pickingTime by rememberSaveable { mutableStateOf(false) }
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
@@ -147,15 +148,14 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
             }
         }
         val amountError = amountError(state.errors)
-        OutlinedTextField(
+        AmountField(
             value = form.amount,
             onValueChange = { text -> viewModel.update { it.copy(amount = text) } },
-            label = { Text(stringResource(R.string.editor_amount)) },
-            textStyle = MaterialTheme.typography.headlineMedium.copy(fontFeatureSettings = "tnum"),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            singleLine = true,
+            digits = currencyDigits(state.accounts.find { it.id == form.accountId }?.currency?.ifEmpty { null } ?: "USD"),
+            centsFirst = centsFirst,
+            label = stringResource(R.string.editor_amount),
             isError = amountError != null,
-            supportingText = amountError?.let { { Text(stringResource(it)) } },
+            supportingText = amountError?.let { stringResource(it) },
             modifier = Modifier.fillMaxWidth().focusRequester(amountFocus),
         )
         ChoiceField(

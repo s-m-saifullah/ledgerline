@@ -52,7 +52,7 @@
     <string name="insights_title">Insights</string>
     <string name="more_title">More</string>
     <string name="amount_hidden">Amount hidden</string>
-    <string name="settings_privacy">Privacy</string>
+    <string name="settings_privacy">Privacy and entry</string>
     <string name="privacy_mode">Hide amounts</string>
     <string name="privacy_mode_detail">Amounts show as dots on every screen.</string>
     <string name="allow_screenshots">Allow screenshots</string>
@@ -134,6 +134,18 @@
     <string name="more_clients_detail">Unpaid services and who owes what</string>
     <string name="more_loans_title">Loans</string>
     <string name="more_loans_detail">Money you lend and borrow</string>
+    <string name="more_settings_title">Settings</string>
+    <string name="more_settings_detail">Theme, privacy and how you type amounts</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">The little details that make your ledger feel like home.</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="theme_title">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System</string>
+    <string name="theme_detail">System follows your phone.</string>
+    <string name="cents_first">Type amounts from the cents</string>
+    <string name="cents_first_detail">On: type digits only and the decimal point stays in place, so 1, 2, 3 reads 1.23. Off: type amounts the usual way.</string>
     <string name="eyebrow_owed">Money owed to you</string>
     <string name="clients_title">Clients</string>
     <string name="clients_subtitle">Unpaid services stay separate from income until you receive payment.</string>
@@ -264,7 +276,7 @@
     <string name="eyebrow_personal">Your personal ledger</string>
     <string name="eyebrow_ledger">Your ledger</string>
     <string name="eyebrow_yours">Make it yours</string>
-    <string name="more_subtitle">Privacy, sync and this phone.</string>
+    <string name="more_subtitle">Clients, loans and settings.</string>
     <string name="settings_this_phone">This phone</string>
     <string name="account_type_bank">Bank</string>
     <string name="account_type_cash">Cash</string>
