@@ -13,13 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.activity.compose.BackHandler
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -34,7 +30,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -54,28 +49,37 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
-import app.ledgerline.android.overlay.AttentionItem
-import app.ledgerline.android.overlay.AttentionReason
 import app.ledgerline.android.ui.editor.EditorScreen
 import app.ledgerline.android.ui.editor.EditorTarget
 import app.ledgerline.android.ui.format.formatEntryDate
 import java.util.UUID
-import app.ledgerline.android.ui.format.formatMoney
+import app.ledgerline.android.ui.more.MoreScreen
+import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.android.ui.format.formatUpdated
 
 /** Tabular figures, so amounts line up. */
-private fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
+internal fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 
-/** The signed-in app for slice 3: the mirrored accounts and entries, read-only (ADR 0043). */
+/** The bottom bar, as on the web: Home, Transactions, Budgets, Insights and More (ADR 0043, slice 5). */
+enum class Tab(val title: Int, val icon: Int) {
+    Home(R.string.home_title, R.drawable.ic_home),
+    Transactions(R.string.entries_title, R.drawable.ic_entries),
+    Budgets(R.string.budgets_title, R.drawable.ic_budgets),
+    Insights(R.string.insights_title, R.drawable.ic_insights),
+    More(R.string.more_title, R.drawable.ic_more),
+}
+
+/** Room under every list for the Add button, so it never covers the last row. */
+private val ListBottomSpace = 96.dp
+
+/** The signed-in app: the mirrored accounts and entries, entries made offline, and More. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
-    var tab by rememberSaveable { mutableIntStateOf(0) }
-    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     var showAttention by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     val line by viewModel.syncLine.collectAsState()
-    val signingOut by viewModel.signingOut.collectAsState()
     val confirmSignOut by viewModel.confirmSignOut.collectAsState()
     confirmSignOut?.let { waiting -> SignOutQuestion(waiting, viewModel) }
     editing?.let { opened ->
@@ -90,86 +94,59 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
         AttentionScreen(viewModel, onBack = { showAttention = false }, onFix = { edit(EditorTarget.Fix(it)) })
         return
     }
+    val openAttention = { showAttention = true }
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(if (tab == 0) R.string.accounts_title else R.string.entries_title)) },
-                actions = {
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) {
-                            Icon(painterResource(R.drawable.ic_more), contentDescription = stringResource(R.string.menu_more))
-                        }
-                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.refresh_everything)) },
-                                onClick = {
-                                    menuOpen = false
-                                    viewModel.refreshEverything()
-                                },
-                            )
-                            if (viewModel.canLock) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.lock_now)) },
-                                    onClick = {
-                                        menuOpen = false
-                                        viewModel.lock()
-                                    },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.sign_out)) },
-                                enabled = !signingOut,
-                                onClick = {
-                                    menuOpen = false
-                                    viewModel.signOut()
-                                },
-                            )
-                        }
-                    }
-                },
-            )
-        },
+        topBar = { TopAppBar(title = { Text(stringResource(tab.title)) }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { edit(EditorTarget.New()) }) {
                 Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add))
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        // Bottom right, where Material puts it and a thumb reaches it (owner's choice; the web keeps it central).
+        floatingActionButtonPosition = FabPosition.End,
         bottomBar = {
             NavigationBar {
-                NavigationBarItem(
-                    selected = tab == 0,
-                    onClick = { tab = 0 },
-                    icon = { Icon(painterResource(R.drawable.ic_accounts), contentDescription = null) },
-                    label = { Text(stringResource(R.string.accounts_title)) },
-                )
-                NavigationBarItem(
-                    selected = tab == 1,
-                    onClick = { tab = 1 },
-                    icon = { Icon(painterResource(R.drawable.ic_entries), contentDescription = null) },
-                    label = { Text(stringResource(R.string.entries_title)) },
-                )
+                Tab.entries.forEach { item ->
+                    NavigationBarItem(
+                        selected = tab == item,
+                        onClick = { tab = item },
+                        icon = { Icon(painterResource(item.icon), contentDescription = null) },
+                        label = { Text(stringResource(item.title), maxLines = 1) },
+                    )
+                }
             }
         },
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = line.running,
-            onRefresh = viewModel::refresh,
-            modifier = Modifier.fillMaxSize().padding(padding),
-        ) {
-            val openAttention = { showAttention = true }
-            val openEntry = { line: EntryLine ->
-                edit(
-                    if (line.kind == "transfer" && line.transferId != null) {
-                        EditorTarget.Transfer(line.transferId)
-                    } else {
-                        EditorTarget.Entry(line.id)
-                    },
-                )
+        val inside = Modifier.fillMaxSize().padding(padding)
+        when (tab) {
+            Tab.Home, Tab.Transactions -> PullToRefreshBox(isRefreshing = line.running, onRefresh = viewModel::refresh, modifier = inside) {
+                val openEntry = { line: EntryLine ->
+                    edit(
+                        if (line.kind == "transfer" && line.transferId != null) {
+                            EditorTarget.Transfer(line.transferId)
+                        } else {
+                            EditorTarget.Entry(line.id)
+                        },
+                    )
+                }
+                if (tab == Tab.Home) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention, openEntry)
             }
-            if (tab == 0) AccountsList(viewModel, line, openAttention) else EntriesList(viewModel, line, openAttention, openEntry)
+            Tab.Budgets -> Box(inside) { Later(R.string.later_budgets) }
+            Tab.Insights -> Box(inside) { Later(R.string.later_insights) }
+            Tab.More -> Box(inside) { MoreScreen(viewModel, openAttention, ListBottomSpace) }
         }
     }
+}
+
+/** A screen that arrives in a later part of slice 5. */
+@Composable
+private fun Later(text: Int) {
+    Text(
+        stringResource(text),
+        modifier = Modifier.padding(16.dp),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
 
 @Composable
@@ -234,24 +211,19 @@ private fun Waiting() {
 @Composable
 private fun AccountsList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit) {
     val state by viewModel.accounts.collectAsState()
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = ListBottomSpace)) {
         item { ListHeader(viewModel, line, openAttention) }
         when (val current = state) {
             Mirrored.Waiting -> item { Waiting() }
             is Mirrored.Ready -> {
                 val (active, archived) = current.items.partition { it.archivedAt == null }
+                item { SectionHeading(R.string.accounts_title) }
                 if (current.items.isEmpty()) {
                     item { Text(stringResource(R.string.accounts_empty), modifier = Modifier.padding(16.dp)) }
                 }
                 items(active, key = { it.id }) { AccountRow(it) }
                 if (archived.isNotEmpty()) {
-                    item {
-                        Text(
-                            stringResource(R.string.accounts_archived),
-                            style = MaterialTheme.typography.titleSmall,
-                            modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
-                        )
-                    }
+                    item { SectionHeading(R.string.accounts_archived) }
                     items(archived, key = { it.id }) { AccountRow(it) }
                 }
             }
@@ -260,10 +232,19 @@ private fun AccountsList(viewModel: SignedInViewModel, line: SyncLine, openAtten
 }
 
 @Composable
-private fun AccountRow(account: AccountBalance) {
-    val balance = formatMoney(account.balance, account.currency)
+private fun SectionHeading(text: Int) {
+    Text(
+        stringResource(text),
+        style = MaterialTheme.typography.titleSmall,
+        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
+    )
+}
+
+@Composable
+internal fun AccountRow(account: AccountBalance) {
+    val balance = money(account.balance, account.currency)
     val pending = if (account.pending > 0) pluralStringResource(R.plurals.accounts_pending_plural, account.pending, account.pending) else null
-    val described = listOfNotNull(account.name, balance, pending).joinToString(", ")
+    val described = listOfNotNull(account.name, balance.spoken, pending).joinToString(", ")
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -273,7 +254,7 @@ private fun AccountRow(account: AccountBalance) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(account.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(balance, style = MaterialTheme.typography.titleLarge.tabular(), modifier = Modifier.padding(start = 12.dp))
+            Text(balance.text, style = MaterialTheme.typography.titleLarge.tabular(), modifier = Modifier.padding(start = 12.dp))
         }
         if (pending != null) {
             Text(pending, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -286,7 +267,7 @@ private fun AccountRow(account: AccountBalance) {
 private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttention: () -> Unit, openEntry: (EntryLine) -> Unit) {
     val state by viewModel.entries.collectAsState()
     val canShowMore by viewModel.canShowMore.collectAsState()
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = ListBottomSpace)) {
         item { ListHeader(viewModel, line, openAttention) }
         when (val current = state) {
             Mirrored.Waiting -> item { Waiting() }
@@ -309,7 +290,7 @@ private fun EntriesList(viewModel: SignedInViewModel, line: SyncLine, openAttent
 }
 
 @Composable
-private fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
+internal fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
     val title = entry.payee?.takeIf { it.isNotBlank() }
         ?: when {
             entry.kind == "transfer" -> stringResource(R.string.entry_transfer)
@@ -323,10 +304,10 @@ private fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
     }
     val details = listOfNotNull(formatEntryDate(entry.date), entry.accountName, category.takeIf { it != title }, entry.tagNames)
         .joinToString(" · ")
-    val amount = formatMoney(entry.amount, entry.currency)
+    val amount = money(entry.amount, entry.currency)
     val pending = if (entry.status == "pending") stringResource(R.string.entry_pending) else null
     val notSent = if (unsent) stringResource(R.string.entry_not_sent) else null
-    val described = listOfNotNull(title, amount, pending, notSent, details).joinToString(", ")
+    val described = listOfNotNull(title, amount.spoken, pending, notSent, details).joinToString(", ")
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -347,109 +328,12 @@ private fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
             )
         }
         Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 12.dp)) {
-            Text(amount, style = MaterialTheme.typography.titleMedium.tabular())
+            Text(amount.text, style = MaterialTheme.typography.titleMedium.tabular())
             if (pending != null) {
                 Text(pending, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (notSent != null) {
                 Text(notSent, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-            }
-        }
-    }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-}
-
-/** Sign out with changes the server does not have: send them first, or delete them on purpose. */
-@Composable
-private fun SignOutQuestion(waiting: Int, viewModel: SignedInViewModel) {
-    AlertDialog(
-        onDismissRequest = viewModel::cancelSignOut,
-        title = { Text(pluralStringResource(R.plurals.signout_unsent_title, waiting, waiting)) },
-        text = { Text(stringResource(R.string.signout_unsent_body)) },
-        confirmButton = {
-            TextButton(onClick = viewModel::sendBeforeSigningOut, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.signout_send_now))
-            }
-        },
-        dismissButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                TextButton(onClick = viewModel::cancelSignOut, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
-                TextButton(onClick = viewModel::signOutDeletingUnsent, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(
-                        pluralStringResource(R.plurals.signout_delete_unsent, waiting, waiting),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        },
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit, onFix: (String) -> Unit) {
-    val items by viewModel.attention.collectAsState()
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.attention_title)) },
-                navigationIcon = {
-                    TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.back)) }
-                },
-            )
-        },
-    ) { padding ->
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(bottom = 24.dp)) {
-            if (items.isEmpty()) {
-                item { Text(stringResource(R.string.attention_empty), modifier = Modifier.padding(16.dp)) }
-            }
-            items(items, key = { it.id }) { item -> AttentionRow(item, viewModel, onFix) }
-        }
-    }
-}
-
-@Composable
-private fun AttentionRow(item: AttentionItem, viewModel: SignedInViewModel, onFix: (String) -> Unit) {
-    val what = stringResource(
-        when (item.type) {
-            "transaction.create" -> R.string.change_new_entry
-            "transaction.update" -> R.string.change_edit_entry
-            "transaction.delete" -> R.string.change_delete_entry
-            "transfer.create" -> R.string.change_new_transfer
-            "transfer.update" -> R.string.change_edit_transfer
-            else -> R.string.change_delete_transfer
-        },
-    )
-    val amount = if (item.amount != null && item.currency != null) formatMoney(item.amount, item.currency) else null
-    val reason = when (item.reason) {
-        AttentionReason.ChangedElsewhere -> stringResource(R.string.attention_changed_elsewhere)
-        AttentionReason.DeletedElsewhere -> stringResource(R.string.attention_deleted_elsewhere)
-        AttentionReason.Rejected -> stringResource(R.string.attention_rejected, item.detail ?: "")
-    }
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(listOfNotNull(what, item.payee, amount).joinToString(" · "), style = MaterialTheme.typography.titleMedium.tabular())
-        Text(reason, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (item.reason == AttentionReason.Rejected) {
-                if (!item.type.endsWith(".delete")) {
-                    OutlinedButton(onClick = { onFix(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text(stringResource(R.string.attention_edit))
-                    }
-                }
-                OutlinedButton(onClick = { viewModel.discard(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.attention_discard))
-                }
-            } else {
-                if (item.canKeepMine) {
-                    OutlinedButton(onClick = { viewModel.keepMine(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                        Text(stringResource(R.string.attention_keep_mine))
-                    }
-                }
-                OutlinedButton(onClick = { viewModel.keepTheirs(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.attention_keep_theirs))
-                }
             }
         }
     }

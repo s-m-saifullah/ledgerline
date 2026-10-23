@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -16,6 +18,9 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        // The API version of the contract the app's types were checked against, shown in More.
+        val contract = JsonSlurper().parse(rootProject.file("../../docs/openapi.json")) as Map<*, *>
+        buildConfigField("String", "API_VERSION", "\"${(contract["info"] as Map<*, *>)["version"]}\"")
     }
 
     buildFeatures {
@@ -25,6 +30,9 @@ android {
 
     buildTypes {
         debug {
+            // Its own id and name, so it sits next to the release build on the same phone (ADR 0043, slice 5).
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
             // A debug build can be pointed at a scratch server over plain HTTP; a release build never can.
             buildConfigField("boolean", "ALLOW_CLEARTEXT", "true")
         }
@@ -87,4 +95,7 @@ dependencies {
     testImplementation(libs.work.testing)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
