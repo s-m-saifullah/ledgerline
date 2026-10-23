@@ -19,6 +19,8 @@ data class EntryValues(
     val payee: String?,
     val note: String?,
     val tagIds: List<String>,
+    /** "HH:mm" on [date], or null when the time is not known (the web's "Time (optional)"). */
+    val time: String? = null,
 )
 
 /** What the form holds for a transfer. [amount] is the positive amount moved. */
@@ -47,6 +49,7 @@ fun entryCreateBody(values: EntryValues): JsonObject = buildJsonObject {
     put("categoryId", text(values.categoryId))
     put("kind", values.kind)
     put("date", values.date)
+    put("time", text(values.time))
     put("amount", money(values.amount, values.currency))
     put("status", "cleared")
     put("payee", text(values.payee))
@@ -60,6 +63,7 @@ fun entryChanges(before: ShownEntry, values: EntryValues): JsonObject = buildJso
     if (values.categoryId != before.categoryId) put("categoryId", text(values.categoryId))
     if (values.kind != before.kind) put("kind", values.kind)
     if (values.date != before.date) put("date", values.date)
+    if (values.time != before.time) put("time", text(values.time))
     if (values.amount != before.amount || values.currency != before.currency) put("amount", money(values.amount, values.currency))
     if (values.payee != before.payee) put("payee", text(values.payee))
     if (values.note != before.note) put("note", text(values.note))

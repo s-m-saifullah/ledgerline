@@ -56,6 +56,14 @@ import app.ledgerline.android.R
 import app.ledgerline.android.ui.format.formatEntryDate
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import android.text.format.DateFormat
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDialog
+import androidx.compose.material3.rememberTimePickerState
 import java.time.ZoneOffset
 
 /** Add, edit or delete an entry or a transfer. Saving works offline: the change waits in the outbox until sent. */
@@ -119,6 +127,7 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
     val form = state.form
     val amountFocus = remember { FocusRequester() }
     var pickingDate by rememberSaveable { mutableStateOf(false) }
+    var pickingTime by rememberSaveable { mutableStateOf(false) }
     var confirmingDelete by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { if (state.isNew) amountFocus.requestFocus() }
     Column(
@@ -181,6 +190,29 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
         OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { pickingDate = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Text(stringResource(R.string.editor_date, if (form.date.isEmpty()) "" else formatEntryDate(form.date)))
         }
+        // Time (optional), as on the web: empty unless the owner adds one.
+        val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+        OutlinedButton(
+            shape = MaterialTheme.shapes.small,
+            border = BorderStroke(1.dp, LocalPalette.current.border),
+            onClick = { pickingTime = true },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        ) {
+            Text(form.time?.let { stringResource(R.string.editor_time, formatTime(it, is24Hour)) } ?: stringResource(R.string.editor_time_add))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.editor_time_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            if (form.time != null) {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = { viewModel.update { it.copy(time = null) } }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.editor_time_clear))
+                }
+            }
+        }
         if (form.mode != EntryMode.Transfer) {
             OutlinedTextField(
                 value = form.payee,
@@ -238,6 +270,27 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
             },
             dismissButton = { TextButton(shape = MaterialTheme.shapes.small, onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) } },
         ) { DatePicker(state = picker) }
+    }
+    if (pickingTime) {
+        val start = form.time?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: LocalTime.now()
+        val picker = rememberTimePickerState(start.hour, start.minute, DateFormat.is24HourFormat(LocalContext.current))
+        val choose = { time: LocalTime ->
+            viewModel.update { it.copy(time = "%02d:%02d".format(time.hour, time.minute)) }
+            pickingTime = false
+        }
+        TimePickerDialog(
+            onDismissRequest = { pickingTime = false },
+            title = { Text(stringResource(R.string.editor_time_add)) },
+            confirmButton = {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = { choose(LocalTime.of(picker.hour, picker.minute)) }) {
+                    Text(stringResource(R.string.editor_date_ok))
+                }
+            },
+            dismissButton = {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = { choose(LocalTime.now()) }) { Text(stringResource(R.string.editor_time_now)) }
+                TextButton(shape = MaterialTheme.shapes.small, onClick = { pickingTime = false }) { Text(stringResource(R.string.cancel)) }
+            },
+        ) { TimePicker(state = picker) }
     }
     if (confirmingDelete) {
         AlertDialog(
@@ -311,3 +364,7 @@ private fun amountError(errors: Set<FormError>) = when {
     FormError.AmountTooLarge in errors -> R.string.editor_error_amount_large
     else -> null
 }
+
+/** "15:05" as the phone shows times: "15:05", or "3:05 PM" with the 12-hour setting. */
+internal fun formatTime(time: String, is24Hour: Boolean, locale: java.util.Locale = java.util.Locale.getDefault()): String =
+    LocalTime.parse(time).format(java.time.format.DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "h:mm a", locale))
