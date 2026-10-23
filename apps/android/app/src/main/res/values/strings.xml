@@ -325,7 +325,14 @@
     <string name="editor_from">From</string>
     <string name="editor_to">To</string>
     <string name="editor_category">Category</string>
-    <string name="editor_no_category">No category</string>
+    <string name="editor_choose_category">Choose a category</string>
+    <string name="editor_no_matching_categories">No matching categories.</string>
+    <string name="editor_error_category">Choose a category.</string>
+    <string name="editor_archived">%1$s (archived)</string>
+    <string name="editor_tags_find">Find a tag</string>
+    <string name="editor_tags_full">Ten tags is the most</string>
+    <string name="editor_no_matching_tags">No matching tags.</string>
+    <string name="editor_tag_remove">Remove tag %1$s</string>
     <string name="editor_date">Date: %1$s</string>
     <string name="editor_date_ok">OK</string>
     <string name="editor_time">Time: %1$s</string>

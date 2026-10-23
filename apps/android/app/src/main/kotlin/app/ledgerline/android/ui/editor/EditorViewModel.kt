@@ -84,7 +84,7 @@ class EditorViewModel @Inject constructor(
         val tags = dao.allTags(ledger).filter { it.deletedAt == null }
         val today = clock.now().atZone(ZoneId.systemDefault()).toLocalDate().toString()
         val tagChoices = { chosen: List<String> ->
-            tags.filter { it.archivedAt == null || it.id in chosen }.sortedBy { it.name.lowercase() }.map { Choice(it.id, it.name) }
+            tags.filter { it.archivedAt == null || it.id in chosen }.sortedBy { it.name.lowercase() }.map { Choice(it.id, it.name, archived = it.archivedAt != null) }
         }
         return when (target) {
             is EditorTarget.New -> {
@@ -169,6 +169,8 @@ class EditorViewModel @Inject constructor(
             AmountInput.Zero -> null.also { errors += FormError.AmountZero }
             AmountInput.TooLarge -> null.also { errors += FormError.AmountTooLarge }
         }
+        // As on the web, an expense or income needs a category.
+        if (form.mode != EntryMode.Transfer && form.categoryId == null) errors += FormError.CategoryMissing
         if (form.mode == EntryMode.Transfer) {
             if (form.toAccountId == null) errors += FormError.ToAccountMissing
             if (form.toAccountId != null && form.toAccountId == form.accountId) errors += FormError.SameAccount
@@ -254,12 +256,7 @@ class EditorViewModel @Inject constructor(
             .filter { (it.usable() || it.id == form.toAccountId) && it.id != form.accountId && it.currency == fromCurrency }
             .sortedBy { it.name.lowercase() }
             .map { Choice(it.id, it.name, it.currency) }
-        val names = categories.associate { it.id to it.name }
-        val kind = form.mode.kind()
-        val categoryChoices = categories
-            .filter { it.kind == kind && (it.archivedAt == null || it.id == form.categoryId) }
-            .map { category -> Choice(category.id, listOfNotNull(category.parentId?.let { names[it] }, category.name).joinToString(" › ")) }
-            .sortedBy { it.label.lowercase() }
+        val categoryChoices = categoryChoices(categories, form.mode.kind(), form.categoryId)
         val modes = when {
             isNew && target !is EditorTarget.Fix -> EntryMode.entries
             editingEntry -> listOf(EntryMode.Expense, EntryMode.Income)

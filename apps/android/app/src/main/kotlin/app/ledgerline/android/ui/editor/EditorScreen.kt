@@ -179,12 +179,14 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
                 onSelect = { id -> viewModel.update { it.copy(toAccountId = id) } },
             )
         } else {
-            ChoiceField(
+            ComboField(
                 label = stringResource(R.string.editor_category),
                 choices = state.categories,
                 selected = form.categoryId,
-                none = stringResource(R.string.editor_no_category),
                 onSelect = { id -> viewModel.update { it.copy(categoryId = id) } },
+                emptyText = stringResource(R.string.editor_no_matching_categories),
+                placeholder = stringResource(R.string.editor_choose_category),
+                error = if (FormError.CategoryMissing in state.errors) stringResource(R.string.editor_error_category) else null,
             )
         }
         OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { pickingDate = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
@@ -222,18 +224,12 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
                 modifier = Modifier.fillMaxWidth(),
             )
             if (state.tags.isNotEmpty()) {
-                Text(stringResource(R.string.editor_tags), style = MaterialTheme.typography.titleSmall)
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.tags.forEach { tag ->
-                        val chosen = tag.id in form.tagIds
-                        FilterChip(
-                            selected = chosen,
-                            onClick = { viewModel.update { it.copy(tagIds = if (chosen) it.tagIds - tag.id else it.tagIds + tag.id) } },
-                            label = { Text(tag.label) },
-                            modifier = Modifier.heightIn(min = 48.dp),
-                        )
-                    }
-                }
+                TagPicker(
+                    tags = state.tags,
+                    chosen = form.tagIds,
+                    onAdd = { id -> viewModel.update { it.copy(tagIds = it.tagIds + id) } },
+                    onRemove = { id -> viewModel.update { it.copy(tagIds = it.tagIds - id) } },
+                )
             }
         }
         OutlinedTextField(
@@ -316,12 +312,11 @@ private fun ChoiceField(
     label: String,
     choices: List<Choice>,
     selected: String?,
-    onSelect: (String?) -> Unit,
-    none: String? = null,
+    onSelect: (String) -> Unit,
     error: String? = null,
 ) {
     var open by remember { mutableStateOf(false) }
-    val shown = choices.find { it.id == selected }?.label ?: none.orEmpty()
+    val shown = choices.find { it.id == selected }?.label.orEmpty()
     ExposedDropdownMenuBox(expanded = open, onExpandedChange = { open = it }) {
         OutlinedTextField(
             value = shown,
@@ -334,12 +329,6 @@ private fun ChoiceField(
             modifier = Modifier.fillMaxWidth().menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
         )
         ExposedDropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            if (none != null) {
-                DropdownMenuItem(text = { Text(none) }, onClick = {
-                    onSelect(null)
-                    open = false
-                })
-            }
             choices.forEach { choice ->
                 DropdownMenuItem(text = { Text(choice.label) }, onClick = {
                     onSelect(choice.id)

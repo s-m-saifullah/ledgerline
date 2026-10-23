@@ -1,6 +1,7 @@
 package app.ledgerline.android.ui.design
 
 import android.app.Application
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import app.ledgerline.android.mirror.AccountBalance
@@ -45,6 +46,9 @@ import app.ledgerline.android.ui.home.homeSummary
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
 import app.ledgerline.android.settings.ThemeChoice
+import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.ui.editor.ComboField
+import app.ledgerline.android.ui.editor.TagPicker
 import app.ledgerline.android.ui.settings.SettingsActions
 import app.ledgerline.android.ui.settings.SettingsContent
 import app.ledgerline.android.ui.settings.SettingsState
@@ -290,6 +294,19 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
         )
+    }
+
+    @Test
+    fun pickers() = shot("pickers", Tab.Home) {
+        val tags = listOf(Choice("t1", "work"), Choice("t2", "weekend trip"), Choice("t3", "an old tag", archived = true), Choice("t4", "home"))
+        androidx.compose.foundation.layout.Column(
+            modifier = androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+        ) {
+            ComboField("Category", listOf(Choice("a", "Food"), Choice("a1", "Food › Groceries")), "a1", {}, "No matching categories.")
+            ComboField("Category", emptyList(), null, {}, "No matching categories.", error = "Choose a category.", placeholder = "Choose a category")
+            TagPicker(tags, listOf("t1", "t2", "t3"), {}, {})
+        }
     }
 
     private val accounts = listOf(
