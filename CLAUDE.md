@@ -69,6 +69,7 @@ Code is grouped by feature:
 - Light, dark and system themes. WCAG AA contrast, 44 px touch targets, full keyboard use, a Cmd/Ctrl+K command palette, a privacy mode that blurs amounts.
 - Navigation: Home, Transactions, Budgets, Insights, More and a central Add button (bottom bar on phones, left sidebar on desktop); the Android app puts Add at the bottom right, above its bar (ADR 0043). Adding a transaction should take under five seconds.
 - Check new UI at 320 px, 390 px and desktop in light and dark.
+- The Android app follows the web's design (ADR 0045): build screens from `apps/android/.../ui/design` and review the Roborazzi screenshots (`-Pledgerline.screenshots`) at 320 and 390 dp, light and dark, and with the largest text.
 
 ## Deployment facts
 
