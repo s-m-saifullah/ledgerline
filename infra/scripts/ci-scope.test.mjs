@@ -39,6 +39,7 @@ test("Markdown plans, ADRs and root instructions use lightweight checks", () => 
       "README.md",
       "AGENTS.md",
       "CLAUDE.md",
+      "CONTRIBUTING.md",
     ]).application,
     false,
   );
@@ -150,6 +151,11 @@ test("the web and API suites run unless only documentation or Android files chan
     classify(["apps/android/x.kt", "docs/PLAN.md"]).web,
     false,
     "Android and documentation together",
+  );
+  assert.equal(
+    classify(["apps/android/x.kt", "CONTRIBUTING.md"]).web,
+    false,
+    "Android and the contribution guide together",
   );
   assert.equal(classify(["apps/android/x.kt", "apps/web/a.ts"]).web, true);
   assert.equal(affectsWebOrApi("apps/android/README.md"), false);

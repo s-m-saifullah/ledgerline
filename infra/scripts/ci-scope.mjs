@@ -3,7 +3,12 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const rootDocs = new Set(["AGENTS.md", "CLAUDE.md", "README.md"]);
+const rootDocs = new Set([
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CONTRIBUTING.md",
+  "README.md",
+]);
 const sha = /^[0-9a-f]{40,64}$/i;
 // Without a reliable list of changed paths every check runs: the web and API suites and the Android build.
 const full = (reason, { android = true, web = true } = {}) => ({
