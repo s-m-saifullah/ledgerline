@@ -91,22 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           apk=apps/android/app/build/outputs/apk/release/app-release.apk
-          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
-          # The log is public and the certificate's name fields are the owner's, so only the digest is printed.
-          if ! signer_output="$("$apksigner" verify --verbose --print-certs "$apk" 2>&1)"; then
-            echo "::error::The signature does not verify"; exit 1
-          fi
-          cert="$(printf '%s\n' "$signer_output" | grep -i -m1 'certificate SHA-256 digest' | sed 's/^[^:]*: *//' | tr -d ' \r\n' | tr 'A-F' 'a-f' || true)"
-          if ! printf '%s' "$cert" | grep -q -E '^[0-9a-f]{64}$'; then
-            echo "::error::Could not read the signing certificate's SHA-256 from apksigner; its output has these labels:"
-            printf '%s\n' "$signer_output" | sed 's/:.*//' | sort -u
-            exit 1
-          fi
-          echo "Signing certificate SHA-256: $cert"
-          if [ -n "$EXPECTED_CERT_SHA256" ] && [ "$cert" != "$(printf '%s' "$EXPECTED_CERT_SHA256" | tr -d ': ' | tr 'A-F' 'a-f')" ]; then
-            echo "::error::The APK is signed with a different key than the repository variable ANDROID_CERT_SHA256"; exit 1
-          fi
-          echo "cert=$cert" >> "$GITHUB_OUTPUT"
+          infra/scripts/android-verify-apk.sh "$apk" "$EXPECTED_CERT_SHA256"
           mkdir release
           cp "$apk" "release/ledgerline-android-$VERSION.apk"
           (cd release && sha256sum "ledgerline-android-$VERSION.apk" > "ledgerline-android-$VERSION.apk.sha256")
