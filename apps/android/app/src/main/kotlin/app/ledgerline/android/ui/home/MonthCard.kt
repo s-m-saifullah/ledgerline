@@ -2,11 +2,7 @@ package app.ledgerline.android.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import app.ledgerline.android.R
@@ -14,25 +10,19 @@ import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.HeroCard
 import app.ledgerline.android.ui.design.LedgerCard
-import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.StatCard
+import app.ledgerline.android.ui.format.monthLabel
 import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.api.HomeSummary
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-/** "October 2026" for "2026-10", in the phone's language. */
-fun monthLabel(month: String, locale: Locale = Locale.getDefault()): String =
-    YearMonth.parse(month).format(DateTimeFormatter.ofPattern("LLLL yyyy", locale))
 
 /** This month, above the mirrored accounts: the web's In hand hero and stat cards, with the same words. */
 @Composable
 internal fun MonthCard(state: Online<HomeSummary>, onRetry: () -> Unit) {
     when (state) {
         Online.Loading -> LedgerCard { Muted(stringResource(R.string.home_loading)) }
-        Online.Offline -> Note(stringResource(R.string.home_offline), onRetry)
-        Online.Failed -> Note(stringResource(R.string.home_failed), onRetry)
+        Online.Offline -> RetryNote(stringResource(R.string.home_offline), onRetry)
+        Online.Failed -> RetryNote(stringResource(R.string.home_failed), onRetry)
         is Online.Ready -> if (state.value.setup.hasActiveAccount) Month(state.value)
     }
 }
@@ -68,16 +58,6 @@ private fun Month(home: HomeSummary) {
         }
         if (home.loans.borrowed.amount > 0) {
             StatCard(stringResource(R.string.home_borrowed), money(home.loans.borrowed.amount, home.loans.borrowed.currency), stringResource(R.string.home_borrowed_detail))
-        }
-    }
-}
-
-@Composable
-private fun Note(text: String, onRetry: () -> Unit) {
-    LedgerCard {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) { Muted(text) }
-            LinkButton(stringResource(R.string.try_again), onRetry)
         }
     }
 }
