@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lucide icon (ISC licence), stroke drawing as in the web app. -->
+<!-- Lucide icon (ISC licence), stroke drawing as in the web app: arrow-left-right. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
     <path
-        android:pathData="M3,6h0.01M3,12h0.01M3,18h0.01M8,6h13M8,12h13M8,18h13"
+        android:pathData="M8,3L4,7l4,4M4,7h16M16,21l4,-4 -4,-4M20,17H4"
         android:fillColor="#00000000"
         android:strokeColor="#FF000000"
         android:strokeWidth="2"
