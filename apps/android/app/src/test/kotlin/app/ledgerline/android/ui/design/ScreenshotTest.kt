@@ -11,7 +11,10 @@ import app.ledgerline.android.ui.budgets.BudgetsContent
 import app.ledgerline.android.ui.budgets.budgetLine
 import app.ledgerline.android.ui.budgets.budgetMonth
 import app.ledgerline.android.ui.home.HomeContent
-import app.ledgerline.android.ui.home.Later
+import app.ledgerline.android.ui.insights.CashFlowChart
+import app.ledgerline.android.ui.insights.InsightsContent
+import app.ledgerline.android.ui.insights.NetWorthChart
+import app.ledgerline.android.ui.insights.insights
 import app.ledgerline.android.ui.home.ListBottomSpace
 import app.ledgerline.android.ui.home.Mirrored
 import app.ledgerline.android.ui.home.SignedInFrame
@@ -28,6 +31,8 @@ import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.theme.LedgerlineTheme
 import app.ledgerline.api.HomeOwed
 import app.ledgerline.api.Money
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -66,11 +71,11 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         RuntimeEnvironment.setFontScale(fontScale)
     }
 
-    private fun shot(name: String, tab: Tab, content: @Composable () -> Unit) {
+    private fun shot(name: String, tab: Tab, private: Boolean = false, content: @Composable () -> Unit) {
         val theme = if (dark) "dark" else "light"
         captureRoboImage("build/outputs/roborazzi/$name-${width}dp-$theme-font$fontScale.png") {
             LedgerlineTheme(darkTheme = dark) {
-                CompositionLocalProvider(LocalPrivacy provides false) {
+                CompositionLocalProvider(LocalPrivacy provides private) {
                     SignedInFrame(tab, onSelect = {}, onAdd = {}) { inside ->
                         androidx.compose.foundation.layout.Box(inside) { content() }
                     }
@@ -131,7 +136,52 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     fun budgetsOffline() = shot("budgets-offline", Tab.Budgets) { BudgetsContent("2026-10", Online.Offline, {}, {}, {}) }
 
     @Test
-    fun insights() = shot("insights", Tab.Insights) { Later(app.ledgerline.android.R.string.insights_title, app.ledgerline.android.R.string.later_insights) }
+    fun insightsPage() = shot("insights", Tab.Insights) {
+        InsightsContent("2026-10", Online.Ready(insights(worthMonths = 8)), open = setOf("c-food"), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
+    }
+
+    /** The charts with their figures open, net worth with a month below zero and one missing a rate. */
+    @Test
+    fun insightsCharts() = shot("insights-charts", Tab.Insights) {
+        val month = insights(spent = 123456789)
+        val worth = month.netWorth.copy(
+            months = month.netWorth.months.mapIndexed { i, row ->
+                row.copy(netWorth = Money(-200000L + i * 90000, "USD"), unconvertedCurrencies = if (i == 9) listOf("EUR") else emptyList())
+            },
+        )
+        androidx.compose.foundation.layout.Column(
+            modifier = androidx.compose.ui.Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+        ) {
+            CashFlowChart(month.cashFlow, "2026-10", open = true, onToggle = {})
+            NetWorthChart(worth, "2026-10", open = true, onToggle = {})
+        }
+    }
+
+    /** Net worth alone, so its chart and figures are in view: below zero at first, and one month missing a rate. */
+    @Test
+    fun insightsWorth() = shot("insights-worth", Tab.Insights) {
+        val month = insights(worthMonths = 10)
+        val worth = month.netWorth.copy(
+            months = month.netWorth.months.mapIndexed { i, row ->
+                row.copy(netWorth = Money(-200000L + i * 90000, "USD"), unconvertedCurrencies = if (i == 7) listOf("EUR") else emptyList())
+            },
+        )
+        NetWorthChart(worth, "2026-10", open = true, onToggle = {})
+    }
+
+    @Test
+    fun insightsHidden() = shot("insights-hidden", Tab.Insights, private = true) {
+        androidx.compose.foundation.layout.Column(verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)) {
+            CashFlowChart(insights().cashFlow, "2026-10", open = false, onToggle = {})
+            NetWorthChart(insights().netWorth, "2026-10", open = false, onToggle = {})
+        }
+    }
+
+    @Test
+    fun insightsOffline() = shot("insights-offline", Tab.Insights) {
+        InsightsContent("2026-10", Online.Offline, open = emptySet(), onToggle = {}, onPrevious = {}, onNext = {}, onRetry = {})
+    }
 
     @Test
     fun more() = shot("more", Tab.More) {

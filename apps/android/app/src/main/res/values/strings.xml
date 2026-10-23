@@ -51,7 +51,6 @@
     <string name="budgets_title">Budgets</string>
     <string name="insights_title">Insights</string>
     <string name="more_title">More</string>
-    <string name="later_insights">Insights are coming to the app. Until then, open them in the web app.</string>
     <string name="amount_hidden">Amount hidden</string>
     <string name="settings_privacy">Privacy</string>
     <string name="privacy_mode">Hide amounts</string>
@@ -85,6 +84,47 @@
     <string name="budget_overspent">Overspent %1$s</string>
     <string name="budget_spent">Spent %1$s</string>
     <string name="budget_nothing_spent">Nothing spent</string>
+
+    <string name="expanded">Expanded</string>
+    <string name="collapsed">Collapsed</string>
+    <string name="insights_loading">Loading your insights…</string>
+    <string name="insights_offline">Insights need a connection.</string>
+    <string name="insights_failed">Your insights could not be loaded.</string>
+    <string name="insights_spent_in">Spent in %1$s</string>
+    <string name="insights_in_and_net">Money in %1$s · Net %2$s</string>
+    <string name="insights_by_category">Spending by category</string>
+    <string name="insights_no_spending">No spending in %1$s.</string>
+    <string name="insights_share">%1$s of spending</string>
+    <plurals name="insights_subcategories">
+        <item quantity="one">%1$d subcategory</item>
+        <item quantity="other">%1$d subcategories</item>
+    </plurals>
+    <string name="insights_archived">%1$s (archived)</string>
+    <string name="insights_directly_in">Directly in %1$s</string>
+    <string name="insights_flow_heading">Money in and out, 12 months to %1$s</string>
+    <string name="insights_flow_empty">Nothing recorded in these months.</string>
+    <string name="insights_flow_chart">Money in and spending for each of the last 12 months</string>
+    <string name="insights_money_in">Money in</string>
+    <string name="insights_spending">Spending</string>
+    <string name="insights_show_figures">Show the figures</string>
+    <string name="insights_month">Month</string>
+    <string name="insights_in">In</string>
+    <string name="insights_out">Out</string>
+    <string name="insights_net">Net</string>
+    <string name="insights_flow_row">%1$s: money in %2$s, spending %3$s, net %4$s</string>
+    <string name="insights_flow_line">In %1$s · Out %2$s · Net %3$s</string>
+    <string name="insights_worth_heading_twelve">Net worth, 12 months to %1$s</string>
+    <string name="insights_worth_heading_to">Net worth, to %1$s</string>
+    <string name="insights_worth_heading_since">Net worth, since %1$s</string>
+    <plurals name="insights_worth_chart">
+        <item quantity="one">Net worth at the end of the last %1$d month</item>
+        <item quantity="other">Net worth at the end of each of the last %1$d months</item>
+    </plurals>
+    <string name="insights_history_starts">History starts in %1$s; earlier months are not shown.</string>
+    <string name="insights_incomplete">Hatched months are incomplete: a currency had no stored rate yet, so its accounts are left out. Missing a rate: %1$s.</string>
+    <string name="insights_missing_rate">%1$s (%2$d of %3$d months)</string>
+    <string name="insights_without">without %1$s</string>
+    <string name="insights_charts_hidden">The bars are hidden while amounts are hidden.</string>
 
     <string name="home_loading">Loading this month…</string>
     <string name="home_offline">This month needs a connection.</string>

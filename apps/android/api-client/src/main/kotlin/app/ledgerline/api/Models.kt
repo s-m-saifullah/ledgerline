@@ -169,3 +169,49 @@ data class BudgetTotals(
     val left: Money,
     val unbudgetedSpent: Money,
 )
+
+/** Spending by category for a month (slice 5, Insights): read online, never stored on the phone. */
+@Serializable
+data class SpendingReport(
+    val month: String,
+    val monthStart: String,
+    val monthEnd: String,
+    val total: Money,
+    val categories: List<SpendingCategory>,
+)
+
+/** A main category's spending, including its subcategories ([children]). [shareBps] is its share in basis points. */
+@Serializable
+data class SpendingCategory(
+    val categoryId: String,
+    val name: String,
+    val color: String?,
+    val archived: Boolean,
+    val amount: Money,
+    val shareBps: Int,
+    val children: List<SpendingSubcategory>,
+)
+
+@Serializable
+data class SpendingSubcategory(
+    val categoryId: String,
+    val name: String,
+    val color: String?,
+    val archived: Boolean,
+    val amount: Money,
+    val shareBps: Int,
+)
+
+/** Money in, spending and net for each month from [from] to [to]. */
+@Serializable
+data class CashFlowReport(val from: String, val to: String, val months: List<CashFlowMonth>)
+
+@Serializable
+data class CashFlowMonth(val month: String, val income: Money, val spending: Money, val net: Money)
+
+/** Net worth at each month end; months before the ledger's first data are left out ([historyStart]). */
+@Serializable
+data class NetWorthReport(val from: String, val to: String, val historyStart: String?, val months: List<NetWorthMonth>)
+
+@Serializable
+data class NetWorthMonth(val month: String, val asOf: String, val netWorth: Money, val unconvertedCurrencies: List<String>)

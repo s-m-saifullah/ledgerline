@@ -34,6 +34,16 @@ interface LedgerlineApi {
     @GET("api/v1/ledgers/{ledgerId}/budgets")
     suspend fun budgets(@Path("ledgerId") ledgerId: String, @Query("month") month: String): BudgetMonth
 
+    /** Insights (slice 5): spending by category for [month], then [months] months of cash flow and net worth to [to]. */
+    @GET("api/v1/ledgers/{ledgerId}/reports/spending")
+    suspend fun spending(@Path("ledgerId") ledgerId: String, @Query("month") month: String): SpendingReport
+
+    @GET("api/v1/ledgers/{ledgerId}/reports/cash-flow")
+    suspend fun cashFlow(@Path("ledgerId") ledgerId: String, @Query("to") to: String, @Query("months") months: Int): CashFlowReport
+
+    @GET("api/v1/ledgers/{ledgerId}/reports/net-worth")
+    suspend fun netWorth(@Path("ledgerId") ledgerId: String, @Query("to") to: String, @Query("months") months: Int): NetWorthReport
+
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")
     suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse

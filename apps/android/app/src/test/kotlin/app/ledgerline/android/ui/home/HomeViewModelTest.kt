@@ -11,6 +11,7 @@ import app.ledgerline.android.session.SessionState
 import app.ledgerline.android.testing.FakeClock
 import app.ledgerline.android.testing.FakeServerAddressStore
 import app.ledgerline.android.testing.FakeTokenProtector
+import app.ledgerline.android.ui.format.monthLabel
 import app.ledgerline.api.ApiJson
 import app.ledgerline.api.HomeGroup
 import app.ledgerline.api.HomeLoans

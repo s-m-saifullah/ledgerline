@@ -104,6 +104,30 @@ class ContractTest {
     )
 
     @Test
+    fun spendingMatches() = assertMatches(
+        SchemaContract.differences(
+            SpendingReport.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/reports/spending", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun cashFlowMatches() = assertMatches(
+        SchemaContract.differences(
+            CashFlowReport.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/reports/cash-flow", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun netWorthMatches() = assertMatches(
+        SchemaContract.differences(
+            NetWorthReport.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/reports/net-worth", "get", "200"),
+        ),
+    )
+
+    @Test
     fun problemMatches() = assertMatches(
         SchemaContract.differences(Problem.serializer().descriptor, SchemaContract.response("/api/v1/ledgers", "get", "401")),
     )

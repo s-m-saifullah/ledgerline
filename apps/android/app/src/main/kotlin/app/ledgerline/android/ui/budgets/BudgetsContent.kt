@@ -1,51 +1,34 @@
 package app.ledgerline.android.ui.budgets
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
-import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.LedgerCard
-import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.MonthSwitcher
 import app.ledgerline.android.ui.design.PageHeader
+import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
+import app.ledgerline.android.ui.design.ShareBar
 import app.ledgerline.android.ui.design.StatCard
+import app.ledgerline.android.ui.design.TitleAndAmount
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.home.ListBottomSpace
 import app.ledgerline.android.ui.home.Muted
-import app.ledgerline.android.ui.home.monthLabel
+import app.ledgerline.android.ui.format.monthLabel
 import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.android.ui.theme.LocalPalette
 import app.ledgerline.api.BudgetLine
@@ -83,8 +66,8 @@ internal fun BudgetsContent(
         }
         when (state) {
             Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.budgets_loading)) } }
-            Online.Offline -> item { Note(stringResource(R.string.budgets_offline), onRetry) }
-            Online.Failed -> item { Note(stringResource(R.string.budgets_failed), onRetry) }
+            Online.Offline -> item { RetryNote(stringResource(R.string.budgets_offline), onRetry) }
+            Online.Failed -> item { RetryNote(stringResource(R.string.budgets_failed), onRetry) }
             is Online.Ready -> {
                 val view = state.value
                 val hasBudgets = view.items.any { it.budget != null }
@@ -108,26 +91,6 @@ internal fun BudgetsContent(
                     }
                 }
             }
-        }
-    }
-}
-
-/** `.month-switcher`: previous and next around the month's name, which a screen reader announces as it changes. */
-@Composable
-private fun MonthSwitcher(month: String, onPrevious: () -> Unit, onNext: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-        IconButton(onClick = onPrevious) {
-            Icon(painterResource(R.drawable.ic_chevron_left), contentDescription = stringResource(R.string.month_previous))
-        }
-        Text(
-            monthLabel(month),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(min = 96.dp).semantics { liveRegion = LiveRegionMode.Polite },
-        )
-        IconButton(onClick = onNext) {
-            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = stringResource(R.string.month_next))
         }
     }
 }
@@ -182,9 +145,9 @@ internal fun LineCard(line: BudgetLine) {
         },
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            NameAndLeft(
-                name = { Text(line.name, style = MaterialTheme.typography.titleMedium) },
-                left = {
+            TitleAndAmount(
+                title = { Text(line.name, style = MaterialTheme.typography.titleMedium) },
+                amount = {
                     Text(
                         shownLeft,
                         style = MaterialTheme.typography.bodyLarge.tabular(),
@@ -198,47 +161,12 @@ internal fun LineCard(line: BudgetLine) {
                     )
                 },
             )
-            if (line.budget != null) {
-                Box(modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)).background(palette.border)) {
-                    Box(modifier = Modifier.fillMaxWidth(usedShare(line)).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(if (over) palette.danger else palette.accent))
-                }
-            }
+            if (line.budget != null) ShareBar(usedShare(line), danger = over)
             Text(
                 details.joinToString(" · ") { it.first },
                 style = MaterialTheme.typography.bodySmall.tabular(),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-    }
-}
-
-/**
- * The category's name with what is left beside it, as `.budget-line-top`; when the amount leaves too little room
- * for the name's longest word (a large amount or the largest text), the amount goes under the name instead, so
- * neither is broken.
- */
-@Composable
-private fun NameAndLeft(name: @Composable () -> Unit, left: @Composable () -> Unit) {
-    Layout(contents = listOf(name, left)) { (nameParts, leftParts), constraints ->
-        val gap = 12.dp.roundToPx()
-        val leftPart = leftParts.single()
-        val namePart = nameParts.single()
-        val leftWidth = leftPart.maxIntrinsicWidth(constraints.maxHeight)
-        val beside = constraints.maxWidth - leftWidth - gap
-        if (beside >= namePart.minIntrinsicWidth(constraints.maxHeight)) {
-            val shownLeft = leftPart.measure(Constraints(maxWidth = leftWidth))
-            val shownName = namePart.measure(Constraints(maxWidth = beside))
-            layout(constraints.maxWidth, maxOf(shownName.height, shownLeft.height)) {
-                shownName.place(0, 0)
-                shownLeft.place(constraints.maxWidth - shownLeft.width, 0)
-            }
-        } else {
-            val shownName = namePart.measure(Constraints(maxWidth = constraints.maxWidth))
-            val shownLeft = leftPart.measure(Constraints(maxWidth = constraints.maxWidth))
-            layout(constraints.maxWidth, shownName.height + shownLeft.height) {
-                shownName.place(0, 0)
-                shownLeft.place(0, shownName.height)
-            }
         }
     }
 }
@@ -265,15 +193,5 @@ private fun lineDetails(line: BudgetLine): List<Pair<String, String>> {
         listOf(stringResource(R.string.budget_spent, spent.text) to stringResource(R.string.budget_spent, spent.spoken))
     } else {
         stringResource(R.string.budget_nothing_spent).let { listOf(it to it) }
-    }
-}
-
-@Composable
-private fun Note(text: String, onRetry: () -> Unit) {
-    LedgerCard {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) { Muted(text) }
-            LinkButton(stringResource(R.string.try_again), onRetry)
-        }
     }
 }
