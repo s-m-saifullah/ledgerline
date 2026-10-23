@@ -1,8 +1,12 @@
 package app.ledgerline.android
 
 import android.os.Bundle
+import android.graphics.Color
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
@@ -10,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import app.ledgerline.android.settings.PhoneSettings
+import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.applyScreenshotRule
 import kotlinx.coroutines.launch
@@ -43,8 +48,19 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         setContent {
             val privacy by settings.privacyMode.collectAsState()
-            CompositionLocalProvider(LocalPrivacy provides privacy) {
-                LedgerlineTheme {
+            val centsFirst by settings.centsFirst.collectAsState()
+            val choice by settings.theme.collectAsState()
+            val dark = choice.isDark(isSystemInDarkTheme())
+            // The system bars' icons follow the app's theme, not only the phone's.
+            DisposableEffect(dark) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+                    navigationBarStyle = SystemBarStyle.auto(LightNavigationScrim, DarkNavigationScrim) { dark },
+                )
+                onDispose { }
+            }
+            CompositionLocalProvider(LocalPrivacy provides privacy, LocalCentsFirst provides centsFirst) {
+                LedgerlineTheme(darkTheme = dark) {
                     val state by root.state.collectAsState()
                     when (val current = state) {
                         RootState.Loading -> Unit
@@ -64,3 +80,7 @@ class MainActivity : FragmentActivity() {
         super.onDestroy()
     }
 }
+
+// The scrims enableEdgeToEdge uses by default, for the bars' three-button style.
+private val LightNavigationScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val DarkNavigationScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)

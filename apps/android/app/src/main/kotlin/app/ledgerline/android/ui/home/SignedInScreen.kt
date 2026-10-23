@@ -52,7 +52,9 @@ import app.ledgerline.android.ui.clients.ClientsScreen
 import app.ledgerline.android.ui.insights.InsightsContent
 import app.ledgerline.android.ui.loans.LoansScreen
 import app.ledgerline.android.ui.insights.InsightsViewModel
-import app.ledgerline.android.ui.more.MoreScreen
+import app.ledgerline.android.ui.more.MoreActions
+import app.ledgerline.android.ui.more.MoreContent
+import app.ledgerline.android.ui.settings.SettingsScreen
 import java.util.UUID
 
 /** The bottom bar, as on the web: Home, Transactions, Budgets, Insights and More (ADR 0043, slice 5). */
@@ -84,7 +86,7 @@ fun SignedInScreen(
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     // What is open on Insights (a category's subcategories, a chart's figures); a list, so it can be saved.
     var openInsights by rememberSaveable { mutableStateOf(listOf<String>()) }
-    // What More has open: "clients", "loans" or nothing (More itself).
+    // What More has open: "clients", "loans", "settings" or nothing (More itself).
     var moreOpen by rememberSaveable { mutableStateOf<String?>(null) }
     val line by viewModel.syncLine.collectAsState()
     val unsent by viewModel.unsent.collectAsState()
@@ -169,7 +171,8 @@ fun SignedInScreen(
             Tab.More -> when (moreOpen) {
                 "clients" -> ClientsScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
                 "loans" -> LoansScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
-                else -> MoreScreen(viewModel, { showAttention = true }, { moreOpen = "clients" }, { moreOpen = "loans" }, ListBottomSpace, inside)
+                "settings" -> SettingsScreen(viewModel, { showAttention = true }, onBack = { moreOpen = null }, ListBottomSpace, inside)
+                else -> MoreContent(MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "settings" }), ListBottomSpace, inside)
             }
         }
     }

@@ -44,7 +44,10 @@ import app.ledgerline.android.ui.home.TransactionsContent
 import app.ledgerline.android.ui.home.homeSummary
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
-import app.ledgerline.android.ui.more.MoreState
+import app.ledgerline.android.settings.ThemeChoice
+import app.ledgerline.android.ui.settings.SettingsActions
+import app.ledgerline.android.ui.settings.SettingsContent
+import app.ledgerline.android.ui.settings.SettingsState
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.theme.LedgerlineTheme
 import app.ledgerline.api.HomeOwed
@@ -278,10 +281,13 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     }
 
     @Test
-    fun more() = shot("more", Tab.More) {
-        MoreContent(
-            MoreState(hideAmounts = false, allowScreenshots = false, unsent = 0, attention = 2, canLock = true, signingOut = false),
-            MoreActions({}, {}, {}, {}, {}, {}, {}, {}),
+    fun more() = shot("more", Tab.More) { MoreContent(MoreActions({}, {}, {}), ListBottomSpace) }
+
+    @Test
+    fun settings() = shot("settings", Tab.More) {
+        SettingsContent(
+            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, unsent = 0, attention = 2, canLock = true, signingOut = false),
+            SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
         )
     }
