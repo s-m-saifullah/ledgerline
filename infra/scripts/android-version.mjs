@@ -18,10 +18,16 @@ export function parseAndroidTag(tag) {
     );
   }
   const [major, minor, patch] = match.slice(1).map(Number);
-  return { name: `${major}.${minor}.${patch}`, code: major * 10000 + minor * 100 + patch };
+  return {
+    name: `${major}.${minor}.${patch}`,
+    code: major * 10000 + minor * 100 + patch,
+  };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   try {
     const { name, code } = parseAndroidTag(process.argv[2]);
     process.stdout.write(`name=${name}\ncode=${code}\n`);
