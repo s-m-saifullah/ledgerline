@@ -1,5 +1,7 @@
 package app.ledgerline.android.ui.editor
 
+import androidx.compose.foundation.BorderStroke
+import app.ledgerline.android.ui.theme.LocalPalette
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -77,7 +79,7 @@ fun EditorScreen(target: EditorTarget, session: String, onClose: () -> Unit, vie
             TopAppBar(
                 title = { Text(stringResource(title)) },
                 navigationIcon = {
-                    TextButton(onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
+                    TextButton(shape = MaterialTheme.shapes.small, onClick = onClose, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
                 },
             )
         },
@@ -107,7 +109,7 @@ private fun ReadOnlyNotice(reason: ReadOnly, onClose: () -> Unit) {
             ),
             style = MaterialTheme.typography.bodyLarge,
         )
-        OutlinedButton(onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.back)) }
+        OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = onClose, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(stringResource(R.string.back)) }
     }
 }
 
@@ -176,7 +178,7 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
                 onSelect = { id -> viewModel.update { it.copy(categoryId = id) } },
             )
         }
-        OutlinedButton(onClick = { pickingDate = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { pickingDate = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Text(stringResource(R.string.editor_date, if (form.date.isEmpty()) "" else formatEntryDate(form.date)))
         }
         if (form.mode != EntryMode.Transfer) {
@@ -211,11 +213,11 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
         if (FormError.CouldNotSave in state.errors) {
             Text(stringResource(R.string.editor_error_save), color = MaterialTheme.colorScheme.error)
         }
-        Button(onClick = viewModel::save, enabled = !state.saving, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+        Button(shape = MaterialTheme.shapes.small, onClick = viewModel::save, enabled = !state.saving, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Text(stringResource(R.string.editor_save))
         }
         if (state.canDelete) {
-            TextButton(onClick = { confirmingDelete = true }, enabled = !state.saving, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            TextButton(shape = MaterialTheme.shapes.small, onClick = { confirmingDelete = true }, enabled = !state.saving, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.editor_delete), color = MaterialTheme.colorScheme.error)
             }
         }
@@ -226,7 +228,7 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
         DatePickerDialog(
             onDismissRequest = { pickingDate = false },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = {
                     picker.selectedDateMillis?.let { millis ->
                         val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate().toString()
                         viewModel.update { it.copy(date = date) }
@@ -234,7 +236,7 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
                     pickingDate = false
                 }) { Text(stringResource(R.string.editor_date_ok)) }
             },
-            dismissButton = { TextButton(onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(shape = MaterialTheme.shapes.small, onClick = { pickingDate = false }) { Text(stringResource(R.string.cancel)) } },
         ) { DatePicker(state = picker) }
     }
     if (confirmingDelete) {
@@ -243,13 +245,13 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
             title = { Text(stringResource(if (form.mode == EntryMode.Transfer) R.string.editor_delete_transfer_title else R.string.editor_delete_entry_title)) },
             text = { Text(stringResource(R.string.editor_delete_body)) },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = {
                     confirmingDelete = false
                     viewModel.delete()
                 }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.editor_delete), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmingDelete = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
+                TextButton(shape = MaterialTheme.shapes.small, onClick = { confirmingDelete = false }, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) }
             },
         )
     }

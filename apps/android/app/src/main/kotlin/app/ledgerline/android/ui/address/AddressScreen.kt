@@ -59,11 +59,11 @@ fun AddressScreen(canCancel: Boolean, onDone: () -> Unit, viewModel: AddressView
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { viewModel.submit(onDone) }),
             )
-            Button(onClick = { viewModel.submit(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Button(shape = MaterialTheme.shapes.small, onClick = { viewModel.submit(onDone) }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.address_continue))
             }
             if (canCancel) {
-                TextButton(onClick = onDone, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = onDone, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.cancel))
                 }
             }

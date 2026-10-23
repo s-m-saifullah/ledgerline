@@ -53,6 +53,9 @@ android {
         // aapt2 only finds the adaptive icon in a folder with a version qualifier (mipmap-anydpi-v26), which
         // lint calls obsolete at minSdk 30.
         disable += "ObsoleteSdkInt"
+        // Version updates come from Dependabot (it watches this Gradle build); this check asks the network and changes
+        // its answer whenever anything is published, which made lint flag a pin kept two weeks old on purpose.
+        disable += "NewerVersionAvailable"
     }
 
     testOptions {
@@ -98,4 +101,15 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+}
+
+// Screenshots for design review (ADR 0045): only with -Pledgerline.screenshots, written to
+// app/build/outputs/roborazzi, never committed or compared in CI (pixels differ between machines).
+tasks.withType<Test>().configureEach {
+    if (project.hasProperty("ledgerline.screenshots")) {
+        systemProperty("ledgerline.screenshots", "true")
+        systemProperty("roborazzi.test.record", "true")
+    }
 }

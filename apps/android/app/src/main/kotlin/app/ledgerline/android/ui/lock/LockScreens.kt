@@ -77,11 +77,12 @@ fun LockedScreen(viewModel: LockViewModel = hiltViewModel()) {
         )
         Problem(state.problem, state.detail)
         Button(
+            shape = MaterialTheme.shapes.small,
             onClick = viewModel::unlock,
             enabled = !state.busy,
             modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
         ) { Text(stringResource(R.string.lock_unlock)) }
-        TextButton(onClick = viewModel::signInAgain, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) {
+        TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::signInAgain, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) {
             Text(stringResource(R.string.lock_sign_in_again))
         }
     }
@@ -108,15 +109,17 @@ fun KeepSignedInScreen(viewModel: LockViewModel = hiltViewModel()) {
         Problem(state.problem, state.detail)
         if (available) {
             Button(
+                shape = MaterialTheme.shapes.small,
                 onClick = viewModel::protect,
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             ) { Text(stringResource(R.string.keep_button)) }
-            TextButton(onClick = viewModel::notNow, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::notNow, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.keep_not_now))
             }
         } else {
             Button(
+                shape = MaterialTheme.shapes.small,
                 onClick = viewModel::notNow,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
             ) { Text(stringResource(R.string.keep_continue)) }

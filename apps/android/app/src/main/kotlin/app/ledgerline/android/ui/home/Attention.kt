@@ -1,5 +1,7 @@
 package app.ledgerline.android.ui.home
 
+import androidx.compose.foundation.BorderStroke
+import app.ledgerline.android.ui.theme.LocalPalette
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.overlay.AttentionItem
 import app.ledgerline.android.overlay.AttentionReason
+import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.privacy.money
 
 /** Sign out with changes the server does not have: send them first, or delete them on purpose. */
@@ -42,16 +45,16 @@ internal fun SignOutQuestion(waiting: Int, viewModel: SignedInViewModel) {
         title = { Text(pluralStringResource(R.plurals.signout_unsent_title, waiting, waiting)) },
         text = { Text(stringResource(R.string.signout_unsent_body)) },
         confirmButton = {
-            TextButton(onClick = viewModel::sendBeforeSigningOut, modifier = Modifier.heightIn(min = 48.dp)) {
+            TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::sendBeforeSigningOut, modifier = Modifier.heightIn(min = 48.dp)) {
                 Text(stringResource(R.string.signout_send_now))
             }
         },
         dismissButton = {
             Column(horizontalAlignment = Alignment.End) {
-                TextButton(onClick = viewModel::cancelSignOut, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::cancelSignOut, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.cancel))
                 }
-                TextButton(onClick = viewModel::signOutDeletingUnsent, modifier = Modifier.heightIn(min = 48.dp)) {
+                TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::signOutDeletingUnsent, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(
                         pluralStringResource(R.plurals.signout_delete_unsent, waiting, waiting),
                         color = MaterialTheme.colorScheme.error,
@@ -71,7 +74,7 @@ internal fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit, o
             TopAppBar(
                 title = { Text(stringResource(R.string.attention_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.back)) }
+                    TextButton(shape = MaterialTheme.shapes.small, onClick = onBack, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.back)) }
                 },
             )
         },
@@ -121,20 +124,20 @@ internal fun AttentionRow(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (item.reason == AttentionReason.Rejected) {
                 if (!item.type.endsWith(".delete")) {
-                    OutlinedButton(onClick = { onFix(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { onFix(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.attention_edit))
                     }
                 }
-                OutlinedButton(onClick = { onDiscard(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { onDiscard(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.attention_discard))
                 }
             } else {
                 if (item.canKeepMine) {
-                    OutlinedButton(onClick = { onKeepMine(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { onKeepMine(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.attention_keep_mine))
                     }
                 }
-                OutlinedButton(onClick = { onKeepTheirs(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { onKeepTheirs(item.id) }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Text(stringResource(R.string.attention_keep_theirs))
                 }
             }
