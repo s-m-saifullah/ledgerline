@@ -109,7 +109,7 @@ Access: light, dark and system themes; WCAG AA contrast; 44 px touch targets; fu
 
 ## Navigation and key flows
 
-Home, Transactions, Budgets, Insights and More, plus a central Add button (bottom bar on phones, left sidebar on desktop).
+Home, Transactions, Budgets, Insights and More, plus a central Add button (bottom bar on phones, left sidebar on desktop). The Android app puts Add at the bottom right, above its bar ([ADR 0043](adr/0043-android-app.md)).
 
 1. **Quick add:** Add, amount, category, Save, with Undo.
 2. **Transfer:** switch Add to Transfer and pick the two accounts.

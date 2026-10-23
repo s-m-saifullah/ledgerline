@@ -69,7 +69,7 @@ enum class Tab(val title: Int, val icon: Int) {
     More(R.string.more_title, R.drawable.ic_more),
 }
 
-/** Room under every list for the centred Add button, so it never covers the last row. */
+/** Room under every list for the Add button, so it never covers the last row. */
 private val ListBottomSpace = 96.dp
 
 /** The signed-in app: the mirrored accounts and entries, entries made offline, and More. */
@@ -102,7 +102,8 @@ fun SignedInScreen(viewModel: SignedInViewModel = hiltViewModel()) {
                 Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add))
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        // Bottom right, where Material puts it and a thumb reaches it (owner's choice; the web keeps it central).
+        floatingActionButtonPosition = FabPosition.End,
         bottomBar = {
             NavigationBar {
                 Tab.entries.forEach { item ->
