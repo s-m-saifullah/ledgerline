@@ -30,7 +30,7 @@ Every doubt means the full suite runs: no associated PR, a different tree (for e
 
 A change is documentation-only when every changed path is one of:
 
-- `README.md`, `AGENTS.md` or `CLAUDE.md` at the repository root.
+- `README.md`, `AGENTS.md`, `CLAUDE.md` or `CONTRIBUTING.md` at the repository root.
 - A Markdown (`.md`) file under `docs/`, including plans, handoffs and ADRs.
 
 These changes run the lightweight CI scope-policy tests and a whitespace check. They skip dependency installation, PostgreSQL, application lint/typechecks, unit/integration tests, builds, OpenAPI generation, Chromium installation and browser tests. Local verification should likewise review the content and links and run `git diff --check`; application regressions need not be repeated for prose alone.
