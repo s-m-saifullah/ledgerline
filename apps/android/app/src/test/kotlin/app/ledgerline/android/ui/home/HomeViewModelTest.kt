@@ -132,6 +132,18 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun theSameCursorWrittenAgainIsNotReadAgain() {
+        answer(200, ApiJson.encodeToString(HomeSummary.serializer(), homeSummary()))
+        start()
+        pulled("2026-10-22T10:00:00.000Z")
+        settled { (it as? Online.Ready)?.value }
+        server.takeRequest(5, TimeUnit.SECONDS)
+        // Room re-runs a watched query on every write to its table, even when nothing it returns changed.
+        pulled("2026-10-22T10:00:00.000Z")
+        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS))
+    }
+
+    @Test
     fun withoutAConnectionItSaysSo() {
         val closed = MockWebServer().apply { start() }
         val origin = closed.url("/").toString().trimEnd('/')
