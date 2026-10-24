@@ -183,4 +183,3 @@ class SettingsContentTest {
         compose.onNodeWithText("Days").assertExists()
     }
 }
-
