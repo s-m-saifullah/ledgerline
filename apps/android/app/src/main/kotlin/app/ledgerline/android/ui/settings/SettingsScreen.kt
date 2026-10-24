@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -243,27 +244,33 @@ private fun KeepFiltersCard(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
         }
         if (keep.mode == KeepMode.ForAWhile) {
             var text by remember(keep.amount) { mutableStateOf(keep.amount.toString()) }
+            val numberLabel = stringResource(R.string.filters_keep_number)
             val amount = FilterKeep.amountOf(text)
             Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { typed ->
-                        text = typed.filter { it.isDigit() }.take(3)
-                        FilterKeep.amountOf(text)?.let { onChange(keep.copy(amount = it)) }
-                    },
-                    label = { Text(stringResource(R.string.filters_keep_number)) },
-                    isError = amount == null,
-                    supportingText = if (amount == null) ({ Text(stringResource(R.string.filters_keep_invalid)) }) else null,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
-                )
+                // The same layout as the unit box beside it: the label above, a box of the same height under it.
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.filters_keep_number), style = MaterialTheme.typography.bodyMedium)
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = { typed ->
+                            text = typed.filter { it.isDigit() }.take(3)
+                            FilterKeep.amountOf(text)?.let { onChange(keep.copy(amount = it)) }
+                        },
+                        isError = amount == null,
+                        supportingText = if (amount == null) ({ Text(stringResource(R.string.filters_keep_invalid)) }) else null,
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.small,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = numberLabel },
+                    )
+                }
                 ChoiceField(
                     label = stringResource(R.string.filters_keep_unit),
                     options = KeepUnit.entries.map { it.name to stringResource(it.label()) },
                     selected = keep.unit.name,
                     onSelect = { name -> onChange(keep.copy(unit = KeepUnit.valueOf(name))) },
                     modifier = Modifier.weight(1f),
+                    minHeight = 56.dp,
                 )
             }
         }

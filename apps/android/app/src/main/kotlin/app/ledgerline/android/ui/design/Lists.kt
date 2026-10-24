@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.theme.LocalPalette
@@ -108,7 +109,15 @@ fun SearchField(label: String, value: String, onChange: (String) -> Unit) {
 
 /** A label above a bordered choice that opens a menu, as the web's native select. */
 @Composable
-fun ChoiceField(label: String, options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit, modifier: Modifier = Modifier) {
+fun ChoiceField(
+    label: String,
+    options: List<Pair<String, String>>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    /** 48 dp as the web's select; 56 dp where it sits beside a text box, which is that tall. */
+    minHeight: Dp = 48.dp,
+) {
     val palette = LocalPalette.current
     var open by remember { mutableStateOf(false) }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -117,7 +126,7 @@ fun ChoiceField(label: String, options: List<Pair<String, String>>, selected: St
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 48.dp)
+                    .heightIn(min = minHeight)
                     .background(palette.surface, MaterialTheme.shapes.small)
                     .border(1.dp, palette.fieldBorder, MaterialTheme.shapes.small)
                     .clickable(onClick = { open = true }, role = Role.DropdownList)
