@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.format.monthLabel
@@ -68,20 +69,23 @@ fun ShareBar(share: Float, danger: Boolean = false) {
     }
 }
 
+/** Whether the amount may sit beside the title: the room left for the title must hold its longest word and be at least [minTitle]. */
+internal fun amountFitsBeside(roomForTitle: Int, longestWord: Int, minTitle: Int): Boolean = roomForTitle >= maxOf(longestWord, minTitle)
+
 /**
  * A line's title with its amount beside it, as `.budget-line-top` and `.insight-line-top`; when the amount leaves
  * too little room for the title's longest word (a large amount or the largest text), the amount goes under the
- * title instead, so neither is broken.
+ * title instead, so neither is broken. [minTitle] is the least the title may be squeezed to before that happens.
  */
 @Composable
-fun TitleAndAmount(title: @Composable () -> Unit, amount: @Composable () -> Unit) {
-    Layout(contents = listOf(title, amount)) { (titleParts, amountParts), constraints ->
+fun TitleAndAmount(title: @Composable () -> Unit, amount: @Composable () -> Unit, modifier: Modifier = Modifier, minTitle: Dp = 0.dp) {
+    Layout(modifier = modifier, contents = listOf(title, amount)) { (titleParts, amountParts), constraints ->
         val gap = 12.dp.roundToPx()
         val amountPart = amountParts.single()
         val titlePart = titleParts.single()
         val amountWidth = amountPart.maxIntrinsicWidth(constraints.maxHeight)
         val beside = constraints.maxWidth - amountWidth - gap
-        if (beside >= titlePart.minIntrinsicWidth(constraints.maxHeight)) {
+        if (amountFitsBeside(beside, titlePart.minIntrinsicWidth(constraints.maxHeight), minTitle.roundToPx())) {
             val shownAmount = amountPart.measure(Constraints(maxWidth = amountWidth))
             val shownTitle = titlePart.measure(Constraints(maxWidth = beside))
             layout(constraints.maxWidth, maxOf(shownTitle.height, shownAmount.height)) {

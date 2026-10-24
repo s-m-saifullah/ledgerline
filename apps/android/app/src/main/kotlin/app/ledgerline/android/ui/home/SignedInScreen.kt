@@ -2,7 +2,10 @@ package app.ledgerline.android.ui.home
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -89,7 +92,9 @@ fun SignedInScreen(
     budgets: BudgetsViewModel = hiltViewModel(),
     insights: InsightsViewModel = hiltViewModel(),
     update: UpdateViewModel = hiltViewModel(),
+    settings: app.ledgerline.android.ui.settings.SettingsViewModel = hiltViewModel(),
 ) {
+    val privacy = app.ledgerline.android.ui.privacy.LocalPrivacy.current
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     // Once when the app opens (after the lock screen): the manager applies the switch, the day limit and the connection.
     LaunchedEffect(Unit) { update.checkOnLaunch() }
@@ -104,6 +109,8 @@ fun SignedInScreen(
     var moreOpen by rememberSaveable { mutableStateOf<String?>(null) }
     // Whether Transactions' "Filter entries" section is open.
     var filtersOpen by rememberSaveable { mutableStateOf(false) }
+    // The currency Home's accounts are narrowed to (null: all), when there are accounts in more than one.
+    var currency by rememberSaveable { mutableStateOf<String?>(null) }
     val line by viewModel.syncLine.collectAsState()
     val unsent by viewModel.unsent.collectAsState()
     val attention by viewModel.attention.collectAsState()
@@ -148,14 +155,22 @@ fun SignedInScreen(
                     val month by home.month.collectAsState()
                     val accounts by viewModel.accounts.collectAsState()
                     HomeContent(
-                        header, month, home::retry, accounts, onOpenPending = { openEntries(PendingEntries) },
+                        status, month, accounts, currency, hidden = privacy,
+                        actions = HomeActions(
+                            onRetry = home::retry,
+                            onOpenPending = { openEntries(PendingEntries) },
+                            onOpenInsights = { tab = Tab.Insights },
+                            onSelectCurrency = { currency = it },
+                            onToggleHide = { settings.setPrivacyMode(!privacy) },
+                            onRetrySync = viewModel::refresh,
+                            onOpenAttention = { showAttention = true },
+                        ),
                         banner = notice?.let { release ->
                             {
                                 UpdateNotice(
                                     release.name,
                                     onOpen = { tab = Tab.More; moreOpen = "update" },
                                     onDismiss = update::dismissNotice,
-                                    modifier = Modifier.padding(top = 12.dp),
                                 )
                             }
                         },
@@ -299,8 +314,8 @@ private fun barLabelSize(labels: List<String>): TextUnit {
     val style = MaterialTheme.typography.labelMedium
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    // The bar's own side padding and each item's inner padding leave a tab about 16 dp less than its share.
-    val tabWidth = with(density) { (LocalWindowInfo.current.containerSize.width / labels.size).toDp() - 16.dp }
+    // A tab's inner padding leaves it a little less than its share; a label that is still too wide at the floor overflows evenly into the gaps, never cut off.
+    val tabWidth = with(density) { (LocalWindowInfo.current.containerSize.width / labels.size).toDp() - 6.dp }
     // Never below the bar label floor (ADR 0046), however large the phone's text setting is.
     val smallest = smallestBarLabel(density.fontScale)
     var size = style.fontSize
@@ -315,24 +330,64 @@ private fun barLabelSize(labels: List<String>): TextUnit {
 /** A bar label on one line at the shared [size]; a screen reader reads the whole word. */
 @Composable
 private fun BarLabel(text: String, size: TextUnit) {
-    Text(text, style = MaterialTheme.typography.labelMedium.copy(fontSize = size), maxLines = 1, softWrap = false, textAlign = TextAlign.Center)
+    Text(
+        text,
+        style = MaterialTheme.typography.labelMedium.copy(fontSize = size),
+        maxLines = 1,
+        softWrap = false,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.wrapContentWidth(unbounded = true),
+    )
 }
 
 /** The sync line, the unsent count and how many changes wait for the owner: what [SyncHeader] shows. */
 data class SyncStatus(val line: SyncLine, val unsent: Int, val attention: Int)
 
-/** Under each page header: when the mirror was updated, what is not sent, and the way to changes that need the owner. */
+/** The sync state in words: running, offline (with when it was last saved), failed, or when the mirror was updated. */
 @Composable
-internal fun SyncHeader(status: SyncStatus, onRetry: () -> Unit, onOpenAttention: () -> Unit) {
-    val line = status.line
+private fun syncText(line: SyncLine): String? {
     val updated = line.updatedAt?.let { stringResource(R.string.sync_updated, formatUpdated(it)) }
-    val text = when {
+    return when {
         line.running -> stringResource(R.string.sync_running)
         line.problem == SyncProblem.Offline && updated != null -> stringResource(R.string.sync_offline_saved, updated)
         line.problem == SyncProblem.Offline -> stringResource(R.string.sync_offline)
         line.problem == SyncProblem.Failed -> stringResource(R.string.sync_failed)
         else -> updated
     }
+}
+
+/** Home's sync state (ADR 0046): a dot, the words, the unsent count and Try again. The dot is only an extra cue, the words say it. */
+@Composable
+internal fun SyncStatusRow(status: SyncStatus, onRetry: () -> Unit) {
+    val line = status.line
+    val palette = app.ledgerline.android.ui.theme.LocalPalette.current
+    val unsent = if (status.unsent > 0) pluralStringResource(R.plurals.unsent_count, status.unsent, status.unsent) else null
+    val dot = when {
+        line.problem == SyncProblem.Failed -> palette.danger
+        line.running || line.problem == SyncProblem.Offline -> palette.muted
+        else -> palette.accent
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin).heightIn(min = 40.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        androidx.compose.foundation.layout.Box(Modifier.size(8.dp).background(dot, androidx.compose.foundation.shape.CircleShape))
+        Text(
+            listOfNotNull(syncText(line), unsent).joinToString(" · "),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (line.problem == SyncProblem.Failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        if (line.problem != null && !line.running) LinkButton(stringResource(R.string.try_again), onRetry)
+    }
+}
+
+/** Under each page header: when the mirror was updated, what is not sent, and the way to changes that need the owner. */
+@Composable
+internal fun SyncHeader(status: SyncStatus, onRetry: () -> Unit, onOpenAttention: () -> Unit) {
+    val line = status.line
+    val text = syncText(line)
     val unsent = if (status.unsent > 0) pluralStringResource(R.plurals.unsent_count, status.unsent, status.unsent) else null
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin).heightIn(min = 48.dp),

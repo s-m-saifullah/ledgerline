@@ -183,22 +183,22 @@ class EntryFiltersPanelTest {
     fun homeLinksToThePendingEntriesOnlyWhenThereAreSome() {
         var opened = 0
         compose.setContent {
-            androidx.compose.foundation.layout.Column(Modifier.requiredHeight(3000.dp)) {
-                MonthCard(Online.Ready(homeSummary().copy(pendingCount = 2)), onRetry = {}, onOpenPending = { opened++ })
-            }
+            HomeContent(
+                quietSync, Online.Ready(homeSummary().copy(pendingCount = 2)), Mirrored.Ready(emptyList()), null, false,
+                noHomeActions.copy(onOpenPending = { opened++ }), Modifier.requiredHeight(3000.dp),
+            )
         }
-        compose.onNodeWithText("Show the pending entries").performClick()
+        compose.onNodeWithText("2 pending entries aren't counted yet.").performClick()
         assertEquals(1, opened)
     }
 
     @Test
     fun homeHasNoPendingLinkWithNothingPending() {
         compose.setContent {
-            androidx.compose.foundation.layout.Column(Modifier.requiredHeight(3000.dp)) {
-                MonthCard(Online.Ready(homeSummary().copy(pendingCount = 0)), onRetry = {}, onOpenPending = {})
-            }
+            HomeContent(quietSync, Online.Ready(homeSummary().copy(pendingCount = 0)), Mirrored.Ready(emptyList()), null, false, noHomeActions, Modifier.requiredHeight(3000.dp))
         }
-        compose.onNodeWithText("Show the pending entries").assertDoesNotExist()
+        compose.onNodeWithText("aren't counted yet", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("isn't counted yet", substring = true).assertDoesNotExist()
     }
 
     @Test

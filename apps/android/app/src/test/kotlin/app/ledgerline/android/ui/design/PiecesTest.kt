@@ -18,6 +18,7 @@ import app.ledgerline.android.ui.theme.LedgerlineTheme
 import app.ledgerline.android.ui.theme.LightPalette
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -98,5 +99,14 @@ class PiecesTest {
         compose.onNodeWithText("Studio 6").assertHeightIsAtLeast(RowHeight)
         compose.onNodeWithContentDescription("Back").assertHeightIsAtLeast(TouchTarget).performClick()
         assertEquals(1, back)
+    }
+
+    @Test
+    fun anAmountStaysBesideTheNameOnlyWhileTheNameKeepsItsLongestWordAndTheMinimum() {
+        assertTrue(amountFitsBeside(roomForTitle = 120, longestWord = 60, minTitle = 80))
+        assertTrue(amountFitsBeside(roomForTitle = 80, longestWord = 60, minTitle = 80))
+        assertTrue(!amountFitsBeside(roomForTitle = 79, longestWord = 60, minTitle = 80))
+        assertTrue(!amountFitsBeside(roomForTitle = 100, longestWord = 101, minTitle = 80))
+        assertTrue(amountFitsBeside(roomForTitle = 0, longestWord = 0, minTitle = 0))
     }
 }
