@@ -50,6 +50,7 @@ import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchField
 import app.ledgerline.android.ui.design.SecondaryButton
+import app.ledgerline.android.ui.design.narrowingRoom
 import app.ledgerline.android.ui.theme.LocalPalette
 
 /** What the Categories screen's buttons and fields do. */
@@ -143,6 +144,8 @@ fun CategoriesContent(
                 }
             }
         }
+        // As on Clients and Loans: a shorter result must not pull the scroll back and slide the search field down.
+        narrowingRoom(narrowed = view.search.isNotEmpty() || view.status != CategoryStatus.All)
     }
 }
 
