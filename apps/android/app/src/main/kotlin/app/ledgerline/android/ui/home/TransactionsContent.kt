@@ -33,7 +33,6 @@ import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.TopBar
-import app.ledgerline.android.ui.design.narrowingRoom
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.privacy.AmountMask
 import app.ledgerline.android.ui.privacy.ShownMoney
@@ -48,9 +47,9 @@ fun dayLabel(date: String, locale: Locale = Locale.getDefault()): String =
     LocalDate.parse(date).format(DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", locale))
 
 /**
- * Transactions (ADR 0046): a fixed top bar, the sync state, what needs the owner, the search box with the type
- * chips and the Filters chip (its sheet opens over the list), then the days, each one grouped card of rows with the
- * day's net in its heading.
+ * Transactions (ADR 0046): a fixed top bar with the search box, the Filters button and the type chips under it (its
+ * sheet opens over the list), then, scrolling, the sync state, what needs the owner, and the days, each one grouped
+ * card of rows with the day's net in its heading.
  */
 @Composable
 internal fun TransactionsContent(
@@ -70,12 +69,14 @@ internal fun TransactionsContent(
 ) {
     Column(modifier) {
         TopBar(stringResource(R.string.entries_title))
-        LazyColumn(contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+        // The search, the Filters button and the type chips stay at the top while the list scrolls under them, so
+        // a shorter result can never move them and the list needs no blank room at its end (CONTRIBUTING.md).
+        EntryFilterBar(filters, onFilters, onToggleFilters)
+        LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             item { SyncStatusRow(status, onRetrySync) }
             if (status.attention > 0) {
                 item { Note(pluralStringResource(R.plurals.attention_banner, status.attention, status.attention), onOpenAttention) }
             }
-            item { EntryFilterBar(filters, onFilters, onToggleFilters) }
             when (entries) {
                 Mirrored.Waiting -> item { LedgerCard { Muted(stringResource(R.string.mirror_waiting)) } }
                 is Mirrored.Ready -> {
@@ -121,8 +122,6 @@ internal fun TransactionsContent(
                     }
                 }
             }
-            // Room so that filtering while scrolled never pulls the list (and the search box) back (CONTRIBUTING.md).
-            narrowingRoom(filters.applied)
         }
     }
     if (filtersOpen) EntryFiltersSheet(filters, options, onFilters, onToggleFilters)
