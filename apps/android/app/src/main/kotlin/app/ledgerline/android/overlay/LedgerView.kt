@@ -49,8 +49,12 @@ class LedgerView @Inject constructor(
         outbox.observePending(ledgerId).flatMapLatest { changes ->
             // Read a few more than shown: the ones a change touches are replaced by their rebuilt version.
             val touched = changes.size * 2
-            val source = if (filters.applied) reads.entryLines(ledgerId, limit + touched, filters) else reads.entryLines(ledgerId, limit + touched)
-            source.map { lines ->
+            // The search is matched in code (every letter's case), so with one the whole filtered list is read and then cut.
+            val searching = filters.searchText != null
+            val read = if (searching) EverythingFound else limit + touched
+            val source = if (filters.applied) reads.entryLines(ledgerId, read, filters) else reads.entryLines(ledgerId, read)
+            source.map { all ->
+                val lines = if (searching) all.filter { filters.matchesText(it.payee, it.note) } else all
                 if (changes.isEmpty()) return@map lines.take(limit).map { ShownLine(it, unsent = false) }
                 val (_, shown) = overlay(ledgerId, changes)
                 val family = categoryFamily(ledgerId, filters)
@@ -130,6 +134,7 @@ class LedgerView @Inject constructor(
                     tagNames = tagNames,
                     transferId = entry.transferId,
                     createdAt = entry.createdAt,
+                    note = entry.note,
                 ),
                 unsent = entry.unsent,
             )
@@ -144,5 +149,8 @@ class LedgerView @Inject constructor(
 
     private companion object {
         const val Chunk = 400
+
+        /** More than any ledger holds, for reading a whole filtered list. */
+        const val EverythingFound = 1_000_000
     }
 }

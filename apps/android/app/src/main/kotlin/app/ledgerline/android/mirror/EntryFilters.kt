@@ -2,11 +2,12 @@ package app.ledgerline.android.mirror
 
 /**
  * What the Transactions list is narrowed to, with the web's fields and meanings (ADR 0043, polish PR C). Empty or
- * null means "any". The rules are written twice, in SQL for the mirror ([MirrorReads]) and in [matches] for the
- * entries a pending change rebuilds, and a test runs both on the same data.
+ * null means "any". All but the search are written twice, in SQL for the mirror ([MirrorReads]) and in [matches] for
+ * the entries a pending change rebuilds, and a test runs both on the same data; the search is matched in code only
+ * ([matchesText]), because SQLite folds the case of A to Z alone.
  */
 data class EntryFilters(
-    /** A literal part of the payee or note; case-insensitive for English letters (SQLite's `lower`). */
+    /** A literal part of the payee or note, ignoring capital and small letters (every letter, not only A to Z). */
     val text: String = "",
     val accountId: String? = null,
     val categoryId: String? = null,
@@ -36,6 +37,12 @@ data class EntryFilters(
     /** The search text as the queries take it: null when blank. */
     val searchText: String? get() = text.trim().ifEmpty { null }
 
+    /** Whether a payee or note contains the search text, ignoring case for every letter; true when there is no search. */
+    fun matchesText(payee: String?, note: String?): Boolean {
+        val term = searchText ?: return true
+        return listOfNotNull(payee, note).any { it.contains(term, ignoreCase = true) }
+    }
+
     /**
      * Whether an entry as the phone shows it (the mirror with pending changes laid over it) passes every filter.
      * [categoryFamily] is the chosen category and, when asked for, its subcategories (null when there is no category
@@ -49,11 +56,7 @@ data class EntryFilters(
         if (to != null && entry.date > to) return false
         if (kind != null && entry.kind != kind) return false
         if (status != null && entry.status != status) return false
-        val term = searchText
-        if (term != null) {
-            val found = listOfNotNull(entry.payee, entry.note).any { it.lowercaseAscii().contains(term.lowercaseAscii()) }
-            if (!found) return false
-        }
+        if (!matchesText(entry.payee, entry.note)) return false
         return true
     }
 }
@@ -69,6 +72,3 @@ data class ShownFilterFields(
     val payee: String?,
     val note: String?,
 )
-
-/** SQLite's `lower` changes only A to Z, so the phone's search does the same on both sides of the comparison. */
-private fun String.lowercaseAscii(): String = buildString(length) { for (c in this@lowercaseAscii) append(if (c in 'A'..'Z') c + 32 else c) }

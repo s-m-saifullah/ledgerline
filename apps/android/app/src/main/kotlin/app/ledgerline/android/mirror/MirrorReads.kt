@@ -35,6 +35,8 @@ data class EntryLine(
     val tagNames: String?,
     val transferId: String?,
     val createdAt: String,
+    /** Read for the search (the list does not show it). */
+    val note: String? = null,
 )
 
 data class TagLink(val transactionId: String, val tagId: String)
@@ -65,7 +67,7 @@ private const val SelectEntryLines = """
                 ORDER BY g.name COLLATE NOCASE
             )
         ) AS tagNames,
-        t.transferId, t.createdAt
+        t.transferId, t.createdAt, t.note
     FROM transactions t
     LEFT JOIN accounts a ON a.ledgerId = t.ledgerId AND a.id = t.accountId
     LEFT JOIN categories c ON c.ledgerId = t.ledgerId AND c.id = t.categoryId
@@ -82,7 +84,8 @@ private const val EntryLinesSql = SelectEntryLines + NewestFirstLimited
 /**
  * The same list narrowed by the Transactions filters, with the meanings of the server's list: an account, a category
  * (the entry or one of its split lines is in it, or in a subcategory when asked), a tag, an inclusive date range, a
- * kind, a status, and a literal part of the payee or note. A null parameter means "any".
+ * kind and a status. A null parameter means "any". The search text is not here: SQLite's `lower` changes only A to Z, so
+ * the text is matched in code ([EntryFilters.matchesText]), which ignores case for every letter.
  */
 private const val FilteredEntryLinesSql = SelectEntryLines + """
     AND (:accountId IS NULL OR t.accountId = :accountId)
@@ -101,7 +104,6 @@ private const val FilteredEntryLinesSql = SelectEntryLines + """
     AND (:to IS NULL OR t.date <= :to)
     AND (:kind IS NULL OR t.kind = :kind)
     AND (:status IS NULL OR t.status = :status)
-    AND (:text IS NULL OR instr(lower(coalesce(t.payee, '')), lower(:text)) > 0 OR instr(lower(coalesce(t.note, '')), lower(:text)) > 0)
 """ + NewestFirstLimited
 
 /** What the screens read. Only live rows (no `deletedAt`) are ever shown. */
@@ -145,7 +147,6 @@ interface MirrorReads {
         to: String?,
         kind: String?,
         status: String?,
-        text: String?,
     ): Flow<List<EntryLine>>
 
     @Query(FilteredEntryLinesSql)
@@ -160,7 +161,6 @@ interface MirrorReads {
         to: String?,
         kind: String?,
         status: String?,
-        text: String?,
     ): List<EntryLine>
 
     @Query("SELECT * FROM transactions WHERE ledgerId = :ledgerId AND deletedAt IS NULL AND id IN (:ids)")
@@ -184,7 +184,7 @@ interface MirrorReads {
 
 /** The list narrowed by [filters] (a flow that re-emits when the mirror changes). */
 fun MirrorReads.entryLines(ledgerId: String, limit: Int, filters: EntryFilters): Flow<List<EntryLine>> =
-    with(filters) { filteredEntryLines(ledgerId, limit, accountId, categoryId, includeSubcategories, tagId, from, to, kind, status, searchText) }
+    with(filters) { filteredEntryLines(ledgerId, limit, accountId, categoryId, includeSubcategories, tagId, from, to, kind, status) }
 
 suspend fun MirrorReads.entryLinesNow(ledgerId: String, limit: Int, filters: EntryFilters): List<EntryLine> =
-    with(filters) { filteredEntryLinesNow(ledgerId, limit, accountId, categoryId, includeSubcategories, tagId, from, to, kind, status, searchText) }
+    with(filters) { filteredEntryLinesNow(ledgerId, limit, accountId, categoryId, includeSubcategories, tagId, from, to, kind, status) }

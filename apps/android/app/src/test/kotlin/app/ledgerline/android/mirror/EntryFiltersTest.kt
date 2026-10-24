@@ -3,6 +3,7 @@ package app.ledgerline.android.mirror
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import app.ledgerline.android.overlay.LedgerView
 import app.ledgerline.api.Money
 import app.ledgerline.api.SyncCategory
 import app.ledgerline.api.SyncSplit
@@ -19,8 +20,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * The Transactions filters with the web's meanings: the mirror's SQL, the same rules in code (for the entries a pending
- * change rebuilds), and the two checked against each other on the same data.
+ * The Transactions filters with the web's meanings: the mirror's SQL and the search in code (read through [LedgerView]),
+ * the same rules in code for the entries a pending change rebuilds, and the two checked against each other on the same data.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -28,6 +29,7 @@ class EntryFiltersTest {
     private lateinit var database: MirrorDatabase
     private val ledger = "ledger-a"
     private val reads get() = database.reads()
+    private val view get() = LedgerView(reads, database.dao(), database.outbox())
 
     private fun category(n: Int, name: String, parent: Int? = null, kind: String = "expense") =
         SyncCategory(id(n), Stamp, Stamp, null, 1, parent?.let { id(it) }, name, kind, null, null, 0, null)
@@ -73,7 +75,7 @@ class EntryFiltersTest {
     fun close() = database.close()
 
     private suspend fun ids(filters: EntryFilters, limit: Int = 100): List<Int> =
-        reads.entryLinesNow(ledger, limit, filters).map { line -> (1..19).first { id(it) == line.id } }
+        view.entries(ledger, limit, filters).first().map { shown -> (1..19).first { id(it) == shown.line.id } }
 
     @Test
     fun noFilterListsEveryLiveEntryNewestFirst() = runBlocking {
@@ -181,7 +183,7 @@ class EntryFiltersTest {
             val family = filters.categoryId?.let { id ->
                 categories.filter { it.id == id || (filters.includeSubcategories && it.parentId == id) }.map { it.id }.toSet() + id
             }
-            val byQuery = reads.entryLinesNow(ledger, 100, filters).map { it.id }.filter { it in fields }.toSet()
+            val byQuery = view.entries(ledger, 100, filters).first().map { it.line.id }.filter { it in fields }.toSet()
             val byCode = fields.filter { (_, f) -> filters.matches(f, family) }.keys
             assertEquals("$filters", byCode, byQuery)
         }
