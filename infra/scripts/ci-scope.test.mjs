@@ -104,6 +104,8 @@ test("the Android build runs only for its own inputs", () => {
     "docs/openapi.json",
     "packages/ui/src/tokens.css",
     "infra/scripts/android-tokens.mjs",
+    "infra/scripts/android-release-notes.mjs",
+    "infra/scripts/android-verify-apk.sh",
     ".github/workflows/ci.yml",
   ])
     assert.equal(classify([path]).android, true, path);

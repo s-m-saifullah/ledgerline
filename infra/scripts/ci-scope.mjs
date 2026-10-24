@@ -32,6 +32,8 @@ const androidInputs = new Set([
   "docs/openapi.json",
   "packages/ui/src/tokens.css",
   "infra/scripts/android-tokens.mjs",
+  "infra/scripts/android-release-notes.mjs",
+  "infra/scripts/android-verify-apk.sh",
   ".github/workflows/ci.yml",
 ]);
 
