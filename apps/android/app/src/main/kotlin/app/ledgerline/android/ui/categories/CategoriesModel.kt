@@ -49,6 +49,26 @@ fun archiveBlock(row: CategoryRow, items: List<CategoryRow>): ActionBlock? = whe
     else -> null
 }
 
+/** Why a category cannot be deleted: the web's rules, which the server enforces too. */
+sealed interface DeleteBlock {
+    /** It has subcategories (archived ones too): delete or move them first. */
+    data object HasSubcategories : DeleteBlock
+
+    /** [count] entries (transactions, split lines and changes not sent yet) use it: archive it instead. */
+    data class UsedByEntries(val count: Int) : DeleteBlock
+}
+
+/**
+ * What stops [row] from being deleted, or null. [entries] is how many entries use it ([MirrorReads.entriesUsingCategory]).
+ * The phone checks first so it can recommend archiving, as the web does; the server still has the last word, and also knows
+ * about recurring rules, which the phone does not hold.
+ */
+fun deleteBlock(row: CategoryRow, items: List<CategoryRow>, entries: Int): DeleteBlock? = when {
+    items.any { it.deletedAt == null && it.parentId == row.id } -> DeleteBlock.HasSubcategories
+    entries > 0 -> DeleteBlock.UsedByEntries(entries)
+    else -> null
+}
+
 /**
  * The main categories a category of [kind] may go under: active ones of that kind, and never the category itself. A
  * main category that has subcategories (archived ones count) cannot become a subcategory, so it is offered none.

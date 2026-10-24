@@ -145,4 +145,30 @@ class CategoriesModelTest {
 
     @Test
     fun aNewFormAlwaysCountsAsChanged() = assertTrue(CategoryForm.forNew("expense").changed)
+
+    @Test
+    fun aCategoryWithSubcategoriesCannotBeDeletedEvenWhenTheyAreArchived() {
+        assertEquals(DeleteBlock.HasSubcategories, deleteBlock(items[0], items, entries = 0))
+        assertEquals(DeleteBlock.HasSubcategories, deleteBlock(items[3], items, entries = 0))
+        // Subcategories come before entries: nothing is deleted until they are dealt with.
+        assertEquals(DeleteBlock.HasSubcategories, deleteBlock(items[0], items, entries = 5))
+    }
+
+    @Test
+    fun aCategoryUsedByEntriesCannotBeDeletedAndSaysHowMany() {
+        assertEquals(DeleteBlock.UsedByEntries(3), deleteBlock(items[1], items, entries = 3))
+        assertEquals(DeleteBlock.UsedByEntries(1), deleteBlock(items[5], items, entries = 1))
+    }
+
+    @Test
+    fun aCategoryNothingUsesMayBeDeleted() {
+        assertNull(deleteBlock(items[1], items, entries = 0))
+        assertNull(deleteBlock(items[6], items, entries = 0))
+    }
+
+    @Test
+    fun aDeletedSubcategoryDoesNotBlockItsMainCategory() {
+        val withGone = items.filter { it.parentId != items[0].id } + row(40, "Gone sub", parentN = 1, deleted = true)
+        assertNull(deleteBlock(items[0], withGone, entries = 0))
+    }
 }

@@ -48,7 +48,7 @@ class CategoriesSearchStaysPutTest {
             CategoriesView(search = search),
             categoryGroups(items, "expense", CategoryStatus.All, search),
             items,
-            CategoriesActions({}, {}, {}, { search = it }, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            CategoriesActions({}, {}, {}, { search = it }, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
             0.dp,
             Modifier.height(height.dp),
         )

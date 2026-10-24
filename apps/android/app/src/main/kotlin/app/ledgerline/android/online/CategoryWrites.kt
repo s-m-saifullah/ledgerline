@@ -28,6 +28,13 @@ class CategoryWrites @Inject constructor(private val writer: OnlineWriter, priva
     suspend fun unarchive(ledgerId: String, categoryId: String, key: String, expectedVersion: Int): Written<CategoryRow> =
         keep(writer.write { unarchiveCategory(ledgerId, categoryId, key, ExpectedVersion(expectedVersion)) })
 
+    /** Deletes a category the phone holds at [row]'s version; once the server accepts, it is a tombstone in the mirror too. */
+    suspend fun delete(ledgerId: String, row: CategoryRow, key: String): Written<Unit> {
+        val result = writer.write { deleteCategory(ledgerId, row.id, key, ExpectedVersion(row.version)) }
+        if (result is Written.Done) store.deleteCategory(row, java.time.Instant.now().toString())
+        return result
+    }
+
     private suspend fun keep(result: Written<app.ledgerline.api.Category>): Written<CategoryRow> = when (result) {
         is Written.Done -> {
             val row = result.value.toRow()

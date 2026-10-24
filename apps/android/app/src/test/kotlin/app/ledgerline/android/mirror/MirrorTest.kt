@@ -301,4 +301,25 @@ class MirrorTest {
         sync.pull(ledger)
         assertEquals(listOf("Pets"), dao.allCategories(ledger).map { it.name })
     }
+
+    @Test
+    fun aDeletedCategoryBecomesATombstoneThatALaterPullOfTheSameVersionLeavesAlone() = runBlocking {
+        store.putCategory(categoryRow(1, "Pets", 3))
+        store.deleteCategory(dao.allCategories(ledger).single(), "2026-10-24T10:00:00Z")
+        val tomb = dao.allCategories(ledger).single()
+        assertEquals(4, tomb.version)
+        assertEquals("2026-10-24T10:00:00Z", tomb.deletedAt)
+        // The server's own tombstone has the same version; it neither undoes nor changes the deletion.
+        store.applyPage(ledger, changes(categories = listOf(syncCategory(1, "Pets", version = 4, deletedAt = "2026-10-24T10:00:01.000Z"))).toRows(ledger), "p1", Stamp)
+        assertEquals("2026-10-24T10:00:00Z", dao.allCategories(ledger).single().deletedAt)
+        // A newer server version (the category was edited again elsewhere) does replace it.
+        store.applyPage(ledger, changes(categories = listOf(syncCategory(1, "Pets", version = 6, deletedAt = "2026-10-24T10:00:02.000Z"))).toRows(ledger), "p2", Stamp)
+        assertEquals(6, dao.allCategories(ledger).single().version)
+        store.deleteCategory(dao.allCategories(ledger).single().copy(version = 3, deletedAt = null), "2026-10-24T10:00:00Z")
+        assertEquals(6, dao.allCategories(ledger).single().version)
+        // An older copy of the live row (a late reply) never brings it back.
+        store.putCategory(categoryRow(1, "Pets", 3))
+        assertEquals(6, dao.allCategories(ledger).single().version)
+        assertTrue(dao.allCategories(ledger).single().deletedAt != null)
+    }
 }

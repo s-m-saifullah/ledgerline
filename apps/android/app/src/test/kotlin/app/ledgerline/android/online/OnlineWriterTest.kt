@@ -84,4 +84,16 @@ class OnlineWriterTest {
         assertEquals("""{"expectedVersion":2}""", sent.body)
         assertEquals("Bearer tok", harness.tokens.single())
     }
+
+    @Test
+    fun aDeleteIsADeleteWithABodyAndANoContentAnswerIsDone() {
+        harness.route(".*") { harness.json(204, "") }
+        val result = runBlocking { harness.writer().write { deleteCategory("ledger-a", "c1", "cat-key-0002", ExpectedVersion(3)) } }
+        assertEquals(Written.Done(Unit), result)
+        val sent = harness.recorded.single()
+        assertEquals("DELETE", sent.method)
+        assertEquals("/api/v1/ledgers/ledger-a/categories/c1", sent.target)
+        assertEquals("cat-key-0002", sent.idempotencyKey)
+        assertEquals("""{"expectedVersion":3}""", sent.body)
+    }
 }

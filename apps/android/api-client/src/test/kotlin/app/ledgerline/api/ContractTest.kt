@@ -49,6 +49,13 @@ class ContractTest {
                 request = true,
             ),
         )
+        assertMatches(
+            SchemaContract.differences(
+                ExpectedVersion.serializer().descriptor,
+                SchemaContract.request("/api/v1/ledgers/{ledgerId}/categories/{categoryId}", "delete"),
+                request = true,
+            ),
+        )
         for (action in listOf("archive", "unarchive")) {
             assertMatches(
                 SchemaContract.differences(

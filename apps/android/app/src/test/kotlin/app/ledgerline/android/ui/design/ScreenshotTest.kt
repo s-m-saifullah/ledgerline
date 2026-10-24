@@ -379,7 +379,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     )
 
     private fun categoriesShot(name: String, view: app.ledgerline.android.ui.categories.CategoriesView, items: List<app.ledgerline.android.mirror.CategoryRow> = categoryItems) = shot(name, Tab.More) {
-        val actions = app.ledgerline.android.ui.categories.CategoriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+        val actions = app.ledgerline.android.ui.categories.CategoriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
         app.ledgerline.android.ui.categories.CategoriesContent(
             view,
             app.ledgerline.android.ui.categories.categoryGroups(items, view.kind, view.status, view.search),

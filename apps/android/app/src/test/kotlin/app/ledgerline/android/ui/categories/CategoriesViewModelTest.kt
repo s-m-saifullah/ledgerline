@@ -6,6 +6,7 @@ import app.ledgerline.android.mirror.Stamp
 import app.ledgerline.android.mirror.SyncEngine
 import app.ledgerline.android.mirror.SyncLock
 import app.ledgerline.android.mirror.changes
+import app.ledgerline.android.mirror.entry
 import app.ledgerline.android.mirror.id
 import app.ledgerline.android.mirror.page
 import app.ledgerline.android.mirror.syncCategory
@@ -35,6 +36,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -320,5 +322,167 @@ class CategoriesViewModelTest {
         viewModel.closeForm()
         assertNull(viewModel.view.value.form)
         assertNull(viewModel.view.value.error)
+    }
+
+    // ---- Delete: the phone checks what uses the category first, and recommends archiving when something does.
+
+    private fun row(n: Int) = viewModel.items.value!!.first { it.id == id(n) }
+
+    private fun ask(n: Int): DeleteAsk {
+        viewModel.askDelete(row(n))
+        harness.until { viewModel.view.value.deleteAsk != null }
+        return viewModel.view.value.deleteAsk!!
+    }
+
+    private fun use(n: Int, entryN: Int = 10) = runBlocking {
+        MirrorStore(harness.database).applyPage(Ledger, changes(transactions = listOf(entry(entryN).copy(categoryId = id(n)))).toRows(Ledger), "p$entryN", Stamp)
+    }
+
+    @Test
+    fun aCategoryNothingUsesIsDeletedWithItsStoredVersionAndLeavesTheList() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}") { harness.json(204, "") }
+        val asked = ask(3)
+        assertNull(asked.block)
+        assertTrue(harness.recorded.isEmpty())
+        viewModel.confirmDelete()
+        harness.until { !viewModel.view.value.saving && harness.recorded.isNotEmpty() }
+        val sent = harness.recorded.single()
+        assertEquals("DELETE", sent.method)
+        assertEquals("/api/v1/ledgers/ledger-a/categories/${id(3)}", sent.target)
+        assertEquals("""{"expectedVersion":1}""", sent.body)
+        assertTrue(KeyPattern.matches(sent.idempotencyKey.orEmpty()))
+        assertEquals(CategoryNotice.Deleted, viewModel.view.value.notice)
+        assertNull(viewModel.view.value.deleteAsk)
+        harness.until { viewModel.items.value!!.none { it.id == id(3) } }
+        assertEquals(listOf("Food[Groceries]"), groupNames())
+    }
+
+    @Test
+    fun aCategoryUsedByAnEntryIsNotDeletedAndArchivingIsRecommended() {
+        use(3)
+        val asked = ask(3)
+        assertEquals(DeleteBlock.UsedByEntries(1), asked.block)
+        assertTrue(asked.canArchiveInstead)
+        viewModel.confirmDelete()
+        assertTrue(harness.quiet())
+        assertTrue(harness.recorded.isEmpty())
+        assertNotNull(viewModel.view.value.deleteAsk)
+    }
+
+    @Test
+    fun archivingInsteadMovesOnToTheArchiveQuestionAndSendsNothingYet() {
+        use(3)
+        ask(3)
+        viewModel.archiveInstead()
+        assertNull(viewModel.view.value.deleteAsk)
+        assertEquals(id(3), viewModel.view.value.ask?.category?.id)
+        assertTrue(harness.recorded.isEmpty())
+    }
+
+    @Test
+    fun aSplitLineAndAnUnsentChangeCountAsUse() {
+        runBlocking {
+            MirrorStore(harness.database).applyPage(
+                Ledger,
+                changes(transactions = listOf(entry(10).copy(isSplit = true))).copy(
+                    transactionSplits = listOf(app.ledgerline.api.SyncSplit(id(50), Stamp, Stamp, null, 1, id(10), id(3), "expense", app.ledgerline.api.Money(-100, "USD"), app.ledgerline.api.Money(-100, "USD"), null, 0)),
+                ).toRows(Ledger),
+                "p", Stamp,
+            )
+        }
+        assertEquals(DeleteBlock.UsedByEntries(1), ask(3).block)
+        viewModel.dismissDeleteAsk()
+        runBlocking {
+            harness.database.outbox().insert(
+                app.ledgerline.android.outbox.OutboxRow(
+                    "m1", Ledger, 1, "transaction", "create", id(77), null, Stamp, """{"categoryId":"${id(1)}"}""", false, "pending", null, null, null,
+                ),
+            )
+        }
+        // Food has a subcategory too, which is named first.
+        assertEquals(DeleteBlock.HasSubcategories, ask(1).block)
+    }
+
+    @Test
+    fun aCategoryWithSubcategoriesIsNotDeletedAndCannotBeArchivedInsteadEither() {
+        use(1)
+        val asked = ask(1)
+        assertEquals(DeleteBlock.HasSubcategories, asked.block)
+        assertFalse(asked.canArchiveInstead)
+        viewModel.confirmDelete()
+        viewModel.archiveInstead()
+        assertTrue(harness.quiet())
+        assertTrue(harness.recorded.isEmpty())
+        // Still on the same question; no archive question was opened.
+        assertEquals(DeleteBlock.HasSubcategories, viewModel.view.value.deleteAsk?.block)
+        assertNull(viewModel.view.value.ask)
+    }
+
+    @Test
+    fun anArchivedCategoryInUseCannotBeDeletedAndThereIsNothingToArchive() {
+        runBlocking {
+            MirrorStore(harness.database).putCategory(
+                app.ledgerline.android.mirror.CategoryRow(Ledger, id(3), 2, Stamp, Stamp, null, null, "Transport", "expense", null, null, 3, Stamp),
+            )
+        }
+        use(3)
+        harness.until { viewModel.items.value!!.first { it.id == id(3) }.archivedAt != null }
+        val asked = ask(3)
+        assertEquals(DeleteBlock.UsedByEntries(1), asked.block)
+        assertFalse(asked.canArchiveInstead)
+    }
+
+    @Test
+    fun theServersRefusalIsShownAndAStalePhoneIsBroughtUpToDate() {
+        // The phone thought nothing used the category; the server knows better (an entry made elsewhere, a recurring rule).
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}") { problem(409, "Delete the connected transactions first, or archive this item to keep its history.") }
+        ask(3)
+        viewModel.confirmDelete()
+        harness.until { !viewModel.view.value.saving && viewModel.view.value.error != null }
+        assertEquals(CategoryError.Rejected("Delete the connected transactions first, or archive this item to keep its history."), viewModel.view.value.error)
+        harness.until { pulls.get() >= 1 }
+        assertTrue(viewModel.items.value!!.any { it.id == id(3) })
+    }
+
+    @Test
+    fun aCategoryAlreadyGoneIsRefreshedAndNotReportedAsADeletion() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}") { problem(404, "Category not found.") }
+        ask(3)
+        viewModel.confirmDelete()
+        harness.until { !viewModel.view.value.saving && viewModel.view.value.error != null }
+        assertEquals(CategoryError.Rejected("Category not found."), viewModel.view.value.error)
+        assertNull(viewModel.view.value.notice)
+        harness.until { pulls.get() >= 1 }
+    }
+
+    @Test
+    fun anAccountThatMayNotDeleteSeesThat() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}") { problem(403, "No.") }
+        ask(3)
+        viewModel.confirmDelete()
+        harness.until { !viewModel.view.value.saving && viewModel.view.value.error != null }
+        assertEquals(CategoryError.Forbidden, viewModel.view.value.error)
+        assertTrue(viewModel.items.value!!.any { it.id == id(3) })
+    }
+
+    @Test
+    fun aDeleteRetriedAfterAFailureKeepsItsKey() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}") { harness.json(500, "{}") }
+        repeat(2) {
+            ask(3)
+            viewModel.confirmDelete()
+            harness.until { !viewModel.view.value.saving && harness.recorded.size == it + 1 }
+        }
+        val keys = harness.recorded.map { it.idempotencyKey }
+        assertEquals(keys[0], keys[1])
+        assertEquals(CategoryError.Failed, viewModel.view.value.error)
+    }
+
+    @Test
+    fun theDeleteQuestionCanBeDismissed() {
+        ask(3)
+        viewModel.dismissDeleteAsk()
+        assertNull(viewModel.view.value.deleteAsk)
+        assertTrue(harness.recorded.isEmpty())
     }
 }
