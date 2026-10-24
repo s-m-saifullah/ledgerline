@@ -187,6 +187,27 @@ jobs:
           LEDGERLINE_KEYSTORE_FILE="$RUNNER_TEMP/throwaway.jks" LEDGERLINE_KEYSTORE_PASSWORD="$password" \
             LEDGERLINE_KEY_ALIAS=throwaway LEDGERLINE_KEY_PASSWORD="$password" ./gradlew --no-daemon :app:assembleRelease
           ../../infra/scripts/android-verify-apk.sh app/build/outputs/apk/release/app-release.apk
+      # The release notes the update screen shows (ADR 0043): every committed file is usable, and the release body step
+      # produces notes, then one marker line, then the fingerprints of this throwaway build.
+      - name: Check the release notes step
+        run: |
+          set -euo pipefail
+          node infra/scripts/android-release-notes.mjs check-all
+          sample="$RUNNER_TEMP/notes"
+          mkdir "$sample"
+          printf 'Sample notes.\n' > "$sample/9.9.9.md"
+          apk=apps/android/app/build/outputs/apk/release/app-release.apk
+          sum="$(sha256sum "$apk" | cut -d' ' -f1)"
+          cert="$(infra/scripts/android-verify-apk.sh "$apk" | sed 's/.*: //')"
+          RELEASE_NOTES_DIR="$sample" node infra/scripts/android-release-notes.mjs body 9.9.9 "$sum" "$cert" > "$RUNNER_TEMP/body.md"
+          [ "$(sed -n 1p "$RUNNER_TEMP/body.md")" = "Sample notes." ]
+          [ "$(grep -c '^---$' "$RUNNER_TEMP/body.md")" = "1" ]
+          grep -q "$sum" "$RUNNER_TEMP/body.md"
+          grep -q "$cert" "$RUNNER_TEMP/body.md"
+          if RELEASE_NOTES_DIR="$sample" node infra/scripts/android-release-notes.mjs check 9.9.8 2> "$RUNNER_TEMP/err.txt"; then
+            echo "::error::A missing notes file was accepted"; exit 1
+          fi
+          grep -q 'No release notes' "$RUNNER_TEMP/err.txt"
       - name: Keep the debug APK for sideloading
         uses: actions/upload-artifact@v7
         with:

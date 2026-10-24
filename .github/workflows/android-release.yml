@@ -30,6 +30,11 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: node infra/scripts/android-version.mjs "$TAG" >> "$GITHUB_OUTPUT"
+      # Before the owner is asked to approve: the update screen shows these notes, so a release without them is refused.
+      - name: The release notes must exist
+        env:
+          VERSION: ${{ steps.rule.outputs.name }}
+        run: node infra/scripts/android-release-notes.mjs check "$VERSION"
       - name: The tag must be on main
         run: |
           git fetch --no-tags origin main
@@ -73,6 +78,8 @@ jobs:
           LEDGERLINE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           LEDGERLINE_VERSION_NAME: ${{ needs.version.outputs.name }}
           LEDGERLINE_VERSION_CODE: ${{ needs.version.outputs.code }}
+          # The update check in the app accepts only an APK signed with this certificate (ADR 0043).
+          LEDGERLINE_CERT_SHA256: ${{ vars.ANDROID_CERT_SHA256 }}
         run: |
           set -euo pipefail
           for name in KEYSTORE_BASE64 LEDGERLINE_KEYSTORE_PASSWORD LEDGERLINE_KEY_ALIAS LEDGERLINE_KEY_PASSWORD; do
@@ -103,13 +110,6 @@ jobs:
         run: |
           set -euo pipefail
           sum="$(cut -d' ' -f1 "release/ledgerline-android-$VERSION.apk.sha256")"
-          {
-            echo "Signed release APK of Ledgerline for Android $VERSION."
-            echo
-            echo "- APK SHA-256: \`$sum\`"
-            echo "- Signing certificate SHA-256: \`$CERT\`"
-            echo
-            echo "Install it over the existing app; Android accepts it only with the same key and a higher version code."
-          } > "$RUNNER_TEMP/notes.md"
+          node infra/scripts/android-release-notes.mjs body "$VERSION" "$sum" "$CERT" > "$RUNNER_TEMP/notes.md"
           gh release create "$TAG" "release/ledgerline-android-$VERSION.apk" "release/ledgerline-android-$VERSION.apk.sha256" \
             --verify-tag --title "Ledgerline for Android $VERSION" --notes-file "$RUNNER_TEMP/notes.md" --latest=false
