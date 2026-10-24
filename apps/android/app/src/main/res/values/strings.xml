@@ -557,4 +557,19 @@
     <string name="editor_new_category_add">Add category</string>
     <string name="editor_new_category_adding">Adding…</string>
     <string name="editor_new_category_invalid">Give the category a name of 1–100 characters.</string>
+
+    <string name="category_delete">Delete category</string>
+    <string name="category_notice_deleted">Category deleted.</string>
+    <string name="category_delete_title">Delete category?</string>
+    <string name="category_delete_body">Delete %1$s? This category has no Undo; archive it to keep it instead.</string>
+    <string name="category_delete_confirm">Delete</string>
+    <string name="category_delete_blocked_title">This category can\'t be deleted</string>
+    <string name="category_delete_blocked_subcategories">%1$s has subcategories. Delete or move them first, including archived ones.</string>
+    <plurals name="category_delete_blocked_entries">
+        <item quantity="one">%1$s is used by %2$d entry, so it can\'t be deleted. Archive it to keep its history: it leaves the pickers for new entries and stays on past entries.</item>
+        <item quantity="other">%1$s is used by %2$d entries, so it can\'t be deleted. Archive it to keep its history: it leaves the pickers for new entries and stays on past entries.</item>
+    </plurals>
+    <string name="category_delete_blocked_archive_first">To archive it, archive its subcategories first.</string>
+    <string name="category_delete_archive_instead">Archive instead</string>
+    <string name="category_delete_close">Close</string>
 </resources>

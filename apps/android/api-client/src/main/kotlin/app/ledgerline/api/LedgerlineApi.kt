@@ -3,6 +3,7 @@ package app.ledgerline.api
 import kotlinx.serialization.json.Json
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -128,6 +129,15 @@ interface LedgerlineApi {
         @Header("Idempotency-Key") key: String,
         @Body body: ExpectedVersion,
     ): Category
+
+    /** Deletes a category (a soft delete); the server answers 204, and refuses while it has subcategories, entries or rules. */
+    @HTTP(method = "DELETE", path = "api/v1/ledgers/{ledgerId}/categories/{categoryId}", hasBody = true)
+    suspend fun deleteCategory(
+        @Path("ledgerId") ledgerId: String,
+        @Path("categoryId") categoryId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: ExpectedVersion,
+    )
 
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")

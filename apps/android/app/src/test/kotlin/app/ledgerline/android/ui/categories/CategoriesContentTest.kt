@@ -59,6 +59,10 @@ class CategoriesContentTest {
             closeForm = { log += "closeForm" },
             confirmArchive = { log += "confirm" },
             dismissAsk = { log += "dismiss" },
+            askDelete = { log += "askDelete:${it.name}" },
+            confirmDelete = { log += "confirmDelete" },
+            dismissDeleteAsk = { log += "dismissDelete" },
+            archiveInstead = { log += "archiveInstead" },
         )
     }
 
@@ -266,6 +270,85 @@ class CategoriesContentTest {
         compose.onNodeWithText("Cancel").performClick()
         compose.onNodeWithText("←  Categories").performClick()
         assertEquals(listOf("closeForm", "closeForm"), taps.log)
+    }
+
+    @Test
+    fun everyRowsMenuHasDeleteAndItAsksFirst() {
+        val taps = show()
+        compose.onNodeWithContentDescription("Actions for Groceries").performClick()
+        compose.onNodeWithText("Delete category").performClick()
+        assertEquals(listOf("askDelete:Groceries"), taps.log)
+        compose.onNodeWithContentDescription("Actions for Old project").performClick()
+        compose.onNodeWithText("Delete category").assertIsEnabled()
+    }
+
+    @Test
+    fun theDeleteQuestionNamesTheCategoryMentionsNoUndoAndReportsTheAnswer() {
+        val taps = show(CategoriesView(deleteAsk = DeleteAsk(groceries, block = null, canArchiveInstead = true)))
+        compose.onNodeWithText("Delete category?").assertExists()
+        compose.onNodeWithText("Delete Groceries? This category has no Undo; archive it to keep it instead.").assertExists()
+        compose.onNodeWithText("Delete").performClick()
+        assertEquals(listOf("confirmDelete"), taps.log)
+    }
+
+    @Test
+    fun cancellingTheDeleteQuestionReportsIt() {
+        val taps = show(CategoriesView(deleteAsk = DeleteAsk(groceries, block = null, canArchiveInstead = true)))
+        compose.onNodeWithText("Cancel").performClick()
+        assertEquals(listOf("dismissDelete"), taps.log)
+    }
+
+    @Test
+    fun aCategoryInUseCannotBeDeletedAndTheQuestionRecommendsArchiving() {
+        val taps = show(CategoriesView(deleteAsk = DeleteAsk(groceries, DeleteBlock.UsedByEntries(3), canArchiveInstead = true)))
+        compose.onNodeWithText("This category can't be deleted").assertExists()
+        compose.onNodeWithText("Groceries is used by 3 entries", substring = true).assertExists()
+        compose.onNodeWithText("Archive it to keep its history", substring = true).assertExists()
+        compose.onNodeWithText("Delete").assertDoesNotExist()
+        compose.onNodeWithText("Archive instead").performClick()
+        assertEquals(listOf("archiveInstead"), taps.log)
+    }
+
+    @Test
+    fun oneEntryIsSaidInTheSingular() {
+        show(CategoriesView(deleteAsk = DeleteAsk(groceries, DeleteBlock.UsedByEntries(1), canArchiveInstead = true)))
+        compose.onNodeWithText("Groceries is used by 1 entry,", substring = true).assertExists()
+    }
+
+    @Test
+    fun theBlockedQuestionCanJustBeClosed() {
+        val taps = show(CategoriesView(deleteAsk = DeleteAsk(groceries, DeleteBlock.UsedByEntries(2), canArchiveInstead = true)))
+        compose.onNodeWithText("Close").performClick()
+        assertEquals(listOf("dismissDelete"), taps.log)
+    }
+
+    @Test
+    fun aMainCategoryWithSubcategoriesIsToldToDealWithThemFirstWithNoArchiveOffer() {
+        val taps = show(CategoriesView(deleteAsk = DeleteAsk(food, DeleteBlock.HasSubcategories, canArchiveInstead = false)))
+        compose.onNodeWithText("Food has subcategories. Delete or move them first, including archived ones.").assertExists()
+        compose.onNodeWithText("Archive instead").assertDoesNotExist()
+        compose.onNodeWithText("Close").performClick()
+        assertEquals(listOf("dismissDelete"), taps.log)
+    }
+
+    @Test
+    fun whenArchivingNeedsTheSubcategoriesArchivedFirstTheQuestionSaysSoInsteadOfOfferingIt() {
+        show(CategoriesView(deleteAsk = DeleteAsk(food, DeleteBlock.UsedByEntries(4), canArchiveInstead = false)))
+        compose.onNodeWithText("To archive it, archive its subcategories first.").assertExists()
+        compose.onNodeWithText("Archive instead").assertDoesNotExist()
+    }
+
+    @Test
+    fun anAlreadyArchivedCategoryInUseOffersNoArchiveAndNoFalseHint() {
+        show(CategoriesView(deleteAsk = DeleteAsk(old, DeleteBlock.UsedByEntries(2), canArchiveInstead = false)))
+        compose.onNodeWithText("To archive it, archive its subcategories first.").assertDoesNotExist()
+        compose.onNodeWithText("Archive instead").assertDoesNotExist()
+    }
+
+    @Test
+    fun aDeletedNoticeIsShown() {
+        show(CategoriesView(notice = CategoryNotice.Deleted))
+        compose.onNodeWithText("Category deleted.").assertExists()
     }
 
     @Test

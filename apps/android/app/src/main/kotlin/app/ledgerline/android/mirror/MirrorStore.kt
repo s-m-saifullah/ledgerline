@@ -51,6 +51,12 @@ class MirrorStore @Inject constructor(private val database: MirrorDatabase) {
         }
     }
 
+    /**
+     * Marks a category deleted after the server accepted the delete, as a pull would: a tombstone one version newer, so a
+     * later pull bringing the server's own tombstone (the same or a newer version) changes nothing.
+     */
+    suspend fun deleteCategory(row: CategoryRow, at: String) = putCategory(row.copy(version = row.version + 1, updatedAt = at, deletedAt = at))
+
     /** Replaces everything held for [ledgerId] (and drops any other ledger's rows) with a full pull, or changes nothing. */
     suspend fun replaceAll(ledgerId: String, rows: MirrorRows, cursor: String, serverTime: String) {
         database.withTransaction {

@@ -142,4 +142,62 @@ class MirrorReadsTest {
         store.wipe()
         assertNull(reads.mirroredLedger().first())
     }
+
+    private fun split(n: Int, entryN: Int, categoryN: Int, deletedAt: String? = null) =
+        app.ledgerline.api.SyncSplit(id(n), Stamp, Stamp, deletedAt, 1, id(entryN), id(categoryN), "expense", app.ledgerline.api.Money(-100, "USD"), app.ledgerline.api.Money(-100, "USD"), null, 0)
+
+    private fun outboxRow(n: Int, action: String, categoryN: Int?, ledgerId: String = ledger) = app.ledgerline.android.outbox.OutboxRow(
+        id = "mutation-$n", ledgerId = ledgerId, seq = n.toLong(), kind = "transaction", action = action, entityId = id(100 + n), baseVersion = null,
+        editedAt = Stamp, body = if (categoryN == null) """{"payee":"x"}""" else """{"categoryId":"${id(categoryN)}","payee":"x"}""",
+        attempted = false, state = "pending", problemTitle = null, problemDetail = null, serverRows = null,
+    )
+
+    private suspend fun seed(
+        transactions: List<app.ledgerline.api.SyncTransaction> = emptyList(),
+        splits: List<app.ledgerline.api.SyncSplit> = emptyList(),
+    ) = store.replaceAll(
+        ledger,
+        changes(accounts = listOf(account(1)), transactions = transactions, categories = listOf(syncCategory(20, "Food"), syncCategory(21, "Fun"))).copy(transactionSplits = splits).toRows(ledger),
+        "c", Stamp,
+    )
+
+    @Test
+    fun aLiveEntryInTheCategoryCountsAndOthersDoNot() = runBlocking {
+        seed(
+            transactions = listOf(
+                entry(10).copy(categoryId = id(20)), entry(11).copy(categoryId = id(20)), entry(12).copy(categoryId = id(21)),
+                entry(13).copy(categoryId = id(20), deletedAt = Stamp), entry(14),
+            ),
+        )
+        assertEquals(2, reads.entriesUsingCategory(ledger, id(20)))
+        assertEquals(1, reads.entriesUsingCategory(ledger, id(21)))
+        assertEquals(0, reads.entriesUsingCategory(ledger, id(99)))
+    }
+
+    @Test
+    fun aLiveSplitLineCountsLikeAnEntry() = runBlocking {
+        seed(transactions = listOf(entry(10).copy(isSplit = true)), splits = listOf(split(50, 10, 20), split(51, 10, 21), split(52, 10, 20, deletedAt = Stamp)))
+        assertEquals(1, reads.entriesUsingCategory(ledger, id(20)))
+        assertEquals(1, reads.entriesUsingCategory(ledger, id(21)))
+    }
+
+    @Test
+    fun aChangeNotSentYetThatNamesTheCategoryCountsButADeleteDoesNot() = runBlocking {
+        seed()
+        database.outbox().insert(outboxRow(1, "create", 20))
+        database.outbox().insert(outboxRow(2, "update", 20))
+        database.outbox().insert(outboxRow(3, "delete", 20))
+        database.outbox().insert(outboxRow(4, "create", 21))
+        database.outbox().insert(outboxRow(5, "update", null))
+        assertEquals(2, reads.entriesUsingCategory(ledger, id(20)))
+        assertEquals(1, reads.entriesUsingCategory(ledger, id(21)))
+    }
+
+    @Test
+    fun anotherLedgersRowsAreNeverCounted() = runBlocking {
+        seed(transactions = listOf(entry(10).copy(categoryId = id(20))))
+        database.outbox().insert(outboxRow(1, "create", 20, ledgerId = "ledger-b"))
+        assertEquals(1, reads.entriesUsingCategory(ledger, id(20)))
+        assertEquals(0, reads.entriesUsingCategory("ledger-b", id(99)))
+    }
 }

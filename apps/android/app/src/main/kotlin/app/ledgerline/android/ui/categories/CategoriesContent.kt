@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -68,6 +69,10 @@ class CategoriesActions(
     val closeForm: () -> Unit,
     val confirmArchive: () -> Unit,
     val dismissAsk: () -> Unit,
+    val askDelete: (CategoryRow) -> Unit,
+    val confirmDelete: () -> Unit,
+    val dismissDeleteAsk: () -> Unit,
+    val archiveInstead: () -> Unit,
 )
 
 /**
@@ -85,6 +90,7 @@ fun CategoriesContent(
     modifier: Modifier = Modifier,
 ) {
     view.ask?.let { ArchiveQuestion(it.category, actions) }
+    view.deleteAsk?.let { DeleteQuestion(it, actions) }
     val form = view.form
     if (form != null) {
         val editing = form.editing
@@ -179,6 +185,7 @@ private fun CategoryNotice.text() = when (this) {
     CategoryNotice.Updated -> R.string.category_notice_updated
     CategoryNotice.Archived -> R.string.category_notice_archived
     CategoryNotice.Unarchived -> R.string.category_notice_unarchived
+    CategoryNotice.Deleted -> R.string.category_notice_deleted
 }
 
 @Composable
@@ -241,6 +248,11 @@ private fun CategoryRowView(row: CategoryRow, child: Boolean, items: List<Catego
                     onClick = { open = false; actions.unarchive(row) },
                 )
             }
+            // As on the web the item is always there: the question that follows says what stops a delete, and recommends archiving.
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.category_delete), color = palette.danger) },
+                onClick = { open = false; actions.askDelete(row) },
+            )
         }
     }
 }
@@ -253,6 +265,51 @@ private fun ArchiveQuestion(category: CategoryRow, actions: CategoriesActions) {
         text = { Text(stringResource(R.string.category_archive_body, category.name)) },
         confirmButton = { TextButton(onClick = actions.confirmArchive) { Text(stringResource(R.string.category_archive_confirm)) } },
         dismissButton = { TextButton(onClick = actions.dismissAsk) { Text(stringResource(R.string.category_cancel)) } },
+    )
+}
+
+/** Delete asks first; when something uses the category it explains and recommends archiving, and nothing is sent. */
+@Composable
+private fun DeleteQuestion(ask: DeleteAsk, actions: CategoriesActions) {
+    val palette = LocalPalette.current
+    val name = ask.category.name
+    val block = ask.block
+    if (block == null) {
+        AlertDialog(
+            onDismissRequest = actions.dismissDeleteAsk,
+            title = { Text(stringResource(R.string.category_delete_title)) },
+            text = { Text(stringResource(R.string.category_delete_body, name)) },
+            confirmButton = { TextButton(onClick = actions.confirmDelete) { Text(stringResource(R.string.category_delete_confirm), color = palette.danger) } },
+            dismissButton = { TextButton(onClick = actions.dismissDeleteAsk) { Text(stringResource(R.string.category_cancel)) } },
+        )
+        return
+    }
+    AlertDialog(
+        onDismissRequest = actions.dismissDeleteAsk,
+        title = { Text(stringResource(R.string.category_delete_blocked_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                when (block) {
+                    DeleteBlock.HasSubcategories -> Text(stringResource(R.string.category_delete_blocked_subcategories, name))
+                    is DeleteBlock.UsedByEntries -> {
+                        Text(pluralStringResource(R.plurals.category_delete_blocked_entries, block.count, name, block.count))
+                        if (!ask.canArchiveInstead && ask.category.archivedAt == null) Text(stringResource(R.string.category_delete_blocked_archive_first))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (ask.canArchiveInstead && block is DeleteBlock.UsedByEntries) {
+                TextButton(onClick = actions.archiveInstead) { Text(stringResource(R.string.category_delete_archive_instead)) }
+            } else {
+                TextButton(onClick = actions.dismissDeleteAsk) { Text(stringResource(R.string.category_delete_close)) }
+            }
+        },
+        dismissButton = if (ask.canArchiveInstead && block is DeleteBlock.UsedByEntries) {
+            { TextButton(onClick = actions.dismissDeleteAsk) { Text(stringResource(R.string.category_delete_close)) } }
+        } else {
+            null
+        },
     )
 }
 

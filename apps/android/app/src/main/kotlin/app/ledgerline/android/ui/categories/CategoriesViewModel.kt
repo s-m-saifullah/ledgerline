@@ -43,10 +43,13 @@ internal fun Written<*>.toCategoryError(): CategoryError? = when (this) {
 }
 
 /** What just worked, said once under the toolbar. */
-enum class CategoryNotice { Added, Updated, Archived, Unarchived }
+enum class CategoryNotice { Added, Updated, Archived, Unarchived, Deleted }
 
 /** One archive question waiting for an answer. */
 data class ArchiveAsk(val category: CategoryRow)
+
+/** One delete question: [block] is what stops it (then the dialog explains and recommends archiving), null when it may go ahead. */
+data class DeleteAsk(val category: CategoryRow, val block: DeleteBlock?, val canArchiveInstead: Boolean)
 
 /** Everything the screen shows besides the categories themselves. */
 data class CategoriesView(
@@ -58,6 +61,7 @@ data class CategoriesView(
     val error: CategoryError? = null,
     val notice: CategoryNotice? = null,
     val ask: ArchiveAsk? = null,
+    val deleteAsk: DeleteAsk? = null,
 )
 
 /**
@@ -68,7 +72,7 @@ data class CategoriesView(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CategoriesViewModel @Inject constructor(
-    reads: MirrorReads,
+    private val reads: MirrorReads,
     private val writes: CategoryWrites,
     private val sync: SyncCoordinator,
 ) : ViewModel() {
@@ -108,6 +112,40 @@ class CategoriesViewModel @Inject constructor(
 
     fun dismissAsk() = _view.update { it.copy(ask = null) }
 
+    /**
+     * Opens the delete question. The phone looks first at what uses the category (subcategories, entries, unsent changes);
+     * if anything does, the question says so and recommends archiving, as the web does, and nothing is sent.
+     */
+    fun askDelete(row: CategoryRow) {
+        val ledgerId = ledger.value ?: return
+        _view.update { it.copy(error = null, notice = null) }
+        viewModelScope.launch {
+            val block = deleteBlock(row, items.value.orEmpty(), reads.entriesUsingCategory(ledgerId, row.id))
+            // Archiving is the way out when something uses the category, unless it is archived already or has active subcategories.
+            val canArchive = row.archivedAt == null && archiveBlock(row, items.value.orEmpty()) == null
+            _view.update { it.copy(deleteAsk = DeleteAsk(row, block, canArchiveInstead = canArchive)) }
+        }
+    }
+
+    fun dismissDeleteAsk() = _view.update { it.copy(deleteAsk = null) }
+
+    /** Deletes the category the question is about, when nothing stopped it. */
+    fun confirmDelete() {
+        val ask = _view.value.deleteAsk ?: return
+        if (ask.block != null) return
+        val ledgerId = ledger.value ?: return
+        val key = keyFor("delete|${ask.category.id}|${ask.category.version}")
+        _view.update { it.copy(deleteAsk = null) }
+        run(ledgerId, CategoryNotice.Deleted, closeForm = false) { writes.delete(ledgerId, ask.category, key) }
+    }
+
+    /** From a question that says the category is in use: go on to archiving it, which keeps its history. */
+    fun archiveInstead() {
+        val ask = _view.value.deleteAsk ?: return
+        if (!ask.canArchiveInstead) return
+        _view.update { it.copy(deleteAsk = null, ask = ArchiveAsk(ask.category)) }
+    }
+
     fun dismissNotice() = _view.update { it.copy(notice = null) }
 
     /** Saves the form: an add, or an edit of only what changed. */
@@ -141,7 +179,7 @@ class CategoriesViewModel @Inject constructor(
 
     private fun keyFor(change: String) = keys.getOrPut(change) { "cat-${Uuid7.next()}" }
 
-    private fun run(ledgerId: String, done: CategoryNotice, closeForm: Boolean, call: suspend () -> Written<CategoryRow>) {
+    private fun run(ledgerId: String, done: CategoryNotice, closeForm: Boolean, call: suspend () -> Written<*>) {
         _view.update { it.copy(saving = true, error = null, notice = null) }
         viewModelScope.launch {
             val result = call()
@@ -153,8 +191,8 @@ class CategoriesViewModel @Inject constructor(
                     v.copy(saving = false, error = result.toCategoryError())
                 }
             }
-            // A version that moved on (an edit on the web, say) is answered with 409; bring this phone up to date.
-            if (result is Written.Rejected && result.status == 409) sync.pullNow()
+            // A version that moved on (an edit on the web, say) is answered with 409, a category already gone with 404; bring this phone up to date.
+            if (result is Written.Rejected && (result.status == 409 || result.status == 404)) sync.pullNow()
         }
     }
 

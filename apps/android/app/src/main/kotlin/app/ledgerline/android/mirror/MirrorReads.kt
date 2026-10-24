@@ -126,6 +126,20 @@ interface MirrorReads {
     @Query("SELECT * FROM categories WHERE ledgerId = :ledgerId AND deletedAt IS NULL")
     fun liveCategories(ledgerId: String): Flow<List<CategoryRow>>
 
+    /**
+     * How many entries use a category, counted as the server counts when it refuses a delete: live transactions and live
+     * split lines, plus the changes made on the phone and not sent yet (a create or an update that names the category),
+     * which the server would refuse later. Zero means the phone knows of nothing that stops a delete.
+     */
+    @Query(
+        """
+        SELECT (SELECT COUNT(*) FROM transactions WHERE ledgerId = :ledgerId AND categoryId = :categoryId AND deletedAt IS NULL)
+             + (SELECT COUNT(*) FROM transaction_splits WHERE ledgerId = :ledgerId AND categoryId = :categoryId AND deletedAt IS NULL)
+             + (SELECT COUNT(*) FROM outbox WHERE ledgerId = :ledgerId AND action != 'delete' AND body LIKE '%' || :categoryId || '%')
+        """,
+    )
+    suspend fun entriesUsingCategory(ledgerId: String, categoryId: String): Int
+
     @Query("SELECT * FROM tags WHERE ledgerId = :ledgerId AND deletedAt IS NULL")
     fun liveTags(ledgerId: String): Flow<List<TagRow>>
 
