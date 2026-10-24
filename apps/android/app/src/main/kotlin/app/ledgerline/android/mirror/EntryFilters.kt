@@ -31,6 +31,9 @@ data class EntryFilters(
 
     val applied: Boolean get() = count > 0
 
+    /** What the Filters chip counts: every filter but the search (its own box) and the entry type (its own chips). */
+    val sheetCount: Int get() = panelCount - if (kind != null) 1 else 0
+
     /** Every filter but the search, for the "Filter entries" heading. */
     val panelCount: Int get() = count - if (text.isNotBlank()) 1 else 0
 

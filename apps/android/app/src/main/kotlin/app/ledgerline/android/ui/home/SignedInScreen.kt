@@ -129,7 +129,6 @@ fun SignedInScreen(
         return
     }
     val status = SyncStatus(line, unsent, attention.size)
-    val header: @Composable () -> Unit = { SyncHeader(status, onRetry = viewModel::refresh, onOpenAttention = { showAttention = true }) }
     // Home's pending note and Insights' category rows open Transactions already narrowed (the filters live in the view model).
     val openEntries = { filters: EntryFilters ->
         viewModel.setFilters(filters)
@@ -181,8 +180,9 @@ fun SignedInScreen(
                     val filters by viewModel.filters.collectAsState()
                     val options by viewModel.filterOptions.collectAsState()
                     TransactionsContent(
-                        header, entries, canShowMore, viewModel::showMoreEntries,
+                        status, entries, canShowMore, viewModel::showMoreEntries,
                         filters, options, filtersOpen, { filtersOpen = !filtersOpen }, viewModel::setFilters,
+                        onRetrySync = viewModel::refresh, onOpenAttention = { showAttention = true },
                     ) { line: EntryLine ->
                         edit(
                             if (line.kind == "transfer" && line.transferId != null) {
@@ -380,33 +380,5 @@ internal fun SyncStatusRow(status: SyncStatus, onRetry: () -> Unit) {
             modifier = Modifier.weight(1f),
         )
         if (line.problem != null && !line.running) LinkButton(stringResource(R.string.try_again), onRetry)
-    }
-}
-
-/** Under each page header: when the mirror was updated, what is not sent, and the way to changes that need the owner. */
-@Composable
-internal fun SyncHeader(status: SyncStatus, onRetry: () -> Unit, onOpenAttention: () -> Unit) {
-    val line = status.line
-    val text = syncText(line)
-    val unsent = if (status.unsent > 0) pluralStringResource(R.plurals.unsent_count, status.unsent, status.unsent) else null
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin).heightIn(min = 48.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            listOfNotNull(text, unsent).joinToString(" · "),
-            style = MaterialTheme.typography.bodySmall,
-            color = if (line.problem == SyncProblem.Failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        if (line.problem != null && !line.running) LinkButton(stringResource(R.string.try_again), onRetry)
-    }
-    if (status.attention > 0) {
-        SecondaryButton(
-            pluralStringResource(R.plurals.attention_banner, status.attention, status.attention),
-            onClick = onOpenAttention,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin, vertical = 4.dp),
-        )
     }
 }

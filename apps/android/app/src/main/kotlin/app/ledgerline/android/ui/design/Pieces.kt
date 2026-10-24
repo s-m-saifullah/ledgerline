@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -24,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -38,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -147,6 +152,8 @@ fun ListRow(
     subtitleColor: Color = Color.Unspecified,
     /** What a screen reader says for the whole row, when it should be one sentence (the amount's spoken form, not its mask). */
     described: String? = null,
+    /** More under the subtitle, such as a row of tags. */
+    extra: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier
@@ -165,6 +172,7 @@ fun ListRow(
                 if (subtitle != null) {
                     Text(subtitle, style = MaterialTheme.typography.bodySmall, color = subtitleColor.takeOrElse { MaterialTheme.colorScheme.onSurfaceVariant })
                 }
+                extra?.invoke(this)
             }
         }
         // The amount goes under the words when it would squeeze them (a large amount, the largest text).
@@ -193,6 +201,51 @@ fun Avatar(name: String) {
     ) {
         Text(initialsOf(name), style = MaterialTheme.typography.labelLarge, color = palette.accent)
     }
+}
+
+/** A tile like [Avatar] with an icon in it, for a row that is not a person or an account (a transfer). */
+@Composable
+fun IconAvatar(icon: Int) {
+    val palette = LocalPalette.current
+    Box(
+        modifier = Modifier.defaultMinSize(minWidth = 40.dp, minHeight = 40.dp).background(palette.accentSoft, MaterialTheme.shapes.small),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(icon), contentDescription = null, tint = palette.accent, modifier = Modifier.size(20.dp))
+    }
+}
+
+/**
+ * A search box (ADR 0046): a filled field with the [label] as its hint (a screen reader reads it too), a cross
+ * that empties it while there is text, and 48 dp tall. It replaces SearchField screen by screen.
+ */
+@Composable
+fun SearchBox(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val palette = LocalPalette.current
+    val clear = stringResource(R.string.clear_search)
+    TextField(
+        value = value,
+        onValueChange = { onChange(it.take(200)) },
+        singleLine = true,
+        placeholder = { Text(label, color = palette.muted, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        trailingIcon = if (value.isEmpty()) null else {
+            {
+                IconButton(onClick = { onChange("") }) {
+                    Icon(painterResource(R.drawable.ic_close), contentDescription = clear, modifier = Modifier.size(20.dp))
+                }
+            }
+        },
+        shape = MaterialTheme.shapes.small,
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = palette.border.copy(alpha = 0.5f),
+            unfocusedContainerColor = palette.border.copy(alpha = 0.5f),
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            disabledIndicatorColor = Color.Transparent,
+        ),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        modifier = modifier.fillMaxWidth().heightIn(min = TouchTarget).semantics { contentDescription = label },
+    )
 }
 
 /** How full a limit is: the accent, the warning at 90 per cent of it and above, red over it. */

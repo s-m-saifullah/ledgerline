@@ -40,7 +40,6 @@ import app.ledgerline.android.ui.insights.insights
 import app.ledgerline.android.ui.home.ListBottomSpace
 import app.ledgerline.android.ui.home.Mirrored
 import app.ledgerline.android.ui.home.SignedInFrame
-import app.ledgerline.android.ui.home.SyncHeader
 import app.ledgerline.android.ui.home.SyncLine
 import app.ledgerline.android.ui.home.SyncStatus
 import app.ledgerline.android.ui.home.Tab
@@ -122,10 +121,6 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     private val homeStatus = SyncStatus(SyncLine("2026-10-22T10:42:00Z", running = false, problem = null), unsent = 1, attention = 1)
     private val homeActions = HomeActions({}, {}, {}, {}, {}, {}, {})
 
-    private val header: @Composable () -> Unit = {
-        SyncHeader(SyncStatus(SyncLine("2026-10-22T10:42:00Z", running = false, problem = null), unsent = 1, attention = 0), {}, {})
-    }
-
     @Test
     fun home() = shot("home", Tab.Home) {
         val month = homeSummary(590005).copy(
@@ -155,7 +150,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun transactions() = shot("transactions", Tab.Transactions) {
-        TransactionsContent(header, Mirrored.Ready(entries), canShowMore = true, onShowMore = {}, EntryFilters(), filterOptions, false, {}, {}, onOpen = {})
+        TransactionsContent(homeStatus, Mirrored.Ready(entries), canShowMore = true, onShowMore = {}, EntryFilters(), filterOptions, false, {}, {}, {}, {}, onOpen = {})
     }
 
     private val filterOptions = FilterOptions(
@@ -167,19 +162,28 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     /** The filters open with several set, as after Home's pending note or an Insights row. */
     @Test
     fun transactionsFiltered() = shot("transactions-filtered", Tab.Transactions) {
+        val filters = EntryFilters(text = "cafe", kind = "expense", accountId = "a1", categoryId = "c1", from = "2026-10-01", to = "2026-10-31", status = "pending")
+        TransactionsContent(homeStatus.copy(attention = 0), Mirrored.Ready(entries.take(1)), canShowMore = false, onShowMore = {}, filters, filterOptions, false, {}, {}, {}, {}, onOpen = {})
+    }
+
+    /** The Filters sheet's content on its own (a screenshot cannot capture the sheet; the sheet itself is checked on the phone). */
+    @Test
+    fun filtersSheet() = shot("filters-sheet", Tab.Transactions) {
         val filters = EntryFilters(text = "cafe", accountId = "a1", categoryId = "c1", from = "2026-10-01", to = "2026-10-31", status = "pending")
-        TransactionsContent(header, Mirrored.Ready(entries.take(1)), canShowMore = false, onShowMore = {}, filters, filterOptions, true, {}, {}, onOpen = {})
+        androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surface) {
+            app.ledgerline.android.ui.home.EntryFiltersSheetContent(filters, filterOptions, {}, {})
+        }
     }
 
     @Test
     fun transactionsNoMatch() = shot("transactions-no-match", Tab.Transactions) {
-        TransactionsContent(header, Mirrored.Ready(emptyList()), canShowMore = false, onShowMore = {}, EntryFilters(text = "zzz"), filterOptions, false, {}, {}, onOpen = {})
+        TransactionsContent(homeStatus.copy(attention = 0), Mirrored.Ready(emptyList()), canShowMore = false, onShowMore = {}, EntryFilters(text = "zzz"), filterOptions, false, {}, {}, {}, {}, onOpen = {})
     }
 
     @Test
     fun transactionsBadRange() = shot("transactions-bad-range", Tab.Transactions) {
         val filters = EntryFilters(from = "2026-10-31", to = "2026-10-01")
-        TransactionsContent(header, Mirrored.Ready(emptyList()), canShowMore = false, onShowMore = {}, filters, filterOptions, true, {}, {}, onOpen = {})
+        TransactionsContent(homeStatus.copy(attention = 0), Mirrored.Ready(emptyList()), canShowMore = false, onShowMore = {}, filters, filterOptions, false, {}, {}, {}, {}, onOpen = {})
     }
 
     @Test
@@ -505,7 +509,8 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     private val entries = listOf(
         ShownLine(entry("e1", "2026-10-22", "expense", -5100, "Corner cafe", "Eating out", "Everyday checking", tags = "work, trip"), unsent = true),
         ShownLine(entry("e2", "2026-10-22", "expense", -1234, "Pharmacy", "Health", "Everyday checking", status = "pending"), unsent = false),
-        ShownLine(entry("e3", "2026-10-22", "transfer", -4800, null, null, "Everyday checking"), unsent = false),
+        ShownLine(entry("e3", "2026-10-22", "transfer", -4800, null, null, "Everyday checking").copy(transferId = "te3"), unsent = false),
+        ShownLine(entry("e3b", "2026-10-22", "transfer", 4800, null, null, "Wallet").copy(transferId = "te3"), unsent = false),
         ShownLine(entry("e4", "2026-10-21", "income", 250000, "Payroll", "Salary", "Everyday checking"), unsent = false),
         ShownLine(entry("e5", "2026-10-21", "expense", -3000, "Market", null, "Wallet", split = true), unsent = false),
         ShownLine(entry("e6", "2026-10-20", "expense", -123456789, "A very long payee name that keeps going and going", "Home and garden", "Rainy day savings account with a long name"), unsent = false),

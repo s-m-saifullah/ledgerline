@@ -292,7 +292,6 @@
     <string name="home_lent">Lent out</string>
         <string name="home_borrowed">You owe</string>
         <string name="eyebrow_personal">Your personal ledger</string>
-    <string name="eyebrow_ledger">Your ledger</string>
     <string name="eyebrow_yours">Make it yours</string>
     <string name="more_subtitle">Clients, loans and settings.</string>
     <string name="settings_this_phone">This phone</string>
@@ -319,8 +318,10 @@
     <string name="entries_no_match_title">No matching entries</string>
     <string name="entries_no_match">Try another search or clear the filters.</string>
     <string name="filters_search">Search payer, payee or note</string>
-    <string name="filters_title">Filter entries</string>
-    <string name="filters_title_count">Filter entries (%1$d)</string>
+    <string name="chip_all">All</string>
+    <string name="filters_chip">Filters</string>
+    <string name="filters_chip_count">Filters (%1$d)</string>
+    <string name="filters_done">Done</string>
     <string name="filters_clear">Clear filters</string>
     <string name="filters_range_invalid">Choose an end date on or after the start date.</string>
     <string name="filter_account">Account</string>
@@ -336,8 +337,6 @@
     <string name="filter_to">To date</string>
     <string name="filter_any_date">Any date</string>
     <string name="filter_clear_date">Clear %1$s</string>
-    <string name="filter_kind">Entry type</string>
-    <string name="filter_kind_all">All entries</string>
     <string name="filter_kind_expense">Expenses</string>
     <string name="filter_kind_income">Income</string>
     <string name="filter_kind_transfer">Transfers</string>
@@ -346,6 +345,7 @@
     <string name="filter_status_cleared">Cleared</string>
     <string name="filter_status_pending">Pending</string>
     <string name="entry_transfer">Transfer</string>
+    <string name="transfer_title">%1$s → %2$s</string>
     <string name="entry_split">Split</string>
     <string name="entry_untitled">Entry</string>
     <string name="entry_pending">Pending</string>

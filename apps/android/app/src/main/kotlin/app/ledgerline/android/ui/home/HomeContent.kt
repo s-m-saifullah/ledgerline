@@ -140,7 +140,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.accountItems(all: Lis
 
 /** One line of news above the hero in a bordered card, so it is not mistaken for the hero's own notes; the whole card opens [onClick]. */
 @Composable
-private fun Note(text: String, onClick: () -> Unit, action: String? = null) {
+internal fun Note(text: String, onClick: () -> Unit, action: String? = null) {
     LedgerCard(
         modifier = Modifier.clickable(onClickLabel = action, onClick = onClick, role = Role.Button),
         padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),

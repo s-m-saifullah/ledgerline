@@ -253,14 +253,19 @@ fun AmountRow(
     }
 }
 
-/** `.transaction-day h2`: the date over a day's entries. */
+/** A day's date over its entries, with what the day came to (one figure per currency) at the right, in the muted colour. */
 @Composable
-fun DayHeader(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleSmall.copy(fontSize = MaterialTheme.typography.bodyLarge.fontSize.times(15f / 16f)),
-        modifier = Modifier.padding(start = ScreenMargin, end = ScreenMargin, top = 20.dp, bottom = 8.dp).semantics { heading() },
-    )
+fun DayHeader(text: String, net: String? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = ScreenMargin + 4.dp, end = ScreenMargin + 4.dp, top = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(text, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).semantics { heading() })
+        if (net != null) {
+            Text(net, style = MaterialTheme.typography.labelLarge.tabular(), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        }
+    }
 }
 
 /** The button ladder (ADR 0039): filled for the one primary action, 8 dp corners as on the web. */
