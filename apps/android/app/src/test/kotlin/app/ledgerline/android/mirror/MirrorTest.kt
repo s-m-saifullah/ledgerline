@@ -279,4 +279,26 @@ class MirrorTest {
         assertNull(dao.cursor(ledger))
         assertNull(dao.cursor(other))
     }
+
+    private fun categoryRow(n: Int, name: String, version: Int) = syncCategory(n, name, version = version).toRow(ledger)
+
+    @Test
+    fun aCategoryFromAWriteIsKeptOnlyWhenItsVersionIsNewer() = runBlocking {
+        store.putCategory(categoryRow(1, "Pets", 1))
+        assertEquals(listOf("Pets"), dao.allCategories(ledger).map { it.name })
+        store.putCategory(categoryRow(1, "Pets and vets", 2))
+        assertEquals(listOf("Pets and vets"), dao.allCategories(ledger).map { it.name })
+        // A pull that already brought a newer copy, or the same one, is never undone by a late reply.
+        store.putCategory(categoryRow(1, "Old name", 1))
+        store.putCategory(categoryRow(1, "Same version", 2))
+        assertEquals(listOf("Pets and vets"), dao.allCategories(ledger).map { it.name })
+    }
+
+    @Test
+    fun theNextPullBringingTheSameVersionChangesNothing() = runBlocking {
+        store.putCategory(categoryRow(1, "Pets", 1))
+        val (_, sync) = engine(reply(page(changes(categories = listOf(syncCategory(1, "Pets", version = 1))), cursor = "p1")))
+        sync.pull(ledger)
+        assertEquals(listOf("Pets"), dao.allCategories(ledger).map { it.name })
+    }
 }

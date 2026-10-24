@@ -3,6 +3,8 @@ package app.ledgerline.api
 import kotlinx.serialization.json.Json
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -94,6 +96,38 @@ interface LedgerlineApi {
 
     @GET("api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans")
     suspend fun loans(@Path("ledgerId") ledgerId: String, @Path("contactId") contactId: String): LoanList
+
+    /** Categories (PRs after slice 5): each write is one idempotent REST call; [key] is the `Idempotency-Key` (8 to 128 safe characters). */
+    @POST("api/v1/ledgers/{ledgerId}/categories")
+    suspend fun createCategory(
+        @Path("ledgerId") ledgerId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: CreateCategory,
+    ): Category
+
+    @PATCH("api/v1/ledgers/{ledgerId}/categories/{categoryId}")
+    suspend fun updateCategory(
+        @Path("ledgerId") ledgerId: String,
+        @Path("categoryId") categoryId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: UpdateCategory,
+    ): Category
+
+    @POST("api/v1/ledgers/{ledgerId}/categories/{categoryId}/archive")
+    suspend fun archiveCategory(
+        @Path("ledgerId") ledgerId: String,
+        @Path("categoryId") categoryId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: ExpectedVersion,
+    ): Category
+
+    @POST("api/v1/ledgers/{ledgerId}/categories/{categoryId}/unarchive")
+    suspend fun unarchiveCategory(
+        @Path("ledgerId") ledgerId: String,
+        @Path("categoryId") categoryId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: ExpectedVersion,
+    ): Category
 
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")

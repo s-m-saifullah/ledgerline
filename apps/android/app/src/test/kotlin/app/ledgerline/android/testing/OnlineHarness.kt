@@ -3,6 +3,7 @@ package app.ledgerline.android.testing
 import app.ledgerline.android.mirror.MirrorDatabase
 import app.ledgerline.android.mirror.SyncCursorRow
 import app.ledgerline.android.online.OnlineReader
+import app.ledgerline.android.online.OnlineWriter
 import app.ledgerline.android.outbox.memoryDatabase
 import app.ledgerline.android.session.ClientsProvider
 import app.ledgerline.android.session.SessionManager
@@ -34,6 +35,9 @@ class OnlineHarness {
     private val routes = mutableListOf<Pair<Regex, (String) -> MockResponse>>()
     val targets = CopyOnWriteArrayList<String>()
     val tokens = CopyOnWriteArrayList<String?>()
+
+    /** Every request as it arrived (method, headers, body), for the screens that write. */
+    val recorded = CopyOnWriteArrayList<Recorded>()
     var delayMillis = 0L
     val server = MockWebServer()
     lateinit var database: MirrorDatabase
@@ -45,6 +49,7 @@ class OnlineHarness {
             override fun dispatch(request: RecordedRequest): MockResponse {
                 targets += request.target
                 tokens += request.headers["Authorization"]
+                recorded += Recorded(request.method, request.target, request.headers["Idempotency-Key"], request.body?.utf8().orEmpty())
                 val match = routes.firstOrNull { it.first.matches(request.target) }
                 val answer = match?.second?.invoke(request.target) ?: MockResponse.Builder().code(404).body("{}").build()
                 return answer.newBuilder().headersDelay(delayMillis, TimeUnit.MILLISECONDS).build()
@@ -65,6 +70,9 @@ class OnlineHarness {
 
     fun reader(origin: String = server.url("/").toString().trimEnd('/')) =
         OnlineReader(FakeServerAddressStore(origin), ClientsProvider(session), session)
+
+    fun writer(origin: String = server.url("/").toString().trimEnd('/')) =
+        OnlineWriter(FakeServerAddressStore(origin), ClientsProvider(session), session)
 
     /** An address nothing answers at, for "no connection": a server that was started and closed. */
     fun closedOrigin(): String {
@@ -101,3 +109,6 @@ class OnlineHarness {
     /** True when nothing arrives in half a second: for "nothing is read until..." checks. */
     fun quiet(): Boolean = server.takeRequest(500, TimeUnit.MILLISECONDS) == null
 }
+
+/** One request the mock server received. */
+data class Recorded(val method: String, val target: String, val idempotencyKey: String?, val body: String)

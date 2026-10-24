@@ -215,7 +215,7 @@ class UpdateContentTest {
     @Test
     fun moreShowsTheNoticeAboveItsCardsOnlyWhenGivenOne() {
         compose.setContent {
-            MoreContent(MoreActions({}, {}, {}), 0.dp, Modifier.requiredHeight(3000.dp), notice = { UpdateNotice("0.1.3", {}, {}) })
+            MoreContent(MoreActions({}, {}, {}, {}), 0.dp, Modifier.requiredHeight(3000.dp), notice = { UpdateNotice("0.1.3", {}, {}) })
         }
         compose.onNodeWithContentDescription("Version 0.1.3 is available, See what's new").assertExists()
         compose.onNodeWithContentDescription("Settings", substring = true).assertExists()
@@ -223,7 +223,7 @@ class UpdateContentTest {
 
     @Test
     fun moreWithoutANoticeShowsNone() {
-        compose.setContent { MoreContent(MoreActions({}, {}, {}), 0.dp, Modifier.requiredHeight(3000.dp)) }
+        compose.setContent { MoreContent(MoreActions({}, {}, {}, {}), 0.dp, Modifier.requiredHeight(3000.dp)) }
         compose.onNodeWithContentDescription("Version 0.1.3 is available, See what's new").assertDoesNotExist()
     }
 }

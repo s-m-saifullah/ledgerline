@@ -57,6 +57,7 @@ import app.ledgerline.android.ui.loans.LoansScreen
 import app.ledgerline.android.ui.insights.InsightsViewModel
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
+import app.ledgerline.android.ui.categories.CategoriesScreen
 import app.ledgerline.android.ui.settings.SettingsScreen
 import app.ledgerline.android.ui.update.UpdateNotice
 import app.ledgerline.android.ui.update.UpdateScreen
@@ -99,7 +100,7 @@ fun SignedInScreen(
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     // What is open on Insights (a category's subcategories, a chart's figures); a list, so it can be saved.
     var openInsights by rememberSaveable { mutableStateOf(listOf<String>()) }
-    // What More has open: "clients", "loans", "settings" or nothing (More itself).
+    // What More has open: "clients", "loans", "categories", "update", "settings" or nothing (More itself).
     var moreOpen by rememberSaveable { mutableStateOf<String?>(null) }
     // Whether Transactions' "Filter entries" section is open.
     var filtersOpen by rememberSaveable { mutableStateOf(false) }
@@ -214,6 +215,7 @@ fun SignedInScreen(
             }
             Tab.More -> when (moreOpen) {
                 "clients" -> ClientsScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
+                "categories" -> CategoriesScreen(onBack = { moreOpen = null }, bottomSpace = ListBottomSpace, modifier = inside)
                 "loans" -> LoansScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
                 "settings" -> SettingsScreen(
                     viewModel,
@@ -228,7 +230,7 @@ fun SignedInScreen(
                 )
                 "update" -> UpdateScreen(onBack = { moreOpen = "settings" }, bottomSpace = ListBottomSpace, modifier = inside)
                 else -> MoreContent(
-                    MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "settings" }),
+                    MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "categories" }, { moreOpen = "settings" }),
                     ListBottomSpace,
                     inside,
                     notice = notice?.let { release ->

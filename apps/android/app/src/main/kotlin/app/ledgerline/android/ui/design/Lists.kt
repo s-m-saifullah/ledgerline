@@ -130,7 +130,7 @@ fun ChoiceField(
                     .background(palette.surface, MaterialTheme.shapes.small)
                     .border(1.dp, palette.fieldBorder, MaterialTheme.shapes.small)
                     .clickable(onClick = { open = true }, role = Role.DropdownList)
-                    .padding(horizontal = 16.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
                     .semantics { contentDescription = label },
                 verticalAlignment = Alignment.CenterVertically,
             ) {

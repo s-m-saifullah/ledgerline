@@ -1,6 +1,7 @@
 package app.ledgerline.android.mirror
 
 import app.ledgerline.api.SyncAccount
+import app.ledgerline.api.Category
 import app.ledgerline.api.SyncCategory
 import app.ledgerline.api.SyncChanges
 import app.ledgerline.api.SyncCurrency
@@ -19,6 +20,9 @@ fun SyncAccount.toRow(ledgerId: String) = AccountRow(
 fun SyncCategory.toRow(ledgerId: String) = CategoryRow(
     ledgerId, id, version, createdAt, updatedAt, deletedAt, parentId, name, kind, icon, color, sortOrder, archivedAt,
 )
+
+/** A category the API returned from a write, as the mirror stores it (live: a write never returns a tombstone). */
+fun Category.toRow() = CategoryRow(ledgerId, id, version, createdAt, updatedAt, null, parentId, name, kind, icon, color, sortOrder, archivedAt)
 
 fun SyncTag.toRow(ledgerId: String) = TagRow(ledgerId, id, version, createdAt, updatedAt, deletedAt, name, archivedAt)
 

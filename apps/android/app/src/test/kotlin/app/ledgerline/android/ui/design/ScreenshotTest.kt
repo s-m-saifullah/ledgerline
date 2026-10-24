@@ -60,6 +60,7 @@ import app.ledgerline.android.ui.settings.SettingsActions
 import app.ledgerline.android.ui.settings.SettingsContent
 import app.ledgerline.android.ui.settings.SettingsState
 import app.ledgerline.android.ui.settings.UpdatesInfo
+import app.ledgerline.android.mirror.toRow
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.theme.LedgerlineTheme
 import app.ledgerline.api.HomeOwed
@@ -317,7 +318,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     }
 
     @Test
-    fun more() = shot("more", Tab.More) { MoreContent(MoreActions({}, {}, {}), ListBottomSpace) }
+    fun more() = shot("more", Tab.More) { MoreContent(MoreActions({}, {}, {}, {}), ListBottomSpace) }
 
     private val longNotes = "Check for updates from Settings, or let the app look when it opens.\n" +
         "- See what is new before you download.\n" +
@@ -365,8 +366,55 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun moreWithUpdateNotice() = shot("more-update", Tab.More) {
-        MoreContent(MoreActions({}, {}, {}), ListBottomSpace, notice = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}) })
+        MoreContent(MoreActions({}, {}, {}, {}), ListBottomSpace, notice = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}) })
     }
+
+    private val categoryItems = listOf(
+        app.ledgerline.android.mirror.syncCategory(1, "Food and groceries for the whole household").toRow("l"),
+        app.ledgerline.android.mirror.syncCategory(2, "Groceries", parentN = 1).toRow("l"),
+        app.ledgerline.android.mirror.syncCategory(3, "Dining out", parentN = 1, archived = true).toRow("l"),
+        app.ledgerline.android.mirror.syncCategory(4, "Transport").toRow("l"),
+        app.ledgerline.android.mirror.syncCategory(5, "Old project", archived = true).toRow("l"),
+        app.ledgerline.android.mirror.syncCategory(6, "Salary", kind = "income").toRow("l"),
+    )
+
+    private fun categoriesShot(name: String, view: app.ledgerline.android.ui.categories.CategoriesView, items: List<app.ledgerline.android.mirror.CategoryRow> = categoryItems) = shot(name, Tab.More) {
+        val actions = app.ledgerline.android.ui.categories.CategoriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+        app.ledgerline.android.ui.categories.CategoriesContent(
+            view,
+            app.ledgerline.android.ui.categories.categoryGroups(items, view.kind, view.status, view.search),
+            items,
+            actions,
+            ListBottomSpace,
+        )
+    }
+
+    @Test
+    fun categories() = categoriesShot("categories", app.ledgerline.android.ui.categories.CategoriesView())
+
+    @Test
+    fun categoriesEmpty() = categoriesShot("categories-empty", app.ledgerline.android.ui.categories.CategoriesView(), emptyList())
+
+    @Test
+    fun categoryAdd() = categoriesShot(
+        "category-add",
+        app.ledgerline.android.ui.categories.CategoriesView(form = app.ledgerline.android.ui.categories.CategoryForm.forNew("expense").copy(name = "Pets", parentId = categoryItems[3].id)),
+    )
+
+    @Test
+    fun categoryEditWithAnError() = categoriesShot(
+        "category-edit-error",
+        app.ledgerline.android.ui.categories.CategoriesView(
+            form = app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[1]).copy(name = "Dining out"),
+            error = app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
+        ),
+    )
+
+    @Test
+    fun categoryEditMainWithSubcategories() = categoriesShot(
+        "category-edit-main",
+        app.ledgerline.android.ui.categories.CategoriesView(form = app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[0])),
+    )
 
     @Test
     fun settingsUpdates() = shot("settings-updates", Tab.More) {
