@@ -270,7 +270,6 @@
     <string name="home_offline">This month needs a connection.</string>
     <string name="home_failed">This month could not be loaded.</string>
     <string name="home_in_hand">In hand</string>
-    <string name="home_in_hand_detail">Positive balances in bank, cash, wallet and savings accounts. Cards, loans, pending entries and money owed to you are not included.</string>
     <plurals name="home_unconverted">
         <item quantity="one">%1$s has no exchange rate yet, so that account is left out of these totals.</item>
         <item quantity="other">%1$s have no exchange rate yet, so those accounts are left out of these totals.</item>
@@ -279,23 +278,21 @@
         <item quantity="one">%d pending entry isn\'t counted yet.</item>
         <item quantity="other">%d pending entries aren\'t counted yet.</item>
     </plurals>
-    <string name="home_money_in">Money in this month</string>
-    <string name="home_money_in_detail">Cleared income in %1$s</string>
-    <string name="home_money_out">Money out this month</string>
-    <string name="home_money_out_detail">Cleared spending in %1$s</string>
+    <string name="home_this_month">This month</string>
+    <string name="home_money_in">Money in</string>
+    <string name="home_money_out">Money out</string>
+    <string name="home_net">Net %1$s</string>
+    <string name="home_open_insights">Open Insights</string>
+    <string name="home_all_currencies">All</string>
+    <string name="accounts_cash">Cash and banking</string>
+    <string name="accounts_debt">Cards and loans</string>
     <string name="home_owed">Owed to you</string>
-    <string name="home_owed_nobody">Nobody owes you right now</string>
-    <plurals name="home_owed_from">
-        <item quantity="one">From %d client</item>
-        <item quantity="other">From %d clients</item>
-    </plurals>
+    <string name="home_owed_count">Owed to you (%1$d)</string>
     <string name="home_owed_rates">At today\'s rates.</string>
     <string name="home_owed_rates_missing">At today\'s rates. Not counting %1$s until it has a rate.</string>
     <string name="home_lent">Lent out</string>
-    <string name="home_lent_detail">Owed back to you</string>
-    <string name="home_borrowed">You owe</string>
-    <string name="home_borrowed_detail">Money you borrowed</string>
-    <string name="eyebrow_personal">Your personal ledger</string>
+        <string name="home_borrowed">You owe</string>
+        <string name="eyebrow_personal">Your personal ledger</string>
     <string name="eyebrow_ledger">Your ledger</string>
     <string name="eyebrow_yours">Make it yours</string>
     <string name="more_subtitle">Clients, loans and settings.</string>
@@ -311,7 +308,6 @@
     <string name="kind_expense">Expense</string>
     <string name="kind_income">Income</string>
     <string name="kind_transfer">Transfer</string>
-    <string name="accounts_title">Accounts</string>
     <string name="accounts_empty">No accounts yet. Add them in the web app.</string>
     <string name="accounts_archived">Archived</string>
     <plurals name="accounts_pending_plural">

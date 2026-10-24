@@ -15,6 +15,8 @@ import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.home.HomeContent
 import app.ledgerline.android.ui.home.Mirrored
 import app.ledgerline.android.ui.home.homeSummary
+import app.ledgerline.android.ui.home.noHomeActions
+import app.ledgerline.android.ui.home.quietSync
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
 import app.ledgerline.android.update.Refusal
@@ -191,7 +193,7 @@ class UpdateContentTest {
         val log = mutableListOf<String>()
         compose.setContent {
             HomeContent(
-                header = {}, month = Online.Ready(homeSummary()), onRetry = {}, accounts = Mirrored.Ready(emptyList()), onOpenPending = {},
+                status = quietSync, month = Online.Ready(homeSummary()), accounts = Mirrored.Ready(emptyList()), currency = null, hidden = false, actions = noHomeActions,
                 banner = { UpdateNotice("0.1.3", { log += "open" }, { log += "dismiss" }) },
                 modifier = Modifier.requiredHeight(3000.dp),
             )
@@ -205,7 +207,7 @@ class UpdateContentTest {
     fun homeWithoutABannerShowsNone() {
         compose.setContent {
             HomeContent(
-                header = {}, month = Online.Ready(homeSummary()), onRetry = {}, accounts = Mirrored.Ready(emptyList()), onOpenPending = {},
+                status = quietSync, month = Online.Ready(homeSummary()), accounts = Mirrored.Ready(emptyList()), currency = null, hidden = false, actions = noHomeActions,
                 modifier = Modifier.requiredHeight(3000.dp),
             )
         }

@@ -2,12 +2,14 @@ package app.ledgerline.android.ui.design
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -98,26 +100,57 @@ fun CardTitle(title: String, detail: String? = null) {
     }
 }
 
-/** `.home-hero`: the one figure that matters most, on the accent's soft fill with an accent border. */
+/** Two figures to a hero row, or one when the text is enlarged or an amount is long enough to be cut off in half a row. */
+fun heroFiguresPerRow(fontScale: Float, amounts: List<String>): Int = if (fontScale > 1.3f || amounts.any { it.length > 11 }) 1 else 2
+
+/** A figure shown small inside the hero: a label over an amount. */
+class HeroFigure(val label: String, val amount: ShownMoney)
+
+/**
+ * The hero (ADR 0046): the one figure that matters most on a solid deep tint of the accent, light text, with
+ * smaller figures under it (two to a row) and muted notes. No border and no shadow.
+ */
 @Composable
-fun HeroCard(label: String, amount: ShownMoney, notes: List<String>) {
+fun HeroCard(label: String, amount: ShownMoney, notes: List<String>, figures: List<HeroFigure> = emptyList()) {
     val palette = LocalPalette.current
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
-        shape = MaterialTheme.shapes.medium,
-        color = palette.accentSoft,
-        contentColor = palette.text,
-        border = BorderStroke(1.dp, palette.accent),
+        shape = MaterialTheme.shapes.large,
+        color = palette.accentDeep,
+        contentColor = palette.accentDeepForeground,
     ) {
         Column(
             modifier = Modifier
                 .padding(20.dp)
-                .clearAndSetSemantics { contentDescription = (listOf(label, amount.spoken) + notes).joinToString(", ") },
+                .clearAndSetSemantics {
+                    contentDescription = (listOf(label, amount.spoken) + figures.map { "${it.label} ${it.amount.spoken}" } + notes).joinToString(", ")
+                },
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(label, style = MaterialTheme.typography.bodySmall.copy(fontWeight = MaterialTheme.typography.titleSmall.fontWeight))
-            Text(amount.text, style = MaterialTheme.typography.displayMedium.tabular(), modifier = Modifier.padding(vertical = 4.dp))
-            notes.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = palette.muted) }
+            Text(label, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = MaterialTheme.typography.titleSmall.fontWeight))
+            Text(amount.text, style = MaterialTheme.typography.displayMedium.tabular(), maxLines = 1, softWrap = false, modifier = Modifier.padding(bottom = 4.dp))
+            // Two to a row, unless the text is enlarged or an amount is long: then one to a row, so no amount is cut off.
+            val perRow = heroFiguresPerRow(LocalDensity.current.fontScale, figures.map { it.amount.text })
+            figures.chunked(perRow).forEach { row ->
+                Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { figure ->
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .background(palette.accentDeepForeground.copy(alpha = 0.12f), MaterialTheme.shapes.small)
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                        ) {
+                            Text(figure.label, style = MaterialTheme.typography.bodySmall)
+                            Text(figure.amount.text, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false)
+                        }
+                    }
+                    // A lone figure keeps half a row, so it lines up with the ones above.
+                    if (row.size == 1 && perRow == 2) Spacer(Modifier.weight(1f))
+                }
+            }
+            if (notes.isNotEmpty()) Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                notes.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+            }
         }
     }
 }

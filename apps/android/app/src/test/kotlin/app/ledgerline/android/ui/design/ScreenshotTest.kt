@@ -31,6 +31,7 @@ import app.ledgerline.api.Contact
 import app.ledgerline.api.Service
 import app.ledgerline.android.ui.budgets.budgetLine
 import app.ledgerline.android.ui.budgets.budgetMonth
+import app.ledgerline.android.ui.home.HomeActions
 import app.ledgerline.android.ui.home.HomeContent
 import app.ledgerline.android.ui.insights.CashFlowChart
 import app.ledgerline.android.ui.insights.InsightsContent
@@ -118,6 +119,9 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         }
     }
 
+    private val homeStatus = SyncStatus(SyncLine("2026-10-22T10:42:00Z", running = false, problem = null), unsent = 1, attention = 1)
+    private val homeActions = HomeActions({}, {}, {}, {}, {}, {}, {})
+
     private val header: @Composable () -> Unit = {
         SyncHeader(SyncStatus(SyncLine("2026-10-22T10:42:00Z", running = false, problem = null), unsent = 1, attention = 0), {}, {})
     }
@@ -130,11 +134,24 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             owed = HomeOwed(Money(0, "USD"), 0, emptyList(), emptyList()),
             loans = homeSummary().loans.copy(lent = Money(0, "USD"), borrowed = Money(1250000, "USD")),
         )
-        HomeContent(header, Online.Ready(month), {}, Mirrored.Ready(accounts), onOpenPending = {})
+        HomeContent(homeStatus, Online.Ready(month), Mirrored.Ready(accounts), null, false, homeActions)
     }
 
     @Test
-    fun homeOffline() = shot("home-offline", Tab.Home) { HomeContent(header, Online.Offline, {}, Mirrored.Ready(accounts.take(2)), onOpenPending = {}) }
+    fun homeOffline() = shot("home-offline", Tab.Home) {
+        val offline = SyncStatus(SyncLine("2026-10-22T10:42:00Z", running = false, problem = app.ledgerline.android.ui.home.SyncProblem.Offline), unsent = 0, attention = 0)
+        HomeContent(offline, Online.Offline, Mirrored.Ready(accounts.take(2)), null, false, homeActions)
+    }
+
+    @Test
+    fun homeHidden() = shot("home-hidden", Tab.Home, private = true) {
+        HomeContent(homeStatus, Online.Ready(homeSummary(590005)), Mirrored.Ready(accounts), null, true, homeActions)
+    }
+
+    @Test
+    fun homeOneCurrency() = shot("home-one-currency", Tab.Home) {
+        HomeContent(homeStatus.copy(attention = 0), Online.Ready(homeSummary(590005).copy(pendingCount = 0)), Mirrored.Ready(accounts.filter { it.currency == "USD" }), null, false, homeActions)
+    }
 
     @Test
     fun transactions() = shot("transactions", Tab.Transactions) {
@@ -359,8 +376,8 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     fun homeWithUpdateNotice() = shot("home-update", Tab.Home) {
         val month = homeSummary(590005)
         HomeContent(
-            header, Online.Ready(month), {}, Mirrored.Ready(accounts.take(2)), onOpenPending = {},
-            banner = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}, androidx.compose.ui.Modifier.padding(top = 12.dp)) },
+            homeStatus, Online.Ready(month), Mirrored.Ready(accounts.take(2)), null, false, homeActions,
+            banner = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}) },
         )
     }
 

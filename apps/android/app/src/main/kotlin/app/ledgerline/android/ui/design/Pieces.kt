@@ -30,6 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -67,9 +70,10 @@ fun TopBar(title: String, onBack: (() -> Unit)? = null, action: (@Composable Row
         Text(
             title,
             style = MaterialTheme.typography.titleLarge,
-            maxLines = 1,
+            // Two lines, so the largest text wraps a long title instead of cutting it off.
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(horizontal = if (onBack == null) 0.dp else 4.dp).semantics { heading() },
+            modifier = Modifier.weight(1f).padding(horizontal = if (onBack == null) 0.dp else 4.dp, vertical = 4.dp).semantics { heading() },
         )
         action?.invoke(this)
     }
@@ -140,24 +144,31 @@ fun ListRow(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
+    subtitleColor: Color = Color.Unspecified,
+    /** What a screen reader says for the whole row, when it should be one sentence (the amount's spoken form, not its mask). */
+    described: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (onClick != null) Modifier.clickable(onClick = onClick, role = Role.Button) else Modifier)
             .heightIn(min = RowHeight)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .then(if (described != null) Modifier.clearAndSetSemantics { contentDescription = described } else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         leading?.invoke()
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        val words: @Composable () -> Unit = {
+            Column {
+                Text(title, style = MaterialTheme.typography.titleMedium)
+                if (subtitle != null) {
+                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = subtitleColor.takeOrElse { MaterialTheme.colorScheme.onSurfaceVariant })
+                }
             }
         }
-        trailing?.invoke()
+        // The amount goes under the words when it would squeeze them (a large amount, the largest text).
+        if (trailing == null) Box(Modifier.weight(1f)) { words() } else TitleAndAmount(words, trailing, minTitle = 80.dp, modifier = Modifier.weight(1f))
     }
 }
 
