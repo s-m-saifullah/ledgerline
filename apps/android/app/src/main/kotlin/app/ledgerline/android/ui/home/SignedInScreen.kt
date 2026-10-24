@@ -58,6 +58,10 @@ import app.ledgerline.android.ui.insights.InsightsViewModel
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
 import app.ledgerline.android.ui.settings.SettingsScreen
+import app.ledgerline.android.ui.update.UpdateNotice
+import app.ledgerline.android.ui.update.UpdateScreen
+import app.ledgerline.android.ui.update.UpdateViewModel
+import androidx.compose.runtime.LaunchedEffect
 import java.util.UUID
 
 /** The bottom bar, as on the web: Home, Transactions, Budgets, Insights and More (ADR 0043, slice 5). */
@@ -83,8 +87,12 @@ fun SignedInScreen(
     home: HomeViewModel = hiltViewModel(),
     budgets: BudgetsViewModel = hiltViewModel(),
     insights: InsightsViewModel = hiltViewModel(),
+    update: UpdateViewModel = hiltViewModel(),
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
+    // Once when the app opens (after the lock screen): the manager applies the switch, the day limit and the connection.
+    LaunchedEffect(Unit) { update.checkOnLaunch() }
+    val notice by update.notice.collectAsState()
     // A time chosen for the filters may have run out while the app was in the background.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.expireFilters() }
     var showAttention by rememberSaveable { mutableStateOf(false) }
@@ -138,7 +146,19 @@ fun SignedInScreen(
                 if (tab == Tab.Home) {
                     val month by home.month.collectAsState()
                     val accounts by viewModel.accounts.collectAsState()
-                    HomeContent(header, month, home::retry, accounts, onOpenPending = { openEntries(PendingEntries) })
+                    HomeContent(
+                        header, month, home::retry, accounts, onOpenPending = { openEntries(PendingEntries) },
+                        banner = notice?.let { release ->
+                            {
+                                UpdateNotice(
+                                    release.name,
+                                    onOpen = { tab = Tab.More; moreOpen = "update" },
+                                    onDismiss = update::dismissNotice,
+                                    modifier = Modifier.padding(top = 12.dp),
+                                )
+                            }
+                        },
+                    )
                 } else {
                     val entries by viewModel.entries.collectAsState()
                     val canShowMore by viewModel.canShowMore.collectAsState()
@@ -195,8 +215,26 @@ fun SignedInScreen(
             Tab.More -> when (moreOpen) {
                 "clients" -> ClientsScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
                 "loans" -> LoansScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
-                "settings" -> SettingsScreen(viewModel, { showAttention = true }, onBack = { moreOpen = null }, ListBottomSpace, inside)
-                else -> MoreContent(MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "settings" }), ListBottomSpace, inside)
+                "settings" -> SettingsScreen(
+                    viewModel,
+                    openAttention = { showAttention = true },
+                    openUpdates = {
+                        update.checkNow()
+                        moreOpen = "update"
+                    },
+                    onBack = { moreOpen = null },
+                    bottomSpace = ListBottomSpace,
+                    modifier = inside,
+                )
+                "update" -> UpdateScreen(onBack = { moreOpen = "settings" }, bottomSpace = ListBottomSpace, modifier = inside)
+                else -> MoreContent(
+                    MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "settings" }),
+                    ListBottomSpace,
+                    inside,
+                    notice = notice?.let { release ->
+                        { UpdateNotice(release.name, onOpen = { moreOpen = "update" }, onDismiss = update::dismissNotice) }
+                    },
+                )
             }
         }
     }

@@ -68,6 +68,7 @@ class FakePhoneSettings(keep: app.ledgerline.android.settings.FilterKeep = app.l
     override val theme = kotlinx.coroutines.flow.MutableStateFlow(app.ledgerline.android.settings.ThemeChoice.System)
     override val centsFirst = kotlinx.coroutines.flow.MutableStateFlow(false)
     override val filterKeep = kotlinx.coroutines.flow.MutableStateFlow(keep)
+    override val autoUpdateCheck = kotlinx.coroutines.flow.MutableStateFlow(true)
 
     override fun setPrivacyMode(on: Boolean) { privacyMode.value = on }
 
@@ -78,6 +79,8 @@ class FakePhoneSettings(keep: app.ledgerline.android.settings.FilterKeep = app.l
     override fun setCentsFirst(on: Boolean) { centsFirst.value = on }
 
     override fun setFilterKeep(keep: app.ledgerline.android.settings.FilterKeep) { filterKeep.value = keep }
+
+    override fun setAutoUpdateCheck(on: Boolean) { autoUpdateCheck.value = on }
 }
 
 /** Filters kept for a chosen time, in memory; [saved] is what a closed app would find. */

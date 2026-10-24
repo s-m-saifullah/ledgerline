@@ -49,6 +49,9 @@ interface PhoneSettings {
     /** How long the Transactions filters stay. Until the app closes by default. */
     val filterKeep: StateFlow<FilterKeep>
 
+    /** Look for a newer release once a day when the app opens (ADR 0043). On by default; the Settings button always works. */
+    val autoUpdateCheck: StateFlow<Boolean>
+
     fun setPrivacyMode(on: Boolean)
 
     fun setAllowScreenshots(allow: Boolean)
@@ -58,6 +61,8 @@ interface PhoneSettings {
     fun setCentsFirst(on: Boolean)
 
     fun setFilterKeep(keep: FilterKeep)
+
+    fun setAutoUpdateCheck(on: Boolean)
 }
 
 @Singleton
@@ -69,6 +74,7 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
         ThemeChoice.entries.find { it.name == prefs.getString(Theme, null) } ?: ThemeChoice.System,
     )
     private val _centsFirst = MutableStateFlow(prefs.getBoolean(CentsFirst, false))
+    private val _autoUpdateCheck = MutableStateFlow(prefs.getBoolean(AutoUpdateCheck, true))
     private val _filterKeep = MutableStateFlow(
         FilterKeep(
             mode = KeepMode.entries.find { it.name == prefs.getString(KeepModeKey, null) } ?: KeepMode.UntilAppCloses,
@@ -82,6 +88,7 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
     override val theme: StateFlow<ThemeChoice> = _theme.asStateFlow()
     override val centsFirst: StateFlow<Boolean> = _centsFirst.asStateFlow()
     override val filterKeep: StateFlow<FilterKeep> = _filterKeep.asStateFlow()
+    override val autoUpdateCheck: StateFlow<Boolean> = _autoUpdateCheck.asStateFlow()
 
     override fun setPrivacyMode(on: Boolean) {
         prefs.edit(commit = true) { putBoolean(PrivacyMode, on) }
@@ -112,7 +119,13 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
         _filterKeep.value = keep
     }
 
+    override fun setAutoUpdateCheck(on: Boolean) {
+        prefs.edit(commit = true) { putBoolean(AutoUpdateCheck, on) }
+        _autoUpdateCheck.value = on
+    }
+
     private companion object {
+        const val AutoUpdateCheck = "autoUpdateCheck"
         const val PrivacyMode = "privacyMode"
         const val AllowScreenshots = "allowScreenshots"
         const val Theme = "theme"

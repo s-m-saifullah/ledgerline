@@ -44,6 +44,7 @@ import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.PageHeader
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.home.SignedInViewModel
+import app.ledgerline.android.ui.update.UpdateViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -67,6 +68,7 @@ class SettingsViewModel @Inject constructor(private val settings: PhoneSettings)
     val centsFirst: StateFlow<Boolean> = settings.centsFirst
     val allowScreenshots: StateFlow<Boolean> = settings.allowScreenshots
     val filterKeep: StateFlow<FilterKeep> = settings.filterKeep
+    val autoUpdateCheck: StateFlow<Boolean> = settings.autoUpdateCheck
 
     fun setTheme(choice: ThemeChoice) = settings.setTheme(choice)
 
@@ -77,6 +79,8 @@ class SettingsViewModel @Inject constructor(private val settings: PhoneSettings)
     fun setAllowScreenshots(allow: Boolean) = settings.setAllowScreenshots(allow)
 
     fun setFilterKeep(keep: FilterKeep) = settings.setFilterKeep(keep)
+
+    fun setAutoUpdateCheck(on: Boolean) = settings.setAutoUpdateCheck(on)
 }
 
 /** Everything Settings shows, as plain data. */
@@ -86,11 +90,15 @@ data class SettingsState(
     val centsFirst: Boolean,
     val allowScreenshots: Boolean,
     val filterKeep: FilterKeep,
+    val updates: UpdatesInfo?,
     val unsent: Int,
     val attention: Int,
     val canLock: Boolean,
     val signingOut: Boolean,
 )
+
+/** What the Updates card shows: whether the owner wants automatic checks and the newer version already known, if any. */
+data class UpdatesInfo(val auto: Boolean, val newVersion: String?)
 
 /** What Settings' buttons, choices and switches do. */
 class SettingsActions(
@@ -100,6 +108,8 @@ class SettingsActions(
     val setCentsFirst: (Boolean) -> Unit,
     val setAllowScreenshots: (Boolean) -> Unit,
     val setFilterKeep: (FilterKeep) -> Unit,
+    val setAutoUpdate: (Boolean) -> Unit,
+    val openUpdates: () -> Unit,
     val openAttention: () -> Unit,
     val refreshEverything: () -> Unit,
     val lock: () -> Unit,
@@ -111,22 +121,26 @@ class SettingsActions(
 fun SettingsScreen(
     signedIn: SignedInViewModel,
     openAttention: () -> Unit,
+    openUpdates: () -> Unit,
     onBack: () -> Unit,
     bottomSpace: Dp,
     modifier: Modifier = Modifier,
     settings: SettingsViewModel = hiltViewModel(),
+    update: UpdateViewModel = hiltViewModel(),
 ) {
     val theme by settings.theme.collectAsState()
     val hide by settings.privacyMode.collectAsState()
     val centsFirst by settings.centsFirst.collectAsState()
     val screenshots by settings.allowScreenshots.collectAsState()
     val filterKeep by settings.filterKeep.collectAsState()
+    val auto by settings.autoUpdateCheck.collectAsState()
+    val newer by update.newer.collectAsState()
     val unsent by signedIn.unsent.collectAsState()
     val attention by signedIn.attention.collectAsState()
     val signingOut by signedIn.signingOut.collectAsState()
     BackHandler(onBack = onBack)
     SettingsContent(
-        SettingsState(theme, hide, centsFirst, screenshots, filterKeep, unsent, attention.size, signedIn.canLock, signingOut),
+        SettingsState(theme, hide, centsFirst, screenshots, filterKeep, if (update.enabled) UpdatesInfo(auto, newer?.name) else null, unsent, attention.size, signedIn.canLock, signingOut),
         SettingsActions(
             onBack,
             settings::setTheme,
@@ -134,6 +148,8 @@ fun SettingsScreen(
             settings::setCentsFirst,
             settings::setAllowScreenshots,
             settings::setFilterKeep,
+            settings::setAutoUpdateCheck,
+            openUpdates,
             openAttention,
             signedIn::refreshEverything,
             signedIn::lock,
@@ -182,6 +198,7 @@ fun SettingsContent(state: SettingsState, actions: SettingsActions, bottomSpace:
             }
         }
         item { KeepFiltersCard(state.filterKeep, actions.setFilterKeep) }
+        state.updates?.let { updates -> item { UpdatesCard(updates, actions) } }
         item {
             LedgerCard {
                 CardTitle(stringResource(R.string.settings_sync), stringResource(R.string.settings_this_phone))
@@ -221,6 +238,29 @@ fun SettingsContent(state: SettingsState, actions: SettingsActions, bottomSpace:
                 }
             }
         }
+    }
+}
+
+/** Updates: the version, the automatic-check switch and the button that opens the update screen (ADR 0043). */
+@Composable
+private fun UpdatesCard(updates: UpdatesInfo, actions: SettingsActions) {
+    LedgerCard {
+        CardTitle(stringResource(R.string.settings_updates), stringResource(R.string.settings_this_phone))
+        Text(
+            if (updates.newVersion != null) {
+                stringResource(R.string.updates_available, updates.newVersion)
+            } else {
+                stringResource(R.string.updates_current_version, BuildConfig.VERSION_NAME.removeSuffix("-debug"))
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        SwitchRow(R.string.updates_auto, R.string.updates_auto_detail, updates.auto, actions.setAutoUpdate)
+        SecondaryButton(
+            stringResource(R.string.updates_check),
+            onClick = actions.openUpdates,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
     }
 }
 

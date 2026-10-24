@@ -1,7 +1,9 @@
 package app.ledgerline.android.ui.design
 
 import android.app.Application
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import app.ledgerline.android.mirror.AccountBalance
@@ -57,6 +59,7 @@ import app.ledgerline.android.ui.editor.TagPicker
 import app.ledgerline.android.ui.settings.SettingsActions
 import app.ledgerline.android.ui.settings.SettingsContent
 import app.ledgerline.android.ui.settings.SettingsState
+import app.ledgerline.android.ui.settings.UpdatesInfo
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.theme.LedgerlineTheme
 import app.ledgerline.api.HomeOwed
@@ -316,11 +319,71 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun more() = shot("more", Tab.More) { MoreContent(MoreActions({}, {}, {}), ListBottomSpace) }
 
+    private val longNotes = "Check for updates from Settings, or let the app look when it opens.\n" +
+        "- See what is new before you download.\n" +
+        "- The file is checked against the release and the signing key before Android is asked to install it.\n" +
+        "- Filters on Transactions can stay for as long as you choose.\n" +
+        "- Fixes for lists that did not line up at the largest text size."
+
+    private val sampleRelease = app.ledgerline.android.update.Release(
+        "android-v0.1.3", "0.1.3", 103, longNotes, "ledgerline-android-0.1.3.apk", 12_582_912, "ledgerline-android-0.1.3.apk.sha256",
+    )
+
+    private fun updateScreen(name: String, state: app.ledgerline.android.update.UpdateState) = shot(name, Tab.More) {
+        app.ledgerline.android.ui.update.UpdateContent("0.1.2", state, app.ledgerline.android.ui.update.UpdateActions({}, {}, {}, {}, {}), ListBottomSpace)
+    }
+
+    @Test
+    fun updateAvailable() = updateScreen("update-available", app.ledgerline.android.update.UpdateState.Available(sampleRelease))
+
+    @Test
+    fun updateDownloading() = updateScreen("update-downloading", app.ledgerline.android.update.UpdateState.Downloading(sampleRelease, 6_291_456))
+
+    @Test
+    fun updateReady() = updateScreen("update-ready", app.ledgerline.android.update.UpdateState.Ready(sampleRelease, needsPermission = true))
+
+    @Test
+    fun updateRefused() = updateScreen(
+        "update-refused",
+        app.ledgerline.android.update.UpdateState.Failed(
+            app.ledgerline.android.update.UpdateProblem.Refused(app.ledgerline.android.update.Refusal.WrongCertificate),
+            sampleRelease,
+        ),
+    )
+
+    @Test
+    fun updateUpToDate() = updateScreen("update-up-to-date", app.ledgerline.android.update.UpdateState.UpToDate)
+
+    @Test
+    fun homeWithUpdateNotice() = shot("home-update", Tab.Home) {
+        val month = homeSummary(590005)
+        HomeContent(
+            header, Online.Ready(month), {}, Mirrored.Ready(accounts.take(2)), onOpenPending = {},
+            banner = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}, androidx.compose.ui.Modifier.padding(top = 12.dp)) },
+        )
+    }
+
+    @Test
+    fun moreWithUpdateNotice() = shot("more-update", Tab.More) {
+        MoreContent(MoreActions({}, {}, {}), ListBottomSpace, notice = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}) })
+    }
+
+    @Test
+    fun settingsUpdates() = shot("settings-updates", Tab.More) {
+        SettingsContent(
+            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(), updates = UpdatesInfo(auto = false, newVersion = "0.1.3"), unsent = 0, attention = 0, canLock = true, signingOut = false),
+            SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            ListBottomSpace,
+            // The Updates card sits below the first screen of Settings; shift the page up so this shot shows it.
+            androidx.compose.ui.Modifier.requiredHeight(2800.dp).offset(y = (-760).dp),
+        )
+    }
+
     @Test
     fun settings() = shot("settings", Tab.More) {
         SettingsContent(
-            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(KeepMode.ForAWhile, 30, KeepUnit.Minutes), unsent = 0, attention = 2, canLock = true, signingOut = false),
-            SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(KeepMode.ForAWhile, 30, KeepUnit.Minutes), updates = UpdatesInfo(auto = true, newVersion = "0.1.3"), unsent = 0, attention = 2, canLock = true, signingOut = false),
+            SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
         )
     }
