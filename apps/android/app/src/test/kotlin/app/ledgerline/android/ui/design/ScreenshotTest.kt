@@ -131,8 +131,8 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         val month = homeSummary(590005).copy(
             moneyIn = Money(250000, "USD"),
             moneyOut = Money(71295, "USD"),
-            owed = HomeOwed(Money(0, "USD"), 0, emptyList(), emptyList()),
-            loans = homeSummary().loans.copy(lent = Money(0, "USD"), borrowed = Money(1250000, "USD")),
+            owed = HomeOwed(Money(35400, "USD"), 4, emptyList(), emptyList()),
+            loans = homeSummary().loans.copy(lent = Money(89189, "USD"), borrowed = Money(125000, "USD")),
         )
         HomeContent(homeStatus, Online.Ready(month), Mirrored.Ready(accounts), null, false, homeActions)
     }

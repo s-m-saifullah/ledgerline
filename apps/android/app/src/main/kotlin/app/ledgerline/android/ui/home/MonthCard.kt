@@ -53,7 +53,6 @@ internal fun MonthCard(state: Online<HomeSummary>, onRetry: () -> Unit, onOpenIn
 @Composable
 private fun Month(home: HomeSummary, onOpenInsights: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        val clients = home.owed.personCount.toInt()
         val rates = when {
             home.owed.otherCurrencies.isEmpty() -> null
             home.owed.unconvertedCurrencies.isNotEmpty() ->
@@ -63,11 +62,14 @@ private fun Month(home: HomeSummary, onOpenInsights: () -> Unit) {
         HeroCard(
             label = stringResource(R.string.home_in_hand),
             amount = money(home.inHand.amount, home.inHand.currency),
-            figures = listOfNotNull(
-                home.owed.total.takeIf { it.amount > 0 }?.let { HeroFigure(if (clients > 0) stringResource(R.string.home_owed_count, clients) else stringResource(R.string.home_owed), money(it.amount, it.currency)) },
-                home.loans.lent.takeIf { it.amount > 0 }?.let { HeroFigure(stringResource(R.string.home_lent), money(it.amount, it.currency)) },
-                home.loans.borrowed.takeIf { it.amount > 0 }?.let { HeroFigure(stringResource(R.string.home_borrowed), money(it.amount, it.currency)) },
-            ),
+            figures = heroFigures(home.owed.total, home.loans.lent, home.loans.borrowed).map { (kind, amount) ->
+                val label = when (kind) {
+                    HeroKind.Owed -> R.string.home_owed
+                    HeroKind.Lent -> R.string.home_lent
+                    HeroKind.Borrowed -> R.string.home_borrowed
+                }
+                HeroFigure(stringResource(label), money(amount.amount, amount.currency))
+            },
             // Only what the figures need said: a missing rate or an account left out. No explanation of what In hand counts.
             notes = listOfNotNull(
                 rates,
@@ -134,7 +136,7 @@ private fun CashFlowCard(home: HomeSummary, onOpen: () -> Unit) {
                     Text(inLabel, style = MaterialTheme.typography.bodySmall, color = palette.muted)
                     Text(moneyIn.text, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false)
                 }
-                Column(modifier = Modifier.weight(1f)) {
+                Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                     Text(outLabel, style = MaterialTheme.typography.bodySmall, color = palette.muted)
                     Text(moneyOut.text, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false)
                 }

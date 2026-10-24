@@ -287,7 +287,6 @@
     <string name="accounts_cash">Cash and banking</string>
     <string name="accounts_debt">Cards and loans</string>
     <string name="home_owed">Owed to you</string>
-    <string name="home_owed_count">Owed to you (%1$d)</string>
     <string name="home_owed_rates">At today\'s rates.</string>
     <string name="home_owed_rates_missing">At today\'s rates. Not counting %1$s until it has a rate.</string>
     <string name="home_lent">Lent out</string>

@@ -40,3 +40,20 @@ fun groupAccounts(items: List<AccountBalance>, currency: String?): List<AccountG
 /** The currencies of [items], the one with most accounts first; the currency control shows only with two or more. */
 fun currenciesOf(items: List<AccountBalance>): List<String> =
     items.groupingBy { it.currency }.eachCount().entries.sortedWith(compareBy({ -it.value }, { it.key })).map { it.key }
+
+/** The small figures under In hand. */
+enum class HeroKind { Owed, Lent, Borrowed }
+
+/**
+ * What the hero's small figures say: money clients owe plus money lent to people is one figure, Owed to you,
+ * because to the owner it is one fact (they come from Clients and from Loans). Only when the two are in
+ * different currencies, which the server does not send, are they kept apart. A figure of nothing is left out.
+ */
+fun heroFigures(owed: Money, lent: Money, borrowed: Money): List<Pair<HeroKind, Money>> {
+    val owing = if (owed.currency == lent.currency) {
+        listOf(HeroKind.Owed to Money(owed.amount + lent.amount, owed.currency))
+    } else {
+        listOf(HeroKind.Owed to owed, HeroKind.Lent to lent)
+    }
+    return (owing + (HeroKind.Borrowed to borrowed)).filter { it.second.amount > 0 }
+}

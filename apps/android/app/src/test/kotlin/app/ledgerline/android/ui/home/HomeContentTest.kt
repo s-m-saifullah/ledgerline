@@ -145,11 +145,12 @@ class HomeContentTest {
     }
 
     @Test
-    fun theHeroHoldsOwedWithItsClientCountAndLentAndExplainsNothing() {
+    fun theHeroHoldsOneOwedFigureOfClientsAndLoansTogetherAndExplainsNothing() {
         show(month = Online.Ready(homeSummary(250000)))
         compose.onNodeWithContentDescription("In hand", substring = true).assertExists()
-        compose.onNodeWithContentDescription("Owed to you (2) \$2,500.00", substring = true).assertExists()
-        compose.onNodeWithContentDescription("Lent out \$2,500.00", substring = true).assertExists()
+        // Clients owe $2,500.00 and $2,500.00 is lent out: one figure, $5,000.00.
+        compose.onNodeWithContentDescription("Owed to you \$5,000.00", substring = true).assertExists()
+        compose.onNodeWithContentDescription("Lent out", substring = true).assertDoesNotExist()
         compose.onNodeWithContentDescription("Not counting", substring = true).assertDoesNotExist()
     }
 
@@ -160,6 +161,25 @@ class HomeContentTest {
         compose.onNodeWithContentDescription("In hand", substring = true).assertExists()
         compose.onNodeWithContentDescription("Owed to you", substring = true).assertDoesNotExist()
         compose.onNodeWithContentDescription("Lent out", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun clientsAndLoansAreOneOwedFigureInOneCurrency() {
+        assertEquals(
+            listOf(HeroKind.Owed to usd(35400 + 89189), HeroKind.Borrowed to usd(1000)),
+            heroFigures(usd(35400), usd(89189), usd(1000)),
+        )
+        assertEquals(listOf(HeroKind.Owed to usd(89189)), heroFigures(usd(0), usd(89189), usd(0)))
+        assertEquals(listOf(HeroKind.Owed to usd(35400)), heroFigures(usd(35400), usd(0), usd(0)))
+        assertEquals(emptyList<Pair<HeroKind, Money>>(), heroFigures(usd(0), usd(0), usd(0)))
+    }
+
+    @Test
+    fun twoCurrenciesAreNeverAddedTogether() {
+        assertEquals(
+            listOf(HeroKind.Owed to usd(100), HeroKind.Lent to Money(200, "BDT")),
+            heroFigures(usd(100), Money(200, "BDT"), usd(0)),
+        )
     }
 
     @Test
