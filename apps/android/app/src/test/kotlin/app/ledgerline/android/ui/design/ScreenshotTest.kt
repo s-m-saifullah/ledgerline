@@ -45,6 +45,9 @@ import app.ledgerline.android.ui.home.TransactionsContent
 import app.ledgerline.android.ui.home.homeSummary
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
+import app.ledgerline.android.settings.FilterKeep
+import app.ledgerline.android.settings.KeepMode
+import app.ledgerline.android.settings.KeepUnit
 import app.ledgerline.android.settings.ThemeChoice
 import app.ledgerline.android.ui.editor.Choice
 import app.ledgerline.android.mirror.EntryFilters
@@ -316,8 +319,8 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun settings() = shot("settings", Tab.More) {
         SettingsContent(
-            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, unsent = 0, attention = 2, canLock = true, signingOut = false),
-            SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
+            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(KeepMode.ForAWhile, 30, KeepUnit.Minutes), unsent = 0, attention = 2, canLock = true, signingOut = false),
+            SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
         )
     }

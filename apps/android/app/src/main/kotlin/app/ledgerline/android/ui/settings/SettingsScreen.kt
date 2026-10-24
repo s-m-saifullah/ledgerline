@@ -44,6 +44,17 @@ import app.ledgerline.android.ui.design.PageHeader
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.home.SignedInViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
+import app.ledgerline.android.settings.FilterKeep
+import app.ledgerline.android.settings.KeepMode
+import app.ledgerline.android.settings.KeepUnit
+import app.ledgerline.android.ui.design.ChoiceField
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
@@ -54,6 +65,7 @@ class SettingsViewModel @Inject constructor(private val settings: PhoneSettings)
     val privacyMode: StateFlow<Boolean> = settings.privacyMode
     val centsFirst: StateFlow<Boolean> = settings.centsFirst
     val allowScreenshots: StateFlow<Boolean> = settings.allowScreenshots
+    val filterKeep: StateFlow<FilterKeep> = settings.filterKeep
 
     fun setTheme(choice: ThemeChoice) = settings.setTheme(choice)
 
@@ -62,6 +74,8 @@ class SettingsViewModel @Inject constructor(private val settings: PhoneSettings)
     fun setCentsFirst(on: Boolean) = settings.setCentsFirst(on)
 
     fun setAllowScreenshots(allow: Boolean) = settings.setAllowScreenshots(allow)
+
+    fun setFilterKeep(keep: FilterKeep) = settings.setFilterKeep(keep)
 }
 
 /** Everything Settings shows, as plain data. */
@@ -70,6 +84,7 @@ data class SettingsState(
     val hideAmounts: Boolean,
     val centsFirst: Boolean,
     val allowScreenshots: Boolean,
+    val filterKeep: FilterKeep,
     val unsent: Int,
     val attention: Int,
     val canLock: Boolean,
@@ -83,6 +98,7 @@ class SettingsActions(
     val setHideAmounts: (Boolean) -> Unit,
     val setCentsFirst: (Boolean) -> Unit,
     val setAllowScreenshots: (Boolean) -> Unit,
+    val setFilterKeep: (FilterKeep) -> Unit,
     val openAttention: () -> Unit,
     val refreshEverything: () -> Unit,
     val lock: () -> Unit,
@@ -103,18 +119,20 @@ fun SettingsScreen(
     val hide by settings.privacyMode.collectAsState()
     val centsFirst by settings.centsFirst.collectAsState()
     val screenshots by settings.allowScreenshots.collectAsState()
+    val filterKeep by settings.filterKeep.collectAsState()
     val unsent by signedIn.unsent.collectAsState()
     val attention by signedIn.attention.collectAsState()
     val signingOut by signedIn.signingOut.collectAsState()
     BackHandler(onBack = onBack)
     SettingsContent(
-        SettingsState(theme, hide, centsFirst, screenshots, unsent, attention.size, signedIn.canLock, signingOut),
+        SettingsState(theme, hide, centsFirst, screenshots, filterKeep, unsent, attention.size, signedIn.canLock, signingOut),
         SettingsActions(
             onBack,
             settings::setTheme,
             settings::setPrivacyMode,
             settings::setCentsFirst,
             settings::setAllowScreenshots,
+            settings::setFilterKeep,
             openAttention,
             signedIn::refreshEverything,
             signedIn::lock,
@@ -162,6 +180,7 @@ fun SettingsContent(state: SettingsState, actions: SettingsActions, bottomSpace:
                 SwitchRow(R.string.allow_screenshots, R.string.allow_screenshots_detail, state.allowScreenshots, actions.setAllowScreenshots)
             }
         }
+        item { KeepFiltersCard(state.filterKeep, actions.setFilterKeep) }
         item {
             LedgerCard {
                 CardTitle(stringResource(R.string.settings_sync), stringResource(R.string.settings_this_phone))
@@ -203,6 +222,63 @@ fun SettingsContent(state: SettingsState, actions: SettingsActions, bottomSpace:
         }
     }
 }
+
+/**
+ * How long the Transactions filters stay: until the owner leaves Transactions, until the app closes (as before), or for
+ * a number of minutes, hours or days, which also survives closing the app. The number is saved only when it is valid.
+ */
+@Composable
+private fun KeepFiltersCard(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
+    LedgerCard {
+        CardTitle(stringResource(R.string.settings_filters), stringResource(R.string.settings_this_phone))
+        Text(
+            stringResource(R.string.filters_keep_title),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = 12.dp).semantics { heading() },
+        )
+        Column(modifier = Modifier.selectableGroup()) {
+            KeepRow(R.string.filters_keep_leave, keep.mode == KeepMode.UntilLeave) { onChange(keep.copy(mode = KeepMode.UntilLeave)) }
+            KeepRow(R.string.filters_keep_app, keep.mode == KeepMode.UntilAppCloses) { onChange(keep.copy(mode = KeepMode.UntilAppCloses)) }
+            KeepRow(R.string.filters_keep_for, keep.mode == KeepMode.ForAWhile) { onChange(keep.copy(mode = KeepMode.ForAWhile)) }
+        }
+        if (keep.mode == KeepMode.ForAWhile) {
+            var text by remember(keep.amount) { mutableStateOf(keep.amount.toString()) }
+            val amount = FilterKeep.amountOf(text)
+            Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { typed ->
+                        text = typed.filter { it.isDigit() }.take(3)
+                        FilterKeep.amountOf(text)?.let { onChange(keep.copy(amount = it)) }
+                    },
+                    label = { Text(stringResource(R.string.filters_keep_number)) },
+                    isError = amount == null,
+                    supportingText = if (amount == null) ({ Text(stringResource(R.string.filters_keep_invalid)) }) else null,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.weight(1f),
+                )
+                ChoiceField(
+                    label = stringResource(R.string.filters_keep_unit),
+                    options = KeepUnit.entries.map { it.name to stringResource(it.label()) },
+                    selected = keep.unit.name,
+                    onSelect = { name -> onChange(keep.copy(unit = KeepUnit.valueOf(name))) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        Muted(stringResource(R.string.filters_keep_detail))
+    }
+}
+
+private fun KeepUnit.label() = when (this) {
+    KeepUnit.Minutes -> R.string.filters_keep_minutes
+    KeepUnit.Hours -> R.string.filters_keep_hours
+    KeepUnit.Days -> R.string.filters_keep_days
+}
+
+@Composable
+private fun KeepRow(label: Int, selected: Boolean, onSelect: () -> Unit) = ThemeRow(label, selected, onSelect)
 
 @Composable
 private fun Muted(text: String, top: Dp = 8.dp) {

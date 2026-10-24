@@ -17,6 +17,15 @@ import app.ledgerline.android.session.SessionEnd
 import app.ledgerline.android.session.SessionManager
 import app.ledgerline.android.sync.SyncCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import app.ledgerline.android.outbox.WallClock
+import app.ledgerline.android.settings.FilterStore
+import app.ledgerline.android.settings.KeepMode
+import app.ledgerline.android.settings.PhoneSettings
+import app.ledgerline.android.settings.SavedFilters
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
+import java.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +69,9 @@ class SignedInViewModel @Inject constructor(
     private val view: LedgerView,
     private val outbox: OutboxStore,
     reads: MirrorReads,
+    private val settings: PhoneSettings,
+    private val filterStore: FilterStore,
+    private val clock: WallClock,
 ) : ViewModel() {
     private val ledger: Flow<String?> = reads.mirroredLedger()
     private val entryLimit = MutableStateFlow(PageOfEntries)
@@ -70,10 +82,68 @@ class SignedInViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Mirrored.Waiting)
 
-    private val _filters = MutableStateFlow(EntryFilters())
+    /** When the filters last changed: what a chosen time counts from. */
+    private var filtersChangedAt: Instant = clock.now()
+    private var expiry: Job? = null
+    private val _filters = MutableStateFlow(restoredFilters())
 
-    /** What Transactions is narrowed to; kept while the app runs, so a tab switch does not lose it. */
+    /** What Transactions is narrowed to, for as long as the owner chose in Settings (until the app closes by default). */
     val filters: StateFlow<EntryFilters> = _filters.asStateFlow()
+
+    /** Filters kept for a chosen time wait on the phone; they come back unless their time has run out. */
+    private fun restoredFilters(): EntryFilters {
+        val saved = filterStore.load() ?: return EntryFilters()
+        val changedAt = Instant.ofEpochMilli(saved.changedAtMillis)
+        val keep = settings.filterKeep.value
+        if (keep.mode != KeepMode.ForAWhile || keep.expired(changedAt, clock.now())) {
+            filterStore.clear()
+            return EntryFilters()
+        }
+        filtersChangedAt = changedAt
+        return saved.filters
+    }
+
+    init {
+        scheduleExpiry()
+        // Changing the setting counts from now: a time starts running, or the saved filters are forgotten.
+        viewModelScope.launch {
+            settings.filterKeep.drop(1).collect {
+                filtersChangedAt = clock.now()
+                persistFilters()
+                scheduleExpiry()
+            }
+        }
+    }
+
+    private fun persistFilters() {
+        val filters = _filters.value
+        if (settings.filterKeep.value.mode == KeepMode.ForAWhile && filters.applied) {
+            filterStore.save(SavedFilters(filters, filtersChangedAt.toEpochMilli()))
+        } else {
+            filterStore.clear()
+        }
+    }
+
+    private fun scheduleExpiry() {
+        expiry?.cancel()
+        val keep = settings.filterKeep.value
+        if (keep.mode != KeepMode.ForAWhile || !_filters.value.applied) return
+        val left = keep.durationMillis - (clock.now().toEpochMilli() - filtersChangedAt.toEpochMilli())
+        expiry = viewModelScope.launch {
+            delay(left.coerceAtLeast(0))
+            expireFilters()
+        }
+    }
+
+    /** Clears filters whose chosen time has run out (also checked whenever Transactions is shown). */
+    fun expireFilters() {
+        if (_filters.value.applied && settings.filterKeep.value.expired(filtersChangedAt, clock.now())) clearFilters()
+    }
+
+    /** The owner went to another tab: filters chosen to last only until then are cleared. */
+    fun leftTransactions() {
+        if (settings.filterKeep.value.mode == KeepMode.UntilLeave && _filters.value.applied) clearFilters()
+    }
 
     /** The accounts, categories and tags the filters offer. */
     val filterOptions: StateFlow<FilterOptions> = ledger
@@ -154,6 +224,9 @@ class SignedInViewModel @Inject constructor(
     fun setFilters(filters: EntryFilters) {
         entryLimit.value = PageOfEntries
         _filters.value = filters
+        filtersChangedAt = clock.now()
+        persistFilters()
+        scheduleExpiry()
     }
 
     fun clearFilters() = setFilters(EntryFilters())
@@ -197,8 +270,10 @@ class SignedInViewModel @Inject constructor(
             val origin = addressStore.origin.first()
             val ended = origin?.let { clients.forOrigin(it).auth.signOut() } ?: false
             _signingOut.value = false
-            // The next sign-in starts on an unfiltered list.
+            // The next sign-in starts on an unfiltered list, and nothing of it stays on the phone.
             _filters.value = EntryFilters()
+            filterStore.clear()
+            expiry?.cancel()
             session.endSession(if (ended) null else SessionEnd.ServerNotReached)
         }
     }

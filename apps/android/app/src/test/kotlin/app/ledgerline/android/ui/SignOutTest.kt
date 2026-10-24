@@ -78,6 +78,9 @@ class SignOutTest {
             LedgerView(database.reads(), database.dao(), database.outbox()),
             outbox,
             database.reads(),
+            app.ledgerline.android.testing.FakePhoneSettings(),
+            app.ledgerline.android.testing.FakeFilterStore(),
+            app.ledgerline.android.outbox.FakeWallClock(),
         )
     }
 

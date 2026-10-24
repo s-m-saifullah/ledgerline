@@ -59,3 +59,32 @@ class FakeTokenProtector(
         discardCount++
     }
 }
+
+/** The phone's own choices, in memory. */
+class FakePhoneSettings(keep: app.ledgerline.android.settings.FilterKeep = app.ledgerline.android.settings.FilterKeep()) :
+    app.ledgerline.android.settings.PhoneSettings {
+    override val privacyMode = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override val allowScreenshots = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override val theme = kotlinx.coroutines.flow.MutableStateFlow(app.ledgerline.android.settings.ThemeChoice.System)
+    override val centsFirst = kotlinx.coroutines.flow.MutableStateFlow(false)
+    override val filterKeep = kotlinx.coroutines.flow.MutableStateFlow(keep)
+
+    override fun setPrivacyMode(on: Boolean) { privacyMode.value = on }
+
+    override fun setAllowScreenshots(allow: Boolean) { allowScreenshots.value = allow }
+
+    override fun setTheme(choice: app.ledgerline.android.settings.ThemeChoice) { theme.value = choice }
+
+    override fun setCentsFirst(on: Boolean) { centsFirst.value = on }
+
+    override fun setFilterKeep(keep: app.ledgerline.android.settings.FilterKeep) { filterKeep.value = keep }
+}
+
+/** Filters kept for a chosen time, in memory; [saved] is what a closed app would find. */
+class FakeFilterStore(var saved: app.ledgerline.android.settings.SavedFilters? = null) : app.ledgerline.android.settings.FilterStore {
+    override fun load() = saved
+
+    override fun save(saved: app.ledgerline.android.settings.SavedFilters) { this.saved = saved }
+
+    override fun clear() { saved = null }
+}
