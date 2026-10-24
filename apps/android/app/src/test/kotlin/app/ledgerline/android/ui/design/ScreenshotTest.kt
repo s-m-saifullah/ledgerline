@@ -436,6 +436,31 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         )
     }
 
+    private fun newCategoryShot(name: String, box: app.ledgerline.android.ui.editor.NewCategory?) = shot(name, Tab.Home) {
+        androidx.compose.foundation.layout.Column(
+            modifier = androidx.compose.ui.Modifier.padding(16.dp),
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+        ) {
+            ComboField("Category", listOf(Choice("a", "Food"), Choice("a1", "Food › Groceries")), "a1", {}, "No matching categories.")
+            app.ledgerline.android.ui.editor.NewCategoryBox(box, {}, {}, {})
+        }
+    }
+
+    @Test
+    fun newCategoryClosed() = newCategoryShot("new-category-closed", null)
+
+    @Test
+    fun newCategoryOpen() = newCategoryShot("new-category-open", app.ledgerline.android.ui.editor.NewCategory("Pets"))
+
+    @Test
+    fun newCategoryWithAnError() = newCategoryShot(
+        "new-category-error",
+        app.ledgerline.android.ui.editor.NewCategory(
+            "Food",
+            error = app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
+        ),
+    )
+
     @Test
     fun pickers() = shot("pickers", Tab.Home) {
         val tags = listOf(Choice("t1", "work"), Choice("t2", "weekend trip"), Choice("t3", "an old tag", archived = true), Choice("t4", "home"))

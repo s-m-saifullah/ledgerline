@@ -551,4 +551,10 @@
     <string name="category_archive_title">Archive category</string>
     <string name="category_archive_body">Archive %1$s? Its label and history are kept, and it stops being offered for new entries.</string>
     <string name="category_archive_confirm">Archive</string>
+
+    <string name="editor_new_category">New category</string>
+    <string name="editor_new_category_name">New category name</string>
+    <string name="editor_new_category_add">Add category</string>
+    <string name="editor_new_category_adding">Adding…</string>
+    <string name="editor_new_category_invalid">Give the category a name of 1–100 characters.</string>
 </resources>
