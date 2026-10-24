@@ -356,9 +356,14 @@ private fun syncText(line: SyncLine): String? {
     }
 }
 
+/** Whether there is anything to say about syncing: it is running, it has a problem, or changes are not sent yet. */
+internal fun syncNeedsSaying(status: SyncStatus): Boolean = status.line.running || status.line.problem != null || status.unsent > 0
+
 /** Home's sync state (ADR 0046): a dot, the words, the unsent count and Try again. The dot is only an extra cue, the words say it. */
 @Composable
 internal fun SyncStatusRow(status: SyncStatus, onRetry: () -> Unit) {
+    // A calm app says nothing while everything is in order (ADR 0046); pulling down still refreshes.
+    if (!syncNeedsSaying(status)) return
     val line = status.line
     val palette = app.ledgerline.android.ui.theme.LocalPalette.current
     val unsent = if (status.unsent > 0) pluralStringResource(R.plurals.unsent_count, status.unsent, status.unsent) else null

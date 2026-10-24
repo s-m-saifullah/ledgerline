@@ -35,6 +35,8 @@ import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.narrowingRoom
 import app.ledgerline.android.ui.design.tabular
+import app.ledgerline.android.ui.privacy.AmountMask
+import app.ledgerline.android.ui.privacy.ShownMoney
 import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.android.ui.theme.LocalPalette
 import java.time.LocalDate
@@ -94,7 +96,7 @@ internal fun TransactionsContent(
                     groupDays(entries.items).forEach { day ->
                         item(key = "day-${day.date}") {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                DayHeader(dayLabel(day.date), day.nets.map { money(it.amount, it.currency).text }.joinToString(" · ").ifEmpty { null })
+                                DayHeader(dayLabel(day.date), day.nets.map { money(it.amount, it.currency).withPlus(it.amount).text }.joinToString(" · ").ifEmpty { null })
                                 GroupedListCard {
                                     day.rows.forEach { model ->
                                         row {
@@ -126,6 +128,9 @@ internal fun TransactionsContent(
     if (filtersOpen) EntryFiltersSheet(filters, options, onFilters, onToggleFilters)
 }
 
+/** A positive amount with its plus sign (income, a day that came out ahead); a hidden amount keeps its mask, which shows no sign. */
+internal fun ShownMoney.withPlus(amount: Long): ShownMoney = if (amount > 0 && text != AmountMask) copy(text = "+$text") else this
+
 /** The word under an amount when the entry is not settled: Not sent yet, or Pending; null otherwise. */
 @Composable
 private fun flagOf(unsent: Boolean, status: String): String? = when {
@@ -136,9 +141,15 @@ private fun flagOf(unsent: Boolean, status: String): String? = when {
 
 /** What sits at the right of a row: the amount, and under it the flag in the accent colour while there is one. */
 @Composable
-private fun AmountAndFlag(amount: String, flag: String?) {
+private fun AmountAndFlag(amount: String, flag: String?, income: Boolean = false) {
     Column(horizontalAlignment = Alignment.End) {
-        Text(amount, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false)
+        Text(
+            amount,
+            style = MaterialTheme.typography.titleMedium.tabular(),
+            color = if (income) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Unspecified,
+            maxLines = 1,
+            softWrap = false,
+        )
         if (flag != null) Text(flag, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
     }
 }
@@ -162,7 +173,8 @@ internal fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
         else -> entry.categoryName
     }
     val details = listOfNotNull(category.takeIf { it != title }, entry.accountName).joinToString(" · ").ifEmpty { null }
-    val amount = money(entry.amount, entry.currency)
+    val income = entry.amount > 0 && entry.kind != "transfer"
+    val amount = money(entry.amount, entry.currency).let { if (income) it.withPlus(entry.amount) else it }
     val kind = stringResource(
         when (entry.kind) {
             "income" -> R.string.kind_income
@@ -178,7 +190,7 @@ internal fun EntryRow(entry: EntryLine, unsent: Boolean, onOpen: () -> Unit) {
         title = title,
         subtitle = details,
         leading = { if (entry.kind == "transfer") IconAvatar(R.drawable.ic_entries) else Avatar(title) },
-        trailing = { AmountAndFlag(amount.text, flag) },
+        trailing = { AmountAndFlag(amount.text, flag, income) },
         onClick = onOpen,
         described = described,
         extra = if (tags.isEmpty()) null else {

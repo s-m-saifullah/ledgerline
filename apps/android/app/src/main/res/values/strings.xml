@@ -321,7 +321,8 @@
     <string name="chip_all">All</string>
     <string name="filters_chip">Filters</string>
     <string name="filters_chip_count">Filters (%1$d)</string>
-    <string name="filters_done">Done</string>
+    <string name="filters_apply">Apply</string>
+    <string name="filters_reset">Reset all</string>
     <string name="filters_clear">Clear filters</string>
     <string name="filters_range_invalid">Choose an end date on or after the start date.</string>
     <string name="filter_account">Account</string>
@@ -341,7 +342,7 @@
     <string name="filter_kind_income">Income</string>
     <string name="filter_kind_transfer">Transfers</string>
     <string name="filter_status">Status</string>
-    <string name="filter_status_all">Cleared and pending</string>
+    <string name="filter_status_all">All</string>
     <string name="filter_status_cleared">Cleared</string>
     <string name="filter_status_pending">Pending</string>
     <string name="entry_transfer">Transfer</string>

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -87,7 +88,7 @@ class TransactionsContentTest {
     fun theDaysHeadingCarriesItsNet() {
         show(listOf(ShownLine(entry("a", -1771, "A"), false), ShownLine(entry("b", 5000, "B", "income"), false)))
         compose.onNodeWithText("Thu, Oct 22, 2026").assertExists()
-        compose.onNodeWithText("\$32.29").assertExists()
+        compose.onNodeWithText("+\$32.29").assertExists()
     }
 
     @Test
@@ -130,5 +131,59 @@ class TransactionsContentTest {
     fun nothingNeedingTheOwnerMeansNoLineAboutIt() {
         show(emptyList(), status = SyncStatus(quietSync.line, unsent = 0, attention = 0))
         compose.onNodeWithText("attention", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun incomeAndAPositiveDayCarryAPlusAndAnExpenseDoesNot() {
+        show(listOf(ShownLine(entry("a", -1771, "Circle K"), false), ShownLine(entry("b", 5000, "Payroll", "income"), false)))
+        compose.onNodeWithContentDescription("Payroll, \$50.00, Income", substring = true).assertExists()
+        // The row's amount and the day's net (\$32.29) carry the plus; the expense's does not.
+        compose.onNodeWithText("+\$50.00", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("+\$32.29", useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("-\$17.71", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun aDayThatCameOutBehindShowsItsMinusAndNoPlus() {
+        show(listOf(ShownLine(entry("a", -1771, "Circle K"), false)))
+        // The heading's net and the row's amount.
+        assertEquals(2, compose.onAllNodesWithText("-\$17.71", useUnmergedTree = true).fetchSemanticsNodes().size)
+        compose.onNodeWithText("+", substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aTransferHasNoPlus() {
+        show(transfer)
+        compose.onNodeWithText("+", substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aLoneTransferLegHasNoPlusEither() {
+        show(listOf(transfer[1]))
+        compose.onNodeWithText("+", substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aHiddenAmountKeepsItsMaskWithoutAPlus() {
+        assertEquals("•••••", app.ledgerline.android.ui.privacy.ShownMoney("•••••", "Amount hidden").withPlus(5000).text)
+        assertEquals("+\$5.00", app.ledgerline.android.ui.privacy.ShownMoney("\$5.00", "\$5.00").withPlus(500).text)
+        assertEquals("\$0.00", app.ledgerline.android.ui.privacy.ShownMoney("\$0.00", "\$0.00").withPlus(0).text)
+        assertEquals("-\$5.00", app.ledgerline.android.ui.privacy.ShownMoney("-\$5.00", "-\$5.00").withPlus(-500).text)
+    }
+
+    @Test
+    fun theSyncLineIsSilentWhileEverythingIsInOrder() {
+        show(emptyList(), status = quietSync)
+        compose.onNodeWithText("Updated", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun theSyncLineSpeaksWhenThereIsSomethingToSay() {
+        assertEquals(false, syncNeedsSaying(quietSync))
+        assertEquals(true, syncNeedsSaying(quietSync.copy(unsent = 1)))
+        assertEquals(true, syncNeedsSaying(quietSync.copy(line = quietSync.line.copy(running = true))))
+        assertEquals(true, syncNeedsSaying(quietSync.copy(line = quietSync.line.copy(problem = SyncProblem.Offline))))
+        show(emptyList(), status = quietSync.copy(unsent = 2))
+        compose.onNodeWithText("2 changes not sent yet", substring = true).assertExists()
     }
 }

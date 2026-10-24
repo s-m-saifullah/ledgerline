@@ -228,6 +228,7 @@ fun SearchBox(label: String, value: String, onChange: (String) -> Unit, modifier
         onValueChange = { onChange(it.take(200)) },
         singleLine = true,
         placeholder = { Text(label, color = palette.muted, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp)) },
         trailingIcon = if (value.isEmpty()) null else {
             {
                 IconButton(onClick = { onChange("") }) {
@@ -246,6 +247,35 @@ fun SearchBox(label: String, value: String, onChange: (String) -> Unit, modifier
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         modifier = modifier.fillMaxWidth().heightIn(min = TouchTarget).semantics { contentDescription = label },
     )
+}
+
+/** The button beside a search box that opens its filters: an icon, Filters, and how many are set (then it takes the accent's soft fill). */
+@Composable
+fun FiltersButton(count: Int, onClick: () -> Unit) {
+    val palette = LocalPalette.current
+    val label = stringResource(R.string.filters_chip)
+    val described = if (count > 0) stringResource(R.string.filters_chip_count, count) else label
+    val shape = MaterialTheme.shapes.small
+    Row(
+        modifier = Modifier
+            .heightIn(min = TouchTarget)
+            .clip(shape)
+            .background(if (count > 0) palette.accentSoft else palette.surface)
+            .border(1.dp, if (count > 0) palette.accent else palette.border, shape)
+            .clickable(onClick = onClick, role = Role.Button)
+            .clearAndSetSemantics { contentDescription = described }
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(painterResource(R.drawable.ic_filters), contentDescription = null, modifier = Modifier.size(20.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+        if (count > 0) {
+            Box(modifier = Modifier.defaultMinSize(minWidth = 22.dp, minHeight = 22.dp).background(palette.accent, RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
+                Text(count.toString(), style = MaterialTheme.typography.labelMedium, color = palette.accentForeground, modifier = Modifier.padding(horizontal = 6.dp))
+            }
+        }
+    }
 }
 
 /** How full a limit is: the accent, the warning at 90 per cent of it and above, red over it. */
