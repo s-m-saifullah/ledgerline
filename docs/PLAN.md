@@ -142,7 +142,7 @@ Versioned REST at `/api/v1`, described by an OpenAPI 3.1 file generated from the
 - Argon2id password hashing; public sign-up is off and the owner account is created on first run; optional TOTP two-factor sign-in with backup codes (ADR 0038); passkeys are planned.
 - Secrets live only in `.env`; `.env.example` documents each one.
 - Backups: a verified `pg_dump` before every release and on a schedule, with a restore drill into a throwaway container. Each backup is also encrypted on the server with a public key and copied off-site with a write-only key (ADR 0037); the restore drill can be run on the off-site copy.
-- No third-party analytics or trackers; logs never contain amounts, payees or notes.
+- No third-party analytics or trackers; logs never contain amounts, payees or notes. The only outside call is the Android app's update check against the repository's public GitHub releases, sending nothing about the owner (ADR 0043).
 
 ## Deployment
 
