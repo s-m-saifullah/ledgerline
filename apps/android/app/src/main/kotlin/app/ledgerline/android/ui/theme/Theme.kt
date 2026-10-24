@@ -40,8 +40,9 @@ private fun inter(size: Int, weight: Int, lineHeight: Double = 1.4, spacing: Dou
 )
 
 /**
- * The web's sizes in sp (ADR 0045): the page title 28, section titles 20, body 16, muted text 14, card labels
- * 12, the eyebrow 11 in capitals; amounts 32 and the In hand amount 36, with tabular figures where shown.
+ * The web's sizes in sp (ADR 0045), with the redesign's floor (ADR 0046): the page title 28, section titles 20,
+ * body 16, muted text 14, card labels and section labels 12 (the smallest text anywhere); amounts 32 and the In
+ * hand amount 36, with tabular figures where shown.
  */
 val LedgerlineTypography = Typography(
     displayMedium = inter(36, 600, lineHeight = 1.15, spacing = -0.02),
@@ -55,16 +56,16 @@ val LedgerlineTypography = Typography(
     bodySmall = inter(12, 400, lineHeight = 1.5),
     labelLarge = inter(14, 500),
     labelMedium = inter(12, 500),
-    labelSmall = inter(11, 600, spacing = 0.14),
+    labelSmall = inter(12, 600, spacing = 0.08),
 )
 
-/** Corners: 8 for fields and buttons, 12 for cards, 16 for dialogs, as on the web. */
+/** Corners (ADR 0046): 8 for small marks, 12 for fields and buttons, 16 for cards, 20 for the hero, 24 for sheets and dialogs. */
 val LedgerlineShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(8.dp),
-    medium = RoundedCornerShape(12.dp),
-    large = RoundedCornerShape(16.dp),
-    extraLarge = RoundedCornerShape(16.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(24.dp),
 )
 
 /**

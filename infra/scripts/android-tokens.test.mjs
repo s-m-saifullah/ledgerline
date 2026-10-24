@@ -50,3 +50,15 @@ test("the committed Android palette matches the web tokens", () => {
     "out of date: run node infra/scripts/android-tokens.mjs",
   );
 });
+
+test("the hero fill and the chart ramp are tints of the seed, five distinct steps per theme", () => {
+  const { light, dark } = palettes(css);
+  for (const theme of [light, dark]) {
+    const ramp = [1, 2, 3, 4, 5].map((n) => theme[`chart-${n}`]);
+    assert.equal(new Set(ramp).size, 5);
+    for (const hex of [theme["accent-deep"], ...ramp])
+      assert.match(hex, /^#[0-9a-f]{6}$/);
+  }
+  assert.notEqual(light["accent-deep"], dark["accent-deep"]);
+  assert.equal(light["accent-deep-foreground"], "#ffffff");
+});

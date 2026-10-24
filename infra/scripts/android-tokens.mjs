@@ -52,7 +52,7 @@ function blocks(css) {
 
 function declarations(block) {
   const result = {};
-  for (const match of block.matchAll(/--([a-z-]+):\s*([^;]+);/g))
+  for (const match of block.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g))
     result[match[1]] = match[2].trim();
   return result;
 }
@@ -88,6 +88,13 @@ export function palettes(css) {
     "accent",
     "accent-soft",
     "accent-foreground",
+    "accent-deep",
+    "accent-deep-foreground",
+    "chart-1",
+    "chart-2",
+    "chart-3",
+    "chart-4",
+    "chart-5",
     "background",
     "surface",
     "border",
@@ -114,7 +121,7 @@ export function palettes(css) {
   };
 }
 
-const camel = (name) => name.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+const camel = (name) => name.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 
 /** The Kotlin source for the palettes in the given tokens.css text. */
 export function generate(css) {

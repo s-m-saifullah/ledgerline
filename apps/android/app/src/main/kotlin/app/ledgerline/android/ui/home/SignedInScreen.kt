@@ -284,6 +284,12 @@ internal fun SignedInFrame(tab: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit,
     ) { padding -> content(Modifier.fillMaxSize().padding(padding)) }
 }
 
+/** The smallest a bar label may get, in sp for the phone's [fontScale]: 11 dp of actual height (ADR 0046). */
+internal fun smallestBarLabel(fontScale: Float): Float = BAR_LABEL_FLOOR_DP / fontScale
+
+/** The one text size below 12 sp: only so "Transactions" stays on one line at 320 dp or with the largest text. */
+internal const val BAR_LABEL_FLOOR_DP = 11f
+
 /**
  * One size for all five bar labels: the theme's, or smaller when the longest label ("Transactions" at 320 dp or
  * with large text) would not fit a tab's width. Labels are never cut off and never differ from each other.
@@ -295,8 +301,8 @@ private fun barLabelSize(labels: List<String>): TextUnit {
     val density = LocalDensity.current
     // The bar's own side padding and each item's inner padding leave a tab about 16 dp less than its share.
     val tabWidth = with(density) { (LocalWindowInfo.current.containerSize.width / labels.size).toDp() - 16.dp }
-    // Never below about 9 dp of actual height, however large the phone's text setting is.
-    val smallest = 9f / density.fontScale
+    // Never below the bar label floor (ADR 0046), however large the phone's text setting is.
+    val smallest = smallestBarLabel(density.fontScale)
     var size = style.fontSize
     while (size.value > smallest) {
         val widest = labels.maxOf { measurer.measure(it, style.copy(fontSize = size), maxLines = 1, softWrap = false).size.width }

@@ -111,7 +111,7 @@ private fun ChartCard(
 ) {
     val palette = LocalPalette.current
     val hidden = LocalPrivacy.current
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = 0.sp, fontWeight = FontWeight.SemiBold)
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp, letterSpacing = 0.sp, fontWeight = FontWeight.SemiBold)
     val measurer = rememberTextMeasurer()
     val names = months.map { shortMonth(it) }
     LedgerCard(padding = PaddingValues(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), modifier = Modifier.clearAndSetSemantics { contentDescription = described }) {
