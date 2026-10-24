@@ -67,9 +67,9 @@ Code is grouped by feature:
 - Neutral (zinc) surfaces; one accent, teal by default, every shade derived from one seed color (OKLCH).
 - Red only for overspending, errors and Delete actions.
 - Light, dark and system themes. WCAG AA contrast, 44 px touch targets, full keyboard use, a Cmd/Ctrl+K command palette, a privacy mode that blurs amounts.
-- Navigation: Home, Transactions, Budgets, Insights, More and a central Add button (bottom bar on phones, left sidebar on desktop); the Android app puts Add at the bottom right, above its bar (ADR 0043). Adding a transaction should take under five seconds.
+- Navigation: Home, Transactions, Budgets, Insights, More and a central Add button (bottom bar on phones, left sidebar on desktop); the Android app puts Add at the bottom right, above its bar (ADR 0043). Adding a transaction should take under five seconds. On Android, Add is hidden on More and the screens opened from it (ADR 0046).
 - Check new UI at 320 px, 390 px and desktop in light and dark.
-- The Android app follows the web's design (ADR 0045): build screens from `apps/android/.../ui/design` and review the Roborazzi screenshots (`-Pledgerline.screenshots`) at 320 and 390 dp, light and dark, and with the largest text.
+- The Android app leads the redesign (ADR 0046, which amends ADR 0045; the web follows later): build screens from `apps/android/.../ui/design`, keep text at 12 sp or more and every text pair at 4.5:1 contrast (a unit test checks the palettes), keep touch targets at 48 dp, use the single teal accent (chart colours are tints of it), and review the Roborazzi screenshots (`-Pledgerline.screenshots`) at 320 and 390 dp, light and dark, and with the largest text.
 - Android list screens with a search or filter end their list with `narrowingRoom(...)` and carry a "search stays put" test, or the search box jumps while typing (see `CONTRIBUTING.md`).
 
 ## Deployment facts
