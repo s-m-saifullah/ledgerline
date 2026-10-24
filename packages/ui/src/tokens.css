@@ -4,6 +4,14 @@
   --accent: oklch(from var(--accent-seed) 0.45 c h);
   --accent-soft: oklch(from var(--accent-seed) 0.96 0.025 h);
   --accent-foreground: white;
+  /* The solid fill of a hero card, and the five steps of a chart's ramp: all tints of the one seed (ADR 0046). */
+  --accent-deep: oklch(from var(--accent-seed) 0.34 c h);
+  --accent-deep-foreground: white;
+  --chart-1: oklch(from var(--accent-seed) 0.34 c h);
+  --chart-2: oklch(from var(--accent-seed) 0.44 c h);
+  --chart-3: oklch(from var(--accent-seed) 0.52 c h);
+  --chart-4: oklch(from var(--accent-seed) 0.58 c h);
+  --chart-5: oklch(from var(--accent-seed) 0.64 c h);
   --background: #fafafa;
   --surface: #ffffff;
   --border: #e4e4e7;
@@ -25,6 +33,13 @@
   --accent: oklch(from var(--accent-seed) 0.78 c h);
   --accent-soft: oklch(from var(--accent-seed) 0.24 0.03 h);
   --accent-foreground: #18181b;
+  --accent-deep: oklch(from var(--accent-seed) 0.3 0.06 h);
+  --accent-deep-foreground: #fafafa;
+  --chart-1: oklch(from var(--accent-seed) 0.88 c h);
+  --chart-2: oklch(from var(--accent-seed) 0.8 c h);
+  --chart-3: oklch(from var(--accent-seed) 0.72 c h);
+  --chart-4: oklch(from var(--accent-seed) 0.64 c h);
+  --chart-5: oklch(from var(--accent-seed) 0.56 c h);
   --background: #09090b;
   --surface: #18181b;
   --border: #3f3f46;
