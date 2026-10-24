@@ -14,6 +14,87 @@ class ContractTest {
     private fun assertMatches(problems: List<String>) = assertEquals(emptyList<String>(), problems)
 
     @Test
+    fun categoryReplyMatches() = assertMatches(
+        SchemaContract.differences(
+            Category.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/categories", "post", "201"),
+        ),
+    )
+
+    @Test
+    fun everyCategoryWriteReturnsTheSameShape() {
+        for ((path, status) in listOf(
+            "/api/v1/ledgers/{ledgerId}/categories/{categoryId}" to "200",
+            "/api/v1/ledgers/{ledgerId}/categories/{categoryId}/archive" to "200",
+            "/api/v1/ledgers/{ledgerId}/categories/{categoryId}/unarchive" to "200",
+        )) {
+            val method = if (path.endsWith("{categoryId}")) "patch" else "post"
+            assertMatches(SchemaContract.differences(Category.serializer().descriptor, SchemaContract.response(path, method, status)))
+        }
+    }
+
+    @Test
+    fun categoryRequestsMatch() {
+        assertMatches(
+            SchemaContract.differences(
+                CreateCategory.serializer().descriptor,
+                SchemaContract.request("/api/v1/ledgers/{ledgerId}/categories", "post"),
+                request = true,
+            ),
+        )
+        assertMatches(
+            SchemaContract.differences(
+                UpdateCategory.serializer().descriptor,
+                SchemaContract.request("/api/v1/ledgers/{ledgerId}/categories/{categoryId}", "patch"),
+                request = true,
+            ),
+        )
+        for (action in listOf("archive", "unarchive")) {
+            assertMatches(
+                SchemaContract.differences(
+                    ExpectedVersion.serializer().descriptor,
+                    SchemaContract.request("/api/v1/ledgers/{ledgerId}/categories/{categoryId}/$action", "post"),
+                    request = true,
+                ),
+            )
+        }
+    }
+
+    @Test
+    fun anEditSendsOnlyWhatChangesAndAMainCategoryIsAnExplicitNull() {
+        fun body(update: UpdateCategory) = ApiJson.encodeToString(UpdateCategory.serializer(), update)
+        assertEquals("""{"expectedVersion":3,"name":"Food"}""", body(UpdateCategory(3, name = "Food")))
+        assertEquals("""{"expectedVersion":3,"parentId":null}""", body(UpdateCategory(3, parentId = ParentChange.MakeMain)))
+        assertEquals("""{"expectedVersion":3,"name":"A","parentId":"p1"}""", body(UpdateCategory(3, "A", ParentChange.MoveUnder("p1"))))
+    }
+
+    @Test
+    fun aCreateLeavesOutAParentThatIsNotThere() {
+        assertEquals("""{"name":"Food","kind":"expense"}""", ApiJson.encodeToString(CreateCategory.serializer(), CreateCategory("Food", "expense")))
+        assertEquals(
+            """{"name":"Milk","kind":"expense","parentId":"p1"}""",
+            ApiJson.encodeToString(CreateCategory.serializer(), CreateCategory("Milk", "expense", "p1")),
+        )
+    }
+
+    @Test
+    fun aProblemReadsItsSentenceAndTheFieldsItNames() {
+        val body = """{"type":"about:blank","title":"Conflict","status":409,"detail":"A sibling category already has this name.","errors":[{"field":"name","message":"x"}],"extra":1}"""
+        val problem = parseProblem(body)!!
+        assertEquals(409L, problem.status)
+        assertEquals("A sibling category already has this name.", problem.detail)
+        assertEquals(listOf("name"), problem.errors.map { it.field })
+    }
+
+    @Test
+    fun anythingThatIsNotAProblemDocumentReadsAsNull() {
+        assertEquals(null, parseProblem("<html>bad gateway</html>"))
+        assertEquals(null, parseProblem(null))
+        assertEquals(null, parseProblem("""{"detail":"only a detail"}"""))
+        assertEquals(null, parseProblem(""))
+    }
+
+    @Test
     fun healthMatches() = assertMatches(
         SchemaContract.differences(Health.serializer().descriptor, SchemaContract.response("/api/health", "get", "200")),
     )

@@ -41,6 +41,16 @@ class MirrorStore @Inject constructor(private val database: MirrorDatabase) {
         }
     }
 
+    /**
+     * Puts one category the API just returned from a write into the mirror, under the same rule as a pulled row: only when
+     * its `version` is newer than the stored one, so a pull that already brought it (or a newer edit) is never undone.
+     */
+    suspend fun putCategory(row: CategoryRow) {
+        database.withTransaction {
+            dao.putCategories(newer(listOf(row), { it.id }, { it.version }) { dao.categoryVersions(row.ledgerId, it) })
+        }
+    }
+
     /** Replaces everything held for [ledgerId] (and drops any other ledger's rows) with a full pull, or changes nothing. */
     suspend fun replaceAll(ledgerId: String, rows: MirrorRows, cursor: String, serverTime: String) {
         database.withTransaction {

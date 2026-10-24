@@ -2,6 +2,7 @@ package app.ledgerline.android.mirror
 
 import app.ledgerline.api.Money
 import app.ledgerline.api.SyncAccount
+import app.ledgerline.api.SyncCategory
 import app.ledgerline.api.SyncChanges
 import app.ledgerline.api.SyncResponse
 import app.ledgerline.api.SyncTag
@@ -22,6 +23,17 @@ fun account(n: Int, version: Int = 1, name: String = "Account $n", deletedAt: St
         id(n), Stamp, updatedAt, deletedAt, version, name, "bank", "USD", Money(openingAmount, "USD"),
         null, null, null, null, null, null, null,
     )
+
+fun syncCategory(
+    n: Int,
+    name: String = "Category $n",
+    kind: String = "expense",
+    parentN: Int? = null,
+    version: Int = 1,
+    sortOrder: Long = n.toLong(),
+    archived: Boolean = false,
+    deletedAt: String? = null,
+) = SyncCategory(id(n), Stamp, Stamp, deletedAt, version, parentN?.let(::id), name, kind, null, null, sortOrder, if (archived) Stamp else null)
 
 fun tag(n: Int, version: Int = 1, name: String = "Tag $n", deletedAt: String? = null) =
     SyncTag(id(n), Stamp, Stamp, deletedAt, version, name, null)
@@ -47,7 +59,8 @@ fun changes(
     tags: List<SyncTag> = emptyList(),
     transactions: List<SyncTransaction> = emptyList(),
     links: List<SyncTransactionTag> = emptyList(),
-) = SyncChanges(accounts, emptyList(), tags, emptyList(), emptyList(), transactions, emptyList(), links)
+    categories: List<SyncCategory> = emptyList(),
+) = SyncChanges(accounts, categories, tags, emptyList(), emptyList(), transactions, emptyList(), links)
 
 fun page(changes: SyncChanges = changes(), cursor: String = "c1", hasMore: Boolean = false, serverTime: String = Stamp) =
     SyncResponse(changes, cursor, hasMore, serverTime)

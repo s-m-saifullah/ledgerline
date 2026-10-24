@@ -16,6 +16,7 @@ import app.ledgerline.android.ui.design.PageHeader
 class MoreActions(
     val openClients: () -> Unit,
     val openLoans: () -> Unit,
+    val openCategories: () -> Unit,
     val openSettings: () -> Unit,
 )
 
@@ -33,6 +34,7 @@ fun MoreContent(actions: MoreActions, bottomSpace: Dp, modifier: Modifier = Modi
         if (notice != null) item { notice() }
         item { NavCard(R.drawable.ic_wallet, stringResource(R.string.more_clients_title), stringResource(R.string.more_clients_detail), actions.openClients) }
         item { NavCard(R.drawable.ic_hand_coins, stringResource(R.string.more_loans_title), stringResource(R.string.more_loans_detail), actions.openLoans) }
+        item { NavCard(R.drawable.ic_tag, stringResource(R.string.more_categories_title), stringResource(R.string.more_categories_detail), actions.openCategories) }
         item { NavCard(R.drawable.ic_settings, stringResource(R.string.more_settings_title), stringResource(R.string.more_settings_detail), actions.openSettings) }
     }
 }
