@@ -40,6 +40,15 @@ class PhoneSettingsTest {
     }
 
     @Test
+    fun automaticUpdateChecksAreOnByDefaultAndTheChoiceIsKept() {
+        assertTrue(PrefsPhoneSettings(context).autoUpdateCheck.value)
+        PrefsPhoneSettings(context).setAutoUpdateCheck(false)
+        assertFalse(PrefsPhoneSettings(context).autoUpdateCheck.value)
+        PrefsPhoneSettings(context).setAutoUpdateCheck(true)
+        assertTrue(PrefsPhoneSettings(context).autoUpdateCheck.value)
+    }
+
+    @Test
     fun themeFollowsThePhoneAndAmountsAreTypedTheUsualWayByDefault() {
         val settings = PrefsPhoneSettings(context)
         assertEquals(ThemeChoice.System, settings.theme.value)

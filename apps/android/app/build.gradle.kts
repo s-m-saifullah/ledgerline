@@ -21,6 +21,7 @@ android {
         versionName = System.getenv("LEDGERLINE_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "0.1.0"
         // The API version of the contract the app's types were checked against, shown in More.
         val contract = JsonSlurper().parse(rootProject.file("../../docs/openapi.json")) as Map<*, *>
+        buildConfigField("String", "UPDATE_REPO", "\"s-m-saifullah/ledgerline\"")
         buildConfigField("String", "API_VERSION", "\"${(contract["info"] as Map<*, *>)["version"]}\"")
     }
 
@@ -47,6 +48,11 @@ android {
             null
         }
 
+    // The pinned signing certificate (64 hex digits, colons and case ignored); the release workflow passes the repository
+    // variable ANDROID_CERT_SHA256 here. Anything else counts as not set.
+    val releaseCertSha256 = (System.getenv("LEDGERLINE_CERT_SHA256") ?: "")
+        .replace(":", "").trim().lowercase().takeIf { Regex("[0-9a-f]{64}").matches(it) } ?: ""
+
     buildTypes {
         debug {
             // Its own id and name, so it sits next to the release build on the same phone (ADR 0043, slice 5).
@@ -54,9 +60,19 @@ android {
             versionNameSuffix = "-debug"
             // A debug build can be pointed at a scratch server over plain HTTP; a release build never can.
             buildConfigField("boolean", "ALLOW_CLEARTEXT", "true")
+            // The update check reads a fake release list on the scratch machine (adb reverse tcp:3103 tcp:3103), and an
+            // update must be signed with this build's own key; the real GitHub is never contacted (ADR 0043).
+            buildConfigField("String", "UPDATE_API_BASE", "\"http://localhost:3103\"")
+            buildConfigField("String", "UPDATE_DOWNLOAD_BASE", "\"http://localhost:3103\"")
+            buildConfigField("String", "UPDATE_CERT_SHA256", "\"own\"")
         }
         release {
             buildConfigField("boolean", "ALLOW_CLEARTEXT", "false")
+            // The update check (ADR 0043): the repository's public releases, and the certificate an update must be signed
+            // with. Without LEDGERLINE_CERT_SHA256 (pull requests, a developer's build) the check is switched off.
+            buildConfigField("String", "UPDATE_API_BASE", "\"https://api.github.com\"")
+            buildConfigField("String", "UPDATE_DOWNLOAD_BASE", "\"https://github.com\"")
+            buildConfigField("String", "UPDATE_CERT_SHA256", "\"$releaseCertSha256\"")
             isMinifyEnabled = true
             isShrinkResources = true
             signingConfig = releaseSigning

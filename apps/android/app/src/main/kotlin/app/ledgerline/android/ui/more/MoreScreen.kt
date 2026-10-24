@@ -21,7 +21,7 @@ class MoreActions(
 
 /** More as on the web: a header and one navigation card each for Clients, Loans and Settings (ADR 0045). */
 @Composable
-fun MoreContent(actions: MoreActions, bottomSpace: Dp, modifier: Modifier = Modifier) {
+fun MoreContent(actions: MoreActions, bottomSpace: Dp, modifier: Modifier = Modifier, notice: (@Composable () -> Unit)? = null) {
     LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         item {
             PageHeader(
@@ -30,6 +30,7 @@ fun MoreContent(actions: MoreActions, bottomSpace: Dp, modifier: Modifier = Modi
                 subtitle = stringResource(R.string.more_subtitle),
             )
         }
+        if (notice != null) item { notice() }
         item { NavCard(R.drawable.ic_wallet, stringResource(R.string.more_clients_title), stringResource(R.string.more_clients_detail), actions.openClients) }
         item { NavCard(R.drawable.ic_hand_coins, stringResource(R.string.more_loans_title), stringResource(R.string.more_loans_detail), actions.openLoans) }
         item { NavCard(R.drawable.ic_settings, stringResource(R.string.more_settings_title), stringResource(R.string.more_settings_detail), actions.openSettings) }

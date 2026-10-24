@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsNotSelected
@@ -39,6 +40,7 @@ class SettingsContentTest {
         centsFirst = true,
         allowScreenshots = false,
         filterKeep = FilterKeep(),
+        updates = UpdatesInfo(auto = true, newVersion = null),
         unsent = 0,
         attention = 0,
         canLock = true,
@@ -50,6 +52,8 @@ class SettingsContentTest {
         val cents = mutableListOf<Boolean>()
         val hide = mutableListOf<Boolean>()
         val keeps = mutableListOf<FilterKeep>()
+        val auto = mutableListOf<Boolean>()
+        var updatesOpened = 0
         var back = 0
 
         fun actions() = SettingsActions(
@@ -59,6 +63,8 @@ class SettingsContentTest {
             setCentsFirst = { cents += it },
             setAllowScreenshots = {},
             setFilterKeep = { keeps += it },
+            setAutoUpdate = { auto += it },
+            openUpdates = { updatesOpened++ },
             openAttention = {},
             refreshEverything = {},
             lock = {},
@@ -87,6 +93,32 @@ class SettingsContentTest {
         compose.onNodeWithText("Hide amounts").performClick()
         assertEquals(listOf(false), taps.cents)
         assertEquals(listOf(true), taps.hide)
+    }
+
+    @Test
+    fun theUpdatesCardHasTheAutomaticSwitchAndTheCheckButton() {
+        val taps = Taps()
+        compose.setContent { SettingsContent(state, taps.actions(), 0.dp, Modifier.requiredHeight(3000.dp)) }
+        compose.onNodeWithText("Check for updates automatically").assertIsOn()
+        compose.onNodeWithText("Check for updates automatically").performClick()
+        assertEquals(listOf(false), taps.auto)
+        compose.onNodeWithText("Check for updates", useUnmergedTree = true).performClick()
+        assertEquals(1, taps.updatesOpened)
+    }
+
+    @Test
+    fun theUpdatesCardNamesANewerVersionAndTheSwitchShowsOff() {
+        val taps = Taps()
+        compose.setContent { SettingsContent(state.copy(updates = UpdatesInfo(auto = false, newVersion = "0.1.3")), taps.actions(), 0.dp, Modifier.requiredHeight(3000.dp)) }
+        compose.onNodeWithText("Version 0.1.3 is available").assertExists()
+        compose.onNodeWithText("Check for updates automatically").assertIsOff()
+    }
+
+    @Test
+    fun aBuildThatCannotCheckHasNoUpdatesCard() {
+        val taps = Taps()
+        compose.setContent { SettingsContent(state.copy(updates = null), taps.actions(), 0.dp, Modifier.requiredHeight(3000.dp)) }
+        compose.onNodeWithText("Check for updates automatically").assertDoesNotExist()
     }
 
     @Test

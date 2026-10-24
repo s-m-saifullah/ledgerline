@@ -33,9 +33,12 @@ internal fun HomeContent(
     onRetry: () -> Unit,
     accounts: Mirrored<AccountBalance>,
     onOpenPending: () -> Unit,
+    modifier: Modifier = Modifier,
+    banner: (@Composable () -> Unit)? = null,
 ) {
     val shownMonth = (month as? Online.Ready)?.value?.month ?: YearMonth.now().toString()
-    LazyColumn(contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+        if (banner != null) item { banner() }
         item {
             PageHeader(stringResource(R.string.home_title), eyebrow = stringResource(R.string.eyebrow_personal), subtitle = monthLabel(shownMonth))
             header()
