@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.overlay.ShownLine
 import app.ledgerline.android.ui.design.AmountRow
@@ -42,17 +43,34 @@ internal fun TransactionsContent(
     entries: Mirrored<ShownLine>,
     canShowMore: Boolean,
     onShowMore: () -> Unit,
+    filters: EntryFilters,
+    options: FilterOptions,
+    filtersOpen: Boolean,
+    onToggleFilters: () -> Unit,
+    onFilters: (EntryFilters) -> Unit,
     onOpen: (EntryLine) -> Unit,
 ) {
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomSpace)) {
         item {
             PageHeader(stringResource(R.string.entries_title), eyebrow = stringResource(R.string.eyebrow_ledger))
             header()
+            EntryFiltersPanel(filters, options, filtersOpen, onToggleFilters, onFilters)
         }
         when (entries) {
             Mirrored.Waiting -> item { LedgerCard { Muted(stringResource(R.string.mirror_waiting)) } }
             is Mirrored.Ready -> {
-                if (entries.items.isEmpty()) item { LedgerCard { Muted(stringResource(R.string.entries_empty)) } }
+                if (entries.items.isEmpty() && !filters.rangeInvalid) {
+                    item {
+                        LedgerCard {
+                            if (filters.applied) {
+                                Text(stringResource(R.string.entries_no_match_title), style = MaterialTheme.typography.titleMedium)
+                                Muted(stringResource(R.string.entries_no_match))
+                            } else {
+                                Muted(stringResource(R.string.entries_empty))
+                            }
+                        }
+                    }
+                }
                 // The list is newest first, so a day's entries are next to each other.
                 val days = entries.items.groupBy { it.line.date }
                 days.forEach { (date, lines) ->

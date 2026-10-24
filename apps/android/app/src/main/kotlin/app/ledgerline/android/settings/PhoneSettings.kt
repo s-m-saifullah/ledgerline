@@ -46,6 +46,9 @@ interface PhoneSettings {
     /** Typed digits fill in from the right of the amount box (1, 2, 3 reads 1.23). Off by default, as on the web. */
     val centsFirst: StateFlow<Boolean>
 
+    /** How long the Transactions filters stay. Until the app closes by default. */
+    val filterKeep: StateFlow<FilterKeep>
+
     fun setPrivacyMode(on: Boolean)
 
     fun setAllowScreenshots(allow: Boolean)
@@ -53,6 +56,8 @@ interface PhoneSettings {
     fun setTheme(choice: ThemeChoice)
 
     fun setCentsFirst(on: Boolean)
+
+    fun setFilterKeep(keep: FilterKeep)
 }
 
 @Singleton
@@ -64,11 +69,19 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
         ThemeChoice.entries.find { it.name == prefs.getString(Theme, null) } ?: ThemeChoice.System,
     )
     private val _centsFirst = MutableStateFlow(prefs.getBoolean(CentsFirst, false))
+    private val _filterKeep = MutableStateFlow(
+        FilterKeep(
+            mode = KeepMode.entries.find { it.name == prefs.getString(KeepModeKey, null) } ?: KeepMode.UntilAppCloses,
+            amount = prefs.getInt(KeepAmountKey, 1).takeIf { it in 1..MaxKeepAmount } ?: 1,
+            unit = KeepUnit.entries.find { it.name == prefs.getString(KeepUnitKey, null) } ?: KeepUnit.Hours,
+        ),
+    )
 
     override val privacyMode: StateFlow<Boolean> = _privacyMode.asStateFlow()
     override val allowScreenshots: StateFlow<Boolean> = _allowScreenshots.asStateFlow()
     override val theme: StateFlow<ThemeChoice> = _theme.asStateFlow()
     override val centsFirst: StateFlow<Boolean> = _centsFirst.asStateFlow()
+    override val filterKeep: StateFlow<FilterKeep> = _filterKeep.asStateFlow()
 
     override fun setPrivacyMode(on: Boolean) {
         prefs.edit(commit = true) { putBoolean(PrivacyMode, on) }
@@ -90,11 +103,23 @@ class PrefsPhoneSettings @Inject constructor(@ApplicationContext context: Contex
         _centsFirst.value = on
     }
 
+    override fun setFilterKeep(keep: FilterKeep) {
+        prefs.edit(commit = true) {
+            putString(KeepModeKey, keep.mode.name)
+            putInt(KeepAmountKey, keep.amount)
+            putString(KeepUnitKey, keep.unit.name)
+        }
+        _filterKeep.value = keep
+    }
+
     private companion object {
         const val PrivacyMode = "privacyMode"
         const val AllowScreenshots = "allowScreenshots"
         const val Theme = "theme"
         const val CentsFirst = "centsFirst"
+        const val KeepModeKey = "filterKeepMode"
+        const val KeepAmountKey = "filterKeepAmount"
+        const val KeepUnitKey = "filterKeepUnit"
     }
 }
 

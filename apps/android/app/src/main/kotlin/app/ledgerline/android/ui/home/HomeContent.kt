@@ -32,6 +32,7 @@ internal fun HomeContent(
     month: Online<HomeSummary>,
     onRetry: () -> Unit,
     accounts: Mirrored<AccountBalance>,
+    onOpenPending: () -> Unit,
 ) {
     val shownMonth = (month as? Online.Ready)?.value?.month ?: YearMonth.now().toString()
     LazyColumn(contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
@@ -39,7 +40,7 @@ internal fun HomeContent(
             PageHeader(stringResource(R.string.home_title), eyebrow = stringResource(R.string.eyebrow_personal), subtitle = monthLabel(shownMonth))
             header()
         }
-        item { MonthCard(month, onRetry) }
+        item { MonthCard(month, onRetry, onOpenPending) }
         when (accounts) {
             Mirrored.Waiting -> item { LedgerCard { Muted(stringResource(R.string.mirror_waiting)) } }
             is Mirrored.Ready -> {

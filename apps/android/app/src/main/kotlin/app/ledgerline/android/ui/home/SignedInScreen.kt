@@ -38,7 +38,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import app.ledgerline.android.R
+import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.ui.budgets.BudgetsContent
 import app.ledgerline.android.ui.budgets.BudgetsViewModel
@@ -82,12 +85,16 @@ fun SignedInScreen(
     insights: InsightsViewModel = hiltViewModel(),
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
+    // A time chosen for the filters may have run out while the app was in the background.
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.expireFilters() }
     var showAttention by rememberSaveable { mutableStateOf(false) }
     var editing by rememberSaveable { mutableStateOf<String?>(null) }
     // What is open on Insights (a category's subcategories, a chart's figures); a list, so it can be saved.
     var openInsights by rememberSaveable { mutableStateOf(listOf<String>()) }
     // What More has open: "clients", "loans", "settings" or nothing (More itself).
     var moreOpen by rememberSaveable { mutableStateOf<String?>(null) }
+    // Whether Transactions' "Filter entries" section is open.
+    var filtersOpen by rememberSaveable { mutableStateOf(false) }
     val line by viewModel.syncLine.collectAsState()
     val unsent by viewModel.unsent.collectAsState()
     val attention by viewModel.attention.collectAsState()
@@ -107,7 +114,18 @@ fun SignedInScreen(
     }
     val status = SyncStatus(line, unsent, attention.size)
     val header: @Composable () -> Unit = { SyncHeader(status, onRetry = viewModel::refresh, onOpenAttention = { showAttention = true }) }
-    SignedInFrame(tab, onSelect = { if (it == Tab.More) moreOpen = null; tab = it }, onAdd = { edit(EditorTarget.New()) }) { inside ->
+    // Home's pending note and Insights' category rows open Transactions already narrowed (the filters live in the view model).
+    val openEntries = { filters: EntryFilters ->
+        viewModel.setFilters(filters)
+        tab = Tab.Transactions
+    }
+    SignedInFrame(tab, onSelect = {
+        if (it == Tab.More) moreOpen = null
+        // Filters chosen to last until the owner leaves Transactions end here; a chosen time is checked on arriving.
+        if (tab == Tab.Transactions && it != Tab.Transactions) viewModel.leftTransactions()
+        if (it == Tab.Transactions) viewModel.expireFilters()
+        tab = it
+    }, onAdd = { edit(EditorTarget.New()) }) { inside ->
         when (tab) {
             Tab.Home, Tab.Transactions -> PullToRefreshBox(
                 isRefreshing = line.running,
@@ -120,11 +138,16 @@ fun SignedInScreen(
                 if (tab == Tab.Home) {
                     val month by home.month.collectAsState()
                     val accounts by viewModel.accounts.collectAsState()
-                    HomeContent(header, month, home::retry, accounts)
+                    HomeContent(header, month, home::retry, accounts, onOpenPending = { openEntries(PendingEntries) })
                 } else {
                     val entries by viewModel.entries.collectAsState()
                     val canShowMore by viewModel.canShowMore.collectAsState()
-                    TransactionsContent(header, entries, canShowMore, viewModel::showMoreEntries) { line: EntryLine ->
+                    val filters by viewModel.filters.collectAsState()
+                    val options by viewModel.filterOptions.collectAsState()
+                    TransactionsContent(
+                        header, entries, canShowMore, viewModel::showMoreEntries,
+                        filters, options, filtersOpen, { filtersOpen = !filtersOpen }, viewModel::setFilters,
+                    ) { line: EntryLine ->
                         edit(
                             if (line.kind == "transfer" && line.transferId != null) {
                                 EditorTarget.Transfer(line.transferId)
@@ -163,6 +186,7 @@ fun SignedInScreen(
                     state,
                     open = openInsights.toSet(),
                     onToggle = { key -> openInsights = if (key in openInsights) openInsights - key else openInsights + key },
+                    onOpenCategory = { categoryId -> openEntries(categoryEntries(categoryId, month)) },
                     onPrevious = insights::previous,
                     onNext = insights::next,
                     onRetry = insights::retry,

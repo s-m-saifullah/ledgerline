@@ -35,6 +35,8 @@ data class EntryLine(
     val tagNames: String?,
     val transferId: String?,
     val createdAt: String,
+    /** Read for the search (the list does not show it). */
+    val note: String? = null,
 )
 
 data class TagLink(val transactionId: String, val tagId: String)
@@ -54,7 +56,7 @@ private const val AccountBalancesSql = """
     ORDER BY a.archivedAt IS NOT NULL, a.name COLLATE NOCASE, a.id
 """
 
-private const val EntryLinesSql = """
+private const val SelectEntryLines = """
     SELECT t.id, t.date, t.time, t.kind, t.isSplit, t.status, t.amount, t.currency, t.payee,
         a.name AS accountName, c.name AS categoryName,
         (
@@ -65,14 +67,44 @@ private const val EntryLinesSql = """
                 ORDER BY g.name COLLATE NOCASE
             )
         ) AS tagNames,
-        t.transferId, t.createdAt
+        t.transferId, t.createdAt, t.note
     FROM transactions t
     LEFT JOIN accounts a ON a.ledgerId = t.ledgerId AND a.id = t.accountId
     LEFT JOIN categories c ON c.ledgerId = t.ledgerId AND c.id = t.categoryId
     WHERE t.ledgerId = :ledgerId AND t.deletedAt IS NULL
+"""
+
+private const val NewestFirstLimited = """
     ORDER BY t.date DESC, t.time IS NULL, t.time DESC, t.createdAt DESC, t.id DESC
     LIMIT :limit
 """
+
+private const val EntryLinesSql = SelectEntryLines + NewestFirstLimited
+
+/**
+ * The same list narrowed by the Transactions filters, with the meanings of the server's list: an account, a category
+ * (the entry or one of its split lines is in it, or in a subcategory when asked), a tag, an inclusive date range, a
+ * kind and a status. A null parameter means "any". The search text is not here: SQLite's `lower` changes only A to Z, so
+ * the text is matched in code ([EntryFilters.matchesText]), which ignores case for every letter.
+ */
+private const val FilteredEntryLinesSql = SelectEntryLines + """
+    AND (:accountId IS NULL OR t.accountId = :accountId)
+    AND (:categoryId IS NULL
+        OR t.categoryId IN (SELECT f.id FROM categories f WHERE f.ledgerId = t.ledgerId AND (f.id = :categoryId OR (:subcategories AND f.parentId = :categoryId)))
+        OR EXISTS (
+            SELECT 1 FROM transaction_splits s
+            WHERE s.ledgerId = t.ledgerId AND s.transactionId = t.id AND s.deletedAt IS NULL
+                AND s.categoryId IN (SELECT f.id FROM categories f WHERE f.ledgerId = t.ledgerId AND (f.id = :categoryId OR (:subcategories AND f.parentId = :categoryId)))
+        ))
+    AND (:tagId IS NULL OR EXISTS (
+        SELECT 1 FROM transaction_tags l
+        WHERE l.ledgerId = t.ledgerId AND l.transactionId = t.id AND l.tagId = :tagId AND l.deletedAt IS NULL
+    ))
+    AND (:from IS NULL OR t.date >= :from)
+    AND (:to IS NULL OR t.date <= :to)
+    AND (:kind IS NULL OR t.kind = :kind)
+    AND (:status IS NULL OR t.status = :status)
+""" + NewestFirstLimited
 
 /** What the screens read. Only live rows (no `deletedAt`) are ever shown. */
 @Dao
@@ -91,11 +123,45 @@ interface MirrorReads {
     @Query(AccountBalancesSql)
     suspend fun accountBalancesNow(ledgerId: String, includeHidden: Boolean): List<AccountBalance>
 
+    @Query("SELECT * FROM categories WHERE ledgerId = :ledgerId AND deletedAt IS NULL")
+    fun liveCategories(ledgerId: String): Flow<List<CategoryRow>>
+
+    @Query("SELECT * FROM tags WHERE ledgerId = :ledgerId AND deletedAt IS NULL")
+    fun liveTags(ledgerId: String): Flow<List<TagRow>>
+
     @Query(EntryLinesSql)
     fun entryLines(ledgerId: String, limit: Int): Flow<List<EntryLine>>
 
     @Query(EntryLinesSql)
     suspend fun entryLinesNow(ledgerId: String, limit: Int): List<EntryLine>
+
+    @Query(FilteredEntryLinesSql)
+    fun filteredEntryLines(
+        ledgerId: String,
+        limit: Int,
+        accountId: String?,
+        categoryId: String?,
+        subcategories: Boolean,
+        tagId: String?,
+        from: String?,
+        to: String?,
+        kind: String?,
+        status: String?,
+    ): Flow<List<EntryLine>>
+
+    @Query(FilteredEntryLinesSql)
+    suspend fun filteredEntryLinesNow(
+        ledgerId: String,
+        limit: Int,
+        accountId: String?,
+        categoryId: String?,
+        subcategories: Boolean,
+        tagId: String?,
+        from: String?,
+        to: String?,
+        kind: String?,
+        status: String?,
+    ): List<EntryLine>
 
     @Query("SELECT * FROM transactions WHERE ledgerId = :ledgerId AND deletedAt IS NULL AND id IN (:ids)")
     suspend fun liveByIds(ledgerId: String, ids: List<String>): List<TransactionRow>
@@ -115,3 +181,10 @@ interface MirrorReads {
     )
     suspend fun liveTagLinks(ledgerId: String, ids: List<String>): List<TagLink>
 }
+
+/** The list narrowed by [filters] (a flow that re-emits when the mirror changes). */
+fun MirrorReads.entryLines(ledgerId: String, limit: Int, filters: EntryFilters): Flow<List<EntryLine>> =
+    with(filters) { filteredEntryLines(ledgerId, limit, accountId, categoryId, includeSubcategories, tagId, from, to, kind, status) }
+
+suspend fun MirrorReads.entryLinesNow(ledgerId: String, limit: Int, filters: EntryFilters): List<EntryLine> =
+    with(filters) { filteredEntryLinesNow(ledgerId, limit, accountId, categoryId, includeSubcategories, tagId, from, to, kind, status) }

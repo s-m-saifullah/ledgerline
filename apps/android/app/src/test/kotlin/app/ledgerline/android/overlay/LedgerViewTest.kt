@@ -1,5 +1,6 @@
 package app.ledgerline.android.overlay
 
+import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.MirrorDatabase
 import app.ledgerline.android.mirror.MirrorStore
 import app.ledgerline.android.mirror.Stamp
@@ -132,5 +133,53 @@ class LedgerViewTest {
         val grocer = view.entries(ledger, 10).first().single { it.line.id == id(10) }
         assertEquals("Theirs", grocer.line.payee)
         assertFalse(grocer.unsent)
+    }
+
+    private suspend fun payees(filters: EntryFilters, limit: Int = 10) = view.entries(ledger, limit, filters).first().map { it.line.payee }
+
+    @Test
+    fun anUnsentEntryShowsOnlyUnderTheFiltersItMatches() = runBlocking {
+        val created = outbox.createEntry(ledger, newEntry(2, -250, "Cafe latte"))
+        outbox.createEntry(ledger, newEntry(2, -999, "Waiting", date = "2026-10-18", status = "pending"))
+        assertEquals(listOf("Cafe latte"), payees(EntryFilters(text = "LATTE")))
+        assertEquals(listOf("Cafe latte", "Waiting"), payees(EntryFilters(accountId = id(2))))
+        assertEquals(listOf("Cafe latte", "Grocer", "Waiting"), payees(EntryFilters(tagId = id(30))))
+        assertEquals(listOf("Waiting"), payees(EntryFilters(status = "pending")))
+        assertEquals(listOf("Cafe latte", "Grocer", "Cinema"), payees(EntryFilters(status = "cleared")))
+        assertEquals(emptyList<String?>(), payees(EntryFilters(text = "zzz")))
+        // And it is marked as not sent.
+        assertTrue(view.entries(ledger, 10, EntryFilters(text = "latte")).first().single { it.line.id == created }.unsent)
+    }
+
+    @Test
+    fun anEditThatMovesAnEntryOutOfOrIntoAFilterShowsAtOnce() = runBlocking {
+        outbox.updateEntry(ledger, id(10), json("payee" to "Baker"))
+        // The mirror still says Grocer; the unsent edit is what counts.
+        assertEquals(emptyList<String?>(), payees(EntryFilters(text = "grocer")))
+        assertEquals(listOf("Baker"), payees(EntryFilters(text = "baker")))
+        assertTrue(view.entries(ledger, 10, EntryFilters(text = "baker")).first().single().unsent)
+    }
+
+    @Test
+    fun anEditToAnotherAccountMovesTheEntryBetweenAccountFilters() = runBlocking {
+        outbox.updateEntry(ledger, id(10), json("accountId" to id(2)))
+        assertEquals(listOf("Cinema"), payees(EntryFilters(accountId = id(1))))
+        assertEquals(listOf("Grocer"), payees(EntryFilters(accountId = id(2))))
+    }
+
+    @Test
+    fun anUnsentDeleteRemovesTheEntryFromAFilteredList() = runBlocking {
+        outbox.deleteEntry(ledger, id(11))
+        assertEquals(emptyList<String?>(), payees(EntryFilters(text = "cinema")))
+        assertEquals(listOf("Grocer"), payees(EntryFilters(accountId = id(1))))
+    }
+
+    @Test
+    fun aFilteredListKeepsItsLimitWithUnsentEntriesMixedIn() = runBlocking {
+        outbox.createEntry(ledger, newEntry(1, -1, "Newest", date = "2026-10-25"))
+        outbox.deleteEntry(ledger, id(10))
+        val account = EntryFilters(accountId = id(1))
+        assertEquals(listOf("Newest", "Cinema"), payees(account, limit = 2))
+        assertEquals(listOf("Newest"), payees(account, limit = 1))
     }
 }

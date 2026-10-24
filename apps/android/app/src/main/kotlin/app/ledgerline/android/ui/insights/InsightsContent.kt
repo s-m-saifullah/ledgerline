@@ -62,6 +62,7 @@ internal fun InsightsContent(
     state: Online<Insights>,
     open: Set<String>,
     onToggle: (String) -> Unit,
+    onOpenCategory: (categoryId: String) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onRetry: () -> Unit,
@@ -79,12 +80,12 @@ internal fun InsightsContent(
             Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.insights_loading)) } }
             Online.Offline -> item { RetryNote(stringResource(R.string.insights_offline), onRetry) }
             Online.Failed -> item { RetryNote(stringResource(R.string.insights_failed), onRetry) }
-            is Online.Ready -> ready(state.value, open, onToggle)
+            is Online.Ready -> ready(state.value, open, onToggle, onOpenCategory)
         }
     }
 }
 
-private fun LazyListScope.ready(insights: Insights, open: Set<String>, onToggle: (String) -> Unit) {
+private fun LazyListScope.ready(insights: Insights, open: Set<String>, onToggle: (String) -> Unit, onOpenCategory: (String) -> Unit) {
     val (spending, flow, worth) = insights
     val month = spending.month
     item { Summary(insights) }
@@ -96,7 +97,7 @@ private fun LazyListScope.ready(insights: Insights, open: Set<String>, onToggle:
         item(key = line.categoryId) {
             val name = named(line.name, line.archived)
             if (line.children.isEmpty()) {
-                SpendingCard(name, line.amount, spending.total.amount)
+                SpendingCard(name, line.amount, spending.total.amount, onOpen = { onOpenCategory(line.categoryId) })
             } else {
                 val opened = line.categoryId in open
                 SpendingCard(
@@ -109,10 +110,11 @@ private fun LazyListScope.ready(insights: Insights, open: Set<String>, onToggle:
                 )
                 if (opened) {
                     Column(modifier = Modifier.padding(start = 16.dp, top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        line.children.forEach { SpendingCard(named(it.name, it.archived), it.amount, spending.total.amount) }
+                        line.children.forEach { child -> SpendingCard(named(child.name, child.archived), child.amount, spending.total.amount, onOpen = { onOpenCategory(child.categoryId) }) }
                         val direct = line.amount.amount - line.children.sumOf { it.amount.amount }
                         if (direct > 0) {
-                            SpendingCard(stringResource(R.string.insights_directly_in, line.name), Money(direct, line.amount.currency), spending.total.amount)
+                            // The main category's own entries only, as the web's "directly in" line.
+                            SpendingCard(stringResource(R.string.insights_directly_in, line.name), Money(direct, line.amount.currency), spending.total.amount, onOpen = { onOpenCategory(line.categoryId) })
                         }
                     }
                 }
@@ -164,6 +166,8 @@ internal fun SpendingCard(
     detail: String? = null,
     opened: Boolean = false,
     onToggle: (() -> Unit)? = null,
+    /** A card that has no subcategories opens that category's entries for the month. */
+    onOpen: (() -> Unit)? = null,
 ) {
     val shown = money(amount.amount, amount.currency)
     val share = stringResource(R.string.insights_share, sharePercent(amount.amount, total))
@@ -172,9 +176,10 @@ internal fun SpendingCard(
     LedgerCard(
         padding = PaddingValues(16.dp),
         modifier = Modifier
-            .let { if (onToggle != null) it.clickable(onClick = onToggle) else it }
+            .let { if (onToggle != null) it.clickable(onClick = onToggle) else if (onOpen != null) it.clickable(onClick = onOpen) else it }
             .clearAndSetSemantics {
                 contentDescription = listOf(name, shown.spoken, words).joinToString(", ")
+                if (onOpen != null) role = Role.Button
                 if (state != null) {
                     role = Role.Button
                     stateDescription = state
