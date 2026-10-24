@@ -115,6 +115,16 @@ data class EditorState(
     val session: String = "",
 )
 
+/** The inline "New category" box under the Category field (the web's quick add). Null in the view model while it is closed. */
+data class NewCategory(
+    val name: String = "",
+    val creating: Boolean = false,
+    val error: app.ledgerline.android.ui.categories.CategoryError? = null,
+) {
+    /** The name the API takes: something in it, and no more than 100 characters. */
+    val valid: Boolean get() = name.trim().let { it.isNotEmpty() && it.length <= app.ledgerline.android.ui.categories.MaxCategoryName }
+}
+
 /** The account and categories used last, so a new entry is mostly filled in already. */
 interface FormMemory {
     fun account(): String?

@@ -33,6 +33,15 @@ sealed interface CategoryError {
     data class Rejected(val detail: String?) : CategoryError
 }
 
+/** The error a write ended with, or null when it was done. */
+internal fun Written<*>.toCategoryError(): CategoryError? = when (this) {
+    is Written.Done -> null
+    Written.Offline -> CategoryError.Offline
+    Written.Forbidden -> CategoryError.Forbidden
+    Written.Failed -> CategoryError.Failed
+    is Written.Rejected -> CategoryError.Rejected(detail)
+}
+
 /** What just worked, said once under the toolbar. */
 enum class CategoryNotice { Added, Updated, Archived, Unarchived }
 
@@ -137,15 +146,11 @@ class CategoriesViewModel @Inject constructor(
         viewModelScope.launch {
             val result = call()
             _view.update { v ->
-                when (result) {
-                    is Written.Done -> {
-                        keys.clear()
-                        v.copy(saving = false, notice = done, form = if (closeForm) null else v.form)
-                    }
-                    Written.Offline -> v.copy(saving = false, error = CategoryError.Offline)
-                    Written.Forbidden -> v.copy(saving = false, error = CategoryError.Forbidden)
-                    Written.Failed -> v.copy(saving = false, error = CategoryError.Failed)
-                    is Written.Rejected -> v.copy(saving = false, error = CategoryError.Rejected(result.detail))
+                if (result is Written.Done) {
+                    keys.clear()
+                    v.copy(saving = false, notice = done, form = if (closeForm) null else v.form)
+                } else {
+                    v.copy(saving = false, error = result.toCategoryError())
                 }
             }
             // A version that moved on (an edit on the web, say) is answered with 409; bring this phone up to date.

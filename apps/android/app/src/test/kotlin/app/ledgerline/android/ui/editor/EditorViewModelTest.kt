@@ -71,6 +71,7 @@ class EditorViewModelTest {
     private lateinit var database: MirrorDatabase
     private lateinit var outbox: OutboxStore
     private lateinit var sync: SyncCoordinator
+    private lateinit var writes: app.ledgerline.android.online.CategoryWrites
     private val memory = FakeFormMemory()
     private val ledger = "ledger-a"
     private val clock = FakeWallClock(Instant.parse("2026-10-22T15:00:00Z"))
@@ -84,6 +85,10 @@ class EditorViewModelTest {
         database = memoryDatabase()
         outbox = outboxFor(database, clock)
         val session = SessionManager(FakeTokenProtector(), FakeClock())
+        writes = app.ledgerline.android.online.CategoryWrites(
+            app.ledgerline.android.online.OnlineWriter(app.ledgerline.android.testing.FakeServerAddressStore(null), app.ledgerline.android.session.ClientsProvider(session), session),
+            MirrorStore(database),
+        )
         val lock = SyncLock()
         val engine = SyncEngine(HoldableSource { page() }, MirrorStore(database), lock)
         val choice = FakeLedgerChoice(ledger)
@@ -120,7 +125,7 @@ class EditorViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun editor() = EditorViewModel(database.reads(), database.dao(), LedgerView(database.reads(), database.dao(), database.outbox()), outbox, sync, memory, clock)
+    private fun editor() = EditorViewModel(database.reads(), database.dao(), LedgerView(database.reads(), database.dao(), database.outbox()), outbox, sync, memory, clock, writes)
 
     private var sessions = 0
 

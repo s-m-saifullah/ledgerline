@@ -6,7 +6,12 @@ import app.ledgerline.android.mirror.AccountRow
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.MirrorDao
 import app.ledgerline.android.mirror.MirrorReads
+import app.ledgerline.android.online.CategoryWrites
+import app.ledgerline.android.online.Written
 import app.ledgerline.android.outbox.OutboxRow
+import app.ledgerline.android.outbox.Uuid7
+import app.ledgerline.android.ui.categories.toCategoryError
+import app.ledgerline.api.CreateCategory
 import app.ledgerline.android.outbox.OutboxStore
 import app.ledgerline.android.outbox.WallClock
 import app.ledgerline.android.overlay.LedgerView
@@ -37,8 +42,14 @@ class EditorViewModel @Inject constructor(
     private val sync: SyncCoordinator,
     private val memory: FormMemory,
     private val clock: WallClock,
+    private val categoryWrites: CategoryWrites,
 ) : ViewModel() {
     private val _state = MutableStateFlow<EditorState?>(null)
+    private val _newCategory = MutableStateFlow<NewCategory?>(null)
+    private val categoryKeys = mutableMapOf<String, String>()
+
+    /** The inline "New category" box: null while closed. */
+    val newCategory: StateFlow<NewCategory?> = _newCategory.asStateFlow()
 
     /** Null while loading. */
     val state: StateFlow<EditorState?> = _state.asStateFlow()
@@ -63,6 +74,8 @@ class EditorViewModel @Inject constructor(
         if (session == this.session) return
         this.session = session
         loading?.cancel()
+        _newCategory.value = null
+        categoryKeys.clear()
         _state.value = null
         current = null
         currentTo = null
@@ -151,6 +164,48 @@ class EditorViewModel @Inject constructor(
         }
         if (form.accountId != before.accountId && form.toAccountId == form.accountId) form = form.copy(toAccountId = null)
         _state.value = stateFor(form, now.isNew, now.tags, now.readOnly, now.canDelete).copy(errors = emptySet(), session = now.session)
+    }
+
+    /** Opens or closes the inline "New category" box (an expense or an income; a transfer has no category). */
+    fun toggleNewCategory() {
+        val now = _state.value ?: return
+        if (now.readOnly != null || now.form.mode == EntryMode.Transfer || _newCategory.value?.creating == true) return
+        _newCategory.value = if (_newCategory.value == null) NewCategory() else null
+        categoryKeys.clear()
+    }
+
+    fun setNewCategoryName(name: String) {
+        val box = _newCategory.value ?: return
+        if (box.creating) return
+        _newCategory.value = box.copy(name = name, error = null)
+    }
+
+    /**
+     * Creates the category the web's way: top-level, of the entry's kind, online as one idempotent call. A retry of the same
+     * name keeps its key, so a lost reply and a second tap cannot make two (the keys are forgotten when the box is opened or closed); on success the category is in the picker (the call
+     * wrote it to the mirror) and chosen for the entry.
+     */
+    fun createCategory() {
+        val now = _state.value ?: return
+        val box = _newCategory.value ?: return
+        if (box.creating || !box.valid || now.readOnly != null || now.saving || now.form.mode == EntryMode.Transfer) return
+        val kind = now.form.mode.kind()
+        val name = box.name.trim()
+        val key = categoryKeys.getOrPut("$kind|$name") { "cat-${Uuid7.next()}" }
+        val opening = session
+        _newCategory.value = box.copy(creating = true, error = null)
+        viewModelScope.launch {
+            val result = categoryWrites.create(ledgerId, key, CreateCategory(name = name, kind = kind))
+            // The owner may have closed the editor meanwhile; the category is saved either way, but this opening is gone.
+            if (opening != session) return@launch
+            if (result is Written.Done) {
+                categories = categories.filter { it.id != result.value.id } + result.value
+                _newCategory.value = null
+                update { it.copy(categoryId = result.value.id) }
+            } else {
+                _newCategory.value = _newCategory.value?.copy(creating = false, error = result.toCategoryError())
+            }
+        }
     }
 
     fun save() {

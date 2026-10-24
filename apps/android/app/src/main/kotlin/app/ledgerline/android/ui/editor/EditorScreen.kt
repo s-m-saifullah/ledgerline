@@ -188,6 +188,8 @@ private fun EditorForm(state: EditorState, viewModel: EditorViewModel) {
                 placeholder = stringResource(R.string.editor_choose_category),
                 error = if (FormError.CategoryMissing in state.errors) stringResource(R.string.editor_error_category) else null,
             )
+            val newCategory by viewModel.newCategory.collectAsState()
+            NewCategoryBox(newCategory, viewModel::toggleNewCategory, viewModel::setNewCategoryName, viewModel::createCategory)
         }
         OutlinedButton(shape = MaterialTheme.shapes.small, border = BorderStroke(1.dp, LocalPalette.current.border), onClick = { pickingDate = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
             Text(stringResource(R.string.editor_date, if (form.date.isEmpty()) "" else formatEntryDate(form.date)))
