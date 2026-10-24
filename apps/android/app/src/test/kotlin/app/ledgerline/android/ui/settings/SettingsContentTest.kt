@@ -156,4 +156,31 @@ class SettingsContentTest {
         compose.onNodeWithText("Days").performClick()
         assertEquals(listOf(FilterKeep(KeepMode.ForAWhile, 2, KeepUnit.Days)), taps.keeps)
     }
+
+    @Test
+    fun theUnitIsSingularForOneAndPluralOtherwise() {
+        showKeeping(FilterKeep(KeepMode.ForAWhile, 1, KeepUnit.Hours), Taps())
+        compose.onNodeWithText("Hour").assertExists()
+        compose.onNodeWithText("Hours").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Unit").performClick()
+        // The list follows the number too.
+        compose.onNodeWithText("Minute").assertExists()
+        compose.onNodeWithText("Day").assertExists()
+        compose.onNodeWithText("Minutes").assertDoesNotExist()
+    }
+
+    @Test
+    fun typingANumberChangesTheUnitBetweenSingularAndPlural() {
+        showKeeping(FilterKeep(KeepMode.ForAWhile, 2, KeepUnit.Days), Taps())
+        compose.onNodeWithText("Days").assertExists()
+        compose.onNode(hasSetTextAction()).performTextReplacement("1")
+        compose.onNodeWithText("Day").assertExists()
+        compose.onNodeWithText("Days").assertDoesNotExist()
+        compose.onNode(hasSetTextAction()).performTextReplacement("10")
+        compose.onNodeWithText("Days").assertExists()
+        // Zero and an empty box are not a number: the unit stays plural.
+        compose.onNode(hasSetTextAction()).performTextReplacement("")
+        compose.onNodeWithText("Days").assertExists()
+    }
 }
+

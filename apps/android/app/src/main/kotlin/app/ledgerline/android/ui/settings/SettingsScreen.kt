@@ -266,7 +266,8 @@ private fun KeepFiltersCard(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
                 }
                 ChoiceField(
                     label = stringResource(R.string.filters_keep_unit),
-                    options = KeepUnit.entries.map { it.name to stringResource(it.label()) },
+                    // "1 Hour", "2 Hours": the unit follows the number in the box.
+                    options = KeepUnit.entries.map { it.name to pluralStringResource(it.label(), amount ?: keep.amount) },
                     selected = keep.unit.name,
                     onSelect = { name -> onChange(keep.copy(unit = KeepUnit.valueOf(name))) },
                     modifier = Modifier.weight(1f),
@@ -279,9 +280,9 @@ private fun KeepFiltersCard(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
 }
 
 private fun KeepUnit.label() = when (this) {
-    KeepUnit.Minutes -> R.string.filters_keep_minutes
-    KeepUnit.Hours -> R.string.filters_keep_hours
-    KeepUnit.Days -> R.string.filters_keep_days
+    KeepUnit.Minutes -> R.plurals.filters_keep_minutes
+    KeepUnit.Hours -> R.plurals.filters_keep_hours
+    KeepUnit.Days -> R.plurals.filters_keep_days
 }
 
 @Composable

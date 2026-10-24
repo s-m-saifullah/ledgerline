@@ -152,9 +152,18 @@
     <string name="filters_keep_for">For a time I choose</string>
     <string name="filters_keep_number">Number</string>
     <string name="filters_keep_unit">Unit</string>
-    <string name="filters_keep_minutes">Minutes</string>
-    <string name="filters_keep_hours">Hours</string>
-    <string name="filters_keep_days">Days</string>
+    <plurals name="filters_keep_minutes">
+        <item quantity="one">Minute</item>
+        <item quantity="other">Minutes</item>
+    </plurals>
+    <plurals name="filters_keep_hours">
+        <item quantity="one">Hour</item>
+        <item quantity="other">Hours</item>
+    </plurals>
+    <plurals name="filters_keep_days">
+        <item quantity="one">Day</item>
+        <item quantity="other">Days</item>
+    </plurals>
     <string name="filters_keep_invalid">Enter a whole number from 1 to 999.</string>
     <string name="filters_keep_detail">The search and filters on Transactions clear themselves when the time is up. A time you choose also keeps them after you close the app, counting from your last change.</string>
     <string name="cents_first">Type amounts from the cents</string>
