@@ -14,6 +14,45 @@ class ContractTest {
     private fun assertMatches(problems: List<String>) = assertEquals(emptyList<String>(), problems)
 
     @Test
+    fun budgetLimitRequestsMatch() {
+        assertMatches(
+            SchemaContract.differences(
+                SetBudget.serializer().descriptor,
+                SchemaContract.request("/api/v1/ledgers/{ledgerId}/budgets", "put"),
+                request = true,
+            ),
+        )
+        assertMatches(
+            SchemaContract.differences(
+                ExpectedVersion.serializer().descriptor,
+                SchemaContract.request("/api/v1/ledgers/{ledgerId}/budgets/{budgetId}", "delete"),
+                request = true,
+            ),
+        )
+    }
+
+    @Test
+    fun settingABudgetReturnsABudgetWhetherItWasCreatedOrEdited() {
+        for (status in listOf("200", "201")) {
+            assertMatches(SchemaContract.differences(Budget.serializer().descriptor, SchemaContract.response("/api/v1/ledgers/{ledgerId}/budgets", "put", status)))
+        }
+    }
+
+    @Test
+    fun aNewLimitSendsNoVersionAndAnEditSendsOne() {
+        fun body(set: SetBudget) = ApiJson.encodeToString(SetBudget.serializer(), set)
+        val amount = Money(12_000, "USD")
+        assertEquals(
+            """{"categoryId":"c1","month":"2026-10","amount":{"amount":12000,"currency":"USD"},"rollover":false}""",
+            body(SetBudget("c1", "2026-10", amount, rollover = false)),
+        )
+        assertEquals(
+            """{"categoryId":"c1","month":"2026-10","amount":{"amount":12000,"currency":"USD"},"rollover":true,"expectedVersion":3}""",
+            body(SetBudget("c1", "2026-10", amount, rollover = true, expectedVersion = 3)),
+        )
+    }
+
+    @Test
     fun categoryReplyMatches() = assertMatches(
         SchemaContract.differences(
             Category.serializer().descriptor,

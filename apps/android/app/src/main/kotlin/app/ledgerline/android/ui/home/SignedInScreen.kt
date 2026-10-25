@@ -47,6 +47,7 @@ import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.ui.budgets.BudgetsContent
+import app.ledgerline.android.ui.budgets.LimitActions
 import app.ledgerline.android.ui.budgets.BudgetsViewModel
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -141,6 +142,8 @@ fun SignedInScreen(
         if (it == Tab.More) moreOpen = null
         // Filters chosen to last until the owner leaves Transactions end here; a chosen time is checked on arriving.
         if (tab == Tab.Transactions && it != Tab.Transactions) viewModel.leftTransactions()
+        // A limit being set belongs to the Budgets tab: leaving it closes the sheet.
+        if (tab == Tab.Budgets && it != Tab.Budgets) budgets.closeLimit()
         if (it == Tab.Transactions) viewModel.expireFilters()
         tab = it
     }, onAdd = { edit(EditorTarget.New()) }) { inside ->
@@ -208,7 +211,25 @@ fun SignedInScreen(
                 // Collecting the budgets is what reads them, so they are read only while this tab is open.
                 val month by budgets.month.collectAsState()
                 val state by budgets.budgets.collectAsState()
-                BudgetsContent(month.toString(), state, budgets::previous, budgets::next, budgets::retry)
+                val limit by budgets.limit.collectAsState()
+                BudgetsContent(
+                    month.toString(),
+                    state,
+                    budgets::previous,
+                    budgets::next,
+                    budgets::retry,
+                    limit = limit,
+                    limitActions = LimitActions(
+                        open = budgets::openLimit,
+                        edit = budgets::editLimit,
+                        preset = budgets::pickPreset,
+                        save = budgets::saveLimit,
+                        close = budgets::closeLimit,
+                        askRemove = budgets::askRemove,
+                        dismissRemove = budgets::dismissRemove,
+                        confirmRemove = budgets::confirmRemove,
+                    ),
+                )
             }
             Tab.Insights -> PullToRefreshBox(
                 isRefreshing = line.running,
