@@ -59,6 +59,7 @@ import app.ledgerline.android.ui.clients.ClientsScreen
 import app.ledgerline.android.ui.insights.InsightsContent
 import app.ledgerline.android.ui.loans.LoansScreen
 import app.ledgerline.android.ui.insights.InsightsViewModel
+import app.ledgerline.android.ui.insights.worthSnapshot
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
 import app.ledgerline.android.ui.more.addVisible
@@ -241,6 +242,7 @@ fun SignedInScreen(
             ) {
                 val month by insights.month.collectAsState()
                 val state by insights.insights.collectAsState()
+                val mirrored by viewModel.accounts.collectAsState()
                 InsightsContent(
                     month.toString(),
                     state,
@@ -250,6 +252,7 @@ fun SignedInScreen(
                     onPrevious = insights::previous,
                     onNext = insights::next,
                     onRetry = insights::retry,
+                    snapshot = (mirrored as? Mirrored.Ready)?.items?.let(::worthSnapshot),
                 )
             }
             Tab.More -> when (moreOpen) {

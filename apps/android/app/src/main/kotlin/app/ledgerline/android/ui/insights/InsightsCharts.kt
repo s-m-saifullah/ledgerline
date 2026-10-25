@@ -185,7 +185,8 @@ internal fun CashFlowChart(report: CashFlowReport, selected: String, open: Boole
                         FigureRow(listOf(stringResource(R.string.insights_month), stringResource(R.string.insights_in), stringResource(R.string.insights_out), stringResource(R.string.insights_net)), header = true)
                         HorizontalDivider(color = palette.border)
                     }
-                    report.months.reversed().forEachIndexed { index, row ->
+                    // Months with nothing in them are left out of the figures; the chart above still has its twelve slots.
+                    report.months.filter(::hasActivity).reversed().forEachIndexed { index, row ->
                         if (index > 0) HorizontalDivider(color = palette.border)
                         val name = "${shortMonth(row.month)} ${row.month.take(4)}"
                         val income = money(row.income.amount, row.income.currency)
@@ -236,11 +237,15 @@ internal fun NetWorthChart(report: NetWorthReport, selected: String, open: Boole
             val corner = CornerRadius(2.dp.toPx())
             val at = Offset((size.width - width) / 2, top)
             val box = Size(width, size.height * bar.height)
+            // Below zero the bar hangs under the line in the neutral colour, so a debt never looks like a tall green bar.
+            val negative = worthTone(row.netWorth.amount) == WorthTone.Negative
+            val fill = if (negative) palette.muted else palette.accent
+            val soft = if (negative) palette.border else palette.accentSoft
             if (row.unconvertedCurrencies.isEmpty()) {
-                drawRoundRect(palette.accent, at, box, corner)
+                drawRoundRect(fill, at, box, corner)
             } else {
-                hatch(at, box, palette.accent, palette.accentSoft)
-                drawRoundRect(palette.accent, at, box, corner, style = Stroke(1.dp.toPx()))
+                hatch(at, box, fill, soft)
+                drawRoundRect(fill, at, box, corner, style = Stroke(1.dp.toPx()))
             }
         }
         history?.let { Note(it) }
