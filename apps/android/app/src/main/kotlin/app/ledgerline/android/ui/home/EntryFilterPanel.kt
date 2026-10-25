@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -72,9 +75,10 @@ private const val Any = ""
 @Composable
 internal fun EntryFilterBar(filters: EntryFilters, onChange: (EntryFilters) -> Unit, onOpenFilters: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(modifier = Modifier.padding(horizontal = ScreenMargin), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        // One row, one height: the button stretches to the box if large text makes the box taller.
+        Row(modifier = Modifier.padding(horizontal = ScreenMargin).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             SearchBox(stringResource(R.string.filters_search), filters.text, { onChange(filters.copy(text = it)) }, Modifier.weight(1f))
-            FiltersButton(filters.sheetCount, onOpenFilters)
+            FiltersButton(filters.sheetCount, onOpenFilters, Modifier.fillMaxHeight())
         }
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = ScreenMargin),

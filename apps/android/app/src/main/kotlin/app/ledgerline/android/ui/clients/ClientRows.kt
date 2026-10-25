@@ -185,7 +185,7 @@ internal fun HistoryRow(event: HistoryEvent, divider: Boolean) {
     )
 }
 
-/** A muted 12 sp line with tabular figures, as the web's `.row-meta`. */
+/** A muted 10 sp line with tabular figures, as the web's `.row-meta`. */
 @Composable
 private fun Small(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall.tabular(), color = MaterialTheme.colorScheme.onSurfaceVariant)

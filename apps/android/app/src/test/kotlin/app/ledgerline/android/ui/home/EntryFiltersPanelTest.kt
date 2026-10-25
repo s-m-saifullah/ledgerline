@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -47,10 +48,13 @@ class EntryFiltersPanelTest {
     private var opened = 0
     private var cancelled = 0
 
-    private fun bar(filters: EntryFilters = EntryFilters()) {
+    private fun bar(filters: EntryFilters = EntryFilters(), fontScale: Float = 1f) {
         compose.setContent {
-            LedgerlineTheme {
-                androidx.compose.foundation.layout.Box(Modifier.requiredHeight(3000.dp)) { EntryFilterBar(filters, { changed += it }, { opened++ }) }
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, fontScale)) {
+                LedgerlineTheme {
+                    androidx.compose.foundation.layout.Box(Modifier.requiredHeight(3000.dp)) { EntryFilterBar(filters, { changed += it }, { opened++ }) }
+                }
             }
         }
     }
@@ -297,5 +301,33 @@ class EntryFiltersPanelTest {
         // A leap February ends on the 29th, a short month on its own last day.
         assertEquals("2028-02-29", categoryEntries("c", YearMonth.of(2028, 2)).to)
         assertEquals("2026-11-30", categoryEntries("c", YearMonth.of(2026, 11)).to)
+    }
+
+    /** The search box and the Filters button sit side by side as one row, so they are the same height (a Material text field is 56 dp by itself). */
+    private fun searchAndButtonHeights(filters: EntryFilters, fontScale: Float = 1f): Pair<Float, Float> {
+        bar(filters, fontScale)
+        val search = compose.onNodeWithContentDescription("Search payer, payee or note").getBoundsInRoot()
+        val button = compose.onNode(androidx.compose.ui.test.hasContentDescription("Filters", substring = true)).getBoundsInRoot()
+        return (search.bottom - search.top).value to (button.bottom - button.top).value
+    }
+
+    @Test
+    fun theSearchBoxAndTheFiltersButtonAreTheSameHeight() {
+        val (search, button) = searchAndButtonHeights(EntryFilters())
+        assertEquals(search, button, 0.5f)
+        // Both are the 48 dp touch target, not the 56 dp of a stock Material text field.
+        assertEquals(48f, search, 0.5f)
+    }
+
+    @Test
+    fun theyStayTheSameHeightWithTextInTheBoxAndFiltersSet() {
+        val (search, button) = searchAndButtonHeights(EntryFilters(text = "coffee", accountId = "a1", tagId = "t1"))
+        assertEquals(search, button, 0.5f)
+    }
+
+    @Test
+    fun theyStayTheSameHeightWithTheLargestText() {
+        val (search, button) = searchAndButtonHeights(EntryFilters(accountId = "a1", tagId = "t1"), fontScale = 2f)
+        assertEquals(search, button, 0.5f)
     }
 }

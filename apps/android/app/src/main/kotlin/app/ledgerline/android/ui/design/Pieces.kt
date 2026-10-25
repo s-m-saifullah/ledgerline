@@ -21,7 +21,14 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -60,7 +67,7 @@ import app.ledgerline.android.ui.theme.LocalPalette
 val TouchTarget = 48.dp
 val RowHeight = 56.dp
 
-/** The fixed bar at the top of a screen: the title (20 sp), a back arrow where there is one, at most one action. */
+/** The fixed bar at the top of a screen: the title (19 sp), a back arrow where there is one, at most one action. */
 @Composable
 fun TopBar(title: String, onBack: (() -> Unit)? = null, action: (@Composable RowScope.() -> Unit)? = null) {
     Row(
@@ -219,45 +226,63 @@ fun IconAvatar(icon: Int) {
  * A search box (ADR 0046): a filled field with the [label] as its hint (a screen reader reads it too), a cross
  * that empties it while there is text, and 48 dp tall. It replaces SearchField screen by screen.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchBox(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val palette = LocalPalette.current
     val clear = stringResource(R.string.clear_search)
-    TextField(
+    val interaction = remember { MutableInteractionSource() }
+    val container = palette.border.copy(alpha = 0.5f)
+    // A Material TextField is 56 dp tall at the least; this is the same field at the 48 dp the row beside it needs.
+    BasicTextField(
         value = value,
         onValueChange = { onChange(it.take(200)) },
         singleLine = true,
-        placeholder = { Text(label, color = palette.muted, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp)) },
-        trailingIcon = if (value.isEmpty()) null else {
-            {
-                IconButton(onClick = { onChange("") }) {
-                    Icon(painterResource(R.drawable.ic_close), contentDescription = clear, modifier = Modifier.size(20.dp))
-                }
-            }
-        },
-        shape = MaterialTheme.shapes.small,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = palette.border.copy(alpha = 0.5f),
-            unfocusedContainerColor = palette.border.copy(alpha = 0.5f),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-        ),
+        textStyle = MaterialTheme.typography.bodyLarge.copy(color = palette.text),
+        cursorBrush = SolidColor(palette.accent),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        interactionSource = interaction,
         modifier = modifier.fillMaxWidth().heightIn(min = TouchTarget).semantics { contentDescription = label },
+        decorationBox = { inner ->
+            TextFieldDefaults.DecorationBox(
+                value = value,
+                innerTextField = inner,
+                enabled = true,
+                singleLine = true,
+                visualTransformation = VisualTransformation.None,
+                interactionSource = interaction,
+                placeholder = { Text(label, color = palette.muted, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyLarge) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp)) },
+                trailingIcon = if (value.isEmpty()) null else {
+                    {
+                        IconButton(onClick = { onChange("") }) {
+                            Icon(painterResource(R.drawable.ic_close), contentDescription = clear, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                },
+                shape = MaterialTheme.shapes.small,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = container,
+                    unfocusedContainerColor = container,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                ),
+                contentPadding = TextFieldDefaults.contentPaddingWithoutLabel(top = 0.dp, bottom = 0.dp),
+            )
+        },
     )
 }
 
 /** The button beside a search box that opens its filters: an icon, Filters, and how many are set (then it takes the accent's soft fill). */
 @Composable
-fun FiltersButton(count: Int, onClick: () -> Unit) {
+fun FiltersButton(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val palette = LocalPalette.current
     val label = stringResource(R.string.filters_chip)
     val described = if (count > 0) stringResource(R.string.filters_chip_count, count) else label
     val shape = MaterialTheme.shapes.small
     Row(
-        modifier = Modifier
+        modifier = modifier
             .heightIn(min = TouchTarget)
             .clip(shape)
             .background(if (count > 0) palette.accentSoft else palette.surface)
@@ -352,7 +377,7 @@ fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** A small capitals label over a group (12 sp, the floor). */
+/** A small capitals label over a group (10 sp, the floor). */
 @Composable
 fun SectionLabel(text: String) {
     Text(

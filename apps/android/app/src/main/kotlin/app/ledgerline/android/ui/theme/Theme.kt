@@ -39,24 +39,27 @@ private fun inter(size: Int, weight: Int, lineHeight: Double = 1.4, spacing: Dou
     letterSpacing = spacing.em,
 )
 
+/** The smallest text anywhere, in sp (ADR 0046, amended: 12 became 10 at the owner's request; the bar labels' floor follows it). */
+const val TEXT_FLOOR_SP = 10
+
 /**
- * The web's sizes in sp (ADR 0045), with the redesign's floor (ADR 0046): the page title 28, section titles 20,
- * body 16, muted text 14, card labels and section labels 12 (the smallest text anywhere); amounts 32 and the In
- * hand amount 36, with tabular figures where shown.
+ * The web's sizes (ADR 0045) smaller for the phone (ADR 0046, amended): the page title 27, section titles 19,
+ * body 14, muted text 12, small text, card labels and section labels 10 (the floor); amounts 31 and the In hand amount 35,
+ * with tabular figures where shown.
  */
 val LedgerlineTypography = Typography(
-    displayMedium = inter(36, 600, lineHeight = 1.15, spacing = -0.02),
-    displaySmall = inter(32, 600, lineHeight = 1.15, spacing = -0.02),
-    headlineMedium = inter(28, 600, lineHeight = 1.2, spacing = -0.045),
-    titleLarge = inter(20, 600, lineHeight = 1.3, spacing = -0.025),
-    titleMedium = inter(16, 600),
-    titleSmall = inter(14, 600),
-    bodyLarge = inter(16, 400, lineHeight = 1.5),
-    bodyMedium = inter(14, 400, lineHeight = 1.6),
-    bodySmall = inter(12, 400, lineHeight = 1.5),
-    labelLarge = inter(14, 500),
-    labelMedium = inter(12, 500),
-    labelSmall = inter(12, 600, spacing = 0.08),
+    displayMedium = inter(35, 600, lineHeight = 1.15, spacing = -0.02),
+    displaySmall = inter(31, 600, lineHeight = 1.15, spacing = -0.02),
+    headlineMedium = inter(27, 600, lineHeight = 1.2, spacing = -0.045),
+    titleLarge = inter(19, 600, lineHeight = 1.3, spacing = -0.025),
+    titleMedium = inter(14, 600),
+    titleSmall = inter(12, 600),
+    bodyLarge = inter(14, 400, lineHeight = 1.5),
+    bodyMedium = inter(12, 400, lineHeight = 1.6),
+    bodySmall = inter(10, 400, lineHeight = 1.5),
+    labelLarge = inter(12, 500),
+    labelMedium = inter(10, 500),
+    labelSmall = inter(10, 600, spacing = 0.08),
 )
 
 /** Corners (ADR 0046): 8 for small marks, 12 for fields and buttons, 16 for cards, 20 for the hero, 24 for sheets and dialogs. */
