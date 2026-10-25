@@ -37,12 +37,22 @@ import app.ledgerline.android.BuildConfig
 import app.ledgerline.android.R
 import app.ledgerline.android.settings.PhoneSettings
 import app.ledgerline.android.settings.ThemeChoice
-import app.ledgerline.android.ui.design.BackLink
 import app.ledgerline.android.ui.design.CardGap
-import app.ledgerline.android.ui.design.CardTitle
-import app.ledgerline.android.ui.design.LedgerCard
-import app.ledgerline.android.ui.design.PageHeader
+import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.GroupedRows
+import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.SecondaryButton
+import app.ledgerline.android.ui.design.SectionLabel
+import app.ledgerline.android.ui.design.SegmentedControl
+import app.ledgerline.android.ui.design.TopBar
+import app.ledgerline.android.ui.home.SyncLine
+import app.ledgerline.android.ui.home.SyncProblem
+import app.ledgerline.android.ui.theme.LocalPalette
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import app.ledgerline.android.ui.home.SignedInViewModel
 import app.ledgerline.android.ui.update.UpdateViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -95,7 +105,31 @@ data class SettingsState(
     val attention: Int,
     val canLock: Boolean,
     val signingOut: Boolean,
+    val pill: SyncPill,
 )
+
+/** The one word in Settings' top bar that says how syncing stands (ADR 0046); the Sync section has the details. */
+enum class SyncPill { Synced, Updating, Offline, Failed, NotSent }
+
+/** Running first, then a problem, then changes not sent yet; otherwise everything is in order. */
+fun syncPill(line: SyncLine, unsent: Int): SyncPill = when {
+    line.running -> SyncPill.Updating
+    line.problem == SyncProblem.Offline -> SyncPill.Offline
+    line.problem == SyncProblem.Failed -> SyncPill.Failed
+    unsent > 0 -> SyncPill.NotSent
+    else -> SyncPill.Synced
+}
+
+enum class AccountAction { Lock, SignOut }
+
+/** One button of the Account section: Sign out is the red one and waits while it is signing out; Lock now only where locking exists. */
+data class AccountRow(val action: AccountAction, val danger: Boolean, val enabled: Boolean)
+
+fun accountActions(canLock: Boolean, signingOut: Boolean): List<AccountRow> =
+    listOfNotNull(
+        if (canLock) AccountRow(AccountAction.Lock, danger = false, enabled = true) else null,
+        AccountRow(AccountAction.SignOut, danger = true, enabled = !signingOut),
+    )
 
 /** What the Updates card shows: whether the owner wants automatic checks and the newer version already known, if any. */
 data class UpdatesInfo(val auto: Boolean, val newVersion: String?)
@@ -138,9 +172,10 @@ fun SettingsScreen(
     val unsent by signedIn.unsent.collectAsState()
     val attention by signedIn.attention.collectAsState()
     val signingOut by signedIn.signingOut.collectAsState()
+    val line by signedIn.syncLine.collectAsState()
     BackHandler(onBack = onBack)
     SettingsContent(
-        SettingsState(theme, hide, centsFirst, screenshots, filterKeep, if (update.enabled) UpdatesInfo(auto, newer?.name) else null, unsent, attention.size, signedIn.canLock, signingOut),
+        SettingsState(theme, hide, centsFirst, screenshots, filterKeep, if (update.enabled) UpdatesInfo(auto, newer?.name) else null, unsent, attention.size, signedIn.canLock, signingOut, syncPill(line, unsent)),
         SettingsActions(
             onBack,
             settings::setTheme,
@@ -160,106 +195,140 @@ fun SettingsScreen(
     )
 }
 
-/** Settings as the web's Settings page (ADR 0045): a header, then one card per group. */
+/** Settings (ADR 0046): a fixed top bar with the sync pill, then grouped sections; every control that existed stays. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsContent(state: SettingsState, actions: SettingsActions, bottomSpace: Dp, modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        item { BackLink(stringResource(R.string.back_more), actions.onBack) }
-        item {
-            PageHeader(
-                stringResource(R.string.settings_title),
-                eyebrow = stringResource(R.string.eyebrow_yours),
-                subtitle = stringResource(R.string.settings_subtitle),
-            )
-        }
-        item {
-            LedgerCard {
-                CardTitle(stringResource(R.string.settings_appearance), stringResource(R.string.settings_this_phone))
-                Text(
-                    stringResource(R.string.theme_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.padding(top = 12.dp).semantics { heading() },
-                )
-                Column(modifier = Modifier.selectableGroup()) {
-                    ThemeRow(R.string.theme_light, state.theme == ThemeChoice.Light) { actions.setTheme(ThemeChoice.Light) }
-                    ThemeRow(R.string.theme_dark, state.theme == ThemeChoice.Dark) { actions.setTheme(ThemeChoice.Dark) }
-                    ThemeRow(R.string.theme_system, state.theme == ThemeChoice.System) { actions.setTheme(ThemeChoice.System) }
-                }
-                Muted(stringResource(R.string.theme_detail))
-            }
-        }
-        item {
-            LedgerCard {
-                CardTitle(stringResource(R.string.settings_privacy), stringResource(R.string.settings_this_phone))
-                SwitchRow(R.string.privacy_mode, R.string.privacy_mode_detail, state.hideAmounts, actions.setHideAmounts)
-                SwitchRow(R.string.cents_first, R.string.cents_first_detail, state.centsFirst, actions.setCentsFirst)
-                SwitchRow(R.string.allow_screenshots, R.string.allow_screenshots_detail, state.allowScreenshots, actions.setAllowScreenshots)
-            }
-        }
-        item { KeepFiltersCard(state.filterKeep, actions.setFilterKeep) }
-        state.updates?.let { updates -> item { UpdatesCard(updates, actions) } }
-        item {
-            LedgerCard {
-                CardTitle(stringResource(R.string.settings_sync), stringResource(R.string.settings_this_phone))
-                Text(
-                    if (state.unsent == 0) stringResource(R.string.all_sent) else pluralStringResource(R.plurals.unsent_count, state.unsent, state.unsent),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-                Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (state.attention > 0) {
-                        SecondaryButton(
-                            pluralStringResource(R.plurals.attention_banner, state.attention, state.attention),
-                            onClick = actions.openAttention,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+    Column(modifier = modifier) {
+        TopBar(stringResource(R.string.settings_title), onBack = actions.onBack, action = { SyncPillView(state.pill) })
+        LazyColumn(contentPadding = PaddingValues(bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+            item {
+                Section(R.string.settings_appearance) {
+                    row {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column {
+                                Text(stringResource(R.string.theme_title), style = MaterialTheme.typography.titleMedium)
+                                Muted(stringResource(R.string.theme_detail), top = 0.dp)
+                            }
+                            val choices = listOf(ThemeChoice.Light, ThemeChoice.Dark, ThemeChoice.System)
+                            SegmentedControl(
+                                options = listOf(stringResource(R.string.theme_light), stringResource(R.string.theme_dark), stringResource(R.string.theme_system)),
+                                selected = choices.indexOf(state.theme),
+                                onSelect = { actions.setTheme(choices[it]) },
+                            )
+                        }
                     }
-                    SecondaryButton(stringResource(R.string.refresh_everything), onClick = actions.refreshEverything)
                 }
             }
-        }
-        item {
-            LedgerCard {
-                CardTitle(stringResource(R.string.settings_session))
-                // Wraps onto a second line with large text instead of squeezing a button's label.
-                FlowRow(modifier = Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (state.canLock) SecondaryButton(stringResource(R.string.lock_now), onClick = actions.lock)
-                    SecondaryButton(stringResource(R.string.sign_out), onClick = actions.signOut, enabled = !state.signingOut)
+            item {
+                Section(R.string.settings_privacy) {
+                    row { SwitchRow(R.string.privacy_mode, R.string.privacy_mode_detail, state.hideAmounts, actions.setHideAmounts) }
+                    row { SwitchRow(R.string.cents_first, R.string.cents_first_detail, state.centsFirst, actions.setCentsFirst) }
+                    row { SwitchRow(R.string.allow_screenshots, R.string.allow_screenshots_detail, state.allowScreenshots, actions.setAllowScreenshots) }
+                    row { KeepFilters(state.filterKeep, actions.setFilterKeep) }
                 }
             }
-        }
-        item {
-            LedgerCard {
-                CardTitle(stringResource(R.string.settings_about))
-                Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Muted(stringResource(R.string.about_version, BuildConfig.VERSION_NAME), top = 0.dp)
-                    Muted(stringResource(R.string.about_api, BuildConfig.API_VERSION), top = 0.dp)
+            item {
+                Section(R.string.settings_sync) {
+                    row {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                if (state.unsent == 0) stringResource(R.string.all_sent) else pluralStringResource(R.plurals.unsent_count, state.unsent, state.unsent),
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            if (state.attention > 0) {
+                                SecondaryButton(
+                                    pluralStringResource(R.plurals.attention_banner, state.attention, state.attention),
+                                    onClick = actions.openAttention,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                            SecondaryButton(stringResource(R.string.refresh_everything), onClick = actions.refreshEverything)
+                        }
+                    }
+                }
+            }
+            item {
+                Section(R.string.settings_session) {
+                    row {
+                        // Wraps onto a second line with large text instead of squeezing a button's label.
+                        FlowRow(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            accountActions(state.canLock, state.signingOut).forEach { account ->
+                                when (account.action) {
+                                    AccountAction.Lock -> SecondaryButton(stringResource(R.string.lock_now), onClick = actions.lock, enabled = account.enabled, danger = account.danger)
+                                    AccountAction.SignOut -> SecondaryButton(stringResource(R.string.sign_out), onClick = actions.signOut, enabled = account.enabled, danger = account.danger)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            item {
+                Section(R.string.settings_about) {
+                    state.updates?.let { updates -> row { UpdatesRows(updates, actions) } }
+                    row {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Muted(stringResource(R.string.about_version, BuildConfig.VERSION_NAME), top = 0.dp)
+                            Muted(stringResource(R.string.about_api, BuildConfig.API_VERSION), top = 0.dp)
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-/** Updates: the version, the automatic-check switch and the button that opens the update screen (ADR 0043). */
+/** A labelled group of rows in one bordered card. */
 @Composable
-private fun UpdatesCard(updates: UpdatesInfo, actions: SettingsActions) {
-    LedgerCard {
-        CardTitle(stringResource(R.string.settings_updates), stringResource(R.string.settings_this_phone))
-        Text(
-            if (updates.newVersion != null) {
-                stringResource(R.string.updates_available, updates.newVersion)
-            } else {
-                stringResource(R.string.updates_current_version, BuildConfig.VERSION_NAME.removeSuffix("-debug"))
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 12.dp),
-        )
+private fun Section(label: Int, rows: GroupedRows.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionLabel(stringResource(label))
+        GroupedListCard(rows = rows)
+    }
+}
+
+/** A dot and one word for the sync state; the dot is only an extra cue. */
+@Composable
+private fun SyncPillView(pill: SyncPill) {
+    val palette = LocalPalette.current
+    val (word, dot) = when (pill) {
+        SyncPill.Synced -> R.string.sync_pill_synced to palette.accent
+        SyncPill.Updating -> R.string.sync_pill_running to palette.muted
+        SyncPill.Offline -> R.string.sync_pill_offline to palette.muted
+        SyncPill.Failed -> R.string.sync_pill_failed to palette.danger
+        SyncPill.NotSent -> R.string.sync_pill_unsent to palette.muted
+    }
+    Row(
+        modifier = Modifier.heightIn(min = 32.dp).border(1.dp, palette.border, CircleShape).padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(Modifier.size(8.dp).background(dot, CircleShape))
+        Text(stringResource(word), style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Updates: the newer version if one is known, the automatic-check switch and the button that opens the update screen (ADR 0043). */
+@Composable
+private fun UpdatesRows(updates: UpdatesInfo, actions: SettingsActions) {
+    Column {
+        if (updates.newVersion != null) {
+            Text(
+                stringResource(R.string.updates_available, updates.newVersion),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
+            )
+        }
         SwitchRow(R.string.updates_auto, R.string.updates_auto_detail, updates.auto, actions.setAutoUpdate)
         SecondaryButton(
             stringResource(R.string.updates_check),
             onClick = actions.openUpdates,
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
         )
     }
 }
@@ -269,13 +338,12 @@ private fun UpdatesCard(updates: UpdatesInfo, actions: SettingsActions) {
  * a number of minutes, hours or days, which also survives closing the app. The number is saved only when it is valid.
  */
 @Composable
-private fun KeepFiltersCard(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
-    LedgerCard {
-        CardTitle(stringResource(R.string.settings_filters), stringResource(R.string.settings_this_phone))
+private fun KeepFilters(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
+    Column(modifier = Modifier.padding(16.dp)) {
         Text(
             stringResource(R.string.filters_keep_title),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(top = 12.dp).semantics { heading() },
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() },
         )
         Column(modifier = Modifier.selectableGroup()) {
             KeepRow(R.string.filters_keep_leave, keep.mode == KeepMode.UntilLeave) { onChange(keep.copy(mode = KeepMode.UntilLeave)) }
@@ -355,12 +423,12 @@ private fun SwitchRow(title: Int, detail: Int, checked: Boolean, onChange: (Bool
         modifier = Modifier
             .fillMaxWidth()
             .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
-            .heightIn(min = 48.dp)
-            .padding(top = 12.dp),
+            .heightIn(min = RowHeight)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(title), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
             Muted(stringResource(detail), top = 0.dp)
         }
         Switch(checked = checked, onCheckedChange = null)

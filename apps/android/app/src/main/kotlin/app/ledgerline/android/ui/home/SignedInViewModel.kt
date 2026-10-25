@@ -3,6 +3,7 @@ package app.ledgerline.android.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.AccountBalance
+import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.outbox.OutboxStore
@@ -81,6 +82,11 @@ class SignedInViewModel @Inject constructor(
             if (id == null) flowOf(Mirrored.Waiting) else view.accounts(id).map { Mirrored.Ready(it) }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Mirrored.Waiting)
+
+    /** The mirrored categories, for More's counts (null until the mirror has a ledger). */
+    val categories: StateFlow<List<CategoryRow>?> = ledger
+        .flatMapLatest { id -> if (id == null) flowOf(null) else reads.liveCategories(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** When the filters last changed: what a chosen time counts from. */
     private var filtersChangedAt: Instant = clock.now()

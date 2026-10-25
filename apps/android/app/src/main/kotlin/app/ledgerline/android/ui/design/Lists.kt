@@ -47,32 +47,6 @@ import app.ledgerline.android.ui.theme.LocalPalette
 
 /* Lists, links and fields shared by the screens that browse people (Clients, Loans), named after the web's. */
 
-/** `.settings-link`: a navigation card with its icon on an accent-soft tile, a title, a short line and a chevron. */
-@Composable
-fun NavCard(icon: Int, title: String, description: String, onClick: () -> Unit) {
-    val palette = LocalPalette.current
-    LedgerCard(
-        modifier = Modifier
-            .clickable(onClick = onClick, role = Role.Button)
-            .clearAndSetSemantics { contentDescription = "$title, $description" },
-        padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-    ) {
-        Row(modifier = Modifier.heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(40.dp).background(palette.accentSoft, MaterialTheme.shapes.small),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(painterResource(icon), contentDescription = null, tint = palette.accent, modifier = Modifier.size(20.dp))
-            }
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = palette.muted)
-        }
-    }
-}
-
 /** `← More`, `All clients`: the way back from a screen opened from another. */
 @Composable
 fun BackLink(text: String, onClick: () -> Unit) {
