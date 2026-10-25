@@ -232,7 +232,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun insightsPage() = shot("insights", Tab.Insights) {
-        InsightsContent("2026-10", Online.Ready(insights(worthMonths = 8)), open = setOf("c-food"), onToggle = {}, onOpenCategory = {}, onPrevious = {}, onNext = {}, onRetry = {})
+        InsightsContent("2026-10", Online.Ready(insights(worthMonths = 8)), open = setOf("c-food"), onToggle = {}, onOpenCategory = {}, onPrevious = {}, onNext = {}, onRetry = {}, snapshot = app.ledgerline.android.ui.insights.WorthSnapshot(Money(155000, "USD"), Money(-142000, "USD"), Money(13000, "USD")))
     }
 
     /** The charts with their figures open, net worth with a month below zero and one missing a rate. */
