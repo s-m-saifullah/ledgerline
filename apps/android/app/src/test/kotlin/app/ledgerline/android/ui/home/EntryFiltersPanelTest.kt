@@ -114,6 +114,18 @@ class EntryFiltersPanelTest {
     }
 
     @Test
+    fun choosingAFilterDoesNotChangeTheSheetsHeight() {
+        sheet()
+        val before = compose.onNodeWithText("Apply").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top
+        compose.onNodeWithText("Pending").performClick()
+        compose.onNodeWithText("Reset all").assertExists()
+        assertEquals(before, compose.onNodeWithText("Apply").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top, 0f)
+        compose.onNodeWithText("All").performClick()
+        compose.onNodeWithText("Reset all").assertDoesNotExist()
+        assertEquals(before, compose.onNodeWithText("Apply").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top, 0f)
+    }
+
+    @Test
     fun cancelLeavesTheFiltersAsTheyWere() {
         sheet(EntryFilters(accountId = "a1"))
         compose.onNodeWithText("Cleared").performClick()

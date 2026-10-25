@@ -129,7 +129,8 @@ internal fun EntryFiltersSheetContent(filters: EntryFilters, options: FilterOpti
         modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // As tall as the Reset all link from the start, so choosing a filter never makes the sheet grow.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 56.dp)) {
             Text(stringResource(R.string.filters_chip), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).semantics { heading() })
             if (draft.sheetCount > 0) {
                 LinkButton(stringResource(R.string.filters_reset), {
