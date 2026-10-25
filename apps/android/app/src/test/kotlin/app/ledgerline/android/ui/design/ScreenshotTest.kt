@@ -198,12 +198,12 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
                 budgetLine("Gifts", null, 0),
             ),
         )
-        BudgetsContent("2026-10", Online.Ready(month), {}, {}, {})
+        BudgetsContent("2026-10", Online.Ready(month), {}, {}, {}, today = java.time.LocalDate.of(2026, 10, 24))
     }
 
     @Test
     fun budgetsOver() = shot("budgets-over", Tab.Budgets) {
-        BudgetsContent("2026-10", Online.Ready(budgetMonth(items = listOf(budgetLine("Fun", 1000, 123456789)))), {}, {}, {})
+        BudgetsContent("2026-10", Online.Ready(budgetMonth(items = listOf(budgetLine("Fun", 1000, 123456789)))), {}, {}, {}, today = java.time.LocalDate.of(2026, 10, 24))
     }
 
     @Test
