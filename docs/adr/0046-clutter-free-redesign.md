@@ -48,7 +48,7 @@ The API, the mirror, the outbox, sync, privacy mode through `money()`, FLAG_SECU
 
 ## Follow-ups, each its own plan and pull request
 
-Edit a budget limit; receive a payment (amount, account, date and tip, with a confirmation, not one tap); record a repayment; lend more; log a service; mark a service paid; the in-app keypad; the send-reminder action; reset filters on app close. Each needs the outbox or an online write, idempotency and tests, and gets its own approval. The web redesign follows the phone.
+Edit a budget limit (done 2026-10-25: Set limit on Budgets, with Remove limit; Auto-Set Limits from the concept is not decided); receive a payment (amount, account, date and tip, with a confirmation, not one tap); record a repayment; lend more; log a service; mark a service paid; the in-app keypad; the send-reminder action; reset filters on app close. Each needs the outbox or an online write, idempotency and tests, and gets its own approval. The web redesign follows the phone.
 
 ## Order of pull requests (small, each checked on the owner's phone)
 

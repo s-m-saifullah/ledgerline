@@ -108,7 +108,11 @@ class BudgetsViewModelTest {
     }
 
     private fun start(origin: String = server.url("/").toString().trimEnd('/')) {
-        model = BudgetsViewModel(OnlineReader(FakeServerAddressStore(origin), ClientsProvider(session), session), database.reads())
+        model = BudgetsViewModel(
+            OnlineReader(FakeServerAddressStore(origin), ClientsProvider(session), session),
+            database.reads(),
+            app.ledgerline.android.online.BudgetWrites(app.ledgerline.android.online.OnlineWriter(FakeServerAddressStore(origin), ClientsProvider(session), session)),
+        )
     }
 
     private fun answer(code: Int, body: String = "{}", delaySeconds: Long = 0) =

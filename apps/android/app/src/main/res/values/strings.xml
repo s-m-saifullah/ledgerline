@@ -596,4 +596,20 @@
     <string name="budget_left_plain">%1$s left</string>
     <string name="budget_over_plain">%1$s over</string>
     <string name="budget_share_of_spend">%1$s%% of %2$s spend</string>
+    <string name="limit_title_set">Set limit</string>
+    <string name="limit_title_edit">Edit limit</string>
+    <string name="limit_context">%1$s · Spent %2$s in %3$s</string>
+    <string name="limit_amount">Monthly limit (%1$s)</string>
+    <string name="limit_save">Save</string>
+    <string name="limit_remove">Remove limit</string>
+    <string name="limit_remove_title">Remove this limit?</string>
+    <string name="limit_remove_body">%1$s will have no limit for %2$s. What was spent stays.</string>
+    <string name="limit_remove_confirm">Remove</string>
+    <string name="limit_error_offline">Needs a connection. Your amount is kept.</string>
+    <string name="limit_error_forbidden">Your account can\'t change budgets.</string>
+    <string name="limit_error_failed">Couldn\'t save. Try again.</string>
+    <string name="limit_error_rejected">The server didn\'t accept this.</string>
+    <string name="budget_set_limit">+ Set limit</string>
+    <string name="budget_set_limit_action">Set limit</string>
+    <string name="budget_edit_limit_action">Edit limit</string>
 </resources>

@@ -7,6 +7,7 @@ import retrofit2.http.HTTP
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -135,6 +136,22 @@ interface LedgerlineApi {
     suspend fun deleteCategory(
         @Path("ledgerId") ledgerId: String,
         @Path("categoryId") categoryId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: ExpectedVersion,
+    )
+
+    /** Budgets: a limit is set (created or edited) or removed with one idempotent call; the server answers 201, 200 or, for a removal, 204. */
+    @PUT("api/v1/ledgers/{ledgerId}/budgets")
+    suspend fun setBudget(
+        @Path("ledgerId") ledgerId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: SetBudget,
+    ): Budget
+
+    @HTTP(method = "DELETE", path = "api/v1/ledgers/{ledgerId}/budgets/{budgetId}", hasBody = true)
+    suspend fun deleteBudget(
+        @Path("ledgerId") ledgerId: String,
+        @Path("budgetId") budgetId: String,
         @Header("Idempotency-Key") key: String,
         @Body body: ExpectedVersion,
     )

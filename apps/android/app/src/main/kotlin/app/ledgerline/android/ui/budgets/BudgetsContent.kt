@@ -77,6 +77,8 @@ internal fun BudgetsContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
+    limit: LimitUi? = null,
+    limitActions: LimitActions? = null,
 ) {
     Column(modifier = modifier) {
         TopBar(stringResource(R.string.budgets_title))
@@ -87,13 +89,15 @@ internal fun BudgetsContent(
                 Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.budgets_loading)) } }
                 Online.Offline -> item { RetryNote(stringResource(R.string.budgets_offline), onRetry) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.budgets_failed), onRetry) }
-                is Online.Ready -> monthItems(state.value, today)
+                is Online.Ready -> monthItems(state.value, today, limitActions)
             }
         }
     }
+    // The Set limit sheet, over the screen while one is open.
+    if (limit != null && limitActions != null) LimitSheet(limit, limitActions)
 }
 
-private fun LazyListScope.monthItems(view: BudgetMonth, today: LocalDate) {
+private fun LazyListScope.monthItems(view: BudgetMonth, today: LocalDate, actions: LimitActions?) {
     if (view.items.isEmpty()) {
         item { Text(stringResource(R.string.budgets_no_categories), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = ScreenMargin)) }
         return
@@ -107,11 +111,11 @@ private fun LazyListScope.monthItems(view: BudgetMonth, today: LocalDate) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SectionLabel(stringResource(R.string.budgets_categories, groups.active.size))
                 val monthName = shortMonth(view.month)
-                GroupedListCard { groups.active.forEach { line -> row { BudgetRow(line, monthName, total, targetSet) } } }
+                GroupedListCard { groups.active.forEach { line -> row { BudgetRow(line, monthName, total, targetSet, onOpen = actions?.let { a -> { a.open(line) } }) } } }
             }
         }
     }
-    if (groups.folded.isNotEmpty()) item { FoldedLine(groups.folded) }
+    if (groups.folded.isNotEmpty()) item { FoldedLine(groups.folded, actions) }
 }
 
 /** Left this month: the figure (red when over), what it is left of, a bar, how much is used and the days left. */
@@ -191,7 +195,7 @@ private fun NoTargetHero(total: Money, categories: Int) {
  * overspent before stays under the bar.
  */
 @Composable
-internal fun BudgetRow(line: BudgetLine, monthName: String, totalSpent: Long, targetSet: Boolean) {
+internal fun BudgetRow(line: BudgetLine, monthName: String, totalSpent: Long, targetSet: Boolean, onOpen: (() -> Unit)? = null) {
     val spent = money(line.spent.amount, line.spent.currency)
     val budget = line.budget
     val allowance = allowanceOf(line)
@@ -224,9 +228,13 @@ internal fun BudgetRow(line: BudgetLine, monthName: String, totalSpent: Long, ta
         line.name, spoken, spent.spoken, of?.let { stringResource(R.string.budgets_of, it.spoken) }, carried?.second,
     ).joinToString(", ")
     val masked = spoken != shown || spent.spoken != spent.text
+    // A category that can be budgeted opens its limit; an archived one cannot be.
+    val open = onOpen.takeIf { !line.archived }
+    val action = stringResource(if (budget == null) R.string.budget_set_limit_action else R.string.budget_edit_limit_action)
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (open != null) Modifier.clickable(onClickLabel = action, role = Role.Button, onClick = open) else Modifier)
             .heightIn(min = RowHeight)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .testTag("row-${line.name}")
@@ -249,6 +257,9 @@ internal fun BudgetRow(line: BudgetLine, monthName: String, totalSpent: Long, ta
                 amount = {
                     Column(horizontalAlignment = Alignment.End) {
                         Text(spent.text, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false)
+                        if (of == null && open != null) {
+                            Text(stringResource(R.string.budget_set_limit), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, maxLines = 1, softWrap = false)
+                        }
                         if (of != null) {
                             Text(stringResource(R.string.budgets_of, of.text), style = MaterialTheme.typography.bodySmall.tabular(), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, softWrap = false, textAlign = TextAlign.End)
                         }
@@ -265,7 +276,7 @@ internal fun BudgetRow(line: BudgetLine, monthName: String, totalSpent: Long, ta
 
 /** One line for the categories with nothing planned or spent; it opens to their names. */
 @Composable
-private fun FoldedLine(folded: List<BudgetLine>) {
+private fun FoldedLine(folded: List<BudgetLine>, actions: LimitActions?) {
     var open by rememberSaveable { mutableStateOf(false) }
     LedgerCard(padding = PaddingValues(0.dp)) {
         Column {
@@ -291,7 +302,17 @@ private fun FoldedLine(folded: List<BudgetLine>) {
             }
             if (open) {
                 folded.forEach { line ->
-                    Text(line.name, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+                    val open = actions?.takeIf { !line.archived }?.let { a -> { a.open(line) } }
+                    val action = stringResource(R.string.budget_set_limit_action)
+                    Text(
+                        line.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (open != null) Modifier.clickable(onClickLabel = action, role = Role.Button, onClick = open) else Modifier)
+                            .heightIn(min = 48.dp)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
                 }
             }
         }
