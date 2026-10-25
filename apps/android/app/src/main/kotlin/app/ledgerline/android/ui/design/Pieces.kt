@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.selection.selectableGroup
@@ -47,13 +48,16 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.format.monthLabel
 import app.ledgerline.android.ui.theme.LedgerlinePalette
 import app.ledgerline.android.ui.theme.LocalPalette
 
@@ -88,6 +92,26 @@ fun TopBar(title: String, onBack: (() -> Unit)? = null, action: (@Composable Row
             modifier = Modifier.weight(1f).padding(horizontal = if (onBack == null) 0.dp else 4.dp, vertical = 4.dp).semantics { heading() },
         )
         action?.invoke(this)
+    }
+}
+
+/** The month in a top bar (ADR 0046): previous and next around the month's name, which a screen reader announces as it changes. */
+@Composable
+fun MonthControl(month: String, onPrevious: () -> Unit, onNext: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        IconButton(onClick = onPrevious, modifier = Modifier.size(TouchTarget)) {
+            Icon(painterResource(R.drawable.ic_chevron_left), contentDescription = stringResource(R.string.month_previous))
+        }
+        Text(
+            monthLabel(month),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.widthIn(min = 72.dp).semantics { liveRegion = LiveRegionMode.Polite },
+        )
+        IconButton(onClick = onNext, modifier = Modifier.size(TouchTarget)) {
+            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = stringResource(R.string.month_next))
+        }
     }
 }
 

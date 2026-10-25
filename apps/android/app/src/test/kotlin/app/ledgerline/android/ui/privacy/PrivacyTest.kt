@@ -50,7 +50,7 @@ import app.ledgerline.android.ui.insights.InsightsContent
 import app.ledgerline.android.ui.insights.NetWorthChart
 import app.ledgerline.android.ui.insights.insights
 import app.ledgerline.api.Money
-import app.ledgerline.android.ui.budgets.LineCard
+import app.ledgerline.android.ui.budgets.BudgetRow
 import app.ledgerline.android.ui.budgets.budgetLine
 import app.ledgerline.android.ui.budgets.budgetMonth
 import org.junit.Assert.assertEquals
@@ -124,7 +124,7 @@ class PrivacyTest {
     }
 
     @Test
-    fun aBudgetLineHidesWhatIsOverAndWhatCarriedIn() = check { LineCard(budgetLine("Fun", 0, 246912, carriedIn = 123456)) }
+    fun aBudgetLineHidesWhatIsOverAndWhatCarriedIn() = check { BudgetRow(budgetLine("Fun", 0, 246912, carriedIn = 123456), "Oct", 246912, true) }
 
     @Test
     fun insightsHideWhatWasSpentAndEachCategory() = check {
@@ -185,7 +185,7 @@ class PrivacyTest {
     }
 
     @Test
-    fun aBudgetLineHidesWhatWasOverspentBefore() = check { LineCard(budgetLine("Fun", 246912, 0, carriedIn = -123456)) }
+    fun aBudgetLineHidesWhatWasOverspentBefore() = check { BudgetRow(budgetLine("Fun", 246912, 0, carriedIn = -123456), "Oct", 0, true) }
 
     /** With privacy off the amount is there (so the check can see it); with privacy on it is nowhere. */
     private fun check(row: @Composable () -> Unit) {
