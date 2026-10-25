@@ -354,8 +354,8 @@ class CategoriesContentTest {
     @Test
     fun moreHasACategoriesCardThatOpensTheScreen() {
         val log = mutableListOf<String>()
-        compose.setContent { MoreContent(MoreActions({}, {}, { log += "categories" }, {}), 0.dp, Modifier.requiredHeight(3000.dp)) }
-        compose.onNodeWithContentDescription("Categories", substring = true).performClick()
+        compose.setContent { MoreContent(MoreActions({}, {}, { log += "categories" }, {}), app.ledgerline.android.ui.more.MoreSummary(), 0.dp, Modifier.requiredHeight(3000.dp)) }
+        compose.onNodeWithText("Categories").performClick()
         assertEquals(listOf("categories"), log)
     }
 }

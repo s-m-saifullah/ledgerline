@@ -338,8 +338,17 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         )
     }
 
+    private val moreSummaryFixture = app.ledgerline.android.ui.more.MoreSummary(
+        owed = Money(35_400, "USD"), owedClients = 4, lent = Money(89_189, "USD"), categoryGroups = 9, categorySubs = 18, version = "0.1.4",
+    )
+
     @Test
-    fun more() = shot("more", Tab.More) { MoreContent(MoreActions({}, {}, {}, {}), ListBottomSpace) }
+    fun moreOffline() = shot("more-offline", Tab.More) {
+        MoreContent(MoreActions({}, {}, {}, {}), app.ledgerline.android.ui.more.MoreSummary(version = "0.1.4"), ListBottomSpace)
+    }
+
+    @Test
+    fun more() = shot("more", Tab.More) { MoreContent(MoreActions({}, {}, {}, {}), moreSummaryFixture, ListBottomSpace) }
 
     private val longNotes = "Check for updates from Settings, or let the app look when it opens.\n" +
         "- See what is new before you download.\n" +
@@ -387,7 +396,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun moreWithUpdateNotice() = shot("more-update", Tab.More) {
-        MoreContent(MoreActions({}, {}, {}, {}), ListBottomSpace, notice = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}) })
+        MoreContent(MoreActions({}, {}, {}, {}), moreSummaryFixture, ListBottomSpace, notice = { app.ledgerline.android.ui.update.UpdateNotice("0.1.3", {}, {}) })
     }
 
     private val categoryItems = listOf(
@@ -440,7 +449,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun settingsUpdates() = shot("settings-updates", Tab.More) {
         SettingsContent(
-            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(), updates = UpdatesInfo(auto = false, newVersion = "0.1.3"), unsent = 0, attention = 0, canLock = true, signingOut = false),
+            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(), updates = UpdatesInfo(auto = false, newVersion = "0.1.3"), unsent = 0, attention = 0, canLock = true, signingOut = false, pill = app.ledgerline.android.ui.settings.SyncPill.Synced),
             SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
             // The Updates card sits below the first screen of Settings; shift the page up so this shot shows it.
@@ -451,7 +460,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun settings() = shot("settings", Tab.More) {
         SettingsContent(
-            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(KeepMode.ForAWhile, 30, KeepUnit.Minutes), updates = UpdatesInfo(auto = true, newVersion = "0.1.3"), unsent = 0, attention = 2, canLock = true, signingOut = false),
+            SettingsState(ThemeChoice.System, hideAmounts = false, centsFirst = true, allowScreenshots = false, filterKeep = FilterKeep(KeepMode.ForAWhile, 30, KeepUnit.Minutes), updates = UpdatesInfo(auto = true, newVersion = "0.1.3"), unsent = 0, attention = 2, canLock = true, signingOut = false, pill = app.ledgerline.android.ui.settings.SyncPill.Synced),
             SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
             ListBottomSpace,
         )

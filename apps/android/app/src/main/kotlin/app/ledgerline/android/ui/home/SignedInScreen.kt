@@ -60,6 +60,9 @@ import app.ledgerline.android.ui.loans.LoansScreen
 import app.ledgerline.android.ui.insights.InsightsViewModel
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
+import app.ledgerline.android.ui.more.addVisible
+import app.ledgerline.android.ui.more.moreSummary
+import app.ledgerline.android.BuildConfig
 import app.ledgerline.android.ui.categories.CategoriesScreen
 import app.ledgerline.android.ui.settings.SettingsScreen
 import app.ledgerline.android.ui.update.UpdateNotice
@@ -246,6 +249,11 @@ fun SignedInScreen(
                 "update" -> UpdateScreen(onBack = { moreOpen = "settings" }, bottomSpace = ListBottomSpace, modifier = inside)
                 else -> MoreContent(
                     MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "categories" }, { moreOpen = "settings" }),
+                    moreSummary(
+                        home.month.collectAsState().value,
+                        viewModel.categories.collectAsState().value,
+                        BuildConfig.VERSION_NAME.removeSuffix("-debug"),
+                    ),
                     ListBottomSpace,
                     inside,
                     notice = notice?.let { release ->
@@ -263,14 +271,17 @@ internal fun SignedInFrame(tab: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit,
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
-            // Filled with the accent and a white plus, as the web's Add button.
-            FloatingActionButton(
-                onClick = onAdd,
-                shape = MaterialTheme.shapes.large,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add))
+            // More and the screens opened from it have no Add button (ADR 0046).
+            if (addVisible(tab)) {
+                // Filled with the accent and a white plus, as the web's Add button.
+                FloatingActionButton(
+                    onClick = onAdd,
+                    shape = MaterialTheme.shapes.large,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Icon(painterResource(R.drawable.ic_add), contentDescription = stringResource(R.string.add))
+                }
             }
         },
         // Bottom right, where Material puts it and a thumb reaches it (owner's choice; the web keeps it central).

@@ -19,6 +19,7 @@ import app.ledgerline.android.ui.home.noHomeActions
 import app.ledgerline.android.ui.home.quietSync
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
+import app.ledgerline.android.ui.more.MoreSummary
 import app.ledgerline.android.update.Refusal
 import app.ledgerline.android.update.Release
 import app.ledgerline.android.update.UpdateProblem
@@ -217,15 +218,15 @@ class UpdateContentTest {
     @Test
     fun moreShowsTheNoticeAboveItsCardsOnlyWhenGivenOne() {
         compose.setContent {
-            MoreContent(MoreActions({}, {}, {}, {}), 0.dp, Modifier.requiredHeight(3000.dp), notice = { UpdateNotice("0.1.3", {}, {}) })
+            MoreContent(MoreActions({}, {}, {}, {}), MoreSummary(), 0.dp, Modifier.requiredHeight(3000.dp), notice = { UpdateNotice("0.1.3", {}, {}) })
         }
         compose.onNodeWithContentDescription("Version 0.1.3 is available, See what's new").assertExists()
-        compose.onNodeWithContentDescription("Settings", substring = true).assertExists()
+        compose.onNodeWithText("Settings").assertExists()
     }
 
     @Test
     fun moreWithoutANoticeShowsNone() {
-        compose.setContent { MoreContent(MoreActions({}, {}, {}, {}), 0.dp, Modifier.requiredHeight(3000.dp)) }
+        compose.setContent { MoreContent(MoreActions({}, {}, {}, {}), MoreSummary(), 0.dp, Modifier.requiredHeight(3000.dp)) }
         compose.onNodeWithContentDescription("Version 0.1.3 is available, See what's new").assertDoesNotExist()
     }
 }
