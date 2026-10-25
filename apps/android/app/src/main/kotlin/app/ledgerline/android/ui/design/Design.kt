@@ -91,7 +91,7 @@ fun LedgerCard(
     }
 }
 
-/** A card's own heading, `h2` inside a card (20 sp), with an optional muted line under it. */
+/** A card's own heading, `h2` inside a card (19 sp), with an optional muted line under it. */
 @Composable
 fun CardTitle(title: String, detail: String? = null) {
     Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })

@@ -310,11 +310,11 @@ internal fun SignedInFrame(tab: Tab, onSelect: (Tab) -> Unit, onAdd: () -> Unit,
     ) { padding -> content(Modifier.fillMaxSize().padding(padding)) }
 }
 
-/** The smallest a bar label may get, in sp for the phone's [fontScale]: 11 dp of actual height (ADR 0046). */
+/** The smallest a bar label may get, in sp for the phone's [fontScale]: 10 dp of actual height (ADR 0046). */
 internal fun smallestBarLabel(fontScale: Float): Float = BAR_LABEL_FLOOR_DP / fontScale
 
-/** The one text size below 12 sp: only so "Transactions" stays on one line at 320 dp or with the largest text. */
-internal const val BAR_LABEL_FLOOR_DP = 11f
+/** The bar labels are 10 sp, the floor; they shrink further only so "Transactions" stays on one line with a larger phone text setting, never under 10 dp of height. */
+internal const val BAR_LABEL_FLOOR_DP = app.ledgerline.android.ui.theme.TEXT_FLOOR_SP.toFloat()
 
 /**
  * One size for all five bar labels: the theme's, or smaller when the longest label ("Transactions" at 320 dp or

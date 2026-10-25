@@ -212,7 +212,7 @@ internal fun SpendingCard(
 @Composable
 private fun named(name: String, archived: Boolean) = if (archived) stringResource(R.string.insights_archived, name) else name
 
-/** `.insight-heading`: a section's 16 sp heading, 24 dp above and 12 dp below as on the web (less the list gap). */
+/** `.insight-heading`: a section's 14 sp heading, 24 dp above and 12 dp below as on the web (less the list gap). */
 @Composable
 private fun Heading(text: String) {
     Text(
