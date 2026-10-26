@@ -1,5 +1,7 @@
 package app.ledgerline.android.ui.loans
 
+import app.ledgerline.android.mirror.AccountRow
+import app.ledgerline.android.mirror.TransactionRow
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
 import app.ledgerline.android.session.SessionState
@@ -52,7 +54,7 @@ class LoansViewModelTest {
         harness.route("/api/v1/ledgers/ledger-a/home\\?.*") { harness.ok(HomeSummary.serializer(), homeSummary().copy(loans = homeLoans(20000, 15000))) }
         harness.route("/api/v1/ledgers/ledger-a/contacts/sam-rivera") { harness.ok(Contact.serializer(), contact("Sam Rivera", origin = "loan")) }
         harness.route("/api/v1/ledgers/ledger-a/contacts/sam-rivera/loans") { harness.ok(LoanList.serializer(), LoanList(listOf(loan("USD", 20000, opening = 5000)))) }
-        model = LoansViewModel(harness.reader(), harness.database.reads()).also { it.searchDelayMillis = 0 }
+        model = LoansViewModel(harness.reader(), harness.database.reads())
     }
 
     @After
@@ -65,12 +67,13 @@ class LoansViewModelTest {
     private fun personRequests() = harness.targets.filter { "/loans?" in it }
 
     @Test
-    fun nothingIsReadUntilTheScreenShowsItThenThePeopleWithActiveByDefault() {
+    fun nothingIsReadUntilTheScreenShowsItThenEveryoneWithActiveChosenByDefault() {
         harness.pulled("2026-10-22T10:00:00.000Z")
         assertTrue(harness.quiet())
 
         assertEquals(listOf(sam, jo, casey), model.people.rows())
-        assertEquals("/api/v1/ledgers/ledger-a/loans?status=active&limit=50", personRequests().single())
+        assertEquals("/api/v1/ledgers/ledger-a/loans?status=all&limit=50", personRequests().single())
+        assertEquals(LoanFilter.Active, model.filter.value)
         assertEquals("Bearer tok", harness.tokens.first())
     }
 
@@ -84,21 +87,70 @@ class LoansViewModelTest {
     }
 
     @Test
-    fun aSearchAndAStatusAreSentAndThePeopleStayOnScreenUntilTheNewOnesArrive() {
+    fun everyoneIsAskedForWithoutASearchAndTheChipsStayOnThePhone() {
         harness.pulled("2026-10-22T10:00:00.000Z")
         model.people.rows()
+        assertEquals(LoanFilter.Active, model.filter.value)
 
-        val shown = mutableListOf<Online<Paged<LoanPerson>>>()
-        val watcher = CoroutineScope(Dispatchers.Unconfined).launch { model.people.collect { shown += it } }
-        harness.delayMillis = 300
         model.search("sam")
-        harness.until { personRequests().any { r -> "text=sam" in r } }
-        model.filter("all")
-        harness.until { personRequests().any { r -> "status=all" in r && "text=sam" in r } }
+        model.filter(LoanFilter.Archived)
         Thread.sleep(600)
-        watcher.cancel()
-        assertTrue(shown.toString(), shown.none { it == Online.Loading })
-        assertTrue(personRequests().any { "status=active" in it && "text=sam" in it })
+        assertEquals("sam", model.text.value)
+        assertEquals(LoanFilter.Archived, model.filter.value)
+        assertEquals(1, personRequests().size)
+        assertTrue(personRequests().single().contains("status=all"))
+        assertTrue(personRequests().none { "text=" in it })
+    }
+
+    private val stamp = "2026-10-01T00:00:00.000Z"
+
+    private fun loanAccount(id: String, person: String) = AccountRow("ledger-a", id, 1, stamp, stamp, null, "Loan $id", "loan", "USD", 0, "USD", null, null, null, null, null, null, person, null)
+
+    private fun move(id: String, account: String, date: String, cents: Long, time: String? = null) =
+        TransactionRow("ledger-a", id, 1, stamp, stamp, null, account, null, "transfer", false, date, time, cents, "USD", null, null, null, null, null, null, null, null, null, "cleared", "1", cents, "USD")
+
+    private fun mirror(accounts: List<AccountRow>, moves: List<TransactionRow>) = runBlocking {
+        harness.database.dao().putAccounts(accounts)
+        harness.database.dao().putTransactions(moves)
+    }
+
+    @Test
+    fun aPersonsMovesAreTheirLoanAccountsLatestEntriesNewestFirstFromThePhone() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        mirror(
+            listOf(loanAccount("sam-usd", "sam-rivera"), loanAccount("jo-usd", "jo-chen")),
+            List(10) { move("s$it", "sam-usd", "2026-10-%02d".format(it + 1), 1000L + it) } + move("j1", "jo-usd", "2026-10-30", 5),
+        )
+        model.open("sam-rivera")
+        val moves = model.movements.settled { it.isNotEmpty() }
+        assertEquals(MovementLimit, moves.size)
+        assertEquals((9 downTo 2).map { "s$it" }, moves.map { it.id })
+    }
+
+    @Test
+    fun noPersonChosenMeansNoMoves() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        mirror(listOf(loanAccount("sam-usd", "sam-rivera")), listOf(move("s1", "sam-usd", "2026-10-01", 100)))
+        assertEquals(emptyList<Any>(), model.movements.settled())
+    }
+
+    @Test
+    fun aPersonWithoutALoanAccountHasNoMoves() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        mirror(listOf(loanAccount("jo-usd", "jo-chen")), listOf(move("j1", "jo-usd", "2026-10-01", 100)))
+        model.open("sam-rivera")
+        Thread.sleep(300)
+        assertEquals(emptyList<Any>(), model.movements.value)
+    }
+
+    @Test
+    fun closingAPersonClearsTheirMoves() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        mirror(listOf(loanAccount("sam-usd", "sam-rivera")), listOf(move("s1", "sam-usd", "2026-10-01", 100)))
+        model.open("sam-rivera")
+        model.movements.settled { it.isNotEmpty() }
+        model.close()
+        model.movements.settled { it.isEmpty() }
     }
 
     @Test

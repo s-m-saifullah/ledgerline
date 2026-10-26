@@ -25,6 +25,7 @@ import app.ledgerline.android.ui.home.SyncStatus
 import app.ledgerline.android.ui.home.TransactionsContent
 import app.ledgerline.android.ui.theme.LedgerlineTheme
 import app.ledgerline.android.online.Paged
+import app.ledgerline.android.ui.loans.LoanFilter
 import app.ledgerline.android.ui.loans.LoansListActions
 import app.ledgerline.android.ui.loans.LoansListContent
 import app.ledgerline.api.Contact
@@ -76,16 +77,18 @@ class SearchStaysPutTest {
     @Test
     fun theLoansSearchFieldStaysWhereItIsWhenTheListGetsShorter() {
         compose.setContent {
-            LoansListContent(Online.Loading, text, "active", Online.Ready(Paged<LoanPerson>(people, hasMore = false)), LoansListActions({}, { text = it }, {}, {}, {}, {}), short(560))
+            LedgerlineTheme {
+                LoansListContent(Online.Ready(app.ledgerline.android.ui.clients.homeLoans(1000, 0)), text, LoanFilter.Active, Online.Ready(Paged<LoanPerson>(people, hasMore = false)), LoansListActions({}, { text = it }, {}, {}, {}, {}), short(560))
+            }
         }
-        compose.onNode(hasScrollAction()).performScrollToIndex(1)
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(1)
         compose.waitForIdle()
-        val before = searchTop("Search people")
+        val before = compose.onNodeWithContentDescription("Search people").getUnclippedBoundsInRoot().top
 
         text = "person 1"
-        people = people.take(1)
         compose.waitForIdle()
-        assertEquals(before, searchTop("Search people"))
+        // The search stays because it is counted over everyone, not over what the search leaves.
+        assertEquals(before, compose.onNodeWithContentDescription("Search people").getUnclippedBoundsInRoot().top)
     }
 
     private var lines by mutableStateOf(

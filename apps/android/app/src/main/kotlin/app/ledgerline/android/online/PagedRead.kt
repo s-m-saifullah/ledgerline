@@ -71,3 +71,9 @@ class PagedRead<K, T>(
         more.tryEmit(Unit)
     }
 }
+
+/** The most rows the screens fetch on their own; past it a Load more button takes over. */
+const val AutoLoadCap = 500
+
+/** Rows asked of the API at a time, as the web does. */
+const val PageSize = 50

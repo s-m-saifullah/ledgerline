@@ -169,3 +169,7 @@ internal fun loan(currency: String, balance: Long, opening: Long = 0) = LoanBala
 
 /** What is lent out and owed in total, as Home reports it. */
 internal fun homeLoans(lent: Long, borrowed: Long) = app.ledgerline.api.HomeLoans(Money(lent, "USD"), Money(borrowed, "USD"))
+
+/** A move on a loan account: positive sent money out to them, negative brought money in. */
+internal fun movement(id: String, date: String, cents: Long, payee: String? = null, note: String? = null, time: String? = null, currency: String = "USD") =
+    app.ledgerline.android.mirror.EntryLine(id, date, time, "transfer", false, "cleared", cents, currency, payee, "Loan", null, null, null, "${date}T10:00:00Z", note)

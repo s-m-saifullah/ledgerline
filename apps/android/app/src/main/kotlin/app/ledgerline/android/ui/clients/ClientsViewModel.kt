@@ -6,6 +6,7 @@ import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.OnlineReader
 import app.ledgerline.android.online.Page
+import app.ledgerline.android.online.PageSize
 import app.ledgerline.android.online.PagedRead
 import app.ledgerline.android.online.Paged
 import app.ledgerline.android.online.map
@@ -27,19 +28,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Rows asked of the API at a time, as the web does. */
-const val PageSize = 50
-
-/** What a list of people is filtered by: the search text and the status (`all`, `active` or `archived`). Loans still reads this way. */
-data class ClientsQuery(val text: String, val status: String)
-
-/** The most rows the screens fetch on their own; past it a Load more button takes over. */
-const val AutoLoadCap = 500
-
 /**
  * Clients, read online (ADR 0043, slice 5): the list, and for the chosen client its details, services and history,
  * with a service's payments read when it is opened. Each list is read a page at a time and the screen asks for the
- * rest on its own (see [AutoLoadMore]), because the chips, the order and the totals need every client. Everything is read only while the screen
+ * rest on its own (see `AutoLoadMore`), because the chips, the order and the totals need every client. Everything is read only while the screen
  * shows it, after every pull, and on Retry or pull to refresh; nothing is written to the phone, and nothing can be
  * changed here (that stays on the web).
  */

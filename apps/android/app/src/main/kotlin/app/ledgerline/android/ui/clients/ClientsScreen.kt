@@ -5,13 +5,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import app.ledgerline.android.online.Online
-import app.ledgerline.android.online.Paged
+import app.ledgerline.android.ui.design.AutoLoadMore
 import java.time.LocalDate
 
 /**
@@ -77,19 +75,5 @@ fun ClientsScreen(
                 ),
             )
         }
-    }
-}
-
-/**
- * Asks for the next page as soon as the one shown has arrived, until there is none or [AutoLoadCap] rows are shown, so
- * the owner never has to press Load more for a list that is a few dozen rows long. Runs only while the screen shows
- * the list, which keeps the view model's rule that nothing is read for a screen that is not on show; a failed page
- * stops it (the list's own Load more button retries).
- */
-@Composable
-internal fun <T> AutoLoadMore(state: Online<Paged<T>>, loadMore: () -> Unit) {
-    val ready = (state as? Online.Ready)?.value
-    LaunchedEffect(ready) {
-        if (ready != null && ready.hasMore && !ready.loadingMore && !ready.moreFailed && ready.items.size < AutoLoadCap) loadMore()
     }
 }

@@ -49,6 +49,12 @@ Top bar; segmented control (two to four options); grouped list card (leading ava
 - **"Paid in Oct"** (money received from the client this month, on the client's screen) is not built on the phone: the API has no such figure. It is planned for the web redesign, then the phone follows.
 - The two screens are built as close to the concept as the app's rules allow: its components, in the app's one design language, with writes (Settle, Receive, Mark Paid, Send Reminder, + Service, Lend, Record Repayment) left to their own follow-ups.
 
+### Amendment, 2026-10-25: Loans (the owner's choices)
+
+- The people list has Active, Archived and All chips, shown only while there is an archived person, and search only with eight or more people in total (the chips and the search work on the phone, over every page, like Clients). A row has the name, one hint (Owes you, You owe, Settled) and the amount.
+- A person's screen has a balance card and a History list: the latest eight moves on their loan accounts (Sent or Received, from the phone's own entries, so they also show offline), then the balance from before Ledgerline as the last line. This adds the web's "latest moves" to the phone, still read-only.
+- Lend / Borrow, Record Repayment and Lend More stay follow-ups.
+
 ## Not changing
 
 The API, the mirror, the outbox, sync, privacy mode through `money()`, FLAG_SECURE, integer minor-unit money, each screen's content as a function of plain data, the search-stays-put rule (`narrowingRoom` and a `SearchStaysPut` test on every list screen with a search or filter), the colour source (`tokens.css`), light, dark and system themes, and the existing tests (kept green, or changed on purpose and said so in the pull request).
