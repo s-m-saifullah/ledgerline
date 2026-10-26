@@ -21,7 +21,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -31,12 +30,16 @@ import javax.inject.Inject
 /** Rows asked of the API at a time, as the web does. */
 const val PageSize = 50
 
-/** What the list is filtered by: the search text and the status (`all`, `active` or `archived`). */
+/** What a list of people is filtered by: the search text and the status (`all`, `active` or `archived`). Loans still reads this way. */
 data class ClientsQuery(val text: String, val status: String)
 
+/** The most rows the screens fetch on their own; past it a Load more button takes over. */
+const val AutoLoadCap = 500
+
 /**
- * Clients, read online (ADR 0043, slice 5): the list a page at a time, and for the chosen client its details,
- * services and history, with a service's payments read when it is opened. Everything is read only while the screen
+ * Clients, read online (ADR 0043, slice 5): the list, and for the chosen client its details, services and history,
+ * with a service's payments read when it is opened. Each list is read a page at a time and the screen asks for the
+ * rest on its own (see [AutoLoadMore]), because the chips, the order and the totals need every client. Everything is read only while the screen
  * shows it, after every pull, and on Retry or pull to refresh; nothing is written to the phone, and nothing can be
  * changed here (that stays on the web).
  */
@@ -51,22 +54,28 @@ class ClientsViewModel @Inject constructor(
 
     private val retries = MutableStateFlow(0)
     private val _text = MutableStateFlow("")
-    private val _status = MutableStateFlow("all")
+    private val _filter = MutableStateFlow(ClientFilter.Open)
+    private val _tab = MutableStateFlow(ClientTab.Paid)
     private val _selected = MutableStateFlow<String?>(null)
     val text: StateFlow<String> = _text.asStateFlow()
-    val status: StateFlow<String> = _status.asStateFlow()
+
+    /** Which clients the chips show; the server is always asked for all of them. */
+    val filter: StateFlow<ClientFilter> = _filter.asStateFlow()
+
+    /** Which list shows under a client's unpaid services. */
+    val tab: StateFlow<ClientTab> = _tab.asStateFlow()
 
     /** The client being looked at, or null while the list shows. */
     val selected: StateFlow<String?> = _selected.asStateFlow()
 
-    private val query = combine(_text.debounce { if (it.isEmpty()) 0L else searchDelayMillis }, _status, ::ClientsQuery)
+    private val query = _text.debounce { if (it.isEmpty()) 0L else searchDelayMillis }
     private val ofClient = reads.readings(_selected.filterNotNull(), retries)
 
     // A search or status change is the same list: its rows stay on screen until the new first page arrives, so typing
     // does not flash a Loading card between keystrokes. Only another ledger shows Loading.
     private val list = PagedRead(viewModelScope, reads.readings(query, retries), { it.ledger }) { reading, cursor ->
-        val (text, status) = reading.params
-        reader.read { contacts(reading.ledger, "clients", status, text.ifEmpty { null }, cursor, PageSize) }.map { Page(it.items, it.nextCursor) }
+        val text = reading.params
+        reader.read { contacts(reading.ledger, "clients", "all", text.ifEmpty { null }, cursor, PageSize) }.map { Page(it.items, it.nextCursor) }
     }
     val clients: StateFlow<Online<Paged<Contact>>> = list.state
 
@@ -92,12 +101,17 @@ class ClientsViewModel @Inject constructor(
         _text.value = text
     }
 
-    fun filter(status: String) {
-        _status.value = status
+    fun filter(filter: ClientFilter) {
+        _filter.value = filter
+    }
+
+    fun tab(tab: ClientTab) {
+        _tab.value = tab
     }
 
     fun open(id: String) {
         _payments.value = emptyMap()
+        _tab.value = ClientTab.Paid
         _selected.value = id
     }
 

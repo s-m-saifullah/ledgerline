@@ -1,6 +1,6 @@
 package app.ledgerline.android.ui.clients
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,130 +8,175 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
-import app.ledgerline.android.ui.design.AmountRow
-import app.ledgerline.android.ui.design.BackLink
-import app.ledgerline.android.ui.design.ChoiceField
+import app.ledgerline.android.ui.design.Avatar
+import app.ledgerline.android.ui.design.CardGap
+import app.ledgerline.android.ui.design.EmptyState
+import app.ledgerline.android.ui.design.FilterChip
+import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
+import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
-import app.ledgerline.android.ui.design.MutedLine
-import app.ledgerline.android.ui.design.narrowingRoom
-import app.ledgerline.android.ui.design.PageHeader
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
-import app.ledgerline.android.ui.design.SearchField
+import app.ledgerline.android.ui.design.SearchBox
+import app.ledgerline.android.ui.design.SectionLabel
+import app.ledgerline.android.ui.design.SegmentedControl
+import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.tabular
+import app.ledgerline.android.ui.format.formatEntryDate
+import app.ledgerline.android.ui.format.formatServiceTime
+import app.ledgerline.android.ui.format.formatShortDate
 import app.ledgerline.android.ui.home.ListBottomSpace
 import app.ledgerline.android.ui.home.Muted
+import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
+import app.ledgerline.android.ui.theme.LocalPalette
 import app.ledgerline.api.Contact
 import app.ledgerline.api.HistoryEvent
 import app.ledgerline.api.Service
 import app.ledgerline.api.ServicePayment
+import java.time.LocalDate
 
 /** What the clients list's controls show and do, as plain data. */
 class ClientsListActions(
     val onBack: () -> Unit,
     val onSearch: (String) -> Unit,
-    val onFilter: (String) -> Unit,
+    val onFilter: (ClientFilter) -> Unit,
     val onOpen: (String) -> Unit,
     val onMore: () -> Unit,
     val onRetry: () -> Unit,
 )
 
 /**
- * Clients as on the web (ADR 0045), read-only: the header, a search and a status, then a card per client with
- * what they owe and their oldest unpaid service. Adding a client stays on the web (ADR 0043).
+ * Clients (ADR 0046), read-only: a fixed top bar with the search box and the Open, Settled and All chips under it
+ * (so a shorter result can never move them), then, scrolling, what the open clients owe together and one grouped
+ * card of clients, those who owe the most first. Adding a client stays on the web (ADR 0043).
  */
 @Composable
 internal fun ClientsListContent(
     text: String,
-    status: String,
+    filter: ClientFilter,
     state: Online<Paged<Contact>>,
     actions: ClientsListActions,
     modifier: Modifier = Modifier,
+    today: LocalDate = LocalDate.now(),
 ) {
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            BackLink(stringResource(R.string.back_more), actions.onBack)
-            PageHeader(
-                stringResource(R.string.clients_title),
-                eyebrow = stringResource(R.string.eyebrow_owed),
-                subtitle = stringResource(R.string.clients_subtitle),
-            )
-        }
-        item { SearchField(stringResource(R.string.clients_search), text, actions.onSearch) }
-        item {
-            ChoiceField(
-                stringResource(R.string.clients_status),
-                listOf(
-                    "all" to stringResource(R.string.clients_all),
-                    "active" to stringResource(R.string.clients_active),
-                    "archived" to stringResource(R.string.clients_archived),
-                ),
-                status,
-                actions.onFilter,
-                modifier = Modifier.padding(horizontal = ScreenMargin),
-            )
-        }
-        when (state) {
-            Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.clients_loading)) } }
-            Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetry) }
-            Online.Failed -> item { RetryNote(stringResource(R.string.clients_failed), actions.onRetry) }
-            is Online.Ready -> {
-                val paged = state.value
-                if (paged.items.isEmpty()) {
-                    item {
-                        LedgerCard {
-                            Text(
-                                stringResource(if (text.isNotEmpty()) R.string.clients_empty_none else R.string.clients_empty_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.semantics { heading() },
-                            )
-                            Muted(stringResource(R.string.clients_empty_body))
-                        }
-                    }
-                }
-                items(paged.items, key = { it.id }) { ClientCard(it, onClick = { actions.onOpen(it.id) }) }
-                if (paged.hasMore) {
-                    item { LoadMore(stringResource(R.string.load_more_clients), paged.loadingMore, paged.moreFailed, actions.onMore) }
-                }
+    Column(modifier) {
+        TopBar(stringResource(R.string.clients_title), onBack = actions.onBack)
+        val loaded = (state as? Online.Ready)?.value?.items.orEmpty()
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SearchBox(stringResource(R.string.clients_search), text, actions.onSearch, Modifier.padding(horizontal = ScreenMargin))
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = ScreenMargin), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val open = loaded.count { matches(it, ClientFilter.Open) }
+                FilterChip(stringResource(R.string.client_filter_open, open), filter == ClientFilter.Open) { actions.onFilter(ClientFilter.Open) }
+                FilterChip(stringResource(R.string.client_filter_settled), filter == ClientFilter.Settled) { actions.onFilter(ClientFilter.Settled) }
+                FilterChip(stringResource(R.string.client_filter_all), filter == ClientFilter.All) { actions.onFilter(ClientFilter.All) }
             }
         }
-        narrowingRoom(narrowed = text.isNotEmpty() || status != "all")
+        LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+            when (state) {
+                Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.clients_loading)) } }
+                Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetry) }
+                Online.Failed -> item { RetryNote(stringResource(R.string.clients_failed), actions.onRetry) }
+                is Online.Ready -> clientItems(state.value, text, filter, actions, today)
+            }
+        }
     }
 }
 
-/** `.client-card`: the name, what they owe, and the oldest unpaid service. */
+private fun LazyListScope.clientItems(paged: Paged<Contact>, text: String, filter: ClientFilter, actions: ClientsListActions, today: LocalDate) {
+    val shown = visibleClients(paged.items, filter)
+    // What they owe together is of everyone, not of a search's few; it waits for a search to be cleared.
+    if (text.isEmpty()) clientsTotal(paged.items)?.let { total -> item { TotalCard(total) } }
+    if (shown.isEmpty()) {
+        item {
+            EmptyState(
+                stringResource(
+                    when {
+                        text.isNotEmpty() -> R.string.clients_empty_none
+                        paged.items.isEmpty() -> R.string.clients_empty
+                        filter == ClientFilter.Open -> R.string.clients_nobody_owes
+                        else -> R.string.clients_no_settled
+                    },
+                ),
+            )
+        }
+    } else {
+        item { GroupedListCard { shown.forEach { client -> row { ClientRow(client, today) { actions.onOpen(client.id) } } } } }
+    }
+    if (paged.hasMore) {
+        item { LoadMore(stringResource(R.string.load_more_clients), paged.loadingMore, paged.moreFailed, actions.onMore) }
+    }
+}
+
+/** What the open clients owe together, and how many of them; with a foreign currency without a rate, which is left out. */
 @Composable
-internal fun ClientCard(client: Contact, onClick: () -> Unit) {
-    val name = if (client.archivedAt != null) stringResource(R.string.client_archived, client.name) else client.name
-    val oldest = client.oldestOpenServiceDate?.let { stringResource(R.string.client_oldest_unpaid, it) } ?: stringResource(R.string.client_no_open)
-    val owed = balances(client)
+private fun TotalCard(total: ClientsTotal) {
+    val owed = money(total.amount.amount, total.amount.currency)
+    val label = stringResource(R.string.client_total_label)
+    val count = pluralStringResource(R.plurals.more_clients_owe, total.clients, total.clients)
+    val missing = total.unconverted.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.client_total_missing, it.joinToString(", ")) }
+    val spoken = listOfNotNull(label, owed.spoken, count, missing).joinToString(", ")
     LedgerCard(
-        modifier = Modifier
-            .clickable(onClick = onClick)
-            .clearAndSetSemantics { contentDescription = listOf(name, owed.spoken, oldest).joinToString(", ") },
+        modifier = if (owed.spoken != owed.text) Modifier.clearAndSetSemantics { contentDescription = spoken } else Modifier,
+        padding = PaddingValues(16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(name, style = MaterialTheme.typography.titleMedium)
-            Balances(owed)
-            Text(oldest, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(owed.text, style = MaterialTheme.typography.displaySmall.tabular(), maxLines = 1, softWrap = false)
+            Text(count, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (missing != null) Text(missing, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/** The hint under a client: how long ago the oldest unpaid service was, and when; or that nothing is open. */
+@Composable
+internal fun unpaidHint(client: Contact, today: LocalDate): String {
+    val date = client.oldestOpenServiceDate ?: return stringResource(R.string.client_no_open)
+    val days = daysAgo(date, today) ?: return stringResource(R.string.client_oldest_unpaid, date)
+    val ago = if (days == 0L) stringResource(R.string.client_today) else stringResource(R.string.client_days_ago, days.toInt())
+    return stringResource(R.string.client_unpaid_since, ago, formatShortDate(date))
+}
+
+/** A client: their initials, the name with how long the oldest unpaid service has waited, and what they owe. */
+@Composable
+internal fun ClientRow(client: Contact, today: LocalDate, onClick: () -> Unit) {
+    val name = if (client.archivedAt != null) stringResource(R.string.client_archived, client.name) else client.name
+    val hint = unpaidHint(client, today)
+    val owed = balances(client)
+    val owing = client.openBalances.isNotEmpty()
+    ListRow(
+        title = name,
+        subtitle = hint,
+        leading = { Avatar(client.name) },
+        trailing = if (owing) {
+            {
+                Column(horizontalAlignment = Alignment.End) {
+                    owed.lines.forEach { Text(it, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false) }
+                }
+            }
+        } else {
+            null
+        },
+        onClick = onClick,
+        described = if (LocalPrivacy.current) listOf(name, owed.spoken, hint).joinToString(", ") else null,
+    )
 }
 
 /** What a client owes as shown and as read aloud: each currency's balance, then its value at today's rates. */
@@ -165,9 +210,13 @@ internal fun Balances(owed: OwedText) {
     }
 }
 
+/** Which of a client's two lists shows under the unpaid services. */
+enum class ClientTab { Paid, History }
+
 /** What one client's screen shows and does, as plain data. */
 class ClientActions(
     val onBack: () -> Unit,
+    val onTab: (ClientTab) -> Unit,
     val onMoreServices: () -> Unit,
     val onMoreHistory: () -> Unit,
     val onTogglePayments: (String) -> Unit,
@@ -178,8 +227,9 @@ class ClientActions(
 )
 
 /**
- * One client as on the web, read-only: their details and what they owe, their services (each with its payments,
- * opened on request) and what happened to them. Logging services and payments stays on the web.
+ * One client (ADR 0046), read-only: a top bar with their name, a balance card (what they owe, what is overdue, how
+ * to reach them), the unpaid services pinned with Overdue marked, then Paid and History as a segmented control
+ * (history is batched). Logging services and receiving payments stay on the web.
  */
 @Composable
 internal fun ClientContent(
@@ -188,119 +238,109 @@ internal fun ClientContent(
     history: Online<Paged<HistoryEvent>>,
     payments: Map<String, Online<List<ServicePayment>>>,
     today: String,
+    tab: ClientTab,
     actions: ClientActions,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item {
-            BackLink(stringResource(R.string.clients_all), actions.onBack)
-            PageHeader(
-                stringResource(R.string.clients_title),
-                eyebrow = stringResource(R.string.eyebrow_owed),
-                subtitle = stringResource(R.string.clients_subtitle),
-            )
-        }
-        when (client) {
-            Online.Loading -> Unit
-            Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryClient) }
-            Online.Failed -> item { RetryNote(stringResource(R.string.client_failed), actions.onRetryClient) }
-            is Online.Ready -> item { ClientDetails(client.value) }
-        }
-        item { SectionHeading(stringResource(R.string.services_title)) }
-        pagedSection(
-            services,
-            loading = R.string.services_loading,
-            offline = R.string.clients_offline,
-            failed = R.string.services_failed,
-            empty = R.string.services_empty,
-            more = R.string.load_more_services,
-            onMore = actions.onMoreServices,
-            onRetry = actions.onRetryServices,
-            card = { rows ->
-                LedgerCard(padding = PaddingValues(horizontal = 20.dp, vertical = 4.dp)) {
-                    rows.forEachIndexed { index, service ->
-                        ServiceRow(
-                            service,
-                            divider = index > 0,
-                            today = today,
-                            payments = payments[service.id],
-                            onTogglePayments = { actions.onTogglePayments(service.id) },
-                            onRetryPayments = { actions.onRetryPayments(service.id) },
-                        )
+    Column(modifier) {
+        val name = (client as? Online.Ready)?.value?.let { if (it.archivedAt != null) stringResource(R.string.client_archived, it.name) else it.name }
+        TopBar(name ?: stringResource(R.string.clients_title), onBack = actions.onBack)
+        LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+            val loadedServices = (services as? Online.Ready)?.value?.items.orEmpty()
+            when (client) {
+                Online.Loading -> Unit
+                Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryClient) }
+                Online.Failed -> item { RetryNote(stringResource(R.string.client_failed), actions.onRetryClient) }
+                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today)) }
+            }
+            val split = splitServices(loadedServices, today)
+            val servicesState = services as? Online.Ready
+            if (split.unpaid.isNotEmpty()) {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SectionLabel(stringResource(R.string.client_unpaid_heading, countLabel(split.unpaid.size, servicesState?.value?.hasMore == true)))
+                        GroupedListCard { split.unpaid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }) } } }
                     }
                 }
-            },
-        )
-        item { SectionHeading(stringResource(R.string.history_title)) }
-        pagedSection(
-            history,
-            loading = R.string.history_loading,
-            offline = R.string.clients_offline,
-            failed = R.string.history_failed,
-            empty = null,
-            more = R.string.load_more_history,
-            onMore = actions.onMoreHistory,
-            onRetry = actions.onRetryHistory,
-            card = { rows ->
-                LedgerCard(padding = PaddingValues(horizontal = 20.dp, vertical = 4.dp)) {
-                    rows.forEachIndexed { index, event -> HistoryRow(event, divider = index > 0) }
-                }
-            },
-        )
-    }
-}
-
-private fun <T> LazyListScope.pagedSection(
-    state: Online<Paged<T>>,
-    loading: Int,
-    offline: Int,
-    failed: Int,
-    empty: Int?,
-    more: Int,
-    onMore: () -> Unit,
-    onRetry: () -> Unit,
-    card: @Composable (List<T>) -> Unit,
-) {
-    when (state) {
-        Online.Loading -> item { LedgerCard { Muted(stringResource(loading)) } }
-        Online.Offline -> item { RetryNote(stringResource(offline), onRetry) }
-        Online.Failed -> item { RetryNote(stringResource(failed), onRetry) }
-        is Online.Ready -> {
-            val paged = state.value
-            if (paged.items.isEmpty() && empty != null) item { MutedLine(stringResource(empty)) }
-            if (paged.items.isNotEmpty()) item { card(paged.items) }
-            if (paged.hasMore) item { LoadMore(stringResource(more), paged.loadingMore, paged.moreFailed, onMore) }
+            }
+            item {
+                val paidCount = servicesState?.let { countLabel(split.paid.size, it.value.hasMore) }
+                val eventCount = (history as? Online.Ready)?.value?.let { countLabel(it.items.size, it.hasMore) }
+                SegmentedControl(
+                    listOf(
+                        paidCount?.let { stringResource(R.string.client_tab_paid, it) } ?: stringResource(R.string.service_paid),
+                        eventCount?.let { stringResource(R.string.client_tab_history, it) } ?: stringResource(R.string.history_title),
+                    ),
+                    tab.ordinal,
+                    { actions.onTab(ClientTab.entries[it]) },
+                    Modifier.padding(horizontal = ScreenMargin),
+                )
+            }
+            when (tab) {
+                ClientTab.Paid -> paidItems(services, split.paid, payments, today, actions)
+                ClientTab.History -> historyItems(history, actions)
+            }
         }
     }
 }
 
-@Composable
-private fun SectionHeading(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.titleLarge,
-        modifier = Modifier.padding(start = ScreenMargin, end = ScreenMargin, top = 12.dp).semantics { heading() },
-    )
+private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List<Service>, payments: Map<String, Online<List<ServicePayment>>>, today: String, actions: ClientActions) {
+    when (services) {
+        Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.services_loading)) } }
+        Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryServices) }
+        Online.Failed -> item { RetryNote(stringResource(R.string.services_failed), actions.onRetryServices) }
+        is Online.Ready -> {
+            val everything = services.value.items
+            if (everything.isEmpty()) item { EmptyState(stringResource(R.string.services_empty)) }
+            if (paid.isNotEmpty()) {
+                item { GroupedListCard { paid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }) } } } }
+            }
+            if (services.value.hasMore) {
+                item { LoadMore(stringResource(R.string.load_more_services), services.value.loadingMore, services.value.moreFailed, actions.onMoreServices) }
+            }
+        }
+    }
 }
 
-/** `.client-detail`: the name, what they owe, their oldest unpaid service and how to reach them. */
+private fun LazyListScope.historyItems(history: Online<Paged<HistoryEvent>>, actions: ClientActions) {
+    when (history) {
+        Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.history_loading)) } }
+        Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryHistory) }
+        Online.Failed -> item { RetryNote(stringResource(R.string.history_failed), actions.onRetryHistory) }
+        is Online.Ready -> {
+            val lines = batchHistory(history.value.items)
+            if (lines.isNotEmpty()) item { GroupedListCard { lines.forEach { line -> row { HistoryLineRow(line) } } } }
+            if (history.value.hasMore) {
+                item { LoadMore(stringResource(R.string.load_more_history), history.value.loadingMore, history.value.moreFailed, actions.onMoreHistory) }
+            }
+        }
+    }
+}
+
+/**
+ * What they owe (a figure per currency, with its value at today's rates when there is a foreign one), a red line
+ * when a service is overdue (how many, and the earliest due date), and how to reach them.
+ */
 @Composable
-private fun ClientDetails(client: Contact) {
+private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?) {
     val owed = balances(client)
-    val name = if (client.archivedAt != null) stringResource(R.string.client_archived, client.name) else client.name
-    val balanceLabel = stringResource(R.string.client_open_balance)
-    LedgerCard {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-            Text(name, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+    val label = stringResource(R.string.client_open_balance)
+    val overdueLine = overdue?.let { (count, due) -> pluralStringResource(R.plurals.client_overdue_line, count, count, formatShortDate(due)) }
+    val contact = listOfNotNull(client.phone, client.email, client.note)
+    LedgerCard(padding = PaddingValues(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.clearAndSetSemantics { contentDescription = "$balanceLabel ${owed.spoken}" },
+                modifier = if (LocalPrivacy.current) Modifier.clearAndSetSemantics { contentDescription = "$label ${owed.spoken}" } else Modifier,
             ) {
-                Text(stringResource(R.string.client_open_balance), style = MaterialTheme.typography.bodyMedium)
+                Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Balances(owed)
             }
-            client.oldestOpenServiceDate?.let { Muted(stringResource(R.string.client_oldest_service, it)) }
-            listOfNotNull(client.phone, client.email, client.note).forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+            if (overdueLine != null) Text(overdueLine, style = MaterialTheme.typography.bodySmall, color = LocalPalette.current.danger)
+            contact.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }
 }
+
+/** The date of a service as a hint shows it: the day, and the time when it has one. */
+internal fun whenOf(service: Service): String = formatEntryDate(service.serviceDate) + (service.serviceTime?.let { " · ${formatServiceTime(it)}" } ?: "")

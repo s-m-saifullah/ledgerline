@@ -29,7 +29,9 @@ import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.budgets.BudgetsContent
 import app.ledgerline.android.ui.clients.ClientActions
-import app.ledgerline.android.ui.clients.ClientCard
+import app.ledgerline.android.ui.clients.ClientFilter
+import app.ledgerline.android.ui.clients.ClientRow
+import app.ledgerline.android.ui.clients.ClientTab
 import app.ledgerline.android.ui.clients.ClientContent
 import app.ledgerline.android.ui.clients.ClientsListActions
 import app.ledgerline.android.ui.clients.ClientsListContent
@@ -144,9 +146,10 @@ class PrivacyTest {
     private val tall = Modifier.requiredHeight(6000.dp)
 
     @Test
-    fun aClientCardHidesWhatTheyOweIncludingTheValueAtTodaysRates() = check {
-        ClientCard(
+    fun aClientRowHidesWhatTheyOwe() = check {
+        ClientRow(
             contact("Northwind", owed = 123456, oldest = "2026-09-21", balances = listOf(Money(123456, "USD"), Money(123456, "EUR"))),
+            today = java.time.LocalDate.of(2026, 10, 23),
             onClick = {},
         )
     }
@@ -161,14 +164,15 @@ class PrivacyTest {
             Online.Ready(Paged(listOf(event("paymentEdited", audit, corrected, before = corrected)), hasMore = false)),
             mapOf("website-audit" to Online.Ready(listOf(corrected))),
             today = "2026-10-23",
-            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}),
+            tab = ClientTab.Paid,
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
             modifier = tall,
         )
     }
 
     @Test
     fun theClientsListHidesEveryBalance() = check {
-        ClientsListContent("", "all", Online.Ready(Paged(listOf(contact("Northwind", owed = 123456), contact("Harbor", owed = 123456)), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}), tall)
+        ClientsListContent("", ClientFilter.Open, Online.Ready(Paged(listOf(contact("Northwind", owed = 123456), contact("Harbor", owed = 123456)), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}), tall)
     }
 
     @Test

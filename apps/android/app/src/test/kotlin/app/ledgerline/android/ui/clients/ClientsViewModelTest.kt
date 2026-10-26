@@ -93,7 +93,7 @@ class ClientsViewModelTest {
     }
 
     @Test
-    fun aSearchAndAStatusAreSentAndTheRowsStayOnScreenUntilTheNewOnesArrive() {
+    fun aSearchIsSentAndTheRowsStayOnScreenUntilTheNewOnesArrive() {
         harness.pulled("2026-10-22T10:00:00.000Z")
         model.clients.rows()
 
@@ -103,14 +103,35 @@ class ClientsViewModelTest {
         harness.delayMillis = 300
         model.search("north")
         harness.until { clientRequests().any { r -> "text=north" in r } }
-        model.filter("archived")
-        harness.until { clientRequests().any { r -> "status=archived" in r } }
         Thread.sleep(600)
         watcher.cancel()
         assertTrue(shown.toString(), shown.none { it == Online.Loading })
         assertEquals(2, (model.clients.value as Online.Ready).value.items.size)
         assertTrue(clientRequests().any { "status=all" in it && "text=north" in it })
-        assertTrue(clientRequests().any { "status=archived" in it && "text=north" in it })
+    }
+
+    @Test
+    fun theChipsAreKeptOnThePhoneAndNeverSentToTheServer() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        model.clients.rows()
+        assertEquals(ClientFilter.Open, model.filter.value)
+
+        model.filter(ClientFilter.Settled)
+        Thread.sleep(500)
+        assertEquals(ClientFilter.Settled, model.filter.value)
+        assertEquals(1, clientRequests().size)
+        assertTrue(clientRequests().all { "status=all" in it })
+    }
+
+    @Test
+    fun aClientOpensOnItsPaidServicesAndTheTabIsKeptUntilItCloses() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        model.open("northwind-design")
+        assertEquals(ClientTab.Paid, model.tab.value)
+        model.tab(ClientTab.History)
+        assertEquals(ClientTab.History, model.tab.value)
+        model.open("harbor-cafe")
+        assertEquals(ClientTab.Paid, model.tab.value)
     }
 
     @Test

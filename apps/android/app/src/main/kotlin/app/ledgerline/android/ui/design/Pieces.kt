@@ -185,11 +185,15 @@ fun ListRow(
     described: String? = null,
     /** More under the subtitle, such as a row of tags. */
     extra: (@Composable ColumnScope.() -> Unit)? = null,
+    /** A pill beside the title, such as [StatusPill]. */
+    badge: (@Composable () -> Unit)? = null,
+    /** What a screen reader says a tap does ("Show payments"), when the row has more than one use. */
+    onClickLabel: String? = null,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick, role = Role.Button) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(onClickLabel = onClickLabel, onClick = onClick, role = Role.Button) else Modifier)
             .heightIn(min = RowHeight)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .then(if (described != null) Modifier.clearAndSetSemantics { contentDescription = described } else Modifier),
@@ -199,7 +203,14 @@ fun ListRow(
         leading?.invoke()
         val words: @Composable () -> Unit = {
             Column {
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                if (badge == null) {
+                    Text(title, style = MaterialTheme.typography.titleMedium)
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f, fill = false))
+                        badge()
+                    }
+                }
                 if (subtitle != null) {
                     Text(subtitle, style = MaterialTheme.typography.bodySmall, color = subtitleColor.takeOrElse { MaterialTheme.colorScheme.onSurfaceVariant })
                 }
@@ -209,6 +220,23 @@ fun ListRow(
         // The amount goes under the words when it would squeeze them (a large amount, the largest text).
         if (trailing == null) Box(Modifier.weight(1f)) { words() } else TitleAndAmount(words, trailing, minTitle = 80.dp, modifier = Modifier.weight(1f))
     }
+}
+
+/** How a [StatusPill] reads: red for what needs attention (overdue), the accent for what is done. */
+enum class PillTone { Danger, Accent }
+
+/** A small outlined word beside a title (Overdue); colour is never the only cue, the word says it. */
+@Composable
+fun StatusPill(text: String, tone: PillTone = PillTone.Danger) {
+    val palette = LocalPalette.current
+    val color = if (tone == PillTone.Danger) palette.danger else palette.accent
+    Text(
+        text,
+        style = MaterialTheme.typography.labelMedium,
+        color = color,
+        maxLines = 1,
+        modifier = Modifier.border(1.dp, color, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
+    )
 }
 
 /** The one or two capital letters that stand for [name]: its first letters of the first two words, or "?" for none. */

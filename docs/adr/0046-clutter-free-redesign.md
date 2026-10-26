@@ -42,6 +42,13 @@ Top bar; segmented control (two to four options); grouped list card (leading ava
 - **Sign-in, address and lock.** Same tokens and top bar, one primary button each.
 - **States.** Loading, empty, offline and error use the shared empty state and the restyled retry note.
 
+### Amendment, 2026-10-25: Clients and Loans follow the concept more closely (the owner's rulings)
+
+- **History is batched, as the concept does.** On a client, consecutive history lines of the same kind written in the same minute become one line: "3 Payments received" with what each was ("$144 + $72 + $72") and the total, or "3 Services logged" with the dates they cover. A single line keeps its own words and, where history has it, the balance after it. This replaces "history lines are not merged"; "service version" is still dropped.
+- **Overdue** is shown on a service whose due date has passed, and on a client row only when the list carries a due date and it has passed. The client list does not carry one yet (only the oldest unpaid date), so the badge shows on the client's own screen first and on the list when the server sends the oldest due date (its own small change).
+- **"Paid in Oct"** (money received from the client this month, on the client's screen) is not built on the phone: the API has no such figure. It is planned for the web redesign, then the phone follows.
+- The two screens are built as close to the concept as the app's rules allow: its components, in the app's one design language, with writes (Settle, Receive, Mark Paid, Send Reminder, + Service, Lend, Record Repayment) left to their own follow-ups.
+
 ## Not changing
 
 The API, the mirror, the outbox, sync, privacy mode through `money()`, FLAG_SECURE, integer minor-unit money, each screen's content as a function of plain data, the search-stays-put rule (`narrowingRoom` and a `SearchStaysPut` test on every list screen with a search or filter), the colour source (`tokens.css`), light, dark and system themes, and the existing tests (kept green, or changed on purpose and said so in the pull request).

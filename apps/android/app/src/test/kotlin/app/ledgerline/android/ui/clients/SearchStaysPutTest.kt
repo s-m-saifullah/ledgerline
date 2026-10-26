@@ -59,16 +59,18 @@ class SearchStaysPutTest {
     @Test
     fun theClientsSearchFieldStaysWhereItIsWhenTheListGetsShorter() {
         compose.setContent {
-            ClientsListContent(text, "all", Online.Ready(Paged<Contact>(clients, hasMore = false)), ClientsListActions({}, { text = it }, {}, {}, {}, {}), short(640))
+            LedgerlineTheme {
+                ClientsListContent(text, ClientFilter.All, Online.Ready(Paged<Contact>(clients, hasMore = false)), ClientsListActions({}, { text = it }, {}, {}, {}, {}), short(640))
+            }
         }
-        compose.onNode(hasScrollAction()).performScrollToIndex(1)
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(1)
         compose.waitForIdle()
-        val before = searchTop("Search clients")
+        val before = compose.onNodeWithContentDescription("Search clients").getUnclippedBoundsInRoot().top
 
         text = "zzz"
         clients = emptyList()
         compose.waitForIdle()
-        assertEquals(before, searchTop("Search clients"))
+        assertEquals(before, compose.onNodeWithContentDescription("Search clients").getUnclippedBoundsInRoot().top)
     }
 
     @Test

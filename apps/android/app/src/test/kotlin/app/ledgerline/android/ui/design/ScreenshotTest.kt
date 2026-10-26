@@ -14,6 +14,8 @@ import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.budgets.BudgetsContent
 import app.ledgerline.android.ui.clients.ClientActions
 import app.ledgerline.android.ui.clients.ClientContent
+import app.ledgerline.android.ui.clients.ClientFilter
+import app.ledgerline.android.ui.clients.ClientTab
 import app.ledgerline.android.ui.clients.ClientsListActions
 import app.ledgerline.android.ui.clients.ClientsListContent
 import app.ledgerline.android.ui.clients.contact
@@ -293,21 +295,21 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             contact("Overseas Print Shop", owed = 98000, oldest = "2026-10-01", balances = listOf(Money(80000, "EUR"), Money(18000, "USD")), unconverted = listOf("EUR")),
             contact("Willow Lane Studio with a long name", owed = 123456789, oldest = "2026-07-04", archived = true),
         )
-        ClientsListContent("", "all", Online.Ready(Paged(rows, hasMore = true)), ClientsListActions({}, {}, {}, {}, {}, {}))
+        ClientsListContent("", ClientFilter.Open, Online.Ready(Paged(rows, hasMore = true)), ClientsListActions({}, {}, {}, {}, {}, {}))
     }
 
     @Test
     fun clientsSearch() = shot("clients-search", Tab.More) {
-        ClientsListContent("north", "all", Online.Ready(Paged(listOf(northwind), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
+        ClientsListContent("north", ClientFilter.All, Online.Ready(Paged(listOf(northwind), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
     }
 
     @Test
     fun clientsEmpty() = shot("clients-empty", Tab.More) {
-        ClientsListContent("zzz", "all", Online.Ready(Paged(emptyList<Contact>(), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
+        ClientsListContent("zzz", ClientFilter.All, Online.Ready(Paged(emptyList<Contact>(), hasMore = false)), ClientsListActions({}, {}, {}, {}, {}, {}))
     }
 
     @Test
-    fun clientsOffline() = shot("clients-offline", Tab.More) { ClientsListContent("", "all", Online.Offline, ClientsListActions({}, {}, {}, {}, {}, {})) }
+    fun clientsOffline() = shot("clients-offline", Tab.More) { ClientsListContent("", ClientFilter.Open, Online.Offline, ClientsListActions({}, {}, {}, {}, {}, {})) }
 
     @Test
     fun client() = shot("client", Tab.More) {
@@ -317,7 +319,8 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             Online.Loading,
             mapOf("website-audit" to Online.Ready(listOf(auditPayment))),
             today = "2026-10-23",
-            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}),
+            tab = ClientTab.Paid,
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
         )
     }
 
@@ -335,7 +338,8 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             Online.Ready(Paged(events, hasMore = false)),
             emptyMap(),
             today = "2026-10-23",
-            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}),
+            tab = ClientTab.History,
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
         )
     }
 

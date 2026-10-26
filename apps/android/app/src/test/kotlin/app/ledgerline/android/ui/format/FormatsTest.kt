@@ -38,4 +38,21 @@ class FormatsTest {
     fun anEntryDateIsAMediumDate() {
         assertEquals("Oct 20, 2026", formatEntryDate("2026-10-20", us))
     }
+
+    @Test
+    fun aShortDateLeavesOutTheYear() {
+        assertEquals("Oct 12", formatShortDate("2026-10-12", us))
+    }
+
+    @Test
+    fun aShortMomentIsTheLocalDateAndTimeWithoutTheYear() {
+        val zone = ZoneId.of("America/Chicago")
+        assertEquals("Oct 21, 5:42 AM", formatMomentShort("2026-10-21T10:42:00Z", zone, us).replace('\u202f', ' '))
+    }
+
+    @Test
+    fun aShortMomentFollowsTheZoneAcrossMidnight() {
+        val zone = ZoneId.of("America/Chicago")
+        assertEquals("Oct 20, 11:30 PM", formatMomentShort("2026-10-21T04:30:00Z", zone, us).replace('\u202f', ' '))
+    }
 }
