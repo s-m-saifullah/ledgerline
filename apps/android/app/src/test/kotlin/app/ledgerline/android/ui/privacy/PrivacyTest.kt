@@ -38,6 +38,7 @@ import app.ledgerline.android.ui.clients.ClientsListContent
 import app.ledgerline.android.ui.clients.contact
 import app.ledgerline.android.ui.clients.event
 import app.ledgerline.android.ui.clients.homeLoans
+import app.ledgerline.android.ui.clients.movement
 import app.ledgerline.android.ui.clients.loan
 import app.ledgerline.android.ui.clients.payment
 import app.ledgerline.android.ui.clients.person
@@ -45,7 +46,8 @@ import app.ledgerline.android.ui.clients.service
 import app.ledgerline.android.ui.loans.LoansListActions
 import app.ledgerline.android.ui.loans.LoansListContent
 import app.ledgerline.android.ui.loans.PersonActions
-import app.ledgerline.android.ui.loans.PersonCard
+import app.ledgerline.android.ui.loans.LoanFilter
+import app.ledgerline.android.ui.loans.PersonRow
 import app.ledgerline.android.ui.loans.PersonContent
 import app.ledgerline.android.ui.insights.CashFlowChart
 import app.ledgerline.android.ui.insights.InsightsContent
@@ -176,16 +178,16 @@ class PrivacyTest {
     }
 
     @Test
-    fun aPersonCardHidesWhatTheyOweYou() = check { PersonCard(person("Sam", "USD" to 123456L), onClick = {}) }
+    fun aPersonRowHidesWhatTheyOweYou() = check { PersonRow(person("Sam", "USD" to 123456L), onClick = {}) }
 
     @Test
     fun aPersonScreenHidesTheirBalanceAndWhatStoodBefore() = check {
-        PersonContent(Online.Ready(contact("Sam", origin = "loan")), Online.Ready(listOf(loan("USD", 123456, opening = 123456))), PersonActions({}, {}, {}), tall)
+        PersonContent(Online.Ready(contact("Sam", origin = "loan")), Online.Ready(listOf(loan("USD", 123456, opening = 123456))), listOf(movement("m", "2026-10-02", 123456), movement("n", "2026-10-03", -123456, payee = "Repayment")), PersonActions({}, {}, {}), tall)
     }
 
     @Test
     fun theLoansListHidesWhatIsLentOutAndOwed() = check {
-        LoansListContent(Online.Ready(homeLoans(123456, 123456)), "", "active", Online.Ready(Paged(listOf(person("Sam", "USD" to 123456L)), hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}), tall)
+        LoansListContent(Online.Ready(homeLoans(123456, 123456)), "", LoanFilter.Active, Online.Ready(Paged(listOf(person("Sam", "USD" to 123456L)), hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}), tall)
     }
 
     @Test

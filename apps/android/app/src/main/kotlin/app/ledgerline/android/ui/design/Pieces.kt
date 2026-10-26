@@ -63,8 +63,9 @@ import app.ledgerline.android.ui.theme.LocalPalette
 
 /*
  * The redesign's building blocks (ADR 0046). Each is a function of plain data, so a screen's content can be
- * rendered in a test or a screenshot without a view model. They replace PageHeader, ListCard, NavCard, StatCard
- * and ShareBar screen by screen; those are deleted when nothing uses them.
+ * rendered in a test or a screenshot without a view model. They replace the old header, cards and rows screen by
+ * screen; an old piece is deleted when nothing uses it (PageHeader, BackLink, SearchField and ChoiceField still serve
+ * Categories, the update screen, Settings and the editor).
  */
 
 /** The least height of a touch target on Android (ADR 0046); the least height of a list row is [RowHeight]. */

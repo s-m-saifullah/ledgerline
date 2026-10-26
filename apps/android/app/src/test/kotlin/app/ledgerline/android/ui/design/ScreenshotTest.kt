@@ -22,6 +22,9 @@ import app.ledgerline.android.ui.clients.contact
 import app.ledgerline.android.ui.clients.event
 import app.ledgerline.android.ui.clients.homeLoans
 import app.ledgerline.android.ui.clients.loan
+import app.ledgerline.android.ui.clients.movement
+import app.ledgerline.android.ui.loans.LoanFilter
+import app.ledgerline.api.LoanPerson
 import app.ledgerline.android.ui.clients.payment
 import app.ledgerline.android.ui.clients.person
 import app.ledgerline.android.ui.clients.service
@@ -343,10 +346,23 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         )
     }
 
+    private val loanRows = listOf(person("Sam Rivera", "USD" to 20000L), person("Jo Chen", "USD" to -15000L, "EUR" to 4000L), person("Casey Morgan"), person("Alex Settled", "USD" to 0L))
+
     @Test
     fun loans() = shot("loans", Tab.More) {
-        val rows = listOf(person("Sam Rivera", "USD" to 20000L), person("Jo Chen", "USD" to -15000L, "EUR" to 4000L), person("Casey Morgan"), person("Alex Settled", "USD" to 0L))
-        LoansListContent(Online.Ready(homeLoans(20000, 15000)), "", "active", Online.Ready(Paged(rows, hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}))
+        LoansListContent(Online.Ready(homeLoans(20000, 15000)), "", LoanFilter.Active, Online.Ready(Paged(loanRows, hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    /** Eight or more people and one archived: the search and the chips show. */
+    @Test
+    fun loansMany() = shot("loans-many", Tab.More) {
+        val more = loanRows + List(5) { person("Person ${it + 1}", "USD" to 1000L * (it + 1)) } + person("Old Friend", "USD" to 0L, archived = true)
+        LoansListContent(Online.Ready(homeLoans(20000, 15000)), "", LoanFilter.All, Online.Ready(Paged(more, hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}))
+    }
+
+    @Test
+    fun loansEmpty() = shot("loans-empty", Tab.More) {
+        LoansListContent(Online.Ready(homeLoans(0, 0)), "", LoanFilter.Active, Online.Ready(Paged(emptyList<LoanPerson>(), hasMore = false)), LoansListActions({}, {}, {}, {}, {}, {}))
     }
 
     @Test
@@ -354,6 +370,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         PersonContent(
             Online.Ready(contact("Jo Chen", origin = "loan")),
             Online.Ready(listOf(loan("USD", -15000, opening = -5000), loan("EUR", 4000), loan("GBP", 0))),
+            listOf(movement("m1", "2026-10-20", -2500, payee = "Birthday dinner"), movement("m2", "2026-10-02", 4000, note = "Flights", currency = "EUR")),
             PersonActions({}, {}, {}),
         )
     }

@@ -1,10 +1,11 @@
-package app.ledgerline.android.ui.clients
+package app.ledgerline.android.ui.design
 
 import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import app.ledgerline.android.online.AutoLoadCap
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
 import org.junit.Assert.assertEquals

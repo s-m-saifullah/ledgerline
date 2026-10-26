@@ -1,10 +1,8 @@
 package app.ledgerline.android.ui.design
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,7 +21,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -150,64 +147,6 @@ fun HeroCard(label: String, amount: ShownMoney, notes: List<String>, figures: Li
                 notes.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
             }
         }
-    }
-}
-
-/**
- * `.stat-card`: a label and a muted detail with the amount beside them, or under them when the card is too
- * narrow for both (the web's phone grid does the same), so an amount is never broken across lines.
- */
-@Composable
-fun StatCard(
-    label: String,
-    amount: ShownMoney,
-    detail: String,
-    modifier: Modifier = Modifier,
-    amountColor: Color = Color.Unspecified,
-    onClick: (() -> Unit)? = null,
-) {
-    val described = listOf(label, amount.spoken, detail).joinToString(", ")
-    LedgerCard(
-        modifier = modifier
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
-            .clearAndSetSemantics { contentDescription = described },
-        padding = PaddingValues(horizontal = 20.dp, vertical = 18.dp),
-    ) {
-        BoxWithConstraints {
-            val figure = @Composable {
-                Text(amount.text, style = MaterialTheme.typography.displaySmall.tabular(), color = amountColor, maxLines = 1, softWrap = false)
-            }
-            val words = @Composable { modifier: Modifier ->
-                Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(label, style = MaterialTheme.typography.bodySmall)
-                    Text(detail, style = MaterialTheme.typography.labelMedium.copy(fontWeight = MaterialTheme.typography.bodySmall.fontWeight), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            // Stack when the card is narrow or the text is enlarged, so neither the words nor the amount squeeze.
-            if (maxWidth < 300.dp * LocalDensity.current.fontScale.coerceAtLeast(1f)) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    words(Modifier)
-                    figure()
-                }
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    words(Modifier.weight(1f).padding(end = 12.dp))
-                    figure()
-                }
-            }
-        }
-    }
-}
-
-/** `.activity-card` with a `.section-heading`: a title row (with an optional text action) over divided rows. */
-@Composable
-fun ListCard(title: String, action: Pair<String, () -> Unit>? = null, content: @Composable ColumnScope.() -> Unit) {
-    LedgerCard(padding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 4.dp)) {
-        Row(modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f).semantics { heading() })
-            if (action != null) LinkButton(action.first, onClick = action.second)
-        }
-        content()
     }
 }
 
