@@ -53,6 +53,10 @@ fun formatUpdated(serverTime: String, zone: ZoneId = ZoneId.systemDefault(), tod
 fun formatEntryDate(date: String, locale: Locale = Locale.getDefault()): String =
     LocalDate.parse(date).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
 
+/** "Oct 12" for "2026-10-12", in the phone's language: a date in a row's hint, where the year is left out. */
+fun formatShortDate(date: String, locale: Locale = Locale.getDefault()): String =
+    LocalDate.parse(date).format(DateTimeFormatter.ofPattern("MMM d", locale))
+
 /** "October 2026" for "2026-10", in the phone's language. */
 fun monthLabel(month: String, locale: Locale = Locale.getDefault()): String =
     YearMonth.parse(month).format(DateTimeFormatter.ofPattern("LLLL yyyy", locale))
@@ -79,3 +83,9 @@ fun formatServiceTime(time: String, locale: Locale = Locale.getDefault()): Strin
 /** A moment from the server (UTC) as the phone's local date and time, as the web's `toLocaleString`. */
 fun formatMoment(serverTime: String, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
     Instant.parse(serverTime).atZone(zone).format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT).withLocale(locale))
+
+/** "Oct 23, 4:01 PM": a moment from the server in the phone's time zone, without the year, for a row's hint. */
+fun formatMomentShort(serverTime: String, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
+    val at = Instant.parse(serverTime).atZone(zone)
+    return at.format(DateTimeFormatter.ofPattern("MMM d, ", locale)) + at.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+}

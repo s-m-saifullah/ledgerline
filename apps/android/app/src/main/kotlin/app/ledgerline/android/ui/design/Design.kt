@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -31,7 +30,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.ui.privacy.ShownMoney
 import app.ledgerline.android.ui.theme.LocalPalette
@@ -210,46 +208,6 @@ fun ListCard(title: String, action: Pair<String, () -> Unit>? = null, content: @
             if (action != null) LinkButton(action.first, onClick = action.second)
         }
         content()
-    }
-}
-
-/**
- * A row in a list card: a bold title and muted lines on the left, the amount and a muted word under it on the
- * right, as the web's account and transaction rows. [divider] draws the line above it (not above the first).
- */
-@Composable
-fun AmountRow(
-    title: String,
-    details: List<String>,
-    amount: ShownMoney,
-    under: String?,
-    described: String,
-    divider: Boolean,
-    underColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    extra: (@Composable ColumnScope.() -> Unit)? = null,
-    onClick: (() -> Unit)? = null,
-) {
-    if (divider) HorizontalDivider(color = LocalPalette.current.border)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
-            .heightIn(min = 56.dp)
-            .padding(vertical = 14.dp)
-            .clearAndSetSemantics { contentDescription = described },
-        verticalAlignment = Alignment.Top,
-    ) {
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            details.forEach {
-                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            }
-            extra?.invoke(this)
-        }
-        Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 12.dp)) {
-            Text(amount.text, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false)
-            if (under != null) Text(under, style = MaterialTheme.typography.bodyMedium, color = underColor)
-        }
     }
 }
 
