@@ -201,8 +201,9 @@ class EditorViewModel @Inject constructor(
             if (opening != session) return@launch
             if (result is Written.Done) {
                 categories = categories.filter { it.id != result.value.id } + result.value
-                _newCategory.value = null
+                // Choose it before the box closes: whoever sees the box closed (a screen, a test) then also sees the choice.
                 update { it.copy(categoryId = result.value.id) }
+                _newCategory.value = null
             } else {
                 _newCategory.value = _newCategory.value?.copy(creating = false, error = result.toCategoryError())
             }
