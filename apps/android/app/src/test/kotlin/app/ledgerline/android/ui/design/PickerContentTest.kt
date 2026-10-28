@@ -1,4 +1,4 @@
-package app.ledgerline.android.ui.editor
+package app.ledgerline.android.ui.design
 
 import android.app.Application
 import androidx.compose.foundation.layout.fillMaxSize
@@ -175,6 +175,11 @@ class PickerContentTest {
         }
         compose.onNodeWithText("New category").assertIsDisplayed()
         compose.onNodeWithText("Cancel").assertIsDisplayed()
+    }
+
+    @Test
+    fun theSearchBoxComesFromEightChoices() {
+        assertEquals(8, PickerSearchFrom)
     }
 
     @Test

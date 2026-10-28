@@ -4,16 +4,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -28,17 +27,27 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.BuildConfig
 import app.ledgerline.android.R
 import app.ledgerline.android.session.Protection
+import app.ledgerline.android.ui.design.CardGap
+import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.ScreenMargin
+import app.ledgerline.android.ui.design.TopBar
 
+/** What the lock screens' buttons do. */
+class LockActions(val primary: () -> Unit, val secondary: () -> Unit)
+
+/** A top bar and a column on the app's background, inside the safe area. */
 @Composable
-private fun ScreenColumn(content: @Composable () -> Unit) {
+private fun LockFrame(title: String, content: @Composable () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            modifier = Modifier
-                .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) { content() }
+        Column(Modifier.safeDrawingPadding().fillMaxSize()) {
+            TopBar(title)
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin, vertical = CardGap),
+                verticalArrangement = Arrangement.spacedBy(CardGap),
+                horizontalAlignment = Alignment.Start,
+            ) { content() }
+        }
     }
 }
 
@@ -52,9 +61,14 @@ private fun Problem(problem: LockProblem?, detail: String?) {
         )
         // A short reason code for testing; release builds show only the sentence above.
         if (BuildConfig.DEBUG && detail != null) {
-            Text("Debug: $detail", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Debug: $detail", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+@Composable
+private fun Line(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /** A stored session is closed. The system prompt opens once on arrival; Unlock opens it again. */
@@ -68,23 +82,17 @@ fun LockedScreen(viewModel: LockViewModel = hiltViewModel()) {
             viewModel.unlock()
         }
     }
-    ScreenColumn {
-        Text(stringResource(R.string.lock_title), style = MaterialTheme.typography.headlineSmall)
-        Text(
-            stringResource(R.string.lock_body),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    LockedContent(state, LockActions(viewModel::unlock, viewModel::signInAgain))
+}
+
+/** The locked screen as plain data (ADR 0046): a top bar, one line, one Unlock button and a link. */
+@Composable
+fun LockedContent(state: LockUiState, actions: LockActions) {
+    LockFrame(stringResource(R.string.lock_title)) {
+        Line(stringResource(R.string.lock_body))
         Problem(state.problem, state.detail)
-        Button(
-            shape = MaterialTheme.shapes.small,
-            onClick = viewModel::unlock,
-            enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        ) { Text(stringResource(R.string.lock_unlock)) }
-        TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::signInAgain, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) {
-            Text(stringResource(R.string.lock_sign_in_again))
-        }
+        PrimaryButton(stringResource(R.string.lock_unlock), actions.primary, Modifier.fillMaxWidth(), enabled = !state.busy)
+        LinkButton(stringResource(R.string.lock_sign_in_again), actions.secondary, Modifier.offset(x = (-12).dp), enabled = !state.busy)
     }
 }
 
@@ -92,37 +100,29 @@ fun LockedScreen(viewModel: LockViewModel = hiltViewModel()) {
 @Composable
 fun KeepSignedInScreen(viewModel: LockViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
-    val available = viewModel.protection == Protection.Available
-    ScreenColumn {
-        Text(stringResource(R.string.keep_title), style = MaterialTheme.typography.headlineSmall)
-        Text(
+    KeepSignedInContent(state, viewModel.protection, LockActions(viewModel::protect, viewModel::notNow))
+}
+
+/** The offer as plain data: one line that depends on what the phone can do, then Use fingerprint or screen lock, or Continue. */
+@Composable
+fun KeepSignedInContent(state: LockUiState, protection: Protection, actions: LockActions) {
+    val available = protection == Protection.Available
+    LockFrame(stringResource(R.string.keep_title)) {
+        Line(
             stringResource(
-                when (viewModel.protection) {
+                when (protection) {
                     Protection.Available -> R.string.keep_body
                     Protection.NoScreenLock -> R.string.keep_body_no_lock
                     Protection.Unavailable -> R.string.keep_body_unavailable
                 },
             ),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Problem(state.problem, state.detail)
         if (available) {
-            Button(
-                shape = MaterialTheme.shapes.small,
-                onClick = viewModel::protect,
-                enabled = !state.busy,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            ) { Text(stringResource(R.string.keep_button)) }
-            TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::notNow, enabled = !state.busy, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.keep_not_now))
-            }
+            PrimaryButton(stringResource(R.string.keep_button), actions.primary, Modifier.fillMaxWidth(), enabled = !state.busy)
+            LinkButton(stringResource(R.string.keep_not_now), actions.secondary, Modifier.offset(x = (-12).dp), enabled = !state.busy)
         } else {
-            Button(
-                shape = MaterialTheme.shapes.small,
-                onClick = viewModel::notNow,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-            ) { Text(stringResource(R.string.keep_continue)) }
+            PrimaryButton(stringResource(R.string.keep_continue), actions.secondary, Modifier.fillMaxWidth())
         }
     }
 }

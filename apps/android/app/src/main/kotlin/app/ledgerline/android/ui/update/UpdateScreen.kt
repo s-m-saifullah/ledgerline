@@ -2,6 +2,10 @@ package app.ledgerline.android.ui.update
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,11 +25,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.BuildConfig
 import app.ledgerline.android.R
-import app.ledgerline.android.ui.design.BackLink
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.CardTitle
 import app.ledgerline.android.ui.design.LedgerCard
-import app.ledgerline.android.ui.design.PageHeader
+import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.RowHeight
+import app.ledgerline.android.ui.design.TopBar
+import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.update.Refusal
@@ -61,14 +67,27 @@ fun UpdateScreen(onBack: () -> Unit, bottomSpace: Dp, modifier: Modifier = Modif
 @Composable
 fun UpdateContent(installed: String, state: UpdateState, actions: UpdateActions, bottomSpace: Dp, modifier: Modifier = Modifier) {
     val release = releaseOf(state)
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        item { BackLink(stringResource(R.string.back_settings), actions.onBack) }
+    Column(modifier) {
+        TopBar(stringResource(R.string.updates_title), onBack = actions.onBack)
+        UpdateList(installed, state, release, actions, bottomSpace)
+    }
+}
+
+@Composable
+private fun UpdateList(installed: String, state: UpdateState, release: Release?, actions: UpdateActions, bottomSpace: Dp) {
+    LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         item {
-            PageHeader(
-                stringResource(R.string.updates_title),
-                eyebrow = stringResource(R.string.eyebrow_yours),
-                subtitle = stringResource(R.string.updates_subtitle, installed),
-            )
+            GroupedListCard {
+                row {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(stringResource(R.string.updates_installed), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                        Text(installed, style = MaterialTheme.typography.titleMedium.tabular())
+                    }
+                }
+            }
         }
         item {
             LedgerCard {
@@ -186,7 +205,7 @@ private fun Progress(received: Long, total: Long) {
 
 @Composable
 private fun Buttons(content: @Composable () -> Unit) {
-    androidx.compose.foundation.layout.Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
+    Column(modifier = Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
 }
 
 /** "12.3 MB", one decimal and a dot whatever the phone's language, as a size (not money). */

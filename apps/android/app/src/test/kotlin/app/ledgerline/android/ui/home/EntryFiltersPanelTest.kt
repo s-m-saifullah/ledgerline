@@ -18,7 +18,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.online.Online
-import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.insights.insights
 import app.ledgerline.android.ui.theme.LedgerlineTheme
 import org.junit.Assert.assertEquals

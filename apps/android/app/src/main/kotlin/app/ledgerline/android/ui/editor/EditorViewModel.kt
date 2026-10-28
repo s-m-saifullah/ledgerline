@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.editor
 
+import app.ledgerline.android.ui.design.Choice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.AccountRow

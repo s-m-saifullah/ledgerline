@@ -18,9 +18,4 @@ class EditorModelTest {
     fun swappingTwiceIsWhereItStarted() {
         assertEquals(form, form.swapped().swapped())
     }
-
-    @Test
-    fun theSearchBoxComesFromEightChoices() {
-        assertEquals(8, PickerSearchFrom)
-    }
 }

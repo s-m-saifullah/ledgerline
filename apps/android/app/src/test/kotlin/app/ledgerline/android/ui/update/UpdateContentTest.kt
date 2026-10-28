@@ -68,7 +68,8 @@ class UpdateContentTest {
     @Test
     fun beforeAnyCheckOnlyTheButtonIsOffered() {
         val taps = show(UpdateState.Idle)
-        compose.onNodeWithText("Version 0.1.2 is installed.").assertExists()
+        compose.onNodeWithText("Installed").assertExists()
+        compose.onNodeWithText("0.1.2").assertExists()
         compose.onNodeWithText("Check for updates").performClick()
         assertEquals(listOf("check"), taps.log)
     }
@@ -173,9 +174,10 @@ class UpdateContentTest {
     }
 
     @Test
-    fun theBackLinkReturnsToSettings() {
+    fun theBackArrowReturnsToSettingsAndTheBarSaysUpdates() {
         val taps = show(UpdateState.Idle)
-        compose.onNodeWithText("←  Settings").performClick()
+        compose.onNodeWithText("Updates").assertExists()
+        compose.onNodeWithContentDescription("Back").performClick()
         assertEquals(listOf("back"), taps.log)
     }
 

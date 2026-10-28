@@ -44,31 +44,6 @@ fun TextStyle.tabular() = copy(fontFeatureSettings = "tnum")
 val ScreenMargin = 16.dp
 val CardGap = 12.dp
 
-/** `.eyebrow` + `h1` + subtitle: the top of a page, scrolling with it. [below] holds a control such as the month switcher. */
-@Composable
-fun PageHeader(title: String, eyebrow: String? = null, subtitle: String? = null, below: (@Composable () -> Unit)? = null) {
-    Column(modifier = Modifier.fillMaxWidth().padding(start = ScreenMargin, end = ScreenMargin, top = 24.dp, bottom = 16.dp)) {
-        if (eyebrow != null) {
-            Text(
-                eyebrow.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-        }
-        Text(title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-        if (subtitle != null) {
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
-            )
-        }
-        below?.invoke()
-    }
-}
-
 /** `.settings-card`, `.activity-card`: a surface card with a 1 dp border. */
 @Composable
 fun LedgerCard(
@@ -189,8 +164,8 @@ fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
 
 /** `.text-button`: the accent colour, for light actions such as Manage or Try again. */
 @Composable
-fun LinkButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    TextButton(onClick = onClick, shape = MaterialTheme.shapes.small, modifier = modifier.heightIn(min = 48.dp)) {
+fun LinkButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+    TextButton(onClick = onClick, enabled = enabled, shape = MaterialTheme.shapes.small, modifier = modifier.heightIn(min = 48.dp)) {
         Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }

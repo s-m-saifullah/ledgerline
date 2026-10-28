@@ -273,10 +273,10 @@ class SettingsContentTest {
     }
 
     @Test
-    fun theNumberAndUnitBoxesShowOnlyForATime() {
+    fun theNumberAndUnitShowOnlyForATime() {
         showKeeping(FilterKeep(KeepMode.UntilLeave), Taps())
         compose.onNodeWithText("Number").assertDoesNotExist()
-        compose.onNodeWithText("Unit").assertDoesNotExist()
+        compose.onNodeWithText("Days").assertDoesNotExist()
     }
 
     @Test
@@ -298,20 +298,19 @@ class SettingsContentTest {
     fun theUnitIsChosenFromMinutesHoursAndDays() {
         val taps = Taps()
         showKeeping(FilterKeep(KeepMode.ForAWhile, 2, KeepUnit.Hours), taps)
-        compose.onNodeWithContentDescription("Unit").performClick()
         compose.onNodeWithText("Days").performClick()
-        assertEquals(listOf(FilterKeep(KeepMode.ForAWhile, 2, KeepUnit.Days)), taps.keeps)
+        compose.onNodeWithText("Minutes").performClick()
+        assertEquals(listOf(FilterKeep(KeepMode.ForAWhile, 2, KeepUnit.Days), FilterKeep(KeepMode.ForAWhile, 2, KeepUnit.Minutes)), taps.keeps)
     }
 
     @Test
     fun theUnitIsSingularForOneAndPluralOtherwise() {
         showKeeping(FilterKeep(KeepMode.ForAWhile, 1, KeepUnit.Hours), Taps())
+        // All three show at once, and all follow the number.
         compose.onNodeWithText("Hour").assertExists()
-        compose.onNodeWithText("Hours").assertDoesNotExist()
-        compose.onNodeWithContentDescription("Unit").performClick()
-        // The list follows the number too.
         compose.onNodeWithText("Minute").assertExists()
         compose.onNodeWithText("Day").assertExists()
+        compose.onNodeWithText("Hours").assertDoesNotExist()
         compose.onNodeWithText("Minutes").assertDoesNotExist()
     }
 

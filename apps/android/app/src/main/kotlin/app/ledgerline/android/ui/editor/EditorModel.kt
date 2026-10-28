@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.editor
 
+import app.ledgerline.android.ui.design.Choice
 import android.content.Context
 import app.ledgerline.android.mirror.CategoryRow
 import androidx.core.content.edit
@@ -50,9 +51,6 @@ enum class FormError {
     AccountMissing, ToAccountMissing, SameAccount, CategoryMissing, CouldNotSave,
 }
 
-/** One entry of a list the owner picks from; [archived] ones are offered only while they are the current choice. */
-data class Choice(val id: String, val label: String, val currency: String = "", val archived: Boolean = false)
-
 /**
  * The categories of one kind in the web's order: each main category with its subcategories under it, by their sort
  * order. Archived ones are left out unless one is the current choice (which then shows as archived) or [includeArchived]
@@ -101,18 +99,6 @@ data class EditorForm(
 
 /** The form with From and To exchanged: a transfer's swap button. */
 fun EditorForm.swapped() = copy(accountId = toAccountId, toAccountId = accountId)
-
-/** A picker sheet offers a search box from this many choices on (the same rule as Loans' search). */
-const val PickerSearchFrom = 8
-
-/** A picker with a search box takes this share of the screen height and keeps it while the list narrows. */
-const val PickerSheetHeight = 0.65f
-
-/** The choices whose label has [query] in it, ignoring case; all of them for a blank query. */
-fun pickerChoices(choices: List<Choice>, query: String): List<Choice> {
-    val term = query.trim()
-    return if (term.isEmpty()) choices else choices.filter { it.label.contains(term, ignoreCase = true) }
-}
 
 data class EditorState(
     val isNew: Boolean,

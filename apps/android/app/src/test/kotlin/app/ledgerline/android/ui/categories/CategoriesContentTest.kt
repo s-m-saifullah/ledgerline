@@ -349,9 +349,26 @@ class CategoriesContentTest {
     @Test
     fun theParentCanBeChosenFromTheActiveMainCategories() {
         val taps = showForm(CategoryForm.forNew("expense").copy(name = "Milk"), parents = listOf(food))
-        compose.onNodeWithContentDescription("Parent category").performClick()
+        compose.onNodeWithText("Parent category").performClick()
         compose.onNodeWithText("Food").performClick()
         assertEquals(id(1), taps.forms.single().parentId)
+    }
+
+    @Test
+    fun theParentRowSaysNoParentUntilOneIsChosenAndTheListOffersNoParentToo() {
+        val taps = showForm(CategoryForm.forNew("expense").copy(name = "Milk", parentId = id(1)), parents = listOf(food))
+        compose.onNodeWithText("Food").assertExists()
+        compose.onNodeWithText("Parent category").performClick()
+        compose.onNodeWithText("No parent").performClick()
+        assertEquals(null, taps.forms.single().parentId)
+    }
+
+    @Test
+    fun cancellingTheParentListGoesBackToTheForm() {
+        showForm(CategoryForm.forNew("expense").copy(name = "Milk"), parents = listOf(food))
+        compose.onNodeWithText("Parent category").performClick()
+        compose.onNodeWithText("Cancel").performClick()
+        compose.onNodeWithText("Category name").assertExists()
     }
 
     @Test
@@ -374,7 +391,7 @@ class CategoriesContentTest {
     @Test
     fun aMainCategoryWithSubcategoriesCannotBeGivenAParent() {
         showForm(CategoryForm.forEdit(food), hasSubcategories = true)
-        compose.onNodeWithContentDescription("Parent category").assertDoesNotExist()
+        compose.onNodeWithText("Parent category").assertDoesNotExist()
         compose.onNodeWithText("Has subcategories", substring = true).assertExists()
     }
 

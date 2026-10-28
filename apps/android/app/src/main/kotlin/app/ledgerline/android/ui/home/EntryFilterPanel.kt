@@ -56,7 +56,7 @@ import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.ScreenMargin
-import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.editor.ComboField
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.theme.LocalPalette

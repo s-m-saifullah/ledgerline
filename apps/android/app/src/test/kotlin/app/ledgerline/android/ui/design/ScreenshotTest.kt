@@ -58,7 +58,7 @@ import app.ledgerline.android.settings.FilterKeep
 import app.ledgerline.android.settings.KeepMode
 import app.ledgerline.android.settings.KeepUnit
 import app.ledgerline.android.settings.ThemeChoice
-import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.ui.home.FilterOptions
 import app.ledgerline.android.ui.settings.SettingsActions
@@ -609,13 +609,13 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
 
     @Test
     fun editorAccountPicker() = sheetShot("editor-picker-accounts") {
-        app.ledgerline.android.ui.editor.PickerContent("Account", editorAccounts, "a1", {}, {})
+        PickerContent("Account", editorAccounts, "a1", {}, {})
     }
 
     @Test
     fun editorCategoryPickerWithSearch() = sheetShot("editor-picker-categories") {
         val many = (1..9).map { Choice("c$it", if (it % 3 == 0) "Food › Category number $it" else "Category $it") }
-        app.ledgerline.android.ui.editor.PickerContent("Category", many, "c2", {}, {}, onNew = {})
+        PickerContent("Category", many, "c2", {}, {}, onNew = {})
     }
 
     @Test
@@ -632,6 +632,75 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             ),
             {}, {}, {},
         )
+    }
+
+    private val signInActions = app.ledgerline.android.ui.signin.SignInActions({}, {}, {}, {}, {}, {}, {}, {})
+    private val signInOrigin = "https://ledgerline.example.com"
+
+    private fun signIn(name: String, state: app.ledgerline.android.ui.signin.SignInUiState, ended: app.ledgerline.android.session.SessionEnd? = null) = fullShot(name) {
+        app.ledgerline.android.ui.signin.SignInContent(state, ended, signInOrigin, signInActions)
+    }
+
+    @Test
+    fun signInPassword() = signIn("signin-password", app.ledgerline.android.ui.signin.SignInUiState(email = "you@example.com", password = "secret"))
+
+    @Test
+    fun signInWithANoticeAndAProblem() = signIn(
+        "signin-notice",
+        app.ledgerline.android.ui.signin.SignInUiState(problem = app.ledgerline.android.ui.signin.SignInProblem.BadCredentials),
+        app.ledgerline.android.session.SessionEnd.KeyLost,
+    )
+
+    @Test
+    fun signInWhileWorking() = signIn("signin-working", app.ledgerline.android.ui.signin.SignInUiState(email = "you@example.com", password = "secret", submitting = true))
+
+    @Test
+    fun signInCode() = signIn("signin-code", app.ledgerline.android.ui.signin.SignInUiState(step = app.ledgerline.android.ui.signin.SignInStep.Code, code = "123456"))
+
+    @Test
+    fun signInBackupCode() = signIn(
+        "signin-backup",
+        app.ledgerline.android.ui.signin.SignInUiState(
+            step = app.ledgerline.android.ui.signin.SignInStep.Code, useBackupCode = true,
+            problem = app.ledgerline.android.ui.signin.SignInProblem.WrongCode,
+        ),
+    )
+
+    private val addressActions = app.ledgerline.android.ui.address.AddressActions({}, {}, {})
+
+    @Test
+    fun addressFirstRun() = fullShot("address-new") {
+        app.ledgerline.android.ui.address.AddressContent(app.ledgerline.android.ui.address.AddressUiState(), false, addressActions)
+    }
+
+    @Test
+    fun addressChangeWithAProblem() = fullShot("address-change") {
+        app.ledgerline.android.ui.address.AddressContent(
+            app.ledgerline.android.ui.address.AddressUiState("http://ledgerline.example.com", app.ledgerline.android.server.AddressProblem.Cleartext),
+            true, addressActions,
+        )
+    }
+
+    private val lockActions = app.ledgerline.android.ui.lock.LockActions({}, {})
+
+    @Test
+    fun locked() = fullShot("locked") { app.ledgerline.android.ui.lock.LockedContent(app.ledgerline.android.ui.lock.LockUiState(), lockActions) }
+
+    @Test
+    fun lockedWithAProblem() = fullShot("locked-problem") {
+        app.ledgerline.android.ui.lock.LockedContent(
+            app.ledgerline.android.ui.lock.LockUiState(problem = app.ledgerline.android.ui.lock.LockProblem.LockedOut), lockActions,
+        )
+    }
+
+    @Test
+    fun keepSignedIn() = fullShot("keep") {
+        app.ledgerline.android.ui.lock.KeepSignedInContent(app.ledgerline.android.ui.lock.LockUiState(), app.ledgerline.android.session.Protection.Available, lockActions)
+    }
+
+    @Test
+    fun keepSignedInWithoutAScreenLock() = fullShot("keep-no-lock") {
+        app.ledgerline.android.ui.lock.KeepSignedInContent(app.ledgerline.android.ui.lock.LockUiState(), app.ledgerline.android.session.Protection.NoScreenLock, lockActions)
     }
 
     private val accounts = listOf(

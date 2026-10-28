@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.editor
 
+import app.ledgerline.android.ui.design.Choice
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue

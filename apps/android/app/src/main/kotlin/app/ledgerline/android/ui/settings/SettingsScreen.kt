@@ -66,7 +66,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import app.ledgerline.android.settings.FilterKeep
 import app.ledgerline.android.settings.KeepMode
 import app.ledgerline.android.settings.KeepUnit
-import app.ledgerline.android.ui.design.ChoiceField
+import app.ledgerline.android.ui.design.SegmentedControl
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
@@ -354,9 +354,8 @@ private fun KeepFilters(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
             var text by remember(keep.amount) { mutableStateOf(keep.amount.toString()) }
             val numberLabel = stringResource(R.string.filters_keep_number)
             val amount = FilterKeep.amountOf(text)
-            Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                // The same layout as the unit box beside it: the label above, a box of the same height under it.
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.filters_keep_number), style = MaterialTheme.typography.bodyMedium)
                     OutlinedTextField(
                         value = text,
@@ -372,14 +371,13 @@ private fun KeepFilters(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = numberLabel },
                     )
                 }
-                ChoiceField(
-                    label = stringResource(R.string.filters_keep_unit),
-                    // "1 Hour", "2 Hours": the unit follows the number in the box.
-                    options = KeepUnit.entries.map { it.name to pluralStringResource(it.label(), amount ?: keep.amount) },
-                    selected = keep.unit.name,
-                    onSelect = { name -> onChange(keep.copy(unit = KeepUnit.valueOf(name))) },
-                    modifier = Modifier.weight(1f),
-                    minHeight = 56.dp,
+                // Minutes, Hours and Days side by side ("1 Hour", "2 Hours": the unit follows the number in the box).
+                val unitLabel = stringResource(R.string.filters_keep_unit)
+                SegmentedControl(
+                    KeepUnit.entries.map { pluralStringResource(it.label(), amount ?: keep.amount) },
+                    KeepUnit.entries.indexOf(keep.unit),
+                    { index -> onChange(keep.copy(unit = KeepUnit.entries[index])) },
+                    Modifier.semantics { contentDescription = unitLabel },
                 )
             }
         }

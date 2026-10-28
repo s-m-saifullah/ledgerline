@@ -57,6 +57,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.design.PickRow
+import app.ledgerline.android.ui.design.InputRow
+import app.ledgerline.android.ui.design.PickerSheet
+import app.ledgerline.android.ui.design.PickerContent
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LinkButton
@@ -228,7 +233,7 @@ private fun EditorBody(state: EditorState, newCategory: NewCategory?, actions: E
                     ) { picker = Picker.To }
                 }
             } else {
-                row { InputRow(stringResource(R.string.editor_payee), form.payee, singleLine = true) { text -> actions.update { it.copy(payee = text) } } }
+                row { InputRow(stringResource(R.string.editor_payee), form.payee, onChange = { text -> actions.update { it.copy(payee = text) } }) }
                 row {
                     PickRow(
                         stringResource(R.string.editor_account), state.accounts.labelOf(form.accountId), stringResource(R.string.editor_choose),
@@ -255,7 +260,7 @@ private fun EditorBody(state: EditorState, newCategory: NewCategory?, actions: E
             if (!isTransfer && state.tags.isNotEmpty()) {
                 row { TagsRow(state.tags, form.tagIds, onRemove = { id -> actions.update { it.copy(tagIds = it.tagIds - id) } }, onAdd = { picker = Picker.Tag }) }
             }
-            row { InputRow(stringResource(R.string.editor_note), form.note, singleLine = false) { text -> actions.update { it.copy(note = text) } } }
+            row { InputRow(stringResource(R.string.editor_note), form.note, onChange = { text -> actions.update { it.copy(note = text) } }, singleLine = false) }
             if (!isTransfer) row { PendingRow(form.pending) { on -> actions.update { it.copy(pending = on) } } }
         }
     }
@@ -306,51 +311,6 @@ private fun amountError(errors: Set<FormError>) = when {
     FormError.AmountZero in errors -> R.string.editor_error_amount_zero
     FormError.AmountTooLarge in errors -> R.string.editor_error_amount_large
     else -> null
-}
-
-/** A row that opens a picker: the label, the chosen value (or a hint), a chevron, and a problem in words under it. */
-@Composable
-private fun PickRow(label: String, value: String, placeholder: String, error: String?, onClick: () -> Unit) {
-    val palette = LocalPalette.current
-    Column(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick, role = Role.Button).heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(label, style = MaterialTheme.typography.bodyMedium, color = palette.muted)
-            Text(
-                value.ifEmpty { placeholder },
-                style = MaterialTheme.typography.titleMedium,
-                color = if (value.isEmpty()) palette.muted else palette.text,
-                textAlign = TextAlign.End,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp))
-        }
-        if (error != null) Text(error, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error)
-    }
-}
-
-/** A row with a text box: the label, and what is typed to its right. */
-@Composable
-private fun InputRow(label: String, value: String, singleLine: Boolean, onChange: (String) -> Unit) {
-    val palette = LocalPalette.current
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = palette.muted)
-        BasicTextField(
-            value = value,
-            onValueChange = onChange,
-            singleLine = singleLine,
-            textStyle = MaterialTheme.typography.titleMedium.copy(color = palette.text, textAlign = TextAlign.End),
-            cursorBrush = SolidColor(palette.accent),
-            modifier = Modifier.weight(1f).heightIn(min = TouchTarget).semantics { contentDescription = label },
-            decorationBox = { inner -> Box(contentAlignment = Alignment.CenterEnd, modifier = Modifier.heightIn(min = TouchTarget)) { inner() } },
-        )
-    }
 }
 
 /** The swap button between From and To, kept on its own line so the two rows stay whole. */
