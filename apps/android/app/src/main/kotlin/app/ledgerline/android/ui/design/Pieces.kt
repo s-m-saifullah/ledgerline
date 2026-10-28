@@ -64,8 +64,8 @@ import app.ledgerline.android.ui.theme.LocalPalette
 /*
  * The redesign's building blocks (ADR 0046). Each is a function of plain data, so a screen's content can be
  * rendered in a test or a screenshot without a view model. They replace the old header, cards and rows screen by
- * screen; an old piece is deleted when nothing uses it (PageHeader, BackLink, SearchField and ChoiceField still serve
- * Categories, the update screen, Settings and the editor).
+ * screen; an old piece is deleted when nothing uses it (PageHeader and BackLink still serve the update screen,
+ * ChoiceField Settings, the editor and the Categories form).
  */
 
 /** The least height of a touch target on Android (ADR 0046); the least height of a list row is [RowHeight]. */
@@ -277,7 +277,7 @@ fun IconAvatar(icon: Int) {
 
 /**
  * A search box (ADR 0046): a filled field with the [label] as its hint (a screen reader reads it too), a cross
- * that empties it while there is text, and 48 dp tall. It replaces SearchField screen by screen.
+ * that empties it while there is text, and 48 dp tall.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

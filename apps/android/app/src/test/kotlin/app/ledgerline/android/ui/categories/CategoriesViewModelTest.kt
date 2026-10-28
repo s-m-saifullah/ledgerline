@@ -126,8 +126,78 @@ class CategoriesViewModelTest {
         viewModel.setKind("expense")
         viewModel.setSearch("groc")
         harness.until { groupNames() == listOf("Food[Groceries]") }
+        // Nothing of this kind is archived, so the Archived chip is not shown and cannot keep the list empty.
         viewModel.setStatus(CategoryStatus.Archived)
-        harness.until { groupNames().isEmpty() }
+        harness.until { groupNames() == listOf("Food[Groceries]") }
+    }
+
+    @Test
+    fun theArchivedFilterWorksWhileSomethingIsArchivedAndFallsAwayWhenTheKindHasNone() {
+        runBlocking {
+            MirrorStore(harness.database).putCategory(
+                app.ledgerline.android.mirror.CategoryRow(Ledger, id(3), 2, Stamp, Stamp, null, null, "Transport", "expense", null, null, 3, Stamp),
+            )
+        }
+        viewModel.setStatus(CategoryStatus.Archived)
+        harness.until { groupNames() == listOf("Transport[]") }
+        viewModel.setKind("income")
+        harness.until { groupNames() == listOf("Salary[]") }
+    }
+
+    @Test
+    fun groupsOpenAndCloseOneByOneAndAllAtOnce() {
+        viewModel.toggleGroup(id(1))
+        assertEquals(setOf(id(1)), viewModel.view.value.expanded)
+        viewModel.toggleGroup(id(1))
+        assertEquals(emptySet<String>(), viewModel.view.value.expanded)
+        viewModel.toggleAll(listOf(id(1), id(3)))
+        assertEquals(setOf(id(1), id(3)), viewModel.view.value.expanded)
+        // One still closed: Expand all opens it; all open: the next tap closes them.
+        viewModel.toggleGroup(id(3))
+        viewModel.toggleAll(listOf(id(1), id(3)))
+        assertEquals(setOf(id(1), id(3)), viewModel.view.value.expanded)
+        viewModel.toggleAll(listOf(id(1), id(3)))
+        assertEquals(emptySet<String>(), viewModel.view.value.expanded)
+    }
+
+    @Test
+    fun theActionsSheetOpensForARowAndEveryActionFromItClosesIt() {
+        val food = viewModel.items.value!!.first { it.id == id(1) }
+        viewModel.openMenu(food)
+        assertEquals(food, viewModel.view.value.menu)
+        viewModel.closeMenu()
+        assertNull(viewModel.view.value.menu)
+        viewModel.openMenu(food); viewModel.startEdit(food)
+        assertNull(viewModel.view.value.menu)
+        viewModel.openMenu(food); viewModel.askArchive(food)
+        assertNull(viewModel.view.value.menu)
+        viewModel.dismissAsk()
+        viewModel.openMenu(food); viewModel.startAddUnder(food)
+        assertNull(viewModel.view.value.menu)
+        viewModel.closeForm()
+        viewModel.openMenu(food); viewModel.askDelete(food)
+        assertNull(viewModel.view.value.menu)
+        viewModel.openMenu(food); viewModel.startAdd()
+        assertNull(viewModel.view.value.menu)
+    }
+
+    @Test
+    fun addingUnderAGroupOpensTheFormOnItsKindWithTheParentChosen() {
+        val salaryRoot = viewModel.items.value!!.first { it.id == id(4) }
+        viewModel.startAddUnder(salaryRoot)
+        assertEquals("income", viewModel.view.value.form?.kind)
+        assertEquals(id(4), viewModel.view.value.form?.parentId)
+        assertNull(viewModel.view.value.form?.editing)
+    }
+
+    @Test
+    fun aNewSubcategoryOpensItsGroupButAnEditOrAMainCategoryDoesNot() {
+        harness.route("/api/v1/ledgers/ledger-a/categories") { answer(category(11, "Dining out", parentN = 3)) }
+        typeAndSave("Dining out", parent = id(3))
+        assertEquals(setOf(id(3)), viewModel.view.value.expanded)
+        harness.route("/api/v1/ledgers/ledger-a/categories") { answer(category(12, "Pets")) }
+        typeAndSave("Pets")
+        assertEquals(setOf(id(3)), viewModel.view.value.expanded)
     }
 
     @Test
@@ -268,6 +338,8 @@ class CategoriesViewModelTest {
         assertEquals("PATCH", sent.method)
         assertEquals("""{"expectedVersion":3,"name":"Supermarket"}""", sent.body)
         assertEquals(CategoryNotice.Updated, viewModel.view.value.notice)
+        // An edit does not open the group the subcategory sits in.
+        assertEquals(emptySet<String>(), viewModel.view.value.expanded)
         harness.until { "Food[Supermarket]" in groupNames() }
     }
 

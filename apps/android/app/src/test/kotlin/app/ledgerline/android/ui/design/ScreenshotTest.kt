@@ -445,43 +445,76 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         app.ledgerline.android.mirror.syncCategory(6, "Salary", kind = "income").toRow("l"),
     )
 
+    private val categoryActions = app.ledgerline.android.ui.categories.Taps().actions()
+
     private fun categoriesShot(name: String, view: app.ledgerline.android.ui.categories.CategoriesView, items: List<app.ledgerline.android.mirror.CategoryRow> = categoryItems) = shot(name, Tab.More) {
-        val actions = app.ledgerline.android.ui.categories.CategoriesActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
         app.ledgerline.android.ui.categories.CategoriesContent(
             view,
-            app.ledgerline.android.ui.categories.categoryGroups(items, view.kind, view.status, view.search),
+            app.ledgerline.android.ui.categories.categoryGroups(
+                items, view.kind, app.ledgerline.android.ui.categories.effectiveStatus(items, view.kind, view.status), view.search,
+            ),
             items,
-            actions,
+            categoryActions,
             ListBottomSpace,
         )
     }
+
+    /** A sheet's content on the sheet's own surface: the screenshot tool cannot capture the sheet itself (check that on the phone). */
+    private fun sheetShot(name: String, content: @Composable () -> Unit) = shot(name, Tab.More) {
+        androidx.compose.material3.Surface(color = androidx.compose.material3.MaterialTheme.colorScheme.surface) { content() }
+    }
+
+    private val allOpen = categoryItems.filter { it.parentId == null }.map { it.id }.toSet()
 
     @Test
     fun categories() = categoriesShot("categories", app.ledgerline.android.ui.categories.CategoriesView())
 
     @Test
+    fun categoriesOpen() = categoriesShot("categories-open", app.ledgerline.android.ui.categories.CategoriesView(expanded = allOpen))
+
+    @Test
+    fun categoriesSearching() = categoriesShot("categories-search", app.ledgerline.android.ui.categories.CategoriesView(search = "gro"))
+
+    @Test
+    fun categoriesIncome() = categoriesShot("categories-income", app.ledgerline.android.ui.categories.CategoriesView(kind = "income"))
+
+    @Test
     fun categoriesEmpty() = categoriesShot("categories-empty", app.ledgerline.android.ui.categories.CategoriesView(), emptyList())
 
     @Test
-    fun categoryAdd() = categoriesShot(
-        "category-add",
-        app.ledgerline.android.ui.categories.CategoriesView(form = app.ledgerline.android.ui.categories.CategoryForm.forNew("expense").copy(name = "Pets", parentId = categoryItems[3].id)),
-    )
+    fun categoryAdd() = sheetShot("category-add") {
+        app.ledgerline.android.ui.categories.CategoryFormContent(
+            app.ledgerline.android.ui.categories.CategoryForm.forNew("expense").copy(name = "Pets", parentId = categoryItems[3].id),
+            listOf(categoryItems[0], categoryItems[3]), false, false, null, categoryActions,
+        )
+    }
 
     @Test
-    fun categoryEditWithAnError() = categoriesShot(
-        "category-edit-error",
-        app.ledgerline.android.ui.categories.CategoriesView(
-            form = app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[1]).copy(name = "Dining out"),
-            error = app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
-        ),
-    )
+    fun categoryEditWithAnError() = sheetShot("category-edit-error") {
+        app.ledgerline.android.ui.categories.CategoryFormContent(
+            app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[1]).copy(name = "Dining out"),
+            listOf(categoryItems[0], categoryItems[3]), false, false,
+            app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
+            categoryActions,
+        )
+    }
 
     @Test
-    fun categoryEditMainWithSubcategories() = categoriesShot(
-        "category-edit-main",
-        app.ledgerline.android.ui.categories.CategoriesView(form = app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[0])),
-    )
+    fun categoryEditMainWithSubcategories() = sheetShot("category-edit-main") {
+        app.ledgerline.android.ui.categories.CategoryFormContent(
+            app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[0]), emptyList(), true, false, null, categoryActions,
+        )
+    }
+
+    @Test
+    fun categoryActionsForAGroup() = sheetShot("category-actions") {
+        app.ledgerline.android.ui.categories.CategoryActionsContent(categoryItems[3], categoryItems, categoryActions)
+    }
+
+    @Test
+    fun categoryActionsForAnArchivedSubcategory() = sheetShot("category-actions-archived") {
+        app.ledgerline.android.ui.categories.CategoryActionsContent(categoryItems[2], categoryItems, categoryActions)
+    }
 
     @Test
     fun settingsUpdates() = shot("settings-updates", Tab.More) {

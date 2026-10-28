@@ -1,29 +1,22 @@
 package app.ledgerline.android.ui.design
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,11 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
@@ -59,30 +50,6 @@ fun BackLink(text: String, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.padding(horizontal = ScreenMargin - 12.dp),
     )
-}
-
-/** A label above a bordered search field, as the web's. */
-@Composable
-fun SearchField(label: String, value: String, onChange: (String) -> Unit) {
-    Column(modifier = Modifier.padding(horizontal = ScreenMargin), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        OutlinedTextField(
-            value = value,
-            onValueChange = { onChange(it.take(200)) },
-            singleLine = true,
-            // A cross at the right end clears the field; it shows only while there is something to clear.
-            trailingIcon = if (value.isEmpty()) null else {
-                {
-                    IconButton(onClick = { onChange("") }) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.clear_search), modifier = Modifier.size(20.dp))
-                    }
-                }
-            },
-            shape = MaterialTheme.shapes.small,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-        )
-    }
 }
 
 /** A label above a bordered choice that opens a menu, as the web's native select. */

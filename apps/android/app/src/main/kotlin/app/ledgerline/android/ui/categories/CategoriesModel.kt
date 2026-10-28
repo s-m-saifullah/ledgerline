@@ -37,6 +37,23 @@ fun categoryGroups(items: List<CategoryRow>, kind: String, status: CategoryStatu
         .filter { it.showRoot || it.children.isNotEmpty() }
 }
 
+/** The number on a kind's segment: its main categories, whatever the status filter and search say. */
+fun mainCount(items: List<CategoryRow>, kind: String): Int = items.count { it.deletedAt == null && it.kind == kind && it.parentId == null }
+
+/** The Active, Archived and All chips earn their place only while something of this kind is archived. */
+fun showStatusChips(items: List<CategoryRow>, kind: String): Boolean = items.any { it.deletedAt == null && it.kind == kind && it.archivedAt != null }
+
+/** The status filter in force: chips that are not shown cannot keep a filter on, so the list is whole again. */
+fun effectiveStatus(items: List<CategoryRow>, kind: String, status: CategoryStatus): CategoryStatus =
+    if (showStatusChips(items, kind)) status else CategoryStatus.All
+
+/** Whether a group shows its subcategories: it has some, and it was opened or a search is looking inside. */
+fun isOpen(group: CategoryGroup, expanded: Set<String>, search: String): Boolean =
+    group.children.isNotEmpty() && (search.isNotBlank() || group.root.id in expanded)
+
+/** The groups that can be opened (those with subcategories shown), for Expand all and Collapse all. */
+fun expandable(groups: List<CategoryGroup>): List<String> = groups.filter { it.children.isNotEmpty() }.map { it.root.id }
+
 /** Why a category cannot be archived or unarchived right now, as the web's disabled buttons say. */
 enum class ActionBlock { ArchiveActiveSubcategoriesFirst, UnarchiveTheMainCategoryFirst }
 

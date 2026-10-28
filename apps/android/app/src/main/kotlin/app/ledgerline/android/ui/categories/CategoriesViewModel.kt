@@ -62,6 +62,10 @@ data class CategoriesView(
     val notice: CategoryNotice? = null,
     val ask: ArchiveAsk? = null,
     val deleteAsk: DeleteAsk? = null,
+    /** The ids of the main categories opened to show their subcategories. */
+    val expanded: Set<String> = emptySet(),
+    /** The category whose actions sheet is open. */
+    val menu: CategoryRow? = null,
 )
 
 /**
@@ -87,7 +91,7 @@ class CategoriesViewModel @Inject constructor(
 
     /** The groups for the chosen kind, status and search; null until the mirror has a ledger. */
     val groups: StateFlow<List<CategoryGroup>?> = combine(items, _view) { all, v ->
-        all?.let { categoryGroups(it, v.kind, v.status, v.search) }
+        all?.let { categoryGroups(it, v.kind, effectiveStatus(it, v.kind, v.status), v.search) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun setKind(kind: String) = _view.update { it.copy(kind = kind, notice = null) }
@@ -96,9 +100,22 @@ class CategoriesViewModel @Inject constructor(
 
     fun setSearch(text: String) = _view.update { it.copy(search = text) }
 
-    fun startAdd() = _view.update { it.copy(form = CategoryForm.forNew(it.kind), error = null, notice = null) }
+    fun startAdd() = _view.update { it.copy(form = CategoryForm.forNew(it.kind), menu = null, error = null, notice = null) }
 
-    fun startEdit(row: CategoryRow) = _view.update { it.copy(form = CategoryForm.forEdit(row), error = null, notice = null) }
+    /** Add under [parent]: the form opens with its kind and the parent chosen. */
+    fun startAddUnder(parent: CategoryRow) =
+        _view.update { it.copy(form = CategoryForm.forNew(parent.kind).copy(parentId = parent.id), menu = null, error = null, notice = null) }
+
+    fun startEdit(row: CategoryRow) = _view.update { it.copy(form = CategoryForm.forEdit(row), menu = null, error = null, notice = null) }
+
+    fun openMenu(row: CategoryRow) = _view.update { it.copy(menu = row, error = null, notice = null) }
+
+    fun closeMenu() = _view.update { it.copy(menu = null) }
+
+    fun toggleGroup(id: String) = _view.update { it.copy(expanded = if (id in it.expanded) it.expanded - id else it.expanded + id) }
+
+    /** Opens every group in [ids], or closes them all when they are all open already. */
+    fun toggleAll(ids: List<String>) = _view.update { it.copy(expanded = if (ids.all { id -> id in it.expanded }) it.expanded - ids.toSet() else it.expanded + ids) }
 
     fun edit(change: (CategoryForm) -> CategoryForm) = _view.update { v -> v.copy(form = v.form?.let(change), error = null) }
 
@@ -108,7 +125,7 @@ class CategoriesViewModel @Inject constructor(
         _view.update { it.copy(form = null, error = null) }
     }
 
-    fun askArchive(row: CategoryRow) = _view.update { it.copy(ask = ArchiveAsk(row), error = null, notice = null) }
+    fun askArchive(row: CategoryRow) = _view.update { it.copy(ask = ArchiveAsk(row), menu = null, error = null, notice = null) }
 
     fun dismissAsk() = _view.update { it.copy(ask = null) }
 
@@ -118,7 +135,7 @@ class CategoriesViewModel @Inject constructor(
      */
     fun askDelete(row: CategoryRow) {
         val ledgerId = ledger.value ?: return
-        _view.update { it.copy(error = null, notice = null) }
+        _view.update { it.copy(menu = null, error = null, notice = null) }
         viewModelScope.launch {
             val block = deleteBlock(row, items.value.orEmpty(), reads.entriesUsingCategory(ledgerId, row.id))
             // Archiving is the way out when something uses the category, unless it is archived already or has active subcategories.
@@ -157,7 +174,8 @@ class CategoriesViewModel @Inject constructor(
         if (!form.changed) return closeForm()
         val editing = form.editing
         val key = keyFor(if (editing == null) "create|${form.trimmedName}|${form.kind}|${form.parentId}" else "update|${editing.id}|${editing.version}|${form.trimmedName}|${form.parentId}")
-        run(ledgerId, if (editing == null) CategoryNotice.Added else CategoryNotice.Updated, closeForm = true) {
+        // A new subcategory opens its main category, so the owner sees it land.
+        run(ledgerId, if (editing == null) CategoryNotice.Added else CategoryNotice.Updated, closeForm = true, expand = form.parentId.takeIf { editing == null }) {
             if (editing == null) writes.create(ledgerId, key, form.toCreate()) else writes.update(ledgerId, editing.id, key, form.toUpdate())
         }
     }
@@ -174,19 +192,20 @@ class CategoriesViewModel @Inject constructor(
     fun unarchive(row: CategoryRow) {
         val ledgerId = ledger.value ?: return
         val key = keyFor("unarchive|${row.id}|${row.version}")
+        _view.update { it.copy(menu = null) }
         run(ledgerId, CategoryNotice.Unarchived, closeForm = false) { writes.unarchive(ledgerId, row.id, key, row.version) }
     }
 
     private fun keyFor(change: String) = keys.getOrPut(change) { "cat-${Uuid7.next()}" }
 
-    private fun run(ledgerId: String, done: CategoryNotice, closeForm: Boolean, call: suspend () -> Written<*>) {
+    private fun run(ledgerId: String, done: CategoryNotice, closeForm: Boolean, expand: String? = null, call: suspend () -> Written<*>) {
         _view.update { it.copy(saving = true, error = null, notice = null) }
         viewModelScope.launch {
             val result = call()
             _view.update { v ->
                 if (result is Written.Done) {
                     keys.clear()
-                    v.copy(saving = false, notice = done, form = if (closeForm) null else v.form)
+                    v.copy(saving = false, notice = done, form = if (closeForm) null else v.form, expanded = if (expand != null) v.expanded + expand else v.expanded)
                 } else {
                     v.copy(saving = false, error = result.toCategoryError())
                 }

@@ -55,6 +55,13 @@ Top bar; segmented control (two to four options); grouped list card (leading ava
 - A person's screen has a balance card and a History list: the latest eight moves on their loan accounts (Sent or Received, from the phone's own entries, so they also show offline), then the balance from before Ledgerline as the last line. This adds the web's "latest moves" to the phone, still read-only.
 - Lend / Borrow, Record Repayment and Lend More stay follow-ups.
 
+### Amendment, 2026-10-27: Categories (the owner's choices)
+
+- A fixed header (top bar with a plus button for Add category, Expense and Income with their counts of main categories, the search box) sits above one accordion card, so the search cannot move while typing. The Active, Archived and All chips show only while something of that kind is archived; with no chips the list is whole again.
+- A group row has a tile, the name, one hint (how many subcategories, or Archived), an actions button and a chevron; a tap opens and closes it, a search opens the groups it found things in, and a text button above the card says Expand all or Collapse all (left out while searching). A new subcategory opens its group. A subcategory row is its name (and Archived); a tap opens its actions.
+- Actions are a sheet: Edit, Add subcategory (a main category that is not archived), Archive or Unarchive, Delete in red. Add and Edit are one form sheet (the kind is a choice only for a new category); the archive and delete questions stay dialogs. Notices are short ("Category archived.").
+- Where it differs from the concept: no "+ Sub" button on the row (it left the name a few letters wide at 320 dp; Add subcategory is in the sheet), a plus icon instead of the words "Add Category" (the title wrapped at the largest text), no "Tap group to expand" line and no "Edit ›" on each row (few words), no emoji (the phone has no category icon yet), search above the segments' row instead of beside them (320 dp).
+
 ## Not changing
 
 The API, the mirror, the outbox, sync, privacy mode through `money()`, FLAG_SECURE, integer minor-unit money, each screen's content as a function of plain data, the search-stays-put rule (`narrowingRoom` and a `SearchStaysPut` test on every list screen with a search or filter), the colour source (`tokens.css`), light, dark and system themes, and the existing tests (kept green, or changed on purpose and said so in the pull request).
