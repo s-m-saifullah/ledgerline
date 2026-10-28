@@ -257,7 +257,7 @@ fun SignedInScreen(
             }
             Tab.More -> when (moreOpen) {
                 "clients" -> ClientsScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
-                "categories" -> CategoriesScreen(onBack = { moreOpen = null }, bottomSpace = ListBottomSpace, modifier = inside)
+                "categories" -> CategoriesScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, bottomSpace = ListBottomSpace, modifier = inside)
                 "loans" -> LoansScreen(line.running, viewModel::refresh, onBack = { moreOpen = null }, modifier = inside)
                 "settings" -> SettingsScreen(
                     viewModel,

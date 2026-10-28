@@ -1,57 +1,53 @@
 package app.ledgerline.android.ui.categories
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
-import app.ledgerline.android.ui.design.BackLink
+import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.CardGap
-import app.ledgerline.android.ui.design.ChoiceField
-import app.ledgerline.android.ui.design.LedgerCard
-import app.ledgerline.android.ui.design.PageHeader
-import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.EmptyState
+import app.ledgerline.android.ui.design.FilterChip
+import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
-import app.ledgerline.android.ui.design.SearchField
-import app.ledgerline.android.ui.design.SecondaryButton
-import app.ledgerline.android.ui.design.narrowingRoom
+import app.ledgerline.android.ui.design.SearchBox
+import app.ledgerline.android.ui.design.SegmentedControl
+import app.ledgerline.android.ui.design.TopBar
+import app.ledgerline.android.ui.design.TouchTarget
+import app.ledgerline.android.ui.home.Muted
 import app.ledgerline.android.ui.theme.LocalPalette
 
 /** What the Categories screen's buttons and fields do. */
@@ -73,12 +69,18 @@ class CategoriesActions(
     val confirmDelete: () -> Unit,
     val dismissDeleteAsk: () -> Unit,
     val archiveInstead: () -> Unit,
+    val openMenu: (CategoryRow) -> Unit,
+    val closeMenu: () -> Unit,
+    val addUnder: (CategoryRow) -> Unit,
+    val toggleGroup: (String) -> Unit,
+    val toggleAll: (List<String>) -> Unit,
 )
 
 /**
- * The Categories screen as plain data (ADR 0045): the list (or, while one is open, the Add / Edit form) and the archive
- * question. [items] is every category of the ledger (the list rules need the whole tree); [groups] is null until the
- * mirror has a ledger.
+ * The Categories screen as plain data (ADR 0046): a fixed header (the top bar with Add category, Expense and Income with
+ * their counts, the search, and the status chips while something is archived) above one accordion card. The Add and Edit
+ * form and a row's actions are sheets; the archive and delete questions are dialogs. [items] is every category of the
+ * ledger (the list rules need the whole tree); [groups] is null until the mirror has a ledger.
  */
 @Composable
 fun CategoriesContent(
@@ -91,67 +93,73 @@ fun CategoriesContent(
 ) {
     view.ask?.let { ArchiveQuestion(it.category, actions) }
     view.deleteAsk?.let { DeleteQuestion(it, actions) }
-    val form = view.form
-    if (form != null) {
+    view.form?.let { form ->
         val editing = form.editing
         val hasSubcategories = editing != null && items.any { it.deletedAt == null && it.parentId == editing.id }
-        CategoryFormContent(form, parentChoices(items, form.kind, editing), hasSubcategories, view.saving, view.error, actions, bottomSpace, modifier)
-        return
+        CategoryFormSheet(form, parentChoices(items, form.kind, editing), hasSubcategories, view.saving, view.error, actions)
     }
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        item { BackLink(stringResource(R.string.back_more), actions.onBack) }
-        item {
-            PageHeader(
-                stringResource(R.string.categories_title),
-                eyebrow = stringResource(R.string.eyebrow_personal),
-                subtitle = stringResource(R.string.categories_subtitle),
+    view.menu?.let { CategoryActionsSheet(it, items, actions) }
+    val chips = showStatusChips(items, view.kind)
+    val status = effectiveStatus(items, view.kind, view.status)
+    val message = messageText(view)
+    Column(modifier) {
+        TopBar(
+            stringResource(R.string.categories_title),
+            onBack = actions.onBack,
+            action = {
+                if (groups != null) {
+                    val add = stringResource(R.string.categories_add)
+                    IconButton(onClick = actions.add, modifier = Modifier.size(TouchTarget).semantics { contentDescription = add }) {
+                        Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = LocalPalette.current.accent)
+                    }
+                }
+            },
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            val labels = listOf(
+                stringResource(R.string.category_kind_expense_count, mainCount(items, "expense")),
+                stringResource(R.string.category_kind_income_count, mainCount(items, "income")),
             )
-        }
-        if (groups != null) {
-            item {
-                PrimaryButton(
-                    stringResource(R.string.categories_add),
-                    actions.add,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
-                    enabled = !view.saving,
-                )
-            }
-        }
-        item { Messages(view) }
-        item { KindSwitch(view.kind, Modifier.padding(horizontal = ScreenMargin), actions.setKind) }
-        item {
-            ChoiceField(
-                label = stringResource(R.string.categories_view),
-                options = CategoryStatus.entries.map { it.name to stringResource(it.label()) },
-                selected = view.status.name,
-                onSelect = { actions.setStatus(CategoryStatus.valueOf(it)) },
-                modifier = Modifier.padding(horizontal = ScreenMargin),
+            SegmentedControl(
+                labels,
+                if (view.kind == "income") 1 else 0,
+                { actions.setKind(if (it == 1) "income" else "expense") },
+                Modifier.padding(horizontal = ScreenMargin),
             )
-        }
-        item { SearchField(stringResource(R.string.categories_search), view.search, actions.setSearch) }
-        when {
-            groups == null -> item { Note(stringResource(R.string.categories_opening)) }
-            groups.isEmpty() -> item {
-                val none = items.none { it.deletedAt == null && it.kind == view.kind } && view.status == CategoryStatus.All && view.search.isBlank()
-                LedgerCard {
-                    Text(
-                        stringResource(if (none) R.string.categories_empty_title else R.string.categories_none_match),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Note(stringResource(if (none) R.string.categories_empty_detail else R.string.categories_none_match_detail))
+            SearchBox(stringResource(R.string.categories_search), view.search, actions.setSearch, Modifier.padding(horizontal = ScreenMargin))
+            if (chips) {
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = ScreenMargin), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CategoryStatus.entries.forEach { FilterChip(stringResource(it.label()), status == it) { actions.setStatus(it) } }
                 }
             }
-            else -> groups.forEach { group ->
-                item(key = group.root.id) {
-                    LedgerCard(padding = PaddingValues(vertical = 4.dp, horizontal = 16.dp)) {
-                        if (group.showRoot) CategoryRowView(group.root, child = false, items, actions)
-                        group.children.forEach { CategoryRowView(it, child = true, items, actions) }
+        }
+        // The list takes the rest of the screen, so a pull down on the empty space under a short list still refreshes.
+        LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(top = CardGap, bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
+            message?.let { (text, isError) -> item { Message(text, isError) } }
+            when {
+                groups == null -> item { Box(Modifier.padding(horizontal = ScreenMargin)) { Muted(stringResource(R.string.categories_opening)) } }
+                groups.isEmpty() -> item {
+                    val none = items.none { it.deletedAt == null && it.kind == view.kind } && status == CategoryStatus.All && view.search.isBlank()
+                    EmptyState(stringResource(if (none) R.string.categories_empty else R.string.categories_none_match))
+                }
+                else -> {
+                    val ids = expandable(groups)
+                    if (ids.isNotEmpty() && view.search.isBlank()) {
+                        item {
+                            val allOpen = ids.all { it in view.expanded }
+                            Row(Modifier.fillMaxWidth().padding(horizontal = ScreenMargin - 12.dp), horizontalArrangement = Arrangement.End) {
+                                LinkButton(stringResource(if (allOpen) R.string.categories_collapse_all else R.string.categories_expand_all), { actions.toggleAll(ids) })
+                            }
+                        }
+                    }
+                    item {
+                        GroupedListCard {
+                            groups.forEach { group -> row { GroupBlock(group, isOpen(group, view.expanded, view.search), actions) } }
+                        }
                     }
                 }
             }
         }
-        // As on Clients and Loans: a shorter result must not pull the scroll back and slide the search field down.
-        narrowingRoom(narrowed = view.search.isNotEmpty() || view.status != CategoryStatus.All)
     }
 }
 
@@ -161,21 +169,21 @@ private fun CategoryStatus.label() = when (this) {
     CategoryStatus.Archived -> R.string.categories_filter_archived
 }
 
+/** What just worked, or why a write did not (and whether it is an error); a form's own error is shown in its sheet. */
 @Composable
-private fun Note(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = ScreenMargin, vertical = 4.dp))
+private fun messageText(view: CategoriesView): Pair<String, Boolean>? {
+    val error = if (view.form == null) view.error?.let { errorText(it) } else null
+    if (error != null) return error to true
+    return view.notice?.let { stringResource(it.text()) to false }
 }
 
-/** What just worked, or why a write did not; read out when it appears. */
+/** Read out when it appears. */
 @Composable
-private fun Messages(view: CategoriesView) {
-    val notice = view.notice?.let { stringResource(it.text()) }
-    val error = view.error?.let { errorText(it) }
-    val text = error ?: notice ?: return
+private fun Message(text: String, isError: Boolean) {
     Text(
         text,
         style = MaterialTheme.typography.bodyMedium,
-        color = if (error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.padding(horizontal = ScreenMargin).semantics { liveRegion = LiveRegionMode.Polite },
     )
 }
@@ -196,64 +204,74 @@ internal fun errorText(error: CategoryError): String = when (error) {
     is CategoryError.Rejected -> error.detail ?: stringResource(R.string.category_error_rejected)
 }
 
-/** Expense and Income, as the web's two kind buttons. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** One main category with, when open, its subcategories underneath. */
 @Composable
-private fun KindSwitch(kind: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
-    val label = stringResource(R.string.category_kind)
-    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth().semantics { contentDescription = label }) {
-        listOf("expense" to R.string.category_kind_expense, "income" to R.string.category_kind_income).forEachIndexed { index, (value, text) ->
-            SegmentedButton(
-                selected = kind == value,
-                onClick = { onChange(value) },
-                shape = SegmentedButtonDefaults.itemShape(index, 2),
-                modifier = Modifier.heightIn(min = 48.dp),
-            ) { Text(stringResource(text)) }
+private fun GroupBlock(group: CategoryGroup, open: Boolean, actions: CategoriesActions) {
+    val palette = LocalPalette.current
+    val root = group.root
+    val hasChildren = group.children.isNotEmpty()
+    val state = stringResource(if (open) R.string.expanded else R.string.collapsed)
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = RowHeight)
+                .then(
+                    if (hasChildren) {
+                        Modifier.clickable(onClick = { actions.toggleGroup(root.id) }, role = Role.Button).semantics { stateDescription = state }
+                    } else {
+                        Modifier
+                    },
+                )
+                .padding(start = 16.dp, end = 12.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Avatar(root.name)
+            Column(Modifier.weight(1f)) {
+                Text(root.name, style = MaterialTheme.typography.titleMedium)
+                // One hint: that it is archived, or how many subcategories it has.
+                if (root.archivedAt != null) {
+                    ArchivedHint()
+                } else if (hasChildren) {
+                    Text(
+                        pluralStringResource(R.plurals.category_subs, group.children.size, group.children.size),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = palette.muted,
+                    )
+                }
+            }
+            val menuLabel = stringResource(R.string.category_actions_for, root.name)
+            IconButton(onClick = { actions.openMenu(root) }, modifier = Modifier.size(TouchTarget).semantics { contentDescription = menuLabel }) {
+                Icon(painterResource(R.drawable.ic_more), contentDescription = null, tint = palette.muted)
+            }
+            // Not a button of its own: the whole row opens and closes the group.
+            if (hasChildren) {
+                Icon(painterResource(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp))
+            }
         }
+        if (open) group.children.forEach { child -> SubcategoryRow(child, actions) }
     }
 }
 
-/** One category: its name, an Archived badge, and a menu of what can be done with it. */
 @Composable
-private fun CategoryRowView(row: CategoryRow, child: Boolean, items: List<CategoryRow>, actions: CategoriesActions) {
-    val palette = LocalPalette.current
-    val block = archiveBlock(row, items)
-    var open by remember { mutableStateOf(false) }
-    Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = if (child) 20.dp else 0.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun ArchivedHint() {
+    Text(stringResource(R.string.category_archived_badge), style = MaterialTheme.typography.labelMedium, color = LocalPalette.current.muted)
+}
+
+/** A subcategory: its name, and an Archived hint when it is; a tap opens its actions. */
+@Composable
+private fun SubcategoryRow(row: CategoryRow, actions: CategoriesActions) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = TouchTarget)
+            .clickable(onClick = { actions.openMenu(row) }, role = Role.Button)
+            .padding(start = 64.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+        verticalArrangement = Arrangement.Center,
     ) {
-        Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(row.name, style = if (child) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleMedium)
-            if (row.archivedAt != null) {
-                Text(stringResource(R.string.category_archived_badge), style = MaterialTheme.typography.labelMedium, color = palette.muted)
-            }
-        }
-        val menuLabel = stringResource(R.string.category_actions_for, row.name)
-        IconButton(onClick = { open = true }, modifier = Modifier.semantics { contentDescription = menuLabel }) {
-            Icon(painterResource(R.drawable.ic_more), contentDescription = null, tint = palette.muted)
-        }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            DropdownMenuItem(text = { Text(stringResource(R.string.category_edit)) }, onClick = { open = false; actions.edit(row) })
-            if (row.archivedAt == null) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(if (block == null) R.string.category_archive else R.string.category_block_archive)) },
-                    enabled = block == null,
-                    onClick = { open = false; actions.askArchive(row) },
-                )
-            } else {
-                DropdownMenuItem(
-                    text = { Text(stringResource(if (block == null) R.string.category_unarchive else R.string.category_block_unarchive)) },
-                    enabled = block == null,
-                    onClick = { open = false; actions.unarchive(row) },
-                )
-            }
-            // As on the web the item is always there: the question that follows says what stops a delete, and recommends archiving.
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.category_delete), color = palette.danger) },
-                onClick = { open = false; actions.askDelete(row) },
-            )
-        }
+        Text(row.name, style = MaterialTheme.typography.bodyLarge)
+        if (row.archivedAt != null) ArchivedHint()
     }
 }
 
@@ -311,91 +329,4 @@ private fun DeleteQuestion(ask: DeleteAsk, actions: CategoriesActions) {
             null
         },
     )
-}
-
-/** The Add and Edit form: a name, the kind (fixed once the category exists) and where it sits. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun CategoryFormContent(
-    form: CategoryForm,
-    parents: List<CategoryRow>,
-    /** An edited main category with subcategories (archived ones too) cannot be given a parent. */
-    hasSubcategories: Boolean,
-    saving: Boolean,
-    error: CategoryError?,
-    actions: CategoriesActions,
-    bottomSpace: Dp,
-    modifier: Modifier = Modifier,
-) {
-    val editing = form.editing != null
-    var touched by remember { mutableStateOf(false) }
-    val nameError = (touched || form.name.isNotEmpty()) && form.nameProblem
-    LazyColumn(modifier = modifier, contentPadding = PaddingValues(bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        item { BackLink(stringResource(R.string.category_back_to_list), actions.closeForm) }
-        item {
-            PageHeader(
-                stringResource(if (editing) R.string.category_form_edit_title else R.string.category_form_add_title),
-                eyebrow = stringResource(R.string.eyebrow_personal),
-                subtitle = stringResource(if (editing) R.string.category_form_edit_detail else R.string.category_form_add_detail),
-            )
-        }
-        item {
-            LedgerCard {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    val nameLabel = stringResource(R.string.category_name)
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(nameLabel, style = MaterialTheme.typography.bodyMedium)
-                        OutlinedTextField(
-                            value = form.name,
-                            onValueChange = { typed -> touched = true; actions.changeForm { it.copy(name = typed.take(MaxCategoryName + 20)) } },
-                            isError = nameError,
-                            supportingText = if (nameError) ({
-                                Text(stringResource(if (form.trimmedName.isEmpty()) R.string.category_name_required else R.string.category_name_too_long))
-                            }) else null,
-                            singleLine = true,
-                            enabled = !saving,
-                            shape = MaterialTheme.shapes.small,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            modifier = Modifier.fillMaxWidth().semantics { contentDescription = nameLabel },
-                        )
-                    }
-                    if (editing) {
-                        val kindName = stringResource(if (form.kind == "income") R.string.category_kind_income else R.string.category_kind_expense)
-                        Text(stringResource(R.string.category_kind_fixed, kindName), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(stringResource(R.string.category_kind), style = MaterialTheme.typography.bodyMedium)
-                            KindSwitch(form.kind) { kind -> actions.changeForm { it.copy(kind = kind, parentId = null) } }
-                        }
-                    }
-                    if (hasSubcategories) {
-                        Text(stringResource(R.string.category_parent_blocked), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        ChoiceField(
-                            label = stringResource(R.string.category_parent),
-                            options = listOf("" to stringResource(R.string.category_parent_none)) + parents.map { it.id to it.name },
-                            selected = form.parentId ?: "",
-                            onSelect = { id -> actions.changeForm { it.copy(parentId = id.ifEmpty { null }) } },
-                        )
-                    }
-                    error?.let { Text(errorText(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PrimaryButton(
-                            stringResource(
-                                when {
-                                    saving -> R.string.category_saving
-                                    editing -> R.string.category_save_edit
-                                    else -> R.string.category_save_add
-                                },
-                            ),
-                            onClick = { touched = true; actions.save() },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !saving && !form.nameProblem,
-                        )
-                        SecondaryButton(stringResource(R.string.category_cancel), actions.closeForm, modifier = Modifier.fillMaxWidth(), enabled = !saving)
-                    }
-                }
-            }
-        }
-    }
 }

@@ -9,8 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.syncCategory
@@ -23,9 +24,9 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Typing in the search shortens the list below it. With the keyboard open the screen is short and the list is scrolled
- * so the search field is at the top; a shorter list used to pull the scroll position back and slide the field down under
- * the owner's fingers (Clients and Loans had the same bug). The field must stay where it is.
+ * Typing in the search shortens the list below it. With the keyboard open the screen is short and the list is scrolled;
+ * a shorter list used to pull the scroll position back and slide the search field down under the owner's fingers
+ * (Clients and Loans had the same bug). The search now sits in a fixed header above the list, so it must stay where it is.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class)
@@ -41,14 +42,19 @@ class CategoriesSearchStaysPutTest {
 
     private var search by mutableStateOf("")
 
-    private fun searchTop() = compose.onNodeWithText("Search by name").getUnclippedBoundsInRoot().top
+    private fun searchTop() = compose.onNode(hasSetTextAction()).getUnclippedBoundsInRoot().top
 
     private fun show(height: Int) = compose.setContent {
         CategoriesContent(
-            CategoriesView(search = search),
+            CategoriesView(search = search, expanded = items.filter { it.parentId == null }.map { it.id }.toSet()),
             categoryGroups(items, "expense", CategoryStatus.All, search),
             items,
-            CategoriesActions({}, {}, {}, { search = it }, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            Taps().actions().let { base ->
+                CategoriesActions(
+                    {}, {}, {}, { search = it }, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+                    base.openMenu, base.closeMenu, base.addUnder, base.toggleGroup, base.toggleAll,
+                )
+            },
             0.dp,
             Modifier.height(height.dp),
         )
@@ -57,8 +63,7 @@ class CategoriesSearchStaysPutTest {
     @Test
     fun theSearchFieldStaysWhereItIsWhenTheListGetsShorter() {
         show(640)
-        // The search field is the seventh item: header pieces, the add button, messages, kind, view, then search.
-        compose.onNode(hasScrollAction()).performScrollToIndex(6)
+        compose.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         compose.waitForIdle()
         val before = searchTop()
 
@@ -70,7 +75,7 @@ class CategoriesSearchStaysPutTest {
     @Test
     fun theSearchFieldStaysWhereItIsWhenNothingMatches() {
         show(640)
-        compose.onNode(hasScrollAction()).performScrollToIndex(6)
+        compose.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         compose.waitForIdle()
         val before = searchTop()
 
@@ -82,9 +87,9 @@ class CategoriesSearchStaysPutTest {
     @Test
     fun clearingTheSearchAlsoLeavesTheFieldWhereItIs() {
         show(640)
-        search = "Sub 1.1"
+        search = "Main"
         compose.waitForIdle()
-        compose.onNode(hasScrollAction()).performScrollToIndex(6)
+        compose.onNode(hasScrollAction()).performTouchInput { swipeUp() }
         compose.waitForIdle()
         val before = searchTop()
 
