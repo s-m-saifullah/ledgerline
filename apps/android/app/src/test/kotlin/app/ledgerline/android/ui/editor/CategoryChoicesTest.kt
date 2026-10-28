@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.editor
 
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.mirror.CategoryRow
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -38,7 +38,7 @@ import app.ledgerline.android.sync.SyncRunner
 import app.ledgerline.android.testing.FakeClock
 import app.ledgerline.android.testing.FakeServerAddressStore
 import app.ledgerline.android.testing.FakeTokenProtector
-import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.api.SessionToken
 import app.ledgerline.api.SyncCategory
 import androidx.lifecycle.viewModelScope

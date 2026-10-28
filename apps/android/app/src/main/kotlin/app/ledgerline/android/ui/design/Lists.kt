@@ -42,55 +42,6 @@ import app.ledgerline.android.ui.theme.LocalPalette
 
 /* Lists, links and fields shared by the screens that browse people (Clients, Loans), named after the web's. */
 
-/** `← More`, `All clients`: the way back from a screen opened from another. */
-@Composable
-fun BackLink(text: String, onClick: () -> Unit) {
-    LinkButton(
-        text = "←  $text",
-        onClick = onClick,
-        modifier = Modifier.padding(horizontal = ScreenMargin - 12.dp),
-    )
-}
-
-/** A label above a bordered choice that opens a menu, as the web's native select. */
-@Composable
-fun ChoiceField(
-    label: String,
-    options: List<Pair<String, String>>,
-    selected: String,
-    onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    /** 48 dp as the web's select; 56 dp where it sits beside a text box, which is that tall. */
-    minHeight: Dp = 48.dp,
-) {
-    val palette = LocalPalette.current
-    var open by remember { mutableStateOf(false) }
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
-        Box {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = minHeight)
-                    .background(palette.surface, MaterialTheme.shapes.small)
-                    .border(1.dp, palette.fieldBorder, MaterialTheme.shapes.small)
-                    .clickable(onClick = { open = true }, role = Role.DropdownList)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .semantics { contentDescription = label },
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(options.firstOrNull { it.first == selected }?.second.orEmpty(), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                Icon(painterResource(R.drawable.ic_chevron_down), contentDescription = null, modifier = Modifier.size(20.dp))
-            }
-            DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-                options.forEach { (value, name) ->
-                    DropdownMenuItem(text = { Text(name) }, onClick = { open = false; onSelect(value) })
-                }
-            }
-        }
-    }
-}
-
 /** `Load more …` under a list that has another page; shows a reading line while it loads or could not. */
 @Composable
 fun LoadMore(label: String, loading: Boolean, failed: Boolean, onClick: () -> Unit) {

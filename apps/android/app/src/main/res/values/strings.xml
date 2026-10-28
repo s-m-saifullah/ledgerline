@@ -8,11 +8,10 @@
     <string name="try_again">Try again</string>
 
     <string name="address_title">Connect to your ledger</string>
-    <string name="address_intro">Enter the address of your own Ledgerline server. Nothing leaves your phone until you sign in.</string>
-    <string name="address_label">Server address</string>
+    <string name="address_intro">Nothing leaves your phone until you sign in.</string>
+    <string name="address_label">Address</string>
     <string name="address_hint">ledgerline.example.com</string>
     <string name="address_continue">Continue</string>
-    <string name="address_change">Change server address</string>
     <string name="address_error_empty">Enter the address of your server.</string>
     <string name="address_error_invalid">That does not look like a server address.</string>
     <string name="address_error_cleartext">The address must start with https://, so your sign-in stays private.</string>
@@ -25,10 +24,10 @@
     <string name="signin_hide">Hide</string>
     <string name="signin_button">Sign in</string>
     <string name="signin_working">Signing in…</string>
-    <string name="signin_server_line">Server: %1$s</string>
+    <string name="signin_server">Server</string>
     <string name="signin_notice_expired">Your session ended, so please sign in again.</string>
-    <string name="signin_notice_server_not_reached">You are signed out on this phone. The server could not be reached, so this phone stays listed under Settings, Signed-in devices until you remove it there.</string>
-    <string name="signin_notice_key_lost">Your phone\'s screen lock or fingerprints changed, so Ledgerline could not open your saved sign-in and signed you out on this phone. Sign in again. The old sign-in stays listed under Settings, Signed-in devices until you remove it there or it expires.</string>
+    <string name="signin_notice_server_not_reached">Signed out here, but the server could not be reached. Remove this phone under Settings, Signed-in devices.</string>
+    <string name="signin_notice_key_lost">Your screen lock or fingerprints changed, so you were signed out here. Sign in again; the old sign-in stays listed under Settings, Signed-in devices.</string>
     <string name="signin_error_missing">Enter your email and password.</string>
     <string name="signin_error_credentials">The email or password is not right.</string>
     <string name="signin_error_rate_limited">Too many attempts. Wait a minute and try again.</string>
@@ -38,12 +37,13 @@
     <string name="signin_error_unexpected">Something unexpected came back from the server. Check the address and try again.</string>
 
     <string name="code_title">Enter your code</string>
-    <string name="code_intro">Open your authenticator app and enter the six-digit code for Ledgerline.</string>
-    <string name="code_intro_backup">Enter one of your backup codes. Each one works only once.</string>
+    <string name="code_intro">The six-digit code from your authenticator app.</string>
+    <string name="code_intro_backup">One of your backup codes. Each works once.</string>
     <string name="code_label">Six-digit code</string>
     <string name="code_label_backup">Backup code</string>
     <string name="code_button">Verify</string>
-    <string name="code_use_backup">Use a backup code instead</string>
+    <string name="code_use_backup">Use a backup code</string>
+    <string name="code_use_code">Use the six-digit code</string>
     <string name="code_error_missing">Enter the code.</string>
     <string name="code_error_wrong">That code is not right or has expired. Check it, or go back and sign in again.</string>
 
@@ -297,7 +297,6 @@
     <string name="home_owed_rates_missing">At today\'s rates. Not counting %1$s until it has a rate.</string>
     <string name="home_lent">Lent out</string>
         <string name="home_borrowed">You owe</string>
-    <string name="eyebrow_yours">Make it yours</string>
     <string name="account_type_bank">Bank</string>
     <string name="account_type_cash">Cash</string>
     <string name="account_type_card">Card</string>
@@ -452,7 +451,7 @@
     <string name="lock_now">Lock now</string>
 
     <string name="lock_title">Ledgerline is locked</string>
-    <string name="lock_body">Confirm it is you with your fingerprint or screen lock to open your ledger.</string>
+    <string name="lock_body">Use your fingerprint or screen lock.</string>
     <string name="lock_unlock">Unlock</string>
     <string name="lock_sign_in_again">Sign in again instead</string>
     <string name="lock_prompt_unlock">Unlock Ledgerline</string>
@@ -460,17 +459,16 @@
     <string name="lock_error_failed">That did not work. Try again, or sign in again with your password.</string>
     <string name="lock_error_locked_out">Too many attempts. Wait a little, then try again, or sign in again with your password.</string>
 
-    <string name="keep_title">Stay signed in on this phone?</string>
-    <string name="keep_body">Ledgerline can keep you signed in, protected by your fingerprint or screen lock, so you do not need your password and code each time. Without it you sign in again every time you open the app.</string>
-    <string name="keep_body_no_lock">This phone has no fingerprint or screen lock set up, so Ledgerline cannot keep you signed in safely. You will sign in again each time you open the app.</string>
-    <string name="keep_body_unavailable">This phone cannot protect a saved sign-in, so you will sign in again each time you open the app.</string>
+    <string name="keep_title">Stay signed in?</string>
+    <string name="keep_body">Open Ledgerline with your fingerprint or screen lock instead of your password.</string>
+    <string name="keep_body_no_lock">No screen lock is set up, so you will sign in each time.</string>
+    <string name="keep_body_unavailable">This phone cannot keep a sign-in safely, so you will sign in each time.</string>
     <string name="keep_button">Use fingerprint or screen lock</string>
     <string name="keep_not_now">Not now</string>
     <string name="keep_continue">Continue</string>
 
     <string name="updates_title">Updates</string>
-    <string name="updates_subtitle">Version %1$s is installed.</string>
-    <string name="back_settings">Settings</string>
+    <string name="updates_installed">Installed</string>
     <string name="updates_auto">Check for updates automatically</string>
     <string name="updates_auto_detail">Once a day when the app opens</string>
     <string name="updates_check">Check for updates</string>

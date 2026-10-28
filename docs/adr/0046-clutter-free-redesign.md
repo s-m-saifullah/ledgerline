@@ -70,6 +70,15 @@ Top bar; segmented control (two to four options); grouped list card (leading ava
 - A segmented control with three or more options stacks its options in a column at a large text size, so a word never breaks in the middle.
 - Left out against the prototype: the "Transaction Amount" label (few words) and the date picker's own button text. Sign-in, address and lock follow in their own pull request.
 
+### Amendment, 2026-10-28: sign-in, address, lock and the update screen (the owner's choices)
+
+- None of these has a concept screen, so they follow the app's design language: a top bar (a back arrow only where there is somewhere to go back to), fields as rows in one card, one primary button, one short hint line, a problem in words, and a link for the quiet choice. The long explanations became one sentence each; the two rare sign-out notices keep what to do next ("Remove this phone under Settings, Signed-in devices").
+- **Sign-in:** Email and Password rows (Show or Hide beside the password) and one Sign in button; the server is one row ("Server", the address without https://) that opens the address screen. The code step has a back arrow, one code row, one hint, one Verify button, and "Use a backup code" as a link, not a switch.
+- **Address:** the label above a full-width box (a long address would be cut off beside a label), one hint, one Continue button; a back arrow only when an address is already saved.
+- **Lock and the offer to stay signed in:** a top bar, one line, one primary button and a link; the offer offers the fingerprint or screen lock only when the phone has one.
+- **Update screen:** a top bar with a back arrow, an Installed row, and the same states as before. The eyebrow and subtitle are gone.
+- **Retired:** `PageHeader`, `BackLink`, `SearchField` and `ChoiceField`. Settings' "Keep my filters" unit is a three-option segmented control (Minutes, Hours, Days); the Categories form's Parent is a row that opens the shared picker. The picker sheet, the pick row and the input row moved to the shared design package.
+
 ## Not changing
 
 The API, the mirror, the outbox, sync, privacy mode through `money()`, FLAG_SECURE, integer minor-unit money, each screen's content as a function of plain data, the search-stays-put rule (`narrowingRoom` and a `SearchStaysPut` test on every list screen with a search or filter), the colour source (`tokens.css`), light, dark and system themes, and the existing tests (kept green, or changed on purpose and said so in the pull request).

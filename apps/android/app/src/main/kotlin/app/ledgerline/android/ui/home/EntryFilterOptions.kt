@@ -4,7 +4,7 @@ import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.TagRow
-import app.ledgerline.android.ui.editor.Choice
+import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.editor.categoryChoices
 import java.time.YearMonth
 

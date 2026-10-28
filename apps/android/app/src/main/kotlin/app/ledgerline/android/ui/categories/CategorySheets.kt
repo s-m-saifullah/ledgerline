@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,7 +37,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
-import app.ledgerline.android.ui.design.ChoiceField
+import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.PickRow
+import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RowHeight
@@ -86,17 +90,33 @@ internal fun CategoryFormContent(
 ) {
     val editing = form.editing != null
     var touched by remember { mutableStateOf(false) }
+    var choosingParent by rememberSaveable { mutableStateOf(false) }
+    if (choosingParent) {
+        val none = stringResource(R.string.category_parent_none)
+        PickerContent(
+            stringResource(R.string.category_parent),
+            listOf(Choice("", none)) + parents.map { Choice(it.id, it.name) },
+            form.parentId ?: "",
+            { id -> actions.changeForm { it.copy(parentId = id.ifEmpty { null }) }; choosingParent = false },
+            { choosingParent = false },
+            modifier,
+        )
+        return
+    }
     val nameError = (touched || form.name.isNotEmpty()) && form.nameProblem
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = 24.dp),
+        modifier = modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SheetTitle(stringResource(if (editing) R.string.category_form_edit_title else R.string.category_form_add_title), actions.closeForm)
+        // The parent card brings its own side margin, so the other items take theirs one by one.
+        val side = Modifier.padding(horizontal = ScreenMargin)
+        Column(side) { SheetTitle(stringResource(if (editing) R.string.category_form_edit_title else R.string.category_form_add_title), actions.closeForm) }
         if (editing) {
             Text(
                 stringResource(if (form.kind == "income") R.string.category_kind_income else R.string.category_kind_expense),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = side,
             )
         } else {
             val kindLabel = stringResource(R.string.category_kind)
@@ -104,11 +124,11 @@ internal fun CategoryFormContent(
                 listOf(stringResource(R.string.category_kind_expense), stringResource(R.string.category_kind_income)),
                 if (form.kind == "income") 1 else 0,
                 { index -> actions.changeForm { it.copy(kind = if (index == 1) "income" else "expense", parentId = null) } },
-                Modifier.semantics { contentDescription = kindLabel },
+                side.semantics { contentDescription = kindLabel },
             )
         }
         val nameLabel = stringResource(R.string.category_name)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(side, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(nameLabel, style = MaterialTheme.typography.bodyMedium)
             OutlinedTextField(
                 value = form.name,
@@ -125,16 +145,14 @@ internal fun CategoryFormContent(
             )
         }
         if (hasSubcategories) {
-            Text(stringResource(R.string.category_parent_blocked), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.category_parent_blocked), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = side)
         } else {
-            ChoiceField(
-                label = stringResource(R.string.category_parent),
-                options = listOf("" to stringResource(R.string.category_parent_none)) + parents.map { it.id to it.name },
-                selected = form.parentId ?: "",
-                onSelect = { id -> actions.changeForm { it.copy(parentId = id.ifEmpty { null }) } },
-            )
+            val none = stringResource(R.string.category_parent_none)
+            GroupedListCard {
+                row { PickRow(stringResource(R.string.category_parent), parents.find { it.id == form.parentId }?.name ?: none, none, null) { choosingParent = true } }
+            }
         }
-        error?.let { Text(errorText(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
+        error?.let { Text(errorText(it), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium, modifier = side.semantics { liveRegion = LiveRegionMode.Polite }) }
         PrimaryButton(
             stringResource(
                 when {
@@ -144,7 +162,7 @@ internal fun CategoryFormContent(
                 },
             ),
             onClick = { touched = true; actions.save() },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = side.fillMaxWidth(),
             enabled = !saving && !form.nameProblem,
         )
     }
