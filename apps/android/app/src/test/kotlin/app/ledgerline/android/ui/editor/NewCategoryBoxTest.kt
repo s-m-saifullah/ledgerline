@@ -19,7 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** The inline "New category" box as plain data: closed, open, invalid, failed and busy. */
+/** The "New category" name box as plain data: open, invalid, failed and busy. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class)
 class NewCategoryBoxTest {
@@ -28,16 +28,8 @@ class NewCategoryBoxTest {
 
     private val log = mutableListOf<String>()
 
-    private fun show(box: NewCategory?) = compose.setContent {
-        NewCategoryBox(box, onToggle = { log += "toggle" }, onName = { log += "name:$it" }, onCreate = { log += "create" })
-    }
-
-    @Test
-    fun closedItIsOnlyTheButton() {
-        show(null)
-        compose.onNodeWithText("New category name").assertDoesNotExist()
-        compose.onNodeWithText("New category").performClick()
-        assertEquals(listOf("toggle"), log)
+    private fun show(box: NewCategory) = compose.setContent {
+        NewCategoryFields(box, onName = { log += "name:$it" }, onCreate = { log += "create" })
     }
 
     @Test
@@ -67,13 +59,12 @@ class NewCategoryBoxTest {
     fun whileCreatingTheBoxSaysSoAndCannotBeChanged() {
         show(NewCategory("Pets", creating = true))
         compose.onNodeWithText("Adding…").assertIsNotEnabled()
-        compose.onNodeWithText("New category").assertIsNotEnabled()
     }
 
     @Test
     fun everyErrorIsWordedAndTheServersSentenceIsShownAsItIs() {
         var shown by mutableStateOf<CategoryError?>(CategoryError.Offline)
-        compose.setContent { NewCategoryBox(NewCategory("Food", error = shown), {}, {}, {}) }
+        compose.setContent { NewCategoryFields(NewCategory("Food", error = shown), {}, {}) }
         val cases = listOf(
             CategoryError.Offline to "needs a connection",
             CategoryError.Forbidden to "can't change categories",

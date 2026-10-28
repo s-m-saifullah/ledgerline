@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -116,39 +117,52 @@ fun MonthControl(month: String, onPrevious: () -> Unit, onNext: () -> Unit) {
     }
 }
 
-/** Two to four choices in one rounded track; the selected one is raised and bold. Each segment is a touch target. */
+/**
+ * Whether a segmented control stacks its options in a column: three or more options at a large text size no longer fit
+ * side by side, and a word would break in the middle. A pure function, because Robolectric's text widths are not real.
+ */
+fun segmentsStacked(fontScale: Float, options: List<String>): Boolean = fontScale > 1.3f && options.size >= 3
+
+/**
+ * Two to four choices in one rounded track; the selected one is raised and bold. Each segment is a touch target. At a
+ * large text size three or more options stack (see [segmentsStacked]).
+ */
 @Composable
 fun SegmentedControl(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
     val palette = LocalPalette.current
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
-            .background(palette.border.copy(alpha = 0.5f))
-            .padding(4.dp)
-            .selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        options.forEachIndexed { index, label ->
-            val on = index == selected
-            Surface(
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = TouchTarget)
-                    .selectable(selected = on, onClick = { onSelect(index) }, role = Role.RadioButton),
-                shape = MaterialTheme.shapes.extraSmall,
-                color = if (on) palette.surface else Color.Transparent,
-                contentColor = if (on) palette.text else palette.muted,
-                border = if (on) BorderStroke(1.dp, palette.border) else null,
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = MaterialTheme.typography.titleSmall.fontWeight.takeIf { on }),
-                        textAlign = TextAlign.Center,
-                    )
-                }
+    val track = modifier
+        .fillMaxWidth()
+        .clip(MaterialTheme.shapes.small)
+        .background(palette.border.copy(alpha = 0.5f))
+        .padding(4.dp)
+        .selectableGroup()
+    val segment: @Composable (Int, String, Modifier) -> Unit = { index, label, size ->
+        val on = index == selected
+        Surface(
+            modifier = size
+                .heightIn(min = TouchTarget)
+                .selectable(selected = on, onClick = { onSelect(index) }, role = Role.RadioButton),
+            shape = MaterialTheme.shapes.extraSmall,
+            color = if (on) palette.surface else Color.Transparent,
+            contentColor = if (on) palette.text else palette.muted,
+            border = if (on) BorderStroke(1.dp, palette.border) else null,
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                Text(
+                    label,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = MaterialTheme.typography.titleSmall.fontWeight.takeIf { on }),
+                    textAlign = TextAlign.Center,
+                )
             }
+        }
+    }
+    if (segmentsStacked(LocalDensity.current.fontScale, options)) {
+        Column(modifier = track, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            options.forEachIndexed { index, label -> segment(index, label, Modifier.fillMaxWidth()) }
+        }
+    } else {
+        Row(modifier = track, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            options.forEachIndexed { index, label -> segment(index, label, Modifier.weight(1f)) }
         }
     }
 }
@@ -439,6 +453,15 @@ fun SectionLabel(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = ScreenMargin + 4.dp).padding(top = 8.dp).semantics { heading() },
     )
+}
+
+/** A sheet's title with a Cancel beside it (the shared look of the Categories and editor sheets). */
+@Composable
+fun SheetTitle(title: String, onCancel: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = RowHeight)) {
+        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).semantics { heading() })
+        LinkButton(stringResource(R.string.cancel), onCancel)
+    }
 }
 
 /** Nothing to show: one sentence and at most one action. */

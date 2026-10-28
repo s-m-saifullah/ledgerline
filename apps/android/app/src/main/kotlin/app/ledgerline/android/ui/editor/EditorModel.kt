@@ -95,7 +95,24 @@ data class EditorForm(
     val tagIds: List<String>,
     /** "HH:mm", or null: empty for a new entry, as on the web. */
     val time: String? = null,
+    /** The web's Status: off is cleared (the default), on is pending. A transfer has none. */
+    val pending: Boolean = false,
 )
+
+/** The form with From and To exchanged: a transfer's swap button. */
+fun EditorForm.swapped() = copy(accountId = toAccountId, toAccountId = accountId)
+
+/** A picker sheet offers a search box from this many choices on (the same rule as Loans' search). */
+const val PickerSearchFrom = 8
+
+/** A picker with a search box takes this share of the screen height and keeps it while the list narrows. */
+const val PickerSheetHeight = 0.65f
+
+/** The choices whose label has [query] in it, ignoring case; all of them for a blank query. */
+fun pickerChoices(choices: List<Choice>, query: String): List<Choice> {
+    val term = query.trim()
+    return if (term.isEmpty()) choices else choices.filter { it.label.contains(term, ignoreCase = true) }
+}
 
 data class EditorState(
     val isNew: Boolean,

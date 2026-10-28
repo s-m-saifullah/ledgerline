@@ -7,10 +7,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,9 +29,9 @@ class AmountFieldTest {
 
     private var amount by mutableStateOf("")
 
-    private fun show(centsFirst: Boolean, digits: Int = 2) {
+    private fun show(centsFirst: Boolean, digits: Int = 2, hero: Boolean = false, problem: String? = null) {
         compose.setContent {
-            AmountField(amount, { amount = it }, digits, centsFirst, label = "Amount")
+            AmountField(amount, { amount = it }, digits, centsFirst, label = "Amount", isError = problem != null, supportingText = problem, hero = hero)
         }
     }
 
@@ -92,5 +95,39 @@ class AmountFieldTest {
         compose.waitForIdle()
         field.performTextInput("1")
         assertEquals("75.01", amount)
+    }
+
+    @Test
+    fun theHeroAmountTypesFromTheCentsLikeTheBoxedOne() {
+        show(centsFirst = true, hero = true)
+        "123".forEach { field.performTextInput(it.toString()) }
+        assertEquals("1.23", amount)
+    }
+
+    @Test
+    fun theOrdinaryHeroAmountKeepsExactlyWhatIsTyped() {
+        show(centsFirst = false, hero = true)
+        field.performTextInput("12,5")
+        assertEquals("12,5", amount)
+    }
+
+    @Test
+    fun anEmptyHeroAmountShowsWhatTypingWillFillIn() {
+        show(centsFirst = true, hero = true)
+        compose.onNodeWithText("0.00").assertExists()
+        field.performTextInput("5")
+        compose.onNodeWithText("0.00").assertDoesNotExist()
+    }
+
+    @Test
+    fun anEmptyHeroAmountWithoutCentsFirstShowsZero() {
+        show(centsFirst = false, hero = true)
+        compose.onNodeWithText("0").assertExists()
+    }
+
+    @Test
+    fun theHeroAmountSaysItsProblemInWordsUnderIt() {
+        show(centsFirst = false, hero = true, problem = "Enter an amount.")
+        compose.onNodeWithText("Enter an amount.").assertExists()
     }
 }

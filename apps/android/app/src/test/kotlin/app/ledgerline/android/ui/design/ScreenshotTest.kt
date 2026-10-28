@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.runtime.Composable
+import app.ledgerline.android.R
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
@@ -59,8 +61,6 @@ import app.ledgerline.android.settings.ThemeChoice
 import app.ledgerline.android.ui.editor.Choice
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.ui.home.FilterOptions
-import app.ledgerline.android.ui.editor.ComboField
-import app.ledgerline.android.ui.editor.TagPicker
 import app.ledgerline.android.ui.settings.SettingsActions
 import app.ledgerline.android.ui.settings.SettingsContent
 import app.ledgerline.android.ui.settings.SettingsState
@@ -536,42 +536,102 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         )
     }
 
-    private fun newCategoryShot(name: String, box: app.ledgerline.android.ui.editor.NewCategory?) = shot(name, Tab.Home) {
-        androidx.compose.foundation.layout.Column(
-            modifier = androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
-        ) {
-            ComboField("Category", listOf(Choice("a", "Food"), Choice("a1", "Food › Groceries")), "a1", {}, "No matching categories.")
-            app.ledgerline.android.ui.editor.NewCategoryBox(box, {}, {}, {})
+    /** The editor is full screen, outside the tab frame. */
+    private fun fullShot(name: String, centsFirst: Boolean = false, content: @Composable () -> Unit) {
+        val theme = if (dark) "dark" else "light"
+        captureRoboImage("build/outputs/roborazzi/$name-${width}dp-$theme-font$fontScale.png") {
+            LedgerlineTheme(darkTheme = dark) {
+                CompositionLocalProvider(app.ledgerline.android.ui.editor.LocalCentsFirst provides centsFirst) {
+                    androidx.compose.material3.Surface(androidx.compose.ui.Modifier.fillMaxSize(), color = androidx.compose.material3.MaterialTheme.colorScheme.background) { content() }
+                }
+            }
         }
     }
 
-    @Test
-    fun newCategoryClosed() = newCategoryShot("new-category-closed", null)
+    private val editorAccounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Wallet", "USD"), Choice("a3", "Savings account with a long name", "USD"))
+    private val editorCategories = listOf(Choice("c1", "Food"), Choice("c2", "Food › Groceries"), Choice("c3", "Transport › Gas"), Choice("c4", "Home and garden", archived = true))
+    private val editorTags = listOf(Choice("t1", "work"), Choice("t2", "weekend trip"), Choice("t3", "home"))
+    private val editorActions = app.ledgerline.android.ui.editor.EditorActions({}, {}, {}, {}, {}, {}, {})
 
-    @Test
-    fun newCategoryOpen() = newCategoryShot("new-category-open", app.ledgerline.android.ui.editor.NewCategory("Pets"))
+    private fun editorForm(mode: app.ledgerline.android.ui.editor.EntryMode = app.ledgerline.android.ui.editor.EntryMode.Expense) = app.ledgerline.android.ui.editor.EditorForm(
+        mode, "", "a1", null, null, "2026-10-23", "", "", emptyList(),
+    )
 
-    @Test
-    fun newCategoryWithAnError() = newCategoryShot(
-        "new-category-error",
-        app.ledgerline.android.ui.editor.NewCategory(
-            "Food",
-            error = app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
-        ),
+    private fun editorState(
+        form: app.ledgerline.android.ui.editor.EditorForm,
+        isNew: Boolean = true,
+        errors: Set<app.ledgerline.android.ui.editor.FormError> = emptySet(),
+        readOnly: app.ledgerline.android.ui.editor.ReadOnly? = null,
+    ) = app.ledgerline.android.ui.editor.EditorState(
+        isNew, form,
+        if (isNew) app.ledgerline.android.ui.editor.EntryMode.entries else listOf(form.mode),
+        editorAccounts, editorAccounts.filter { it.id != form.accountId }, editorCategories, editorTags,
+        readOnly = readOnly, canDelete = !isNew, errors = errors,
     )
 
     @Test
-    fun pickers() = shot("pickers", Tab.Home) {
-        val tags = listOf(Choice("t1", "work"), Choice("t2", "weekend trip"), Choice("t3", "an old tag", archived = true), Choice("t4", "home"))
-        androidx.compose.foundation.layout.Column(
-            modifier = androidx.compose.ui.Modifier.padding(16.dp),
-            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
-        ) {
-            ComboField("Category", listOf(Choice("a", "Food"), Choice("a1", "Food › Groceries")), "a1", {}, "No matching categories.")
-            ComboField("Category", emptyList(), null, {}, "No matching categories.", error = "Choose a category.", placeholder = "Choose a category")
-            TagPicker(tags, listOf("t1", "t2", "t3"), {}, {})
-        }
+    fun editorNew() = fullShot("editor-new") {
+        app.ledgerline.android.ui.editor.EditorContent(editorState(editorForm()), null, R.string.editor_title_new, editorActions)
+    }
+
+    @Test
+    fun editorEdit() = fullShot("editor-edit", centsFirst = true) {
+        val form = editorForm().copy(
+            amount = "37.71", categoryId = "c3", payee = "Corner station", note = "Trip to the lake house", time = "21:10",
+            tagIds = listOf("t1", "t2"), pending = true,
+        )
+        app.ledgerline.android.ui.editor.EditorContent(editorState(form, isNew = false), null, R.string.editor_title_entry, editorActions)
+    }
+
+    @Test
+    fun editorWithErrors() = fullShot("editor-errors") {
+        val state = editorState(
+            editorForm().copy(accountId = null),
+            errors = setOf(
+                app.ledgerline.android.ui.editor.FormError.AmountMissing, app.ledgerline.android.ui.editor.FormError.AccountMissing,
+                app.ledgerline.android.ui.editor.FormError.CategoryMissing, app.ledgerline.android.ui.editor.FormError.CouldNotSave,
+            ),
+        )
+        app.ledgerline.android.ui.editor.EditorContent(state, null, R.string.editor_title_new, editorActions)
+    }
+
+    @Test
+    fun editorTransfer() = fullShot("editor-transfer") {
+        val form = editorForm(app.ledgerline.android.ui.editor.EntryMode.Transfer).copy(amount = "195.07", toAccountId = "a2", note = "Card payment")
+        app.ledgerline.android.ui.editor.EditorContent(editorState(form), null, R.string.editor_title_new, editorActions)
+    }
+
+    @Test
+    fun editorReadOnly() = fullShot("editor-readonly") {
+        val state = editorState(editorForm(), isNew = false, readOnly = app.ledgerline.android.ui.editor.ReadOnly.Split)
+        app.ledgerline.android.ui.editor.EditorContent(state, null, R.string.editor_title_entry, editorActions)
+    }
+
+    @Test
+    fun editorAccountPicker() = sheetShot("editor-picker-accounts") {
+        app.ledgerline.android.ui.editor.PickerContent("Account", editorAccounts, "a1", {}, {})
+    }
+
+    @Test
+    fun editorCategoryPickerWithSearch() = sheetShot("editor-picker-categories") {
+        val many = (1..9).map { Choice("c$it", if (it % 3 == 0) "Food › Category number $it" else "Category $it") }
+        app.ledgerline.android.ui.editor.PickerContent("Category", many, "c2", {}, {}, onNew = {})
+    }
+
+    @Test
+    fun editorNewCategorySheet() = sheetShot("editor-new-category") {
+        app.ledgerline.android.ui.editor.NewCategorySheetContent(app.ledgerline.android.ui.editor.NewCategory("Pets"), {}, {}, {})
+    }
+
+    @Test
+    fun editorNewCategoryWithAnError() = sheetShot("editor-new-category-error") {
+        app.ledgerline.android.ui.editor.NewCategorySheetContent(
+            app.ledgerline.android.ui.editor.NewCategory(
+                "Food",
+                error = app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
+            ),
+            {}, {}, {},
+        )
     }
 
     private val accounts = listOf(
