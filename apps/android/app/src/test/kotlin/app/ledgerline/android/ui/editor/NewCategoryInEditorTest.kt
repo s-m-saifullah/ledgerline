@@ -261,6 +261,24 @@ class NewCategoryInEditorTest {
     }
 
     @Test
+    fun theCategoryIsChosenBeforeTheBoxIsSeenClosed() = runBlocking {
+        harness.route("/api/v1/ledgers/ledger-a/categories") { answer(created(30, "Pets")) }
+        // Anyone who sees the box closed (a screen, or a test waiting for it) must also see the category chosen; a test that
+        // polls every 10 ms only met the gap now and then on a slow runner, so this one spins to meet it every time.
+        var early = 0
+        repeat(30) {
+            val editor = editor()
+            editor.opened(EditorTarget.New())
+            editor.type("Pets")
+            editor.createCategory()
+            val limit = System.nanoTime() + 5_000_000_000L
+            while (editor.newCategory.value?.creating == true && System.nanoTime() < limit) { }
+            if (editor.state.value!!.form.categoryId != id(30)) early++
+        }
+        assertEquals("times the category was not yet chosen when the box closed", 0, early)
+    }
+
+    @Test
     fun aSecondTapWhileCreatingSendsNothingMore() = runBlocking {
         harness.delayMillis = 400
         harness.route("/api/v1/ledgers/ledger-a/categories") { answer(created(30, "Pets")) }
