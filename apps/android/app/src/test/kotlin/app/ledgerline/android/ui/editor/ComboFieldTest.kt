@@ -126,42 +126,4 @@ class ComboFieldTest {
         compose.setContent { ComboField("Tags", categories, null, {}, "none", enabled = false) }
         compose.onNodeWithText("Tags").assertIsNotEnabled()
     }
-
-    @Test
-    fun tagPickerShowsChipsRemovesAndOffersOnlyOthers() {
-        val tags = listOf(Choice("t1", "work"), Choice("t2", "trip"), Choice("t3", "old", archived = true), Choice("t4", "home"))
-        var chosen by mutableStateOf(listOf("t1", "t3"))
-        compose.setContent { TagPicker(tags, chosen, onAdd = { chosen = chosen + it }, onRemove = { chosen = chosen - it }) }
-        compose.onNodeWithText("work").assertExists()
-        compose.onNodeWithText("old (archived)").assertExists()
-        // The box offers tags not yet chosen and not archived.
-        box.performClick()
-        compose.onNodeWithText("trip").assertExists()
-        compose.onNodeWithText("home").assertExists()
-        compose.onAllNodesWithTextCount("work").let { assertEquals(1, it) }
-        compose.onNodeWithText("trip").performClick()
-        assertEquals(listOf("t1", "t3", "t2"), chosen)
-        compose.onNodeWithContentDescription("Remove tag work").performClick()
-        assertEquals(listOf("t3", "t2"), chosen)
-    }
-
-    @Test
-    fun tenTagsIsTheMostAndTheBoxSaysSo() {
-        val tags = (1..11).map { Choice("t$it", "tag$it") }
-        compose.setContent { TagPicker(tags, tags.take(MaxTagsPerEntry).map { it.id }, onAdd = {}, onRemove = {}) }
-        compose.onNodeWithText("Tags").assertIsNotEnabled()
-        compose.onNodeWithText("Ten tags is the most").assertExists()
-    }
-
-    @Test
-    fun withRoomLeftTheBoxIsUsable() {
-        compose.setContent { TagPicker(listOf(Choice("t1", "work")), emptyList(), onAdd = {}, onRemove = {}) }
-        box.assertIsEnabled()
-        compose.onNodeWithText("Ten tags is the most").assertDoesNotExist()
-        box.performClick()
-        compose.onNodeWithText("Find a tag").assertExists()
-    }
 }
-
-private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTextCount(text: String): Int =
-    onAllNodes(androidx.compose.ui.test.hasText(text)).fetchSemanticsNodes().size

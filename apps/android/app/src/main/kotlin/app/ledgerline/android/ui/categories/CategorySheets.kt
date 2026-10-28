@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.ui.design.ChoiceField
-import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -172,15 +172,6 @@ internal fun CategoryActionsContent(row: CategoryRow, items: List<CategoryRow>, 
         }
         // As on the web the item is always there: the question that follows says what stops a delete, and recommends archiving.
         ActionRow(stringResource(R.string.category_delete), enabled = true, color = palette.danger) { actions.askDelete(row) }
-    }
-}
-
-/** The sheet's title and a Cancel beside it. */
-@Composable
-private fun SheetTitle(title: String, onCancel: () -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = RowHeight)) {
-        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).semantics { heading() })
-        LinkButton(stringResource(R.string.category_cancel), onCancel)
     }
 }
 

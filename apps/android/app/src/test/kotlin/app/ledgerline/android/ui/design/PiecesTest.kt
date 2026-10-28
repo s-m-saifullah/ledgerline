@@ -2,6 +2,10 @@ package app.ledgerline.android.ui.design
 
 import android.app.Application
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +77,41 @@ class PiecesTest {
         assertEquals(1, selected)
         compose.onNodeWithText("Income").assertIsSelected()
         compose.onNodeWithText("Expense").assertIsNotSelected()
+    }
+
+    @Test
+    fun threeOrMoreOptionsStackAtLargeTextAndTwoNeverDo() {
+        assertTrue(segmentsStacked(2f, listOf("a", "b", "c")))
+        assertTrue(segmentsStacked(1.4f, listOf("a", "b", "c", "d")))
+        assertEquals(false, segmentsStacked(2f, listOf("a", "b")))
+        assertEquals(false, segmentsStacked(1.3f, listOf("a", "b", "c")))
+        assertEquals(false, segmentsStacked(1f, listOf("a", "b", "c", "d")))
+    }
+
+    private fun segmentTops(fontScale: Float): List<Pair<Float, Float>> {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(2f, fontScale)) {
+                LedgerlineTheme { SegmentedControl(listOf("Expense", "Income", "Transfer"), 0, {}) }
+            }
+        }
+        return listOf("Expense", "Income", "Transfer").map {
+            val box = compose.onNodeWithText(it).getUnclippedBoundsInRoot()
+            box.left.value to box.top.value
+        }
+    }
+
+    @Test
+    fun threeSegmentsSitSideBySideAtNormalTextSize() {
+        val (a, b, c) = segmentTops(1f)
+        assertEquals(a.second, b.second, 0.5f)
+        assertEquals(b.second, c.second, 0.5f)
+    }
+
+    @Test
+    fun threeSegmentsStackOneUnderTheOtherAtTheLargestTextSize() {
+        val (a, b, c) = segmentTops(2f)
+        assertTrue(a.second < b.second && b.second < c.second)
+        assertEquals(a.first, b.first, 0.5f)
     }
 
     @Test

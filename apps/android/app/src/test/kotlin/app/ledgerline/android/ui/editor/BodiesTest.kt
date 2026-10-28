@@ -32,6 +32,19 @@ class BodiesTest {
     }
 
     @Test
+    fun aNewEntryIsClearedUnlessTheOwnerMarkedItPending() {
+        assertTrue(entryCreateBody(values).toString().contains(""""status":"cleared""""))
+        assertTrue(entryCreateBody(values.copy(status = "pending")).toString().contains(""""status":"pending""""))
+    }
+
+    @Test
+    fun anEditSendsTheStatusOnlyWhenItChanged() {
+        assertTrue(entryChanges(before, values.copy(status = "cleared")).isEmpty())
+        assertEquals("""{"status":"pending"}""", entryChanges(before, values.copy(status = "pending")).toString())
+        assertEquals("""{"status":"cleared"}""", entryChanges(before.copy(status = "pending"), values.copy(status = "cleared")).toString())
+    }
+
+    @Test
     fun aTimeIsSentWhenTheOwnerGaveOneAndOnlyWhenItChanged() {
         assertTrue(entryCreateBody(values.copy(time = "07:45")).toString().contains(""""date":"2026-10-22","time":"07:45","""))
         assertEquals("""{"time":"10:15"}""", entryChanges(before, values.copy(time = "10:15")).toString())

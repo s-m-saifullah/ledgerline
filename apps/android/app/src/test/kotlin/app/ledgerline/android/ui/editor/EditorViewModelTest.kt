@@ -41,6 +41,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -108,6 +109,7 @@ class EditorViewModelTest {
                     entry(10, accountN = 1, amount = -1_000, payee = "Grocer").copy(categoryId = id(20), time = "18:20"),
                     entry(11, accountN = 1, amount = -3_000, payee = "Split").copy(isSplit = true),
                     entry(12, accountN = 1, amount = -100, payee = "Fee").copy(feeTransferId = "t2"),
+                    entry(13, accountN = 1, amount = -250, payee = "Pending shop").copy(categoryId = id(20), status = "pending"),
                     entry(40, accountN = 1, amount = -500, kind = "transfer", payee = null).copy(transferId = "t1", time = "08:30"),
                     entry(41, accountN = 2, amount = 500, kind = "transfer", payee = null).copy(transferId = "t1", time = "08:30"),
                     entry(42, accountN = 1, amount = -700, kind = "transfer", payee = null).copy(transferId = "t2"),
@@ -162,6 +164,50 @@ class EditorViewModelTest {
             row.body,
         )
         assertEquals(id(2), memory.lastAccount)
+    }
+
+    @Test
+    fun aNewEntryIsNotPendingAndSavesClearedUntilTheOwnerSwitchesPendingOn() = runBlocking {
+        memory.categories["expense"] = id(20)
+        val vm = editor()
+        assertEquals(false, vm.opened(EditorTarget.New()).form.pending)
+        vm.update { it.copy(amount = "3", pending = true) }
+        vm.save()
+        assertTrue(vm.saved().done)
+        assertEquals("pending", body(rows().single())["status"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun anOpenedPendingEntryShowsPendingAndClearingItSendsOnlyTheStatus() = runBlocking {
+        val vm = editor()
+        assertEquals(true, vm.opened(EditorTarget.Entry(id(13))).form.pending)
+        assertEquals(false, vm.opened(EditorTarget.Entry(id(10))).form.pending)
+        vm.opened(EditorTarget.Entry(id(13)))
+        vm.update { it.copy(pending = false) }
+        vm.save()
+        assertTrue(vm.saved().done)
+        assertEquals("""{"status":"cleared"}""", body(rows().single()).toString())
+    }
+
+    @Test
+    fun anEditThatLeavesTheStatusAloneSendsNoStatus() = runBlocking {
+        val vm = editor()
+        vm.opened(EditorTarget.Entry(id(13)))
+        vm.update { it.copy(payee = "Renamed") }
+        vm.save()
+        assertTrue(vm.saved().done)
+        assertEquals("""{"payee":"Renamed"}""", body(rows().single()).toString())
+    }
+
+    @Test
+    fun aTransferHasNoStatusWhateverTheSwitchSaid() = runBlocking {
+        val vm = editor()
+        vm.opened(EditorTarget.New())
+        vm.update { it.copy(amount = "5", pending = true, mode = EntryMode.Transfer) }
+        vm.update { it.copy(accountId = id(1), toAccountId = id(2)) }
+        vm.save()
+        assertTrue(vm.saved().done)
+        assertTrue("status" !in body(rows().single()))
     }
 
     @Test

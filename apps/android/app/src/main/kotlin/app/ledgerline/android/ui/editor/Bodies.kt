@@ -21,6 +21,8 @@ data class EntryValues(
     val tagIds: List<String>,
     /** "HH:mm" on [date], or null when the time is not known (the web's "Time (optional)"). */
     val time: String? = null,
+    /** "cleared", or "pending" for an entry that does not change the posted balance yet (the web's Status). */
+    val status: String = "cleared",
 )
 
 /** What the form holds for a transfer. [amount] is the positive amount moved. */
@@ -51,7 +53,7 @@ fun entryCreateBody(values: EntryValues): JsonObject = buildJsonObject {
     put("date", values.date)
     put("time", text(values.time))
     put("amount", money(values.amount, values.currency))
-    put("status", "cleared")
+    put("status", values.status)
     put("payee", text(values.payee))
     put("note", text(values.note))
     put("tagIds", ids(values.tagIds))
@@ -65,6 +67,7 @@ fun entryChanges(before: ShownEntry, values: EntryValues): JsonObject = buildJso
     if (values.date != before.date) put("date", values.date)
     if (values.time != before.time) put("time", text(values.time))
     if (values.amount != before.amount || values.currency != before.currency) put("amount", money(values.amount, values.currency))
+    if (values.status != before.status) put("status", values.status)
     if (values.payee != before.payee) put("payee", text(values.payee))
     if (values.note != before.note) put("note", text(values.note))
     if (values.tagIds.toSet() != before.tagIds.toSet()) put("tagIds", ids(values.tagIds))

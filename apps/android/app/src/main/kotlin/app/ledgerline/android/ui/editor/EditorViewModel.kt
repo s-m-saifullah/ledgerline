@@ -283,7 +283,7 @@ class EditorViewModel @Inject constructor(
             return
         }
         val kind = form.mode.kind()
-        val values = EntryValues(kind, account.id, form.categoryId, form.date, if (kind == "expense") -minor else minor, currency, payee, note, form.tagIds, form.time)
+        val values = EntryValues(kind, account.id, form.categoryId, form.date, if (kind == "expense") -minor else minor, currency, payee, note, form.tagIds, form.time, if (form.pending) "pending" else "cleared")
         if (creating) {
             outbox.createEntry(ledgerId, entryCreateBody(values))
         } else {
@@ -338,6 +338,7 @@ class EditorViewModel @Inject constructor(
         payee = entry.payee.orEmpty(),
         note = entry.note.orEmpty(),
         tagIds = entry.tagIds,
+        pending = entry.status == "pending",
     )
 
     private fun transferForm(from: ShownEntry, to: ShownEntry) = EditorForm(
