@@ -3,7 +3,7 @@
 Self-hosted personal finance web app, deployed with Docker. A native Android app (Phase 5, in progress, `apps/android`) uses the same API.
 
 - Scope, data model and design: `docs/PLAN.md`; first-phase rules: `docs/PHASE_1_PLAN.md`
-- Progress and next steps: `docs/PROGRESS.md`: read it at the start of every session and update it when a piece of work lands
+- Progress and next steps: `docs/PROGRESS.md`: read it at the start of every session and update it when a piece of work lands. It keeps the current status and the last six session entries; when a new entry makes it seven, move the oldest, unchanged, to `docs/progress-archive.md` (newest first). Read the archive only to look something up
 - Decisions: `docs/adr/NNNN-title.md` (one short file per decision that changes the plan)
 - Contribution rules: `CONTRIBUTING.md`; CI rules: `docs/CI.md`; self-hosting: `docs/SELF_HOSTING.md`
 
