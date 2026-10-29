@@ -1,0 +1,189 @@
+/*
+ * Home (ADR 0047): two bands, so every column starts on one line. The hero beside This month, then the
+ * accounts beside Latest transactions. One column on a phone; side by side from 700 px. Widths are the layout
+ * system's two (700 and 1100 px); nothing here depends on JavaScript.
+ */
+.home {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.home-band {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+  min-width: 0;
+}
+.home-band > * {
+  min-width: 0;
+}
+.home-heading {
+  margin-bottom: 8px;
+}
+.home-heading h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* One height for every label row, so the cards under two columns start on the same line. */
+.home-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  /* The row is one height in both columns; pulling the card up keeps the label close to what it names. */
+  margin-bottom: -6px;
+}
+.home-label-row > .ui-seg,
+.home-label-row > .theme-picker {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.home-label-row .ui-section-label {
+  margin: 0;
+  padding: 0 4px;
+}
+
+.home-group + .home-group {
+  border-top: 1px solid var(--border);
+}
+.home-welcome {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.home-welcome p {
+  margin: 0;
+}
+.home-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.home-error p {
+  margin: 0;
+}
+
+/* This month: one card that opens Insights. */
+.home-month {
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+}
+.home-month:hover {
+  background: var(--tint);
+}
+.home-month-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.home-month-title {
+  display: grid;
+  min-width: 0;
+}
+.home-month-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.home-month-net svg {
+  color: var(--muted);
+}
+.home-month-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.home-month-cols > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.home-month-cols > span:last-child {
+  text-align: right;
+}
+.home-month-cols strong {
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.home-month .ui-row-hint {
+  white-space: normal;
+}
+
+.home-pos {
+  color: var(--positive);
+}
+.home-neg {
+  color: var(--danger);
+}
+.ui-row-end .base-note {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.home-pending {
+  display: inline-flex;
+}
+
+.home-skeleton {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.home-skeleton span {
+  height: 88px;
+  border-radius: var(--shape-card);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  animation: home-pulse 1.4s ease-in-out infinite;
+}
+@keyframes home-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-skeleton span {
+    animation: none;
+  }
+}
+
+@container app (max-width: 699.98px) {
+  /* The top bar already says Home; the heading stays for screen readers and takes no room. */
+  .home-heading {
+    margin-bottom: 0;
+  }
+}
+@container app (min-width: 700px) {
+  .home,
+  .home-band {
+    gap: 16px;
+  }
+  .home-band {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+@container app (min-width: 1100px) {
+  .home,
+  .home-band {
+    gap: 20px;
+  }
+}
