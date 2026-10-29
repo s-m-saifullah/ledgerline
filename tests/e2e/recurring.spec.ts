@@ -96,7 +96,7 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   await expect(
     page.getByRole("heading", { name: "Recurring", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".topbar-page")).toHaveText("Recurring");
+  await expect(page).toHaveTitle("Recurring · Ledgerline");
   await expect(page.getByText(/Nothing recurring yet/)).toBeVisible();
 
   // A monthly rent that started about six weeks ago: two occurrences are already due.

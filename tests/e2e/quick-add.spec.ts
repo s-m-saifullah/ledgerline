@@ -8,6 +8,7 @@ import {
   createOwnerLedger,
   prepareBrowser,
 } from "./ledger-setup";
+import { leaveForAnotherPage } from "./more-nav";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
@@ -244,10 +245,7 @@ test("confirms interrupted create and Undo with the same immutable request", asy
   await page.getByRole("button", { name: "Save transaction" }).click();
   await expect(page.getByText(/couldn't confirm the save/)).toBeVisible();
   await page.getByRole("button", { name: "Close for now" }).click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await openAdd(page);
   await page.getByRole("button", { name: "Retry save" }).click();
   await expect(
@@ -542,11 +540,13 @@ test("type amounts from the cents: the setting is saved and digits fill in from 
     exact: true,
   });
   await expect(toggle).not.toBeChecked();
-  // Off: the box is an ordinary one.
+  // Off: the box is an ordinary one. (A phone has no Add button on Settings, so add from Home.)
+  await page.goto("/");
   await openAdd(page);
   await page.getByLabel("Amount (USD)").fill("19.29");
   await expect(page.getByLabel("Amount (USD)")).toHaveValue("19.29");
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.goto("/settings");
   await toggle.check();
   for (const theme of ["light", "dark"] as const) {
     await page.setViewportSize({ width: 320, height: 800 });
@@ -560,6 +560,7 @@ test("type amounts from the cents: the setting is saved and digits fill in from 
   }
   await page.reload();
   await expect(toggle).toBeChecked();
+  await page.goto("/");
   await openAdd(page);
   const amount = page.getByLabel("Amount (USD)");
   await expect(amount).toHaveAttribute("placeholder", "0.00");
@@ -580,6 +581,7 @@ test("type amounts from the cents: the setting is saved and digits fill in from 
   await page
     .getByLabel("Type amounts from the cents", { exact: true })
     .uncheck();
+  await page.goto("/");
   await openAdd(page);
   await page.getByLabel("Amount (USD)").fill("7.5");
   await expect(page.getByLabel("Amount (USD)")).toHaveValue("7.5");

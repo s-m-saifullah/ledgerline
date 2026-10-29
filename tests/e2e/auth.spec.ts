@@ -36,7 +36,9 @@ test("owner signs in, navigates, changes theme, and signs out", async ({
     .getByRole("button", { name: "Switch to dark theme", exact: true })
     .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect(page.locator(".sidebar")).not.toContainText("Personal ledger");
+  await expect(page.locator("header").getByText("Personal ledger")).toHaveCount(
+    0,
+  );
   await page.getByRole("button", { name: "Hide amounts" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-privacy", "true");
   const navigation = page.getByRole("navigation", {

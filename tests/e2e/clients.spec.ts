@@ -8,6 +8,7 @@ import {
   createOwnerLedger,
   prepareBrowser,
 } from "./ledger-setup";
+import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
 
 const { env, pool } = connectLocalDatabase("Clients browser tests");
@@ -175,7 +176,7 @@ async function setup(page: Page) {
   await client(page);
   await log(page);
 }
-async function navigate(page: Page, name: "Transactions" | "More") {
+async function navigate(page: Page, name: "Transactions") {
   await page
     .getByRole("link", { name, exact: true })
     .filter({ visible: true })
@@ -343,8 +344,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   await expect(
     page.getByRole("button", { name: "Undo deletion", exact: true }),
   ).toBeEnabled();
-  await navigate(page, "More");
-  await page.getByRole("link", { name: /^Clients/ }).click();
+  await openMorePage(page, "Clients");
   await page.locator(".client-card").filter({ hasText: "Sam" }).click();
   let interrupted = false;
   const seen: { key: string | null; body: string | null }[] = [];
@@ -457,8 +457,7 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
       .getByRole("button", { name: "Retry same action", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await navigate(page, "More");
-    await page.getByRole("link", { name: "Clients", exact: false }).click();
+    await openMorePage(page, "Clients");
     await page.locator(".client-card").click();
   }
   await page.getByRole("button", { name: "Edit payment", exact: true }).click();

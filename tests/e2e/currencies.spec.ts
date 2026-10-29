@@ -91,7 +91,7 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
   await page.getByLabel("1 USD is worth (EUR)").fill("1.25");
   await page.getByRole("button", { name: "Save rate" }).click();
   await expect(page.getByText(/1 USD = 1\.25 EUR/)).toBeVisible();
-  await expect(page.locator(".topbar-page")).toHaveText("Currencies");
+  await expect(page).toHaveTitle("Currencies · Ledgerline");
 
   // 2. Add a euro account; its card shows euros and today's value in dollars.
   await page.goto("/accounts");

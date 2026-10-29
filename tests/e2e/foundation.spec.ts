@@ -21,6 +21,9 @@ async function open(
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.setViewportSize({ width, height });
   await page.goto(`/gallery.html?view=${view}&theme=light${query}`);
+  await page.waitForFunction(
+    () => getComputedStyle(document.body).containerType === "inline-size",
+  );
   // A modal hides the page behind it from the accessibility tree, so wait for the dialog instead.
   if (/^(sheet|question)/.test(view))
     await expect(page.getByRole("dialog")).toBeVisible();

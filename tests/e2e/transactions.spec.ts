@@ -7,6 +7,7 @@ import {
   createOwnerLedger,
   prepareBrowser,
 } from "./ledger-setup";
+import { leaveForAnotherPage } from "./more-nav";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
@@ -329,10 +330,7 @@ test("replays interrupted edit/delete/restore across navigation and freezes conf
     editor(page).getByRole("button", { name: "Retry save" }),
   ).toBeVisible();
   await editor(page).getByRole("button", { name: "Close for now" }).click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await page
     .getByRole("button", { name: "Add transaction", exact: true })
     .filter({ visible: true })
