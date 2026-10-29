@@ -1,6 +1,6 @@
 # ADR 0046: Clutter-free redesign, phone first
 
-Date: 2026-10-24. Status: accepted by the owner in chat ("Approved"). Amends [0045](0045-one-design-for-web-and-android.md) (one design for web and Android) and the design rules in [CLAUDE.md](../../CLAUDE.md). Builds on [0039](0039-interactive-control-styles.md), [0040](0040-accessibility-pass.md) and [0043](0043-android-app.md).
+Date: 2026-10-24. Status: accepted by the owner in chat ("Approved"). Amends [0045](0045-one-design-for-web-and-android.md) (one design for web and Android) and the design rules in [CLAUDE.md](../../CLAUDE.md). The web follows in [0047](0047-web-redesign.md). Builds on [0039](0039-interactive-control-styles.md), [0040](0040-accessibility-pass.md) and [0043](0043-android-app.md).
 
 ## Context
 

@@ -1,6 +1,6 @@
 # ADR 0045: One design for the web and Android
 
-> Amended by [0046](0046-clutter-free-redesign.md): during the clutter-free redesign the phone leads and the web follows later, and the type, shape, navigation and shared pieces below are replaced as that ADR says.
+> Amended by [0046](0046-clutter-free-redesign.md): during the clutter-free redesign the phone leads and the web follows later, and the type, shape, navigation and shared pieces below are replaced as that ADR says. [0047](0047-web-redesign.md) then applies that language to the web.
 
 Date: 2026-10-23. Status: accepted by the owner in chat ("I want consistency of design: on the web app and the android app"). Builds on [PLAN.md](../PLAN.md) (design system), [0039](0039-interactive-control-styles.md) and [0040](0040-accessibility-pass.md) (the button ladder, spacing and accessibility rules) and [0043](0043-android-app.md) (the Android app).
 
