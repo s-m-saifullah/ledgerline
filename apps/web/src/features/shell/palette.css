@@ -1,0 +1,70 @@
+/* The command palette (ADR 0047): a card near the top, a search box and the list of pages and actions. */
+.ui-palette {
+  position: fixed;
+  top: max(16px, 12dvh);
+  left: 50%;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  width: min(560px, calc(100% - 24px));
+  max-height: calc(100dvh - max(16px, 12dvh) - 16px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--shape-sheet);
+  background: var(--surface);
+  color: var(--text);
+  transform: translateX(-50%);
+}
+.ui-palette-search {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 20px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.ui-palette-search:focus-visible {
+  outline: 0;
+}
+.ui-palette-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.ui-palette-results {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ui-palette-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--shape-field);
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+}
+.ui-palette-option svg:last-child {
+  margin-left: auto;
+  color: var(--muted);
+}
+.ui-palette-option:hover,
+.ui-palette-option:focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ui-palette-option:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

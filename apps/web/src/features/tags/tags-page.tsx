@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Archive, ArchiveRestore, List, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { BackToMore } from "../../components/back-to-more";
 import { EditorDialog } from "../../components/editor-dialog";
 import { ApiError, getLedgers } from "../../lib/api";
 import {
@@ -187,7 +186,6 @@ function LedgerTags({
   };
   return (
     <>
-      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">YOUR LEDGER</p>
         <h1 id="tags-title" tabIndex={-1}>

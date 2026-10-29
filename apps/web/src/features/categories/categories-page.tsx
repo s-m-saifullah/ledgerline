@@ -5,7 +5,6 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { useIsPhone } from "../../components/action-bar";
-import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
 import { CategoryActionDialog } from "./action-dialog";
@@ -158,7 +157,6 @@ function LedgerCategories({
   };
   return (
     <>
-      <BackToMore />
       <div className="page-heading accounts-heading">
         <div>
           <p className="eyebrow">YOUR PERSONAL LEDGER</p>

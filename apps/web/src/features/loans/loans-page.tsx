@@ -18,7 +18,6 @@ import { useState } from "react";
 import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { Amount } from "../../components/amount";
 import { Amount as HomeAmount } from "../../components/amount-text";
-import { BackToMore } from "../../components/back-to-more";
 import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
@@ -125,7 +124,6 @@ export function LoansPage() {
   ) => ({ key, label, shortLabel, icon, disabled, onSelect: run });
   return (
     <>
-      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">MONEY YOU LEND AND BORROW</p>
         <h1 id="loans-title" tabIndex={-1}>

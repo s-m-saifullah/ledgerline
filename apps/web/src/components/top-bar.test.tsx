@@ -29,3 +29,11 @@ it("has no tools wrapper when there are none", () => {
   const { container } = render(<TopBar title="Home" />);
   expect(container.querySelector(".ui-topbar-tools")).toBeNull();
 });
+
+it("can show the title as plain text when the page's own heading carries it", () => {
+  const { container } = render(<TopBar title="Budgets" decorative />);
+  expect(screen.queryByRole("heading")).toBeNull();
+  const title = container.querySelector(".ui-topbar-title");
+  expect(title).toHaveTextContent("Budgets");
+  expect(title).toHaveAttribute("aria-hidden", "true");
+});

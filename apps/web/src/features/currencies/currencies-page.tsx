@@ -2,7 +2,6 @@ import type { PinnedCurrency } from "@ledgerline/shared";
 import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
 import { currencyName, rateSentence } from "../../lib/rate-format";
 import { AddCurrencyDialog } from "./add-dialog";
@@ -57,7 +56,6 @@ export function CurrenciesPage() {
   };
   return (
     <>
-      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">MAKE IT YOURS</p>
         <h1 id="currencies-title" tabIndex={-1}>

@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { BackToMore } from "../../components/back-to-more";
 import { CategoriesStep } from "./categories-step";
 import { ColumnsStep } from "./columns-step";
 import { DoneStep } from "./done-step";
@@ -28,7 +27,6 @@ export function ImportPage() {
   const position = LABELS.findIndex(([step]) => step === w.step);
   return (
     <>
-      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">BRING IN YOUR HISTORY</p>
         <h1 id="import-title" ref={heading} tabIndex={-1}>
