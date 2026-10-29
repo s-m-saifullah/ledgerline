@@ -1,0 +1,346 @@
+/*
+ * The shell (ADR 0047): a phone has a top bar, five tabs and one Add button; from 700 px an 88 px icon rail and
+ * a thin top bar of global tools; from 1100 px a 248 px sidebar that also lists More's pages. The widths are the
+ * container's (`layout.css`), the same two numbers as everywhere, and nothing here is chosen by a script.
+ */
+.ui-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+}
+/* Room under the page for the bottom bar and the Add button above it, so the last card is never covered. */
+.ui-shell-body {
+  min-width: 0;
+  padding-bottom: calc(144px + env(safe-area-inset-bottom));
+}
+
+/* ---------- the sidebar and the rail (hidden on a phone) ---------- */
+.ui-side {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  padding: 14px 10px;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+}
+/* The add button and the pages scroll between the brand and the foot, so a short window never hides the foot. */
+.ui-side-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.ui-side a,
+.ui-side button {
+  color: var(--muted);
+}
+.ui-side .ui-side-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ui-side .ui-side-add {
+  color: var(--accent-foreground);
+  margin-bottom: 8px;
+}
+.ui-side-nav,
+.ui-side-group {
+  display: grid;
+  gap: 2px;
+}
+.ui-side-nav a,
+.ui-side-group a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 52px;
+  padding: 6px 0;
+  border-radius: var(--shape-field);
+  font-size: 10px;
+  font-weight: 500;
+}
+.ui-side-nav a:hover,
+.ui-side-group a:hover,
+.ui-side-jump:hover {
+  background: var(--tint);
+  color: var(--text);
+}
+.ui-side a[aria-current="page"]:not(.ui-side-brand) {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.ui-side-pages,
+.ui-side-owner,
+.ui-side-foot .app-version {
+  display: none;
+}
+.ui-side-foot {
+  display: grid;
+  flex: none;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.ui-side-jump {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--shape-field);
+  background: none;
+  font-size: 12px;
+}
+.ui-side-jump kbd {
+  margin-left: auto;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+}
+.ui-side-owner {
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+}
+.ui-side-owner strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+.ui-side-owner span:not(.ui-avatar) {
+  font-size: 10px;
+  color: var(--muted);
+}
+.ui-side-owner .ui-icon-btn {
+  margin-left: auto;
+}
+.ui-side-foot .app-version {
+  margin: 0;
+  padding: 0 8px;
+}
+/* On the rail the long words are read aloud only; from 1100 px they show. */
+.ui-side-wide {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.ui-side-group-label {
+  display: none;
+}
+
+/* ---------- the top bar ---------- */
+.ui-topbar-sync {
+  display: contents;
+}
+.ui-sync {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ui-sync[data-state="synced"] {
+  display: none;
+}
+.ui-sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.ui-sync[data-state="updating"] .ui-sync-dot {
+  background: var(--warning);
+}
+.ui-sync[data-state="offline"] .ui-sync-dot {
+  background: var(--muted);
+}
+
+/* ---------- the bottom bar and the one Add button (a phone) ---------- */
+.ui-bottom {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.ui-bottom a {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 6px 2px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.ui-bottom a[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.ui-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  z-index: 21;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid color-mix(in oklab, var(--accent) 70%, black);
+  border-radius: var(--shape-card);
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.ui-fab:disabled {
+  opacity: 1;
+  background: color-mix(in oklch, var(--accent) 55%, var(--surface));
+}
+
+/* A page that has not moved to the new design shows its title in the top bar on a phone, so its own heading
+   stays for screen readers and for focus only. Delete this with the last old page heading. */
+@container app (max-width: 699.98px) {
+  .main-content .page-heading h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .main-content .page-heading .eyebrow {
+    display: none;
+  }
+}
+
+/* ---------- from 700 px: the rail ---------- */
+@container app (min-width: 700px) {
+  .ui-shell {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+  .ui-shell-body {
+    padding-bottom: 0;
+  }
+  .ui-side {
+    position: sticky;
+    top: 0;
+    display: flex;
+    height: 100dvh;
+    align-self: start;
+  }
+  .ui-bottom,
+  .ui-fab {
+    display: none;
+  }
+  .ui-shell .ui-topbar {
+    justify-content: flex-end;
+    padding: 0 24px;
+  }
+  .ui-topbar-title,
+  .ui-topbar-back {
+    display: none;
+  }
+  .ui-sync[data-state] {
+    display: flex;
+  }
+}
+
+/* ---------- from 1100 px: the sidebar ---------- */
+@container app (min-width: 1100px) {
+  .ui-shell {
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+  .ui-side {
+    padding: 18px 14px;
+  }
+  .ui-side .ui-side-brand {
+    justify-content: flex-start;
+    padding-left: 8px;
+  }
+  .ui-side-wide {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+  }
+  .ui-side-add {
+    justify-content: flex-start;
+    padding: 0 14px;
+  }
+  .ui-side-nav a,
+  .ui-side-group a {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+  .ui-side-group a {
+    min-height: 40px;
+  }
+  .ui-side .ui-side-more {
+    display: none;
+  }
+  .ui-side-pages {
+    display: grid;
+    gap: 2px;
+  }
+  .ui-side-group-label {
+    display: block;
+    padding: 14px 12px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ui-side-jump {
+    justify-content: flex-start;
+  }
+  .ui-side-owner {
+    display: flex;
+  }
+  .ui-side-foot .app-version {
+    display: block;
+  }
+  .ui-topbar-signout {
+    display: none;
+  }
+}

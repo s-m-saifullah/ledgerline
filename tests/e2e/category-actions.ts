@@ -30,10 +30,15 @@ const control = (page: Page, verb: CategoryVerb, name: string) =>
     ? page.getByRole("menuitem", { name: menuLabel[verb], exact: true })
     : page.getByRole("button", { name: buttonLabel(verb, name), exact: true });
 const openMenu = async (page: Page, name: string) => {
-  if (phone(page))
-    await page
-      .getByRole("button", { name: `Actions for ${name}`, exact: true })
-      .click();
+  if (!phone(page)) return;
+  const button = page.getByRole("button", {
+    name: `Actions for ${name}`,
+    exact: true,
+  });
+  // The phone's Add button and an Undo toast sit at the bottom right, over a row's right-hand button that
+  // has scrolled to the screen's edge: bring it to the middle first, as a person would.
+  await button.evaluate((node) => node.scrollIntoView({ block: "center" }));
+  await button.click();
 };
 
 /** Click a category action: an inline button on wide screens, a row-menu item on phones. */

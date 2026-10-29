@@ -8,6 +8,7 @@ import {
   createOwnerLedger,
   prepareBrowser,
 } from "./ledger-setup";
+import { leaveForAnotherPage } from "./more-nav";
 import { signIn } from "./sign-in";
 
 const { env, pool } = connectLocalDatabase("Split browser tests");
@@ -247,10 +248,7 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
   await page
     .getByRole("button", { name: "Close for now", exact: true })
     .click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await openAdd(page);
   await page.getByRole("button", { name: "Retry save", exact: true }).click();
   await expect(
@@ -266,10 +264,7 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
   await page
     .getByRole("button", { name: "Close for now", exact: true })
     .click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await page
     .getByRole("button", { name: "Resume transaction", exact: true })
     .click();
@@ -305,10 +300,7 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
   await expect(
     page.getByRole("button", { name: "Retry deletion Undo", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await page
     .getByRole("button", { name: "Retry deletion Undo", exact: true })
     .click();

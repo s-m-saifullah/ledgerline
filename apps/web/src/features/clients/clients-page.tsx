@@ -16,7 +16,6 @@ import { useEffect, useState } from "react";
 import { ActionBar, useIsPhone } from "../../components/action-bar";
 import { ActionButton } from "../../components/action-button";
 import { Amount } from "../../components/amount";
-import { BackToMore } from "../../components/back-to-more";
 import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
@@ -116,7 +115,6 @@ export function ClientsPage() {
     workspace?.open({ kind: "contact", client: p }, `client-${p.id}`);
   return (
     <>
-      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">MONEY OWED TO YOU</p>
         <h1>Clients</h1>

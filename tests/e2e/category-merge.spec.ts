@@ -9,6 +9,7 @@ import {
 } from "../../packages/shared/src/index";
 import { clickCategoryAction, expectCategoryAction } from "./category-actions";
 import { chooseCategory } from "./category-picker";
+import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
@@ -284,11 +285,7 @@ test("replays an interrupted committed merge across navigation and blocks compet
   const quick = page.getByRole("dialog", { name: "Add transaction" });
   await expect(quick.getByRole("button", { name: /Save/ })).toBeDisabled();
   await quick.getByRole("button", { name: "Close transaction dialog" }).click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
-  await page.getByRole("link", { name: /^Clients/ }).click();
+  await openMorePage(page, "Clients");
   await expect(
     page.getByRole("button", { name: "Add client", exact: true }),
   ).toBeDisabled();

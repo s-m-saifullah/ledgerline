@@ -1,5 +1,4 @@
 import { useContext } from "react";
-import { BackToMore } from "../../components/back-to-more";
 import {
   AmountEntryContext,
   PrivacyControlContext,
@@ -16,7 +15,6 @@ export function SettingsPage() {
   const { centsFirst, setCentsFirst } = useContext(AmountEntryContext);
   return (
     <>
-      <BackToMore />
       <div className="page-heading">
         <p className="eyebrow">MAKE IT YOURS</p>
         <h1>Settings</h1>

@@ -1,4 +1,3 @@
-import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
 import {
   Link,
@@ -7,64 +6,44 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import {
-  ArrowLeftRight,
-  ArrowUpRight,
-  BarChart3,
-  ChevronRight,
-  Coins,
+  ArrowLeft,
   Command,
   Eye,
   EyeOff,
-  FileUp,
-  HandCoins,
-  Home,
-  Layers,
+  type Home,
   LogOut,
   Moon,
-  MoreHorizontal,
   Plus,
-  Repeat,
   Search,
-  Settings,
-  Shapes,
   Sun,
-  Tags,
-  Wallet,
-  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LoadError } from "../../components/load-error";
+import { TopBar } from "../../components/top-bar";
 import { api, getLedgers, type Session } from "../../lib/api";
 import type { Preferences } from "../../lib/preferences";
 import { useLiveChanges } from "../../lib/use-live-changes";
 import { usePageAnnouncement } from "../../lib/use-page-announcement";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
+import {
+  backsToMore,
+  destinations,
+  isActiveDestination,
+  moreGroups,
+  morePages,
+  pageTitle,
+  showsAdd,
+} from "./nav";
+import { CommandPalette, type PaletteItem } from "./palette";
+import { SyncStatus } from "./sync-status";
+import "./shell.css";
 
-/** Pages reached from More: the More tab stays highlighted on them. */
-const moreArea = [
-  "/more",
-  "/accounts",
-  "/categories",
-  "/tags",
-  "/currencies",
-  "/recurring",
-  "/clients",
-  "/loans",
-  "/import",
-  "/settings",
-];
-const isActiveDestination = (to: string, pathname: string) =>
-  to === "/more" ? moreArea.includes(pathname) : pathname === to;
-
-const destinations = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { to: "/budgets", label: "Budgets", icon: Layers },
-  { to: "/insights", label: "Insights", icon: BarChart3 },
-  { to: "/more", label: "More", icon: MoreHorizontal },
-] as const;
-
+/**
+ * The frame of every signed-in screen (ADR 0047). One `aside` is a bottom bar's counterpart: hidden under
+ * 700 px, an icon rail from 700 px and a sidebar that also lists More's pages from 1100 px, all in CSS
+ * (`shell.css`), so no script chooses between layouts. A phone has a top bar, five tabs and one Add button.
+ */
 export function Shell({
   session,
   onSignOut,
@@ -78,31 +57,12 @@ export function Shell({
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const currentPage =
-    pathname === "/accounts"
-      ? "Accounts"
-      : pathname === "/categories"
-        ? "Categories"
-        : pathname === "/tags"
-          ? "Tags"
-          : pathname === "/clients"
-            ? "Clients"
-            : pathname === "/loans"
-              ? "Loans"
-              : pathname === "/import"
-                ? "Import"
-                : pathname === "/currencies"
-                  ? "Currencies"
-                  : pathname === "/recurring"
-                    ? "Recurring"
-                    : pathname === "/settings"
-                      ? "Settings"
-                      : (destinations.find(({ to }) => to === pathname)
-                          ?.label ?? "Home");
+  const currentPage = pageTitle(pathname);
   const pageAnnouncement = usePageAnnouncement(currentPage);
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
-  useLiveChanges(ledger?.id);
+  const sync = useLiveChanges(ledger?.id);
+  const canAdd = !!ledger && ledger.role !== "viewer";
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [addTrigger, setAddTrigger] = useState("add-transaction");
   const paletteToAdd = useRef(false);
@@ -131,140 +91,212 @@ export function Shell({
       setError("Couldn't sign out. Please try again.");
     }
   };
+  const darkNow = preferences.resolvedTheme === "dark";
+  const themeLabel = darkNow ? "Switch to light theme" : "Switch to dark theme";
+  const signOutButton = (className: string) => (
+    <button
+      type="button"
+      className={className}
+      aria-label="Sign out"
+      onClick={signOut}
+    >
+      <LogOut size={18} />
+    </button>
+  );
+  const paletteItems: PaletteItem[] = [
+    {
+      key: "add",
+      label: "Add transaction",
+      icon: Plus,
+      disabled: !canAdd,
+      run: () => {
+        paletteToAdd.current = true;
+        setPaletteOpen(false);
+        openAdd("open-navigation");
+      },
+    },
+    ...[...destinations, ...morePages].map((page) => ({
+      key: page.to,
+      label: ("paletteLabel" in page && page.paletteLabel) || page.label,
+      icon: page.icon,
+      run: () => {
+        setPaletteOpen(false);
+        void navigate({ to: page.to });
+      },
+    })),
+    ...(["light", "dark", "system"] as const).map((value) => ({
+      key: `theme-${value}`,
+      label: `Theme: ${value[0]?.toUpperCase()}${value.slice(1)}`,
+      icon: value === "dark" ? Moon : value === "light" ? Sun : Command,
+      run: () => {
+        preferences.setTheme(value);
+        setPaletteOpen(false);
+      },
+    })),
+    {
+      key: "privacy",
+      label: preferences.privateMode ? "Show amounts" : "Hide amounts",
+      icon: preferences.privateMode ? EyeOff : Eye,
+      run: () => {
+        preferences.setPrivateMode(!preferences.privateMode);
+        setPaletteOpen(false);
+      },
+    },
+    {
+      key: "sign-out",
+      label: "Sign out",
+      icon: LogOut,
+      run: () => {
+        setPaletteOpen(false);
+        void signOut();
+      },
+    },
+  ];
   const content = (
-    <div className="app-layout">
+    <div className="ui-shell">
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
-      <aside className="sidebar">
-        <a href="/" className="brand">
-          <span className="brand-mark">
+      <aside className="ui-side">
+        <Link to="/" className="ui-side-brand">
+          <span className="brand-mark" aria-hidden="true">
             L<span>↗</span>
           </span>
-          Ledgerline
-        </a>
-        <button
-          type="button"
-          className="button add-button"
-          id="add-transaction"
-          disabled={!ledger || ledger.role === "viewer"}
-          title={
-            ledger?.role === "viewer"
-              ? "Read-only ledger"
-              : "Record income or an expense"
-          }
-          onClick={() => openAdd("add-transaction")}
-        >
-          <Plus size={18} />
-          Add transaction
-        </button>
-        <nav aria-label="Main navigation">
-          {destinations.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              {...(isActiveDestination(to, pathname)
-                ? { className: "active", "aria-current": "page" as const }
-                : {})}
-            >
-              <Icon size={20} />
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <div className="sidebar-bottom">
+          <span className="ui-side-wide">Ledgerline</span>
+        </Link>
+        <div className="ui-side-scroll">
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary ui-side-add"
+            id="add-transaction"
+            disabled={!canAdd}
+            title={
+              ledger?.role === "viewer"
+                ? "Read-only ledger"
+                : "Record income or an expense"
+            }
+            onClick={() => openAdd("add-transaction")}
+          >
+            <Plus size={18} aria-hidden="true" />
+            <span className="ui-side-wide">Add transaction</span>
+          </button>
+          <nav aria-label="Main navigation" className="ui-side-nav">
+            {destinations.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className={to === "/more" ? "ui-side-more" : undefined}
+                {...(isActiveDestination(to, pathname)
+                  ? { "aria-current": "page" as const }
+                  : {})}
+              >
+                <Icon size={20} aria-hidden="true" />
+                <span className="ui-side-label">{label}</span>
+              </Link>
+            ))}
+          </nav>
+          <nav aria-label="More pages" className="ui-side-pages">
+            {moreGroups.map((group) => (
+              <div key={group.label} className="ui-side-group">
+                <p className="ui-side-group-label">{group.label}</p>
+                {group.pages.map(({ to, label, icon: Icon }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    {...(pathname === to
+                      ? { "aria-current": "page" as const }
+                      : {})}
+                  >
+                    <Icon size={18} aria-hidden="true" />
+                    <span className="ui-side-label">{label}</span>
+                  </Link>
+                ))}
+              </div>
+            ))}
+          </nav>
+        </div>
+        <div className="ui-side-foot">
           <button
             type="button"
             id="open-navigation"
-            className="quiet-button search-button"
+            className="ui-side-jump"
             onClick={() => setPaletteOpen(true)}
           >
-            <Search size={18} />
-            Jump to<kbd>⌘ K</kbd>
+            <Search size={18} aria-hidden="true" />
+            <span className="ui-side-wide">Jump to</span>
+            <kbd className="ui-side-wide">⌘ K</kbd>
           </button>
-          <div className="owner">
-            <span className="avatar">{session.user.name.slice(0, 1)}</span>
+          <div className="ui-side-owner">
+            <span className="ui-avatar" aria-hidden="true">
+              {session.user.name.slice(0, 1)}
+            </span>
             <div>
               <strong>{session.user.name}</strong>
-              <span className="owner-role">Owner</span>
+              <span>Owner</span>
             </div>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Sign out"
-              onClick={signOut}
-            >
-              <LogOut size={18} />
-            </button>
+            {signOutButton("ui-icon-btn")}
           </div>
           <AppVersion />
         </div>
       </aside>
-      <div className="workspace">
-        <header className="topbar">
-          <Link to="/" className="mobile-brand">
-            <span className="brand-mark" aria-hidden="true">
-              L<span>↗</span>
-            </span>
-            <span className="sr-only">Ledgerline home</span>
-          </Link>
-          <div className="topbar-context">
-            <span>Personal ledger</span>
-            <ChevronRight size={14} aria-hidden="true" />
-            <span className="topbar-page">{currentPage}</span>
-          </div>
-          <div className="topbar-actions">
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={
-                preferences.privateMode ? "Show amounts" : "Hide amounts"
-              }
-              aria-pressed={preferences.privateMode}
-              onClick={() =>
-                preferences.setPrivateMode(!preferences.privateMode)
-              }
-            >
-              {preferences.privateMode ? (
-                <EyeOff size={19} />
-              ) : (
-                <Eye size={19} />
-              )}
-            </button>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label={
-                preferences.resolvedTheme === "dark"
-                  ? "Switch to light theme"
-                  : "Switch to dark theme"
-              }
-              title={
-                preferences.resolvedTheme === "dark"
-                  ? "Switch to light theme"
-                  : "Switch to dark theme"
-              }
-              onClick={() =>
-                preferences.setTheme(
-                  preferences.resolvedTheme === "dark" ? "light" : "dark",
-                )
-              }
-            >
-              {preferences.resolvedTheme === "dark" ? (
-                <Sun size={19} aria-hidden="true" />
-              ) : (
-                <Moon size={19} aria-hidden="true" />
-              )}
-            </button>
-            <button
-              type="button"
-              className="icon-button mobile-signout"
-              aria-label="Sign out"
-              onClick={signOut}
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
+      <div className="ui-shell-body">
+        <header>
+          <TopBar
+            decorative
+            title={currentPage}
+            back={
+              backsToMore(pathname) ? (
+                <Link
+                  to="/more"
+                  className="ui-icon-btn"
+                  aria-label="Back to More"
+                >
+                  <ArrowLeft size={20} aria-hidden="true" />
+                </Link>
+              ) : undefined
+            }
+            tools={
+              <>
+                <span className="ui-topbar-sync">
+                  <SyncStatus state={sync} />
+                </span>
+                <button
+                  type="button"
+                  className="ui-icon-btn"
+                  aria-label={
+                    preferences.privateMode ? "Show amounts" : "Hide amounts"
+                  }
+                  aria-pressed={preferences.privateMode}
+                  onClick={() =>
+                    preferences.setPrivateMode(!preferences.privateMode)
+                  }
+                >
+                  {preferences.privateMode ? (
+                    <EyeOff size={20} aria-hidden="true" />
+                  ) : (
+                    <Eye size={20} aria-hidden="true" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="ui-icon-btn"
+                  aria-label={themeLabel}
+                  title={themeLabel}
+                  onClick={() =>
+                    preferences.setTheme(darkNow ? "light" : "dark")
+                  }
+                >
+                  {darkNow ? (
+                    <Sun size={20} aria-hidden="true" />
+                  ) : (
+                    <Moon size={20} aria-hidden="true" />
+                  )}
+                </button>
+                {/* Until Settings has Sign out (PR 6): the sidebar carries it from 1100 px. */}
+                {signOutButton("ui-icon-btn ui-topbar-signout")}
+              </>
+            }
+          />
         </header>
         {error && (
           <p role="alert" className="field-error">
@@ -278,30 +310,32 @@ export function Shell({
           <Outlet />
         </main>
       </div>
-      <nav className="bottom-nav" aria-label="Mobile navigation">
-        <button
-          type="button"
-          className="mobile-add"
-          id="mobile-add-transaction"
-          aria-label="Add transaction"
-          disabled={!ledger || ledger.role === "viewer"}
-          onClick={() => openAdd("mobile-add-transaction")}
-        >
-          <Plus size={24} />
-        </button>
+      <nav className="ui-bottom" aria-label="Mobile navigation">
         {destinations.map(({ to, label, icon: Icon }) => (
           <Link
             key={to}
             to={to}
             {...(isActiveDestination(to, pathname)
-              ? { className: "active", "aria-current": "page" as const }
+              ? { "aria-current": "page" as const }
               : {})}
           >
-            <Icon size={20} />
+            <Icon size={20} aria-hidden="true" />
             <span>{label}</span>
           </Link>
         ))}
       </nav>
+      {showsAdd(pathname) && (
+        <button
+          type="button"
+          className="ui-fab"
+          id="mobile-add-transaction"
+          aria-label="Add transaction"
+          disabled={!canAdd}
+          onClick={() => openAdd("mobile-add-transaction")}
+        >
+          <Plus size={24} aria-hidden="true" />
+        </button>
+      )}
       {ledgers.isError && (
         <LoadError
           className="shell-ledger-error"
@@ -320,135 +354,17 @@ export function Shell({
           returnFocusId={addTrigger}
         />
       )}
-      <Dialog.Root open={paletteOpen} onOpenChange={setPaletteOpen}>
-        <Dialog.Portal>
-          <Dialog.Overlay className="dialog-overlay" />
-          <Dialog.Content
-            className="command-dialog"
-            onCloseAutoFocus={(event) => {
-              if (paletteToAdd.current) {
-                event.preventDefault();
-                paletteToAdd.current = false;
-              }
-            }}
-          >
-            <Dialog.Title>
-              <Command size={20} />
-              Go to
-            </Dialog.Title>
-            <Dialog.Description className="muted">
-              Type to find a page or action.
-            </Dialog.Description>
-            <PaletteList
-              items={[
-                {
-                  key: "add",
-                  label: "Add transaction",
-                  icon: Plus,
-                  disabled: !ledger || ledger.role === "viewer",
-                  run: () => {
-                    paletteToAdd.current = true;
-                    setPaletteOpen(false);
-                    openAdd("open-navigation");
-                  },
-                },
-                ...[
-                  ...destinations,
-                  {
-                    to: "/accounts",
-                    label: "Accounts",
-                    icon: Wallet,
-                  } as const,
-                  {
-                    to: "/categories",
-                    label: "Categories",
-                    icon: Shapes,
-                  } as const,
-                  {
-                    to: "/tags",
-                    label: "Tags",
-                    icon: Tags,
-                  } as const,
-                  {
-                    to: "/currencies",
-                    label: "Currencies",
-                    icon: Coins,
-                  } as const,
-                  {
-                    to: "/recurring",
-                    label: "Recurring",
-                    icon: Repeat,
-                  } as const,
-                  {
-                    to: "/clients",
-                    label: "Clients",
-                    icon: Wallet,
-                  } as const,
-                  {
-                    to: "/loans",
-                    label: "Loans",
-                    icon: HandCoins,
-                  } as const,
-                  {
-                    to: "/import",
-                    label: "Import from CSV",
-                    icon: FileUp,
-                  } as const,
-                  {
-                    to: "/settings",
-                    label: "Settings",
-                    icon: Settings,
-                  } as const,
-                ].map(({ to, label, icon }) => ({
-                  key: to,
-                  label,
-                  icon,
-                  run: () => {
-                    setPaletteOpen(false);
-                    void navigate({ to });
-                  },
-                })),
-                ...(["light", "dark", "system"] as const).map((value) => ({
-                  key: `theme-${value}`,
-                  label: `Theme: ${value[0]?.toUpperCase()}${value.slice(1)}`,
-                  icon:
-                    value === "dark" ? Moon : value === "light" ? Sun : Command,
-                  run: () => {
-                    preferences.setTheme(value);
-                    setPaletteOpen(false);
-                  },
-                })),
-                {
-                  key: "privacy",
-                  label: preferences.privateMode
-                    ? "Show amounts"
-                    : "Hide amounts",
-                  icon: preferences.privateMode ? EyeOff : Eye,
-                  run: () => {
-                    preferences.setPrivateMode(!preferences.privateMode);
-                    setPaletteOpen(false);
-                  },
-                },
-                {
-                  key: "sign-out",
-                  label: "Sign out",
-                  icon: LogOut,
-                  run: () => {
-                    setPaletteOpen(false);
-                    void signOut();
-                  },
-                },
-              ]}
-            />
-            <Dialog.Close
-              className="dialog-close icon-button"
-              aria-label="Close navigation"
-            >
-              <X size={20} />
-            </Dialog.Close>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        items={paletteItems}
+        onCloseAutoFocus={(event) => {
+          if (paletteToAdd.current) {
+            event.preventDefault();
+            paletteToAdd.current = false;
+          }
+        }}
+      />
     </div>
   );
   return (
@@ -460,89 +376,6 @@ export function Shell({
     >
       {content}
     </TransactionWorkspace>
-  );
-}
-
-type PaletteItem = {
-  key: string;
-  label: string;
-  icon: typeof Home;
-  disabled?: boolean;
-  run: () => void;
-};
-/** Search box plus filtered actions; arrows move between them and Enter runs the first match. */
-function PaletteList({ items }: { items: PaletteItem[] }) {
-  const [query, setQuery] = useState("");
-  const list = useRef<HTMLFieldSetElement>(null);
-  const search = useRef<HTMLInputElement>(null);
-  const shown = items.filter((item) =>
-    item.label.toLowerCase().includes(query.trim().toLowerCase()),
-  );
-  const options = () =>
-    Array.from(
-      list.current?.querySelectorAll<HTMLButtonElement>(
-        "button:not(:disabled)",
-      ) ?? [],
-    );
-  return (
-    <>
-      <input
-        ref={search}
-        type="search"
-        className="command-search"
-        aria-label="Search pages and actions"
-        placeholder="Search pages and actions"
-        autoComplete="off"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown") {
-            event.preventDefault();
-            options()[0]?.focus();
-          } else if (event.key === "Enter") {
-            event.preventDefault();
-            options()[0]?.click();
-          }
-        }}
-      />
-      <div className="command-scroll">
-        <fieldset
-          ref={list}
-          className="command-results"
-          onKeyDown={(event) => {
-            if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-            event.preventDefault();
-            const all = options();
-            const index = all.indexOf(
-              document.activeElement as HTMLButtonElement,
-            );
-            const next = index + (event.key === "ArrowDown" ? 1 : -1);
-            if (next < 0) search.current?.focus();
-            else all[Math.min(next, all.length - 1)]?.focus();
-          }}
-        >
-          <legend className="sr-only">Results</legend>
-          {shown.map(({ key, label, icon: Icon, disabled, run }) => (
-            <button
-              key={key}
-              type="button"
-              className="command-option"
-              disabled={disabled ?? false}
-              onClick={run}
-            >
-              <Icon size={18} />
-              {label}
-              <ArrowUpRight size={16} />
-            </button>
-          ))}
-          {shown.length === 0 && (
-            <p className="muted" role="status">
-              Nothing matches “{query.trim()}”.
-            </p>
-          )}
-        </fieldset>
-      </div>
-    </>
   );
 }
 
@@ -581,132 +414,5 @@ export function AppVersion({ phoneOnly = false }: { phoneOnly?: boolean }) {
     >
       Ledgerline {__APP_VERSION__}
     </p>
-  );
-}
-
-export function MorePage() {
-  return (
-    <>
-      <div className="page-heading">
-        <p className="eyebrow">MAKE IT YOURS</p>
-        <h1>Your space.</h1>
-        <p className="muted">
-          Your accounts, categories and clients, and the settings behind them.
-        </p>
-      </div>
-      <section className="settings-card">
-        <Link to="/accounts" className="settings-link">
-          <span className="account-icon">
-            <Wallet size={22} />
-          </span>
-          <div>
-            <h2>Accounts</h2>
-            <p>Manage your bank accounts, cards, wallets, and balances.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/categories" className="settings-link">
-          <span className="account-icon">
-            <Shapes size={22} />
-          </span>
-          <div>
-            <h2>Categories</h2>
-            <p>
-              Create, organize and style your income and expense categories.
-            </p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/tags" className="settings-link">
-          <span className="account-icon">
-            <Tags size={22} />
-          </span>
-          <div>
-            <h2>Tags</h2>
-            <p>
-              Free-form labels for entries, like a trip or a reimbursable cost.
-            </p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/currencies" className="settings-link">
-          <span className="account-icon">
-            <Coins size={22} />
-          </span>
-          <div>
-            <h2>Currencies</h2>
-            <p>Add currencies and keep their exchange rates.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/recurring" className="settings-link">
-          <span className="account-icon">
-            <Repeat size={22} />
-          </span>
-          <div>
-            <h2>Recurring</h2>
-            <p>Rent, salary and regular transfers, created on their dates.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/clients" className="settings-link">
-          <span className="account-icon">
-            <Wallet size={22} />
-          </span>
-          <div>
-            <h2>Clients</h2>
-            <p>Track unpaid services, payments and money owed to you.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/loans" className="settings-link">
-          <span className="account-icon">
-            <HandCoins size={22} />
-          </span>
-          <div>
-            <h2>Loans</h2>
-            <p>Money you lent to or borrowed from friends and family.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/import" className="settings-link">
-          <span className="account-icon">
-            <FileUp size={22} />
-          </span>
-          <div>
-            <h2>Import</h2>
-            <p>Bring in a bank statement or spreadsheet saved as CSV.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <section className="settings-card">
-        <Link to="/settings" className="settings-link">
-          <span className="account-icon">
-            <Settings size={22} />
-          </span>
-          <div>
-            <h2>Settings</h2>
-            <p>Theme, privacy, how amounts are typed and your time zone.</p>
-          </div>
-          <ChevronRight size={20} aria-hidden="true" />
-        </Link>
-      </section>
-      <AppVersion phoneOnly />
-    </>
   );
 }

@@ -8,6 +8,7 @@ import {
 import { clickCategoryAction, expectCategoryAction } from "./category-actions";
 import { chooseCategory } from "./category-picker";
 import { connectLocalDatabase } from "./ledger-setup";
+import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
@@ -76,11 +77,7 @@ test.afterAll(async () => {
 });
 async function openCategories(page: Page) {
   await signIn(page);
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
-  await page.getByRole("link", { name: /^Categories/ }).click();
+  await openMorePage(page, "Categories");
   await expect(
     page.getByRole("heading", { name: "Categories", exact: true }),
   ).toBeVisible();

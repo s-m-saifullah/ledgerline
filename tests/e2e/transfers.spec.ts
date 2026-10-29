@@ -7,6 +7,7 @@ import {
   createOwnerLedger,
   prepareBrowser,
 } from "./ledger-setup";
+import { leaveForAnotherPage } from "./more-nav";
 import { signIn } from "./sign-in";
 
 const { env, pool } = connectLocalDatabase("Quick-add browser tests");
@@ -247,10 +248,7 @@ test("replays interrupted create and Add Undo after close/resume and navigation"
     page.getByRole("radio", { name: "Income / expense" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "Close for now" }).click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await openAdd(page);
   await page.getByRole("button", { name: "Retry save" }).click();
   await expect(
@@ -316,10 +314,7 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
   await transferEditor(page)
     .getByRole("button", { name: "Close for now" })
     .click();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await add(page).click();
   await expect(
     page.getByText(/Confirm the earlier transaction action/),
@@ -363,10 +358,7 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
   await expect(
     page.getByRole("button", { name: "Retry deletion Undo" }),
   ).toBeVisible();
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
+  await leaveForAnotherPage(page);
   await page.getByRole("button", { name: "Retry deletion Undo" }).click();
   await expect(
     page.getByText("Deletion undone.", { exact: true }),

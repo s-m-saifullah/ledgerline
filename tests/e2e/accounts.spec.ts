@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 import { type Account, accountSchema } from "../../packages/shared/src/index";
 import { connectLocalDatabase } from "./ledger-setup";
+import { expectMorePageCurrent, openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
@@ -65,22 +66,12 @@ test("creates, retries, edits and archives real accounts with privacy and confli
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await signIn(page);
-  const nav = page.getByRole("navigation", {
-    name:
-      testInfo.project.name === "mobile"
-        ? "Mobile navigation"
-        : "Main navigation",
-    exact: true,
-  });
-  await nav.getByRole("link", { name: "More", exact: true }).click();
-  await page.getByRole("link", { name: /^Accounts/ }).click();
+  await openMorePage(page, "Accounts");
   await expect(page).toHaveURL(/\/accounts$/);
   await expect(
     page.getByRole("heading", { name: "Accounts", exact: true }),
   ).toBeVisible();
-  await expect(
-    nav.getByRole("link", { name: "More", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+  await expectMorePageCurrent(page, "Accounts");
   const name = `E2E ${testInfo.project.name} bank ${randomUUID().slice(0, 8)}`;
   const attempts: string[] = [];
   let dropped = false;

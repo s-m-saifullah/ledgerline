@@ -20,7 +20,6 @@ import {
 import { useContext, useState } from "react";
 import type { z } from "zod";
 import { Amount } from "../../components/amount-text";
-import { BackToMore } from "../../components/back-to-more";
 import { getLedgers } from "../../lib/api";
 import { formatMoney } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
@@ -140,7 +139,6 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
   };
   return (
     <>
-      <BackToMore />
       <div className="page-heading accounts-heading">
         <div>
           <p className="eyebrow">YOUR PERSONAL LEDGER</p>

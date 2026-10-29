@@ -8,6 +8,7 @@ import {
   createOwnerLedger,
   prepareBrowser,
 } from "./ledger-setup";
+import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
 
 const { env, pool } = connectLocalDatabase("Reference deletion browser tests");
@@ -84,11 +85,7 @@ test.afterAll(async () => {
 });
 
 async function openPage(page: Page, name: "Accounts" | "Categories") {
-  await page
-    .getByRole("link", { name: "More", exact: true })
-    .filter({ visible: true })
-    .click();
-  await page.getByRole("link", { name: new RegExp(`^${name}`) }).click();
+  await openMorePage(page, name);
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 }
 const headers = () => ({
