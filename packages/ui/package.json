@@ -5,21 +5,31 @@
   "type": "module",
   "exports": {
     ".": "./src/index.tsx",
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./pieces.css": "./src/pieces.css"
   },
   "scripts": {
     "build": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^3.3.0"
+    "tailwind-merge": "^3.3.0",
+    "lucide-react": "^0.577.0"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0"
+    "@types/react": "^19.0.0",
+    "@testing-library/jest-dom": "^6.9.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/react-dom": "^19.2.0",
+    "jsdom": "^27.0.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   }
 }
