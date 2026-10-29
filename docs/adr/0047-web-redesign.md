@@ -75,6 +75,10 @@ Each pull request lists the tests it changes and why; accessible names are kept 
 
 The phone's order is followed where it fits; Clients and Loans come after the API field.
 
+## Amendments
+
+- **Foundation pull request (2026-10-29).** The shared pieces are in `packages/ui` (`pieces.tsx`, `pieces.css`: no router, no money, so a link is a `render` prop and an amount is a node) and the overlay, top bar and month control in `apps/web/src/components`. New classes start with `ui-` so they sit beside the old ones; the old radius tokens (8, 12, 16) stay in `tokens.css` until the last old screen moves, and the new shapes are `--shape-field/card/hero/sheet` in `pieces.css`. The one layout system is `apps/web/src/layout.css`: the body is a container named `app`, and 700 and 1100 px are the only widths any new CSS may use (a test checks it). `useIsPhone` is **not** removed in this pull request: its callers (Categories, Clients, Loans, through `ActionBar`) can only lose the branch when their sheets exist, so it goes with the last of them (pull request 12). A development-only gallery page (`apps/web/gallery.html`, not in the production build) shows every piece and overlay, and the browser tests for the widths run on it. The phone warns at 90 per cent of a limit; the prototype said 85, and the web follows the phone.
+
 ## Checks
 
 Each pull request: tests that fail before the change; a deliberate-mutation check on each new rule (a script that copies the file, applies one edit, runs the focused tests and restores; a mutation that is not caught means a missing test); a look in the browser at 320, 390 and desktop widths in light and dark; `pnpm lint` (read the output), `pnpm typecheck`, `pnpm test` and `pnpm e2e` (alone and serially); the existing tests that pin behaviour kept green or changed on purpose and said so; then the owner's browser check and the merge on the owner's word. A pull request with an API change also regenerates `docs/openapi.json` and updates the Android contract test.
