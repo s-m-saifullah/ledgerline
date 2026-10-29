@@ -1,0 +1,116 @@
+/*
+ * The one layout system of the web (ADR 0047). The page is a container named `app`, and two of its widths
+ * decide everything: 700 px (a phone below it, a tablet from it) and 1100 px (a desktop from it). Nothing in
+ * JavaScript chooses between layouts, so a phone and a desktop differ in layout, never in which controls exist.
+ * Container width excludes a classic scrollbar, so a 1100 px window that shows one is just under 1100.
+ * Write new layout here or in `pieces.css`, with these two widths and no others (`css-contract.test.ts`).
+ */
+/* A container on the body stops its background reaching the canvas, so the page paints it on the root. */
+html {
+  background: var(--background);
+}
+body {
+  container: app / inline-size;
+}
+
+/* A page: up to 1160 px wide, with room for the bottom bar on a phone. Simple lists use `ui-narrow` (760 px). */
+.ui-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 16px 16px 84px;
+}
+.ui-narrow {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  max-width: 760px;
+}
+.ui-stack {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+
+/* Columns: one on a phone; two from 700 px; the lopsided ones only from 1100 px. Every column starts on one line. */
+.ui-cols {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+/* A list beside what it opens, from 1100 px; below that the detail is its own page. */
+.ui-split {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+.ui-split-empty {
+  display: none;
+}
+
+.ui-wide-only {
+  display: none;
+}
+
+@container app (max-width: 699.98px) {
+  .ui-wide-only-below {
+    display: none;
+  }
+}
+
+@container app (min-width: 700px) {
+  .ui-page {
+    gap: 16px;
+    padding: 8px 32px 48px;
+  }
+  .ui-narrow,
+  .ui-stack {
+    gap: 16px;
+  }
+  .ui-cols {
+    gap: 16px;
+  }
+  .ui-cols-2,
+  .ui-cols-21 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ui-wide-only {
+    display: revert;
+  }
+}
+
+@container app (min-width: 1100px) {
+  .ui-page {
+    gap: 20px;
+    padding: 8px 40px 56px;
+  }
+  .ui-stack {
+    gap: 20px;
+  }
+  .ui-cols {
+    gap: 20px;
+  }
+  .ui-cols-21 {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  }
+  .ui-cols-12 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
+  .ui-cols-57 {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+  .ui-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .ui-split {
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  }
+  .ui-split-empty {
+    display: grid;
+  }
+}

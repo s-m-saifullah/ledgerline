@@ -1,5 +1,7 @@
 @import "tailwindcss";
 @import "@ledgerline/ui/tokens.css";
+@import "@ledgerline/ui/pieces.css";
+@import "./layout.css";
 
 @theme inline {
   --color-accent: var(--accent);

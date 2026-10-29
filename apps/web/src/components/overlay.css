@@ -1,0 +1,172 @@
+/*
+ * The overlay (ADR 0047): a bottom sheet under 700 px, a right-hand drawer from 700 px, a centred dialog for
+ * questions. The width is the container's (`layout.css` makes the page one), so a phone and a desktop use
+ * the same markup.
+ */
+.ui-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--scrim);
+  animation: ui-fade 0.15s ease-out;
+}
+.ui-sheet,
+.ui-question {
+  position: fixed;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  color: var(--text);
+}
+.ui-sheet {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: 92dvh;
+  border-top: 1px solid var(--border);
+  border-radius: var(--shape-sheet) var(--shape-sheet) 0 0;
+  animation: ui-up 0.2s ease-out;
+}
+.ui-grab {
+  flex: none;
+  width: 40px;
+  height: 4px;
+  margin: 8px auto 0;
+  border-radius: 999px;
+  background: var(--field-border);
+  opacity: 0.6;
+}
+.ui-sheet-head {
+  display: grid;
+  flex: none;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "cancel title action";
+  align-items: center;
+  min-height: 52px;
+  padding: 0 8px;
+}
+.ui-sheet .ui-sheet-cancel {
+  grid-area: cancel;
+  justify-self: start;
+  color: var(--muted);
+}
+.ui-sheet-title {
+  grid-area: title;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+.ui-sheet-action {
+  grid-area: action;
+  justify-self: end;
+}
+.ui-sheet-body {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 16px 16px;
+}
+.ui-sheet-foot {
+  display: flex;
+  flex: none;
+  gap: 12px;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+}
+.ui-sheet-foot > .ui-btn-primary {
+  flex: 1;
+}
+
+.ui-question {
+  top: 50%;
+  left: 50%;
+  gap: 12px;
+  width: min(420px, calc(100% - 32px));
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--shape-sheet);
+  transform: translate(-50%, -50%);
+  animation: ui-fade 0.15s ease-out;
+}
+.ui-question-title {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+.ui-question-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+@container app (min-width: 700px) {
+  .ui-sheet {
+    top: 0;
+    left: auto;
+    width: 440px;
+    max-height: none;
+    border: 1px solid var(--border);
+    border-right: 0;
+    border-radius: var(--shape-sheet) 0 0 var(--shape-sheet);
+    animation: ui-in 0.2s ease-out;
+  }
+  .ui-sheet-wide {
+    width: 560px;
+  }
+  .ui-grab {
+    display: none;
+  }
+  .ui-sheet-head {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: "title action cancel";
+    min-height: 60px;
+    padding: 8px 16px 0;
+  }
+  .ui-sheet-title {
+    justify-self: start;
+    font-size: 19px;
+    letter-spacing: -0.025em;
+    text-align: left;
+  }
+}
+
+@keyframes ui-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes ui-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes ui-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-scrim,
+  .ui-sheet,
+  .ui-question {
+    animation: none;
+  }
+}
