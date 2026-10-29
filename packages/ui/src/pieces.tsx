@@ -18,6 +18,8 @@ import { cn } from "./cn";
 /** What a row or a hero figure does when it is pressed: nothing, a click handler, or whatever `render` makes. */
 type Press = {
   onClick?: () => void;
+  /** Only for a press that is a button: it is then a disabled button (a link cannot be disabled). */
+  disabled?: boolean;
   /** Wraps the content in a link (or anything else) that the caller owns, such as the router's `Link`. */
   render?: (inner: ReactNode, className: string) => ReactElement;
 };
@@ -25,12 +27,17 @@ type Press = {
 function pressable(
   className: string,
   inner: ReactNode,
-  { onClick, render }: Press,
+  { onClick, render, disabled }: Press,
 ) {
   if (render) return render(inner, className);
   if (onClick)
     return (
-      <button type="button" className={className} onClick={onClick}>
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        disabled={disabled}
+      >
         {inner}
       </button>
     );
@@ -114,8 +121,21 @@ export function StatusPill({
 }
 
 /** The small capitals heading above a group of rows. */
-export function SectionLabel({ children }: { children: ReactNode }) {
-  return <p className="ui-section-label">{children}</p>;
+export function SectionLabel({
+  children,
+  as: Tag = "p",
+  id,
+}: {
+  children: ReactNode;
+  /** A heading when a section is named by it. */
+  as?: "p" | "h2";
+  id?: string;
+}) {
+  return (
+    <Tag className="ui-section-label" id={id}>
+      {children}
+    </Tag>
+  );
 }
 
 export function EmptyState({
@@ -300,9 +320,15 @@ export function RowBody({
 }
 
 /** A row: an optional lead, a title with at most one short hint, and a trailing value with at most one hint of its own. */
-export function ListRow({ onClick, render, ...row }: RowProps & Press) {
+export function ListRow({
+  onClick,
+  render,
+  disabled,
+  ...row
+}: RowProps & Press) {
   const press: Press = {};
   if (onClick) press.onClick = onClick;
+  if (disabled) press.disabled = disabled;
   if (render) press.render = render;
   return pressable(
     cn(
