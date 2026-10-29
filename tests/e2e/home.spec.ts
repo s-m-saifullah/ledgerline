@@ -72,9 +72,12 @@ const add = (page: Page) =>
   page
     .getByRole("button", { name: "Add transaction", exact: true })
     .filter({ visible: true });
-const hero = (page: Page) => page.locator(".home-hero .amount");
-const card = (page: Page, label: string) =>
-  page.locator(".stat-card", { hasText: label }).locator(".amount");
+const hero = (page: Page) => page.locator(".ui-hero-figure");
+// "Money in" and "Money out" are the two columns of the This month card.
+const month = (page: Page, label: "Money in" | "Money out") =>
+  page.locator(".home-month-cols > span", { hasText: label }).locator("strong");
+const latestRows = (page: Page) =>
+  page.locator("section[aria-labelledby=home-latest] .ui-row");
 
 async function addExpense(page: Page, amount: string) {
   await add(page).click();
@@ -102,12 +105,18 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
   await signIn(page);
   // In hand: Checking 100000 + Cash 20000. The card and the archived savings are not in it.
   await expect(hero(page)).toHaveText("$1,200.00");
-  await expect(page.locator(".home-hero")).toContainText("In hand");
+  await expect(page.locator(".ui-hero")).toContainText("In hand");
   await expect(page.getByText("Net worth")).toHaveCount(0);
-  await expect(page.getByText("Visa")).toHaveCount(0);
-  await expect(card(page, "Money in")).toHaveText("$0.00");
-  await expect(card(page, "Money out")).toHaveText("$0.00");
-  await expect(card(page, "Owed to you")).toHaveText("$0.00");
+  // Cards and loans are listed, apart from money to hand, and are not in In hand.
+  await expect(
+    page.getByText("Cards and loans", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Visa", { exact: true })).toBeVisible();
+  await expect(month(page, "Money in")).toHaveText("$0.00");
+  await expect(month(page, "Money out")).toHaveText("$0.00");
+  // Nobody owes anything, so none of the small figures is there.
+  await expect(page.getByRole("link", { name: /Clients owe/ })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /People owe/ })).toHaveCount(0);
   await expect(
     page.getByText("Use Add to record your first entry"),
   ).toBeVisible();
@@ -115,30 +124,30 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
 
   await addExpense(page, "42.15");
   await expect(hero(page)).toHaveText("$1,157.85");
-  await expect(card(page, "Money out")).toHaveText("$42.15");
-  await expect(page.locator(".home-list .transaction-row")).toHaveCount(1);
+  await expect(month(page, "Money out")).toHaveText("$42.15");
+  await expect(latestRows(page)).toHaveCount(1);
 
   await addTransfer(page, "12.34");
   await expect(hero(page)).toHaveText("$1,157.85");
-  await expect(card(page, "Money out")).toHaveText("$42.15");
-  await expect(card(page, "Money in")).toHaveText("$0.00");
+  await expect(month(page, "Money out")).toHaveText("$42.15");
+  await expect(month(page, "Money in")).toHaveText("$0.00");
   // One row for the transfer, not one per leg.
-  await expect(page.locator(".home-list .transaction-row")).toHaveCount(2);
+  await expect(latestRows(page)).toHaveCount(2);
   await expect(
-    page.getByText("Transfer · Checking → Cash", { exact: true }),
+    page.getByText("Checking → Cash", { exact: true }),
   ).toBeVisible();
 
   // Open the expense from Home, then delete and undo it.
-  await page.locator(".transaction-row", { hasText: "Food" }).click();
+  await latestRows(page).filter({ hasText: "Food" }).click();
   const editor = page.getByRole("dialog", { name: "Edit transaction" });
   await editor.getByRole("button", { name: "Delete transaction" }).click();
   await editor.getByRole("button", { name: "Confirm delete" }).click();
-  await expect(card(page, "Money out")).toHaveText("$0.00");
+  await expect(month(page, "Money out")).toHaveText("$0.00");
   await expect(hero(page)).toHaveText("$1,200.00");
   await page
     .getByRole("button", { name: "Undo deletion", exact: true })
     .click();
-  await expect(card(page, "Money out")).toHaveText("$42.15");
+  await expect(month(page, "Money out")).toHaveText("$42.15");
   await expect(hero(page)).toHaveText("$1,157.85");
 
   // Privacy removes digits from the page and survives reload.
@@ -201,7 +210,7 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
 test("is reachable and operable with the keyboard", async ({ page }) => {
   await signIn(page);
   await addExpense(page, "5.00");
-  const row = page.locator(".home-list .transaction-row").first();
+  const row = latestRows(page).first();
   await row.focus();
   await expect(row).toBeFocused();
   await page.keyboard.press("Enter");

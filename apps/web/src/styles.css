@@ -357,75 +357,12 @@ select {
   max-width: 440px;
   margin: 0 auto;
 }
-.welcome-art {
-  height: 108px;
-  width: 160px;
-  margin: 0 auto 20px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-}
-.welcome-art::before {
-  content: "";
-  position: absolute;
-  width: 80px;
-  height: 80px;
-  background: var(--accent-soft);
-  border-radius: 24px;
-  transform: rotate(-8deg);
-}
-.welcome-art > svg {
-  z-index: 1;
-}
-.orbit {
-  position: absolute;
-  width: 112px;
-  height: 112px;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-}
-.orbit-two {
-  width: 146px;
-  height: 146px;
-  border-style: dashed;
-  opacity: 0.5;
-}
-.activity-card,
 .settings-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 24px;
-}
-.section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.section-heading h2 {
-  font-size: 14px;
-}
-.section-heading > span {
-  font-size: 11px;
-}
-.empty-activity {
-  text-align: center;
-  padding: 32px 0 16px;
-  color: var(--muted);
-}
-.empty-activity svg {
-  margin: 0 auto 12px;
-}
-.empty-activity p {
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-.empty-activity span {
-  font-size: 11px;
 }
 .settings-card p {
   font-size: 14px;
@@ -545,9 +482,6 @@ select {
   .welcome-card h2 {
     font-size: 24px;
   }
-  .section-heading > span {
-    display: none;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -559,9 +493,6 @@ select {
 }
 
 /* Account management */
-.home-accounts-link {
-  margin-top: 24px;
-}
 .secondary-button {
   display: inline-flex;
   align-items: center;
@@ -1847,121 +1778,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   }
 }
 
-.home-hero {
-  /* The one tinted card on Home: money you can use now stands out from the neutral totals. */
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 16px;
-  display: grid;
-  gap: 4px;
-}
-.home-hero > p {
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 600;
-}
-.home-hero .amount {
-  font-size: 44px;
-  margin: 8px 0;
-}
-.home-hero .muted {
-  font-size: 12px;
-}
-.home-link-card {
-  display: block;
-  color: var(--text);
-  text-decoration: none;
-}
-.home-link-card:hover {
-  background: var(--accent-soft);
-}
-.home-list {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-}
-.home-list > li + li {
-  border-top: 1px solid var(--border);
-}
-.home-list .transaction-row {
-  padding: 14px 0;
-  background: transparent;
-}
-.home-account-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  min-height: 56px;
-  padding: 10px 0;
-  color: var(--text);
-  text-decoration: none;
-  font-variant-numeric: tabular-nums;
-}
-.home-account-row > span {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.home-account-row .muted {
-  font-size: 12px;
-}
-.quiet-link {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--accent);
-  font-size: 13px;
-}
-.home-notice {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  background: var(--accent-soft);
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-}
-.home-skeleton {
-  display: grid;
-  gap: 12px;
-  margin-top: 16px;
-}
-.home-skeleton span {
-  height: 88px;
-  border-radius: 12px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  animation: home-pulse 1.4s ease-in-out infinite;
-}
-@keyframes home-pulse {
-  50% {
-    opacity: 0.5;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .home-skeleton span {
-    animation: none;
-  }
-}
-@media (max-width: 700px) {
-  .home-hero {
-    padding: 20px;
-  }
-  .home-hero .amount {
-    font-size: 36px;
-  }
-  .stat-card.home-link-card {
-    display: grid;
-  }
-}
-
 .receipt-preview {
   margin: 4px 0 8px;
 }
@@ -2615,10 +2431,6 @@ button.budget-line:hover {
   display: block;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-}
-.home-account-amount {
-  display: grid;
-  justify-items: end;
 }
 .account-base-value {
   margin: 0;

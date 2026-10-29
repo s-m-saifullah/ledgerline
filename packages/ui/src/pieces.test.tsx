@@ -134,6 +134,20 @@ describe("ListRow", () => {
     expect(screen.getByRole("link")).toHaveClass("ui-row");
   });
 
+  it("a pressable row can be disabled: it is a disabled button and ignores a click", async () => {
+    const onClick = vi.fn();
+    render(<ListRow title="Busy" onClick={onClick} disabled />);
+    const row = screen.getByRole("button", { name: "Busy" });
+    expect(row).toBeDisabled();
+    await userEvent.click(row);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it("a row that is not disabled stays enabled", () => {
+    render(<ListRow title="Ready" onClick={() => {}} />);
+    expect(screen.getByRole("button", { name: "Ready" })).toBeEnabled();
+  });
+
   it("marks a row that opens something with a chevron hidden from screen readers", () => {
     const { container } = render(
       <ListRow title="Settings" onClick={() => {}} chevron />,
@@ -173,6 +187,26 @@ describe("StatusPill, SectionLabel, EmptyState", () => {
     expect(screen.getByText("Cash and banking")).toHaveClass(
       "ui-section-label",
     );
+  });
+
+  it("is a paragraph, not a heading, unless it is asked to be one", () => {
+    render(<SectionLabel>Cash and banking</SectionLabel>);
+    expect(screen.queryByRole("heading")).toBeNull();
+    expect(screen.getByText("Cash and banking").tagName).toBe("P");
+  });
+
+  it("can be a heading with an id, so a section can be named by it", () => {
+    render(
+      <SectionLabel as="h2" id="latest">
+        Latest transactions
+      </SectionLabel>,
+    );
+    const heading = screen.getByRole("heading", {
+      level: 2,
+      name: "Latest transactions",
+    });
+    expect(heading).toHaveAttribute("id", "latest");
+    expect(heading).toHaveClass("ui-section-label");
   });
 
   it("shows an empty state with an optional action", async () => {

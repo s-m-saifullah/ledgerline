@@ -2,15 +2,20 @@ import { useContext } from "react";
 import { formatMoney } from "../lib/money";
 import { PrivacyContext } from "../lib/preferences";
 
-/** Privacy mode removes the digits from the page, not just from view. */
+/**
+ * Privacy mode removes the digits from the page, not just from view. `plus` puts a plus sign before an
+ * amount above zero (never in privacy mode, where the mask has no sign).
+ */
 export function Amount({
   cents,
   currency = "USD",
   className,
+  plus = false,
 }: {
   cents: number;
   currency?: string;
   className?: string;
+  plus?: boolean;
 }) {
   const hidden = useContext(PrivacyContext);
   return hidden ? (
@@ -19,7 +24,10 @@ export function Amount({
       <span className="sr-only">Amount hidden</span>
     </span>
   ) : (
-    <span className={className}>{formatMoney(cents, currency)}</span>
+    <span className={className}>
+      {plus && cents > 0 ? "+" : ""}
+      {formatMoney(cents, currency)}
+    </span>
   );
 }
 
