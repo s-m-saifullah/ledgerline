@@ -378,9 +378,7 @@ test("reloads stale splits, preserves archived corrections and private viewer de
       ),
     });
   }
-  await page
-    .getByRole("button", { name: "Close transaction editor", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await pool.query(
     "UPDATE ledger_members SET role='viewer' WHERE ledger_id=$1",
     [ledgerId],

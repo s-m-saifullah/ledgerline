@@ -241,9 +241,7 @@ test("replays interrupted create and Add Undo after close/resume and navigation"
   await page.getByLabel("Amount (USD)").fill("1.23");
   await page.getByRole("button", { name: "Save transfer" }).click();
   await expect(page.getByRole("button", { name: "Retry save" })).toBeVisible();
-  await expect(
-    page.getByRole("radio", { name: "Income / expense" }),
-  ).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "Expense" })).toBeDisabled();
   await page.getByRole("button", { name: "Close for now" }).click();
   await leaveForAnotherPage(page);
   await openAdd(page);
@@ -259,7 +257,7 @@ test("replays interrupted create and Add Undo after close/resume and navigation"
   await expect(
     page.getByRole("button", { name: "Save transfer" }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Close transaction dialog" }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("button", { name: "Retry Undo" }).click();
   await expect(
     page.getByText("Transfer saved.", { exact: true }),
@@ -316,7 +314,7 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
   await expect(
     page.getByText(/Confirm the earlier transaction action/),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close transaction dialog" }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("button", { name: "Resume transaction" }).click();
   await transferEditor(page)
     .getByRole("button", { name: "Retry save" })
@@ -456,7 +454,7 @@ test("requires explicit stale reload, preserves archived corrections, and provid
       ),
     });
   }
-  await page.getByRole("button", { name: "Close transfer editor" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await pool.query(
     "UPDATE ledger_members SET role='viewer' WHERE ledger_id=$1",
     [ledgerId],
