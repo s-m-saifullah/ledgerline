@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
+import { applyFilters, openFilters, rows } from "./filters";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -94,16 +95,16 @@ test("tags an entry in Add, finds it by tag, edits the tags and keeps the balanc
 
   await page.goto("/transactions");
   await expect(page.locator(".tag-chip", { hasText: "Holiday" })).toBeVisible();
-  await page.getByText("Filter entries", { exact: true }).click();
-  await page
+  const filters = await openFilters(page);
+  await filters
     .getByLabel("Tag", { exact: true })
     .selectOption({ label: "Holiday" });
-  await page.getByRole("button", { name: "Apply filters" }).click();
+  await applyFilters(filters);
   await expect(page).toHaveURL(/tagId=/);
-  await expect(page.locator(".transaction-row")).toHaveCount(1);
+  await expect(rows(page)).toHaveCount(1);
 
   // Edit: remove the tag again.
-  await page.locator(".transaction-row").first().click();
+  await rows(page).first().click();
   await page.getByRole("button", { name: "Remove tag Holiday" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.locator(".tag-chip")).toHaveCount(0);

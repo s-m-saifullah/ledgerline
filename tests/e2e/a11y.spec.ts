@@ -212,7 +212,7 @@ for (const width of [390, 1280]) {
           "filters",
           async () => {
             await page.goto("/transactions");
-            await page.getByText("Filter entries", { exact: true }).click();
+            await page.getByRole("button", { name: /^Filters/ }).click();
           },
         ],
       ];

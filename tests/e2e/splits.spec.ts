@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
+import { rows } from "./filters";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -119,7 +120,7 @@ async function openHistory(page: Page) {
     .getByRole("link", { name: "Transactions", exact: true })
     .filter({ visible: true })
     .click();
-  await expect(page.locator(".transaction-row")).toHaveCount(1);
+  await expect(rows(page)).toHaveCount(1);
   await page
     .getByRole("button", {
       name: "Open transaction: Split transaction",

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
+import { rows } from "./filters";
 import { connectLocalDatabase } from "./ledger-setup";
 import { signIn } from "./sign-in";
 
@@ -126,7 +127,7 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
     made.every((item) => item.date <= new Date().toISOString().slice(0, 10)),
   ).toBe(true);
   await page.goto("/transactions");
-  await expect(page.locator(".transaction-row")).toHaveCount(2);
+  await expect(rows(page)).toHaveCount(2);
 
   // Its history lists both, then it can be paused and deleted; the entries stay.
   await page.goto("/recurring");

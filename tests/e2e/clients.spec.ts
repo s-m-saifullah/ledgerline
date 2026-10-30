@@ -332,7 +332,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   expect(independent.status()).toBe(201);
   await navigate(page, "Transactions");
   await page
-    .locator(".transaction-row")
+    .locator(".tx-row")
     .filter({ hasText: "Independent receipt" })
     .click();
   await page

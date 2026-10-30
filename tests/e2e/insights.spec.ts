@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { applyFilters, openFilters } from "./filters";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -173,12 +174,12 @@ test("filtering Transactions by a main category includes its subcategories", asy
   page,
 }) => {
   await page.goto("/transactions");
-  await page.getByText("Filter entries").click();
-  await page.getByLabel("Category", { exact: true }).selectOption({
+  const filters = await openFilters(page);
+  await filters.getByLabel("Category", { exact: true }).selectOption({
     label: "Food",
   });
-  await expect(page.getByText("Includes its subcategories.")).toBeVisible();
-  await page.getByRole("button", { name: "Apply filters" }).click();
+  await expect(filters.getByText("Includes its subcategories.")).toBeVisible();
+  await applyFilters(filters);
   await expect(page).toHaveURL(/includeSubcategories=true/);
   await expect(page.getByText("Lunch")).toBeVisible();
   await expect(page.getByText("Market")).toBeVisible();

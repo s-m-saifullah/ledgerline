@@ -129,12 +129,8 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
 test("the template is offered next to the Import button and the file chooser", async ({
   page,
 }) => {
-  await page.goto("/transactions");
-  // Hidden until the Import and export section is opened.
-  await expect(
-    page.getByRole("link", { name: "Import from CSV" }),
-  ).toBeHidden();
-  await page.getByText("Import and export", { exact: true }).click();
+  // Settings (Your data) holds the Import button and the template; Transactions no longer does.
+  await page.goto("/settings");
   await expect(
     page.getByRole("link", { name: "Import from CSV" }),
   ).toBeVisible();

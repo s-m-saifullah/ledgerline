@@ -2,6 +2,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { chooseKind, rows as listRows } from "./filters";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -124,11 +125,10 @@ async function history(page: Page) {
     .getByRole("link", { name: "Transactions", exact: true })
     .filter({ visible: true })
     .click();
-  await expect(page.locator(".transaction-row")).toHaveCount(2);
+  await expect(listRows(page)).toHaveCount(1);
   await page
     .getByRole("button", {
-      name: "Open transaction: Transfer from Checking",
-      exact: true,
+      name: /^Open transaction: Transfer from Checking.* to Cash$/,
     })
     .click();
   await expect(transferEditor(page)).toBeVisible();
@@ -178,8 +178,7 @@ test("moves exact cents, edits both legs, deletes and restores with historical i
   expect(await posted(page, cashId)).toBe(5029);
   await page
     .getByRole("button", {
-      name: "Open transaction: Transfer to Cash",
-      exact: true,
+      name: /^Open transaction: Transfer from Checking.* to Cash$/,
     })
     .click();
   await transferEditor(page)
@@ -206,15 +205,13 @@ test("moves exact cents, edits both legs, deletes and restores with historical i
   );
   expect(await posted(page)).toBe(9971);
   expect(await posted(page, cashId)).toBe(5029);
-  await page.locator("summary").filter({ hasText: "Filter entries" }).click();
-  await page.getByLabel("Entry type", { exact: true }).selectOption("expense");
-  await page.getByRole("button", { name: "Apply filters" }).click();
-  await expect(page.locator(".transaction-row")).toHaveCount(0);
-  await page.getByLabel("Entry type", { exact: true }).selectOption("transfer");
-  await page.getByRole("button", { name: "Apply filters" }).click();
-  await expect(page.locator(".transaction-row")).toHaveCount(2);
+  await chooseKind(page, "Expenses");
+  await expect(listRows(page)).toHaveCount(0);
+  await chooseKind(page, "Transfers");
+  // Both legs of the transfer are one row.
+  await expect(listRows(page)).toHaveCount(1);
   await page.reload();
-  await expect(page.locator(".transaction-row")).toHaveCount(2);
+  await expect(listRows(page)).toHaveCount(1);
 });
 test("replays interrupted create and Add Undo after close/resume and navigation", async ({
   page,
@@ -417,8 +414,7 @@ test("requires explicit stale reload, preserves archived corrections, and provid
   await page.reload();
   await page
     .getByRole("button", {
-      name: "Open transaction: Transfer from Checking (archived)",
-      exact: true,
+      name: /^Open transaction: Transfer from Checking.* to Cash$/,
     })
     .click();
   await expect(transferEditor(page).getByLabel("From account")).toHaveValue(
@@ -435,13 +431,10 @@ test("requires explicit stale reload, preserves archived corrections, and provid
   ).toBeVisible();
   expect(await posted(page)).toBe(9971);
   await page.getByRole("button", { name: "Hide amounts" }).click();
-  await expect(page.locator(".transaction-row").first()).not.toContainText(
-    "0.29",
-  );
+  await expect(listRows(page).first()).not.toContainText("0.29");
   await page
     .getByRole("button", {
-      name: "Open transaction: Transfer to Cash",
-      exact: true,
+      name: /^Open transaction: Transfer from Checking.* to Cash$/,
     })
     .click();
   await expect(transferEditor(page).getByLabel("Amount (USD)")).toHaveAttribute(
@@ -487,8 +480,7 @@ test("requires explicit stale reload, preserves archived corrections, and provid
   await page.reload();
   await page
     .getByRole("button", {
-      name: "Open transaction: Transfer to Cash",
-      exact: true,
+      name: /^Open transaction: Transfer from Checking.* to Cash$/,
     })
     .click();
   await expect(
