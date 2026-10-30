@@ -164,13 +164,18 @@ describe("ExportButton", () => {
         disabled={false}
       />,
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Export as CSV" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Export CSV" }));
     await screen.findByText("Your file is ready.");
     expect(downloads(fetcher)).toEqual([
       `/api/v1/ledgers/${ledgerId}/exports/transactions.csv?categoryId=c1&status=pending`,
     ]);
+  });
+
+  it("has no explanation beside it", () => {
+    stubDownloads();
+    render(<ExportButton ledgerId={ledgerId} filters={{}} disabled={false} />);
+    expect(screen.getByRole("button", { name: "Export CSV" })).toBeEnabled();
+    expect(screen.queryByText(/Saves the entries/)).toBeNull();
   });
 
   it("is off while the ledger is loading or the range is invalid", () => {

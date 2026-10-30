@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { DownloadMessage } from "./message";
 import { exportPath } from "./paths";
 import { useCsvDownload } from "./use-csv-download";
@@ -17,7 +18,7 @@ export function ExportButton({
     <div className="export-inline">
       <button
         type="button"
-        className="secondary-button"
+        className="ui-btn ui-btn-secondary"
         disabled={!ledgerId || disabled || busy}
         onClick={() =>
           ledgerId &&
@@ -27,11 +28,9 @@ export function ExportButton({
           )
         }
       >
-        {busy ? "Preparing…" : "Export as CSV"}
+        <Download size={16} aria-hidden="true" />
+        {busy ? "Preparing…" : "Export CSV"}
       </button>
-      <p className="muted export-hint">
-        Saves the entries that match the filters above.
-      </p>
       <DownloadMessage message={message} />
     </div>
   );
