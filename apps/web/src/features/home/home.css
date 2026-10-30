@@ -134,11 +134,6 @@
 .home-neg {
   color: var(--danger);
 }
-.ui-row-end .base-note {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--muted);
-}
 .home-pending {
   display: inline-flex;
 }

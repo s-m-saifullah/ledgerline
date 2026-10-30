@@ -85,13 +85,8 @@ async function savedText(
 test("Transactions exports what its filters show", async ({ page }) => {
   await page.goto("/transactions?from=2026-10-01&to=2026-10-31");
   await expect(page.getByText("Dinner, out").first()).toBeVisible();
-  // The export controls stay out of the way until the section is opened.
-  await expect(
-    page.getByRole("button", { name: "Export as CSV" }),
-  ).toBeHidden();
-  await page.getByText("Import and export", { exact: true }).click();
   const file = await savedText(page, () =>
-    page.getByRole("button", { name: "Export as CSV" }).click(),
+    page.getByRole("button", { name: "Export CSV" }).click(),
   );
   expect(file.name).toMatch(/^ledgerline-transactions-\d{4}-\d{2}-\d{2}\.csv$/);
   expect(file.text.startsWith("﻿id,date,time,type,amount,")).toBe(true);

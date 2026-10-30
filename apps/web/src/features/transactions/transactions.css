@@ -1,0 +1,190 @@
+/*
+ * The Transactions list (ADR 0047): a search with a Filters button, kind chips, and day cards of rows. A row is
+ * a phone row (lead, title, one hint, amount); from 1100 px its account and tags become columns instead of a
+ * longer hint. Widths are the layout system's two (700 and 1100 px).
+ */
+.tx-page,
+.tx-days {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.tx-page > *,
+.tx-days > * {
+  min-width: 0;
+}
+/* The rows dim a little while the next ones load; nothing moves. */
+.tx-days[aria-busy="true"] {
+  opacity: 0.6;
+}
+.tx-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.tx-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* On a phone the heading is only for screen readers, so the actions keep to the right on their own. Clear filters
+   shares this row with Export CSV, so it appearing never adds a line to the page. */
+.tx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+.tx-search {
+  display: flex;
+  gap: 8px;
+}
+.tx-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+}
+.tx-search .ui-btn {
+  flex: none;
+}
+.tx-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.tx-kinds {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tx-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tx-error p,
+.tx-empty p {
+  margin: 0;
+}
+.tx-empty {
+  display: grid;
+  gap: 4px;
+}
+
+.tx-day-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: inherit;
+}
+.tx-net {
+  font-variant-numeric: tabular-nums;
+}
+.tx-pos {
+  color: var(--positive);
+}
+.tx-load-more {
+  justify-self: center;
+}
+
+/* A row's middle: the title and its hint, then the tags. Account and tags become columns from 1100 px. */
+.tx-main {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 4px;
+  min-width: 0;
+}
+.tx-text {
+  display: grid;
+  min-width: 0;
+}
+.tx-account,
+.tx-note {
+  display: none;
+}
+.tx-pending {
+  display: inline-flex;
+}
+.tx-main .tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+@container app (min-width: 700px) {
+  .tx-note {
+    display: block;
+  }
+  .tx-page,
+  .tx-days {
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .tx-page,
+  .tx-days {
+    gap: 20px;
+  }
+  .tx-main {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1.4fr);
+    align-items: center;
+    gap: 16px;
+  }
+  .tx-account {
+    display: block;
+    overflow: hidden;
+    font-size: 12px;
+    color: var(--muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tx-inline-account {
+    display: none;
+  }
+  /* One width for every amount, so the columns line up from row to row. */
+  .tx-row .ui-row-end {
+    width: 150px;
+    min-width: 0;
+  }
+}
+
+/* The Filters sheet. */
+.tx-sheet {
+  display: grid;
+  gap: 16px;
+}
+.tx-sheet label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.tx-sheet p {
+  margin: 4px 0 0;
+}
+.tx-sheet-dates {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@container app (min-width: 700px) {
+  .tx-sheet-dates {
+    grid-template-columns: 1fr 1fr;
+  }
+}

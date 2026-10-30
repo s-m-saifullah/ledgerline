@@ -3,6 +3,14 @@ import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import {
+  chooseFilter,
+  chooseKind,
+  closeFilters,
+  openFilters,
+  rows,
+  searchFor,
+} from "./filters";
+import {
   connectLocalDatabase,
   createOwnerLedger,
   prepareBrowser,
@@ -147,11 +155,10 @@ async function openHistory(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Transactions", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".transaction-row").first()).toBeEnabled();
+  await expect(rows(page).first()).toBeEnabled();
 }
 async function search(page: Page, text: string) {
-  await page.getByLabel("Search payer, payee or note").fill(text);
-  await page.getByRole("button", { name: "Apply filters" }).click();
+  await searchFor(page, text);
   await expect(page).toHaveURL(
     new RegExp(`text=${text.replaceAll(" ", "(?:%20|\\+)")}`),
   );
@@ -175,27 +182,36 @@ test("groups days, loads stable cursor pages, retains URL filters and hides amou
   page,
 }, info) => {
   await openHistory(page);
-  await expect(page.locator(".transaction-row")).toHaveCount(50);
-  await expect(page.locator(".transaction-pending")).toBeVisible();
+  await expect(rows(page)).toHaveCount(50);
+  await expect(page.locator(".tx-pending").first()).toBeVisible();
   await page.getByRole("button", { name: "Load more", exact: true }).click();
-  await expect(page.locator(".transaction-row")).toHaveCount(58);
-  const ids = await page
-    .locator(".transaction-row")
-    .evaluateAll((nodes) => nodes.map((node) => node.id));
+  await expect(rows(page)).toHaveCount(58);
+  const ids = await rows(page).evaluateAll((nodes) =>
+    nodes.map((node) => node.id),
+  );
   expect(new Set(ids).size).toBe(58);
+  // The category and the account are one hint on a phone and two columns on a desktop: the row has both.
   await expect(
-    page.getByText("Old category (archived) · Old account (archived)"),
+    rows(page)
+      .filter({ hasText: "Old category (archived)" })
+      .filter({ hasText: "Old account (archived)" }),
   ).toBeVisible();
-  await expect(page.getByText(/Checking · 9:05 AM/)).toBeVisible();
-  await page.locator("summary").filter({ hasText: "Filter entries" }).click();
-  await page.getByLabel("Account", { exact: true }).selectOption(bankId);
-  await page.getByLabel("Category", { exact: true }).selectOption(expenseId);
-  await page.getByLabel("From date", { exact: true }).fill("2026-10-06");
-  await page.getByLabel("To date", { exact: true }).fill("2026-10-06");
-  await page.getByLabel("Entry type", { exact: true }).selectOption("expense");
-  await page.getByLabel("Status", { exact: true }).selectOption("cleared");
+  await expect(
+    rows(page).filter({ hasText: "Checking" }).filter({ hasText: "9:05 AM" }),
+  ).toBeVisible();
+  const filters = await openFilters(page);
+  // Each choice applies at once; the account and the category are found by typing their names.
+  await chooseFilter(filters, "Account", "Checking");
+  await chooseFilter(filters, "Category", "Food");
+  await filters.getByLabel("From date", { exact: true }).fill("2026-10-06");
+  await filters.getByLabel("To date", { exact: true }).fill("2026-10-06");
+  await filters.getByRole("radio", { name: "Cleared", exact: true }).click();
+  await expect(page).toHaveURL(/status=cleared/);
+  await expect(page).toHaveURL(new RegExp(`accountId=${bankId}`));
+  await closeFilters(filters);
+  await chooseKind(page, "Expenses");
   await search(page, "Older");
-  await expect(page.locator(".transaction-row")).toHaveCount(1);
+  await expect(rows(page)).toHaveCount(1);
   await page.reload();
   await expect(coffee(page)).toBeVisible();
   await expect(page.getByLabel("Search payer, payee or note")).toHaveValue(
@@ -235,8 +251,9 @@ test("shows Clear filters only while a filter is applied", async ({ page }) => {
   const clear = page.getByRole("button", { name: "Clear filters" });
   await expect(clear).toHaveCount(0);
   await page.getByLabel("Search payer, payee or note").fill("a");
+  // What is typed is not applied yet.
   await expect(clear).toHaveCount(0);
-  await page.getByRole("button", { name: "Apply filters" }).click();
+  await page.getByLabel("Search payer, payee or note").press("Enter");
   await expect(clear).toBeVisible();
 });
 

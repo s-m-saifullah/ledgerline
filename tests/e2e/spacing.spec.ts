@@ -145,7 +145,7 @@ test("fields keep 8 px between their label and the focus ring on every main form
       "transaction filters",
       async (p) => {
         await p.goto("/transactions");
-        await p.getByText("Filter entries", { exact: true }).click();
+        await p.getByRole("button", { name: /^Filters/ }).click();
       },
     ],
     [
