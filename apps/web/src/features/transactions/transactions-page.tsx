@@ -1,11 +1,19 @@
+import { createCategorySchema, tagNameSchema } from "@ledgerline/shared";
 import { FilterChip, ListCard, ListHead } from "@ledgerline/ui";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useEffect, useState } from "react";
 import { Amount } from "../../components/amount-text";
-import { getLedgers } from "../../lib/api";
-import { getCategories } from "../categories/api";
+import type { ComboCreate } from "../../components/combo-field";
+import { ApiError, getLedgers } from "../../lib/api";
+import { getCategories, prepareCategorySave } from "../categories/api";
 import { ExportButton } from "../exports/export-button";
+import { prepareTagCreate } from "../tags/api";
 import { useTags } from "../tags/use-tags";
 import { getAllAccounts, getTransactions } from "./api";
 import { EntryRow } from "./entry-row";
@@ -47,6 +55,7 @@ export function TransactionsPage() {
   const ledger = ledgers.data?.items[0];
   const rangeInvalid =
     !!filters.from && !!filters.to && filters.from > filters.to;
+  const client = useQueryClient();
   const entries = useInfiniteQuery({
     queryKey: ["transactions", ledger?.id, "list", filters],
     initialPageParam: null as string | null,
@@ -57,6 +66,8 @@ export function TransactionsPage() {
         ? page.nextCursor
         : undefined,
     enabled: !!ledger && !rangeInvalid,
+    // The rows stay while the next ones load, so a new search does not blank and rebuild the page.
+    placeholderData: keepPreviousData,
   });
   const accounts = useQuery({
     queryKey: ["accounts", ledger?.id, "history"],
@@ -130,9 +141,60 @@ export function TransactionsPage() {
       search: kind ? { ...rest, kind } : rest,
     });
   };
-  const applySheet = (draft: SheetFilters) => {
-    setSheetOpen(false);
-    void navigate({ to: "/transactions", search: nextFilters(filters, draft) });
+  // Each change in the sheet applies at once; the history keeps one entry, not one per click.
+  const changeSheet = (draft: SheetFilters) => {
+    void navigate({
+      to: "/transactions",
+      search: nextFilters(filters, draft),
+      replace: true,
+    });
+  };
+  const writable = !!ledger && ledger.role !== "viewer";
+  // A category or a tag that does not exist yet can be made from the sheet (saved at once, then applied).
+  const createCategory = (kind: "expense" | "income"): ComboCreate => ({
+    key: kind,
+    label: (text) => `Create ${kind} category “${text}”`,
+    run: async (name) => {
+      const parsed = createCategorySchema.safeParse({
+        name,
+        kind,
+        parentId: null,
+        icon: null,
+        color: null,
+      });
+      if (!parsed.success || !ledger)
+        throw new Error("Give the category a name of 1–100 characters.");
+      const made = await prepareCategorySave(
+        ledger.id,
+        undefined,
+        parsed.data,
+      )();
+      await client.invalidateQueries({ queryKey: ["categories", ledger.id] });
+      return made.id;
+    },
+  });
+  const createTag: ComboCreate = {
+    key: "tag",
+    label: (text) => `Create tag “${text}”`,
+    run: async (name) => {
+      const parsed = tagNameSchema.safeParse(name);
+      if (!parsed.success || !ledger)
+        throw new Error(
+          "Use 1 to 40 characters, without commas or semicolons, for a tag name.",
+        );
+      try {
+        const made = await prepareTagCreate(ledger.id, parsed.data)();
+        await client.invalidateQueries({ queryKey: ["tags", ledger.id] });
+        return made.id;
+      } catch (failure) {
+        await client.invalidateQueries({ queryKey: ["tags", ledger.id] });
+        throw new Error(
+          failure instanceof ApiError && failure.status === 409
+            ? "A tag with this name already exists. Pick it from the list."
+            : "Couldn't add the tag. Try again.",
+        );
+      }
+    },
   };
   const count = countFilters(filters);
   const paginationStalled =
@@ -149,11 +211,25 @@ export function TransactionsPage() {
         <h1 id="transactions-title" tabIndex={-1}>
           Transactions
         </h1>
-        <ExportButton
-          ledgerId={ledger?.id}
-          filters={filters}
-          disabled={rangeInvalid}
-        />
+        <div className="tx-actions">
+          {hasAnyFilter(filters) && (
+            <button
+              type="button"
+              className="ui-btn ui-btn-text"
+              onClick={() => {
+                setSearchText("");
+                void navigate({ to: "/transactions", search: {} });
+              }}
+            >
+              Clear filters
+            </button>
+          )}
+          <ExportButton
+            ledgerId={ledger?.id}
+            filters={filters}
+            disabled={rangeInvalid}
+          />
+        </div>
       </div>
       <search>
         <form
@@ -172,7 +248,7 @@ export function TransactionsPage() {
             maxLength={200}
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search transactions"
+            placeholder="Search payee, payer or note"
           />
           <button
             type="button"
@@ -199,18 +275,6 @@ export function TransactionsPage() {
             </FilterChip>
           ))}
         </fieldset>
-        {hasAnyFilter(filters) && (
-          <button
-            type="button"
-            className="ui-btn ui-btn-text"
-            onClick={() => {
-              setSearchText("");
-              void navigate({ to: "/transactions", search: {} });
-            }}
-          >
-            Clear filters
-          </button>
-        )}
       </div>
       {rangeInvalid && (
         <p role="alert" className="field-error">
@@ -222,15 +286,24 @@ export function TransactionsPage() {
         applied={filters}
         accounts={(accounts.data ?? []).map((row) => ({
           id: row.id,
-          name: accountName(row.id),
+          label: accountName(row.id),
         }))}
-        categories={categories.data ?? []}
+        categories={(categories.data ?? []).map((row) => ({
+          id: row.id,
+          label: categoryName(row.id),
+        }))}
         tags={(tags.data ?? []).map((row) => ({
           id: row.id,
-          name: `${row.name}${row.archivedAt ? " (archived)" : ""}`,
+          label: `${row.name}${row.archivedAt ? " (archived)" : ""}`,
         }))}
-        categoryName={categoryName}
-        onApply={applySheet}
+        categoryHasChildren={(id) =>
+          !!categories.data?.some((item) => item.parentId === id)
+        }
+        createCategories={
+          writable ? [createCategory("expense"), createCategory("income")] : []
+        }
+        createTags={writable ? [createTag] : []}
+        onChange={changeSheet}
         onDismiss={() => setSheetOpen(false)}
       />
       {(ledgers.isError ||
@@ -260,59 +333,64 @@ export function TransactionsPage() {
       {ledgers.data && !ledger && (
         <p className="account-error">No ledger is available.</p>
       )}
-      {!rangeInvalid && entries.data && rows.length === 0 && (
-        <div className="ui-card tx-empty">
-          <h2 className="ui-title">No matching entries</h2>
-          <p className="muted">
-            {hasAnyFilter(filters)
-              ? "Try another search or clear the filters."
-              : "Use Add to record your first income or expense."}
-          </p>
+      {!rangeInvalid && entries.data && (
+        <div className="tx-days" aria-busy={entries.isPlaceholderData}>
+          {rows.length === 0 && (
+            <div className="ui-card tx-empty">
+              <h2 className="ui-title">No matching entries</h2>
+              <p className="muted">
+                {hasAnyFilter(filters)
+                  ? "Try another search or clear the filters."
+                  : "Use Add to record your first income or expense."}
+              </p>
+            </div>
+          )}
+          {days.map((day) => (
+            <section
+              className="tx-day"
+              key={day.date}
+              aria-label={dayLabel(day.date)}
+            >
+              <ListCard>
+                <ListHead
+                  left={<h2 className="tx-day-title">{dayLabel(day.date)}</h2>}
+                  right={
+                    day.net.length > 0 ? (
+                      <span className="tx-net">
+                        {day.net.map((money, index) => (
+                          <Fragment key={money.currency}>
+                            {index > 0 && " · "}
+                            <span
+                              className={
+                                money.amount > 0 ? "tx-pos" : undefined
+                              }
+                            >
+                              <Amount
+                                cents={money.amount}
+                                currency={money.currency}
+                                plus
+                              />
+                            </span>
+                          </Fragment>
+                        ))}
+                      </span>
+                    ) : undefined
+                  }
+                />
+                {day.entries.map((entry) => (
+                  <EntryRow
+                    key={entry.kind === "single" ? entry.row.id : entry.from.id}
+                    entry={entry}
+                    names={{ account: accountName, category: categoryName }}
+                    disabled={blocked}
+                    onOpen={(row) => workspace?.openTransaction(row)}
+                  />
+                ))}
+              </ListCard>
+            </section>
+          ))}
         </div>
       )}
-      {!rangeInvalid &&
-        days.map((day) => (
-          <section
-            className="tx-day"
-            key={day.date}
-            aria-label={dayLabel(day.date)}
-          >
-            <ListCard>
-              <ListHead
-                left={<h2 className="tx-day-title">{dayLabel(day.date)}</h2>}
-                right={
-                  day.net.length > 0 ? (
-                    <span className="tx-net">
-                      {day.net.map((money, index) => (
-                        <Fragment key={money.currency}>
-                          {index > 0 && " · "}
-                          <span
-                            className={money.amount > 0 ? "tx-pos" : undefined}
-                          >
-                            <Amount
-                              cents={money.amount}
-                              currency={money.currency}
-                              plus
-                            />
-                          </span>
-                        </Fragment>
-                      ))}
-                    </span>
-                  ) : undefined
-                }
-              />
-              {day.entries.map((entry) => (
-                <EntryRow
-                  key={entry.kind === "single" ? entry.row.id : entry.from.id}
-                  entry={entry}
-                  names={{ account: accountName, category: categoryName }}
-                  disabled={blocked}
-                  onOpen={(row) => workspace?.openTransaction(row)}
-                />
-              ))}
-            </ListCard>
-          </section>
-        ))}
       {paginationStalled && (
         <p role="alert" className="field-error">
           Pagination stopped advancing. Refresh the list before continuing.

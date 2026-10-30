@@ -3,14 +3,20 @@
  * a phone row (lead, title, one hint, amount); from 1100 px its account and tags become columns instead of a
  * longer hint. Widths are the layout system's two (700 and 1100 px).
  */
-.tx-page {
+.tx-page,
+.tx-days {
   display: grid;
   gap: 12px;
   align-content: start;
   min-width: 0;
 }
-.tx-page > * {
+.tx-page > *,
+.tx-days > * {
   min-width: 0;
+}
+/* The rows dim a little while the next ones load; nothing moves. */
+.tx-days[aria-busy="true"] {
+  opacity: 0.6;
 }
 .tx-head {
   display: flex;
@@ -26,8 +32,14 @@
   font-weight: 600;
   letter-spacing: -0.02em;
 }
-/* On a phone the heading is only for screen readers, so the button keeps to the right on its own. */
-.tx-head .export-inline {
+/* On a phone the heading is only for screen readers, so the actions keep to the right on their own. Clear filters
+   shares this row with Export CSV, so it appearing never adds a line to the page. */
+.tx-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   margin-left: auto;
 }
 .tx-search {
@@ -46,7 +58,6 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 .tx-kinds {
@@ -119,12 +130,14 @@
   .tx-note {
     display: block;
   }
-  .tx-page {
+  .tx-page,
+  .tx-days {
     gap: 16px;
   }
 }
 @container app (min-width: 1100px) {
-  .tx-page {
+  .tx-page,
+  .tx-days {
     gap: 20px;
   }
   .tx-main {

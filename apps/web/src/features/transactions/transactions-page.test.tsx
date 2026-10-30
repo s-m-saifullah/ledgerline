@@ -11,9 +11,10 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError, getLedgers } from "../../lib/api";
 import { PrivacyContext } from "../../lib/preferences";
-import { getCategories } from "../categories/api";
-import { getTags } from "../tags/api";
+import { getCategories, prepareCategorySave } from "../categories/api";
+import { getTags, prepareTagCreate } from "../tags/api";
 import { getAllAccounts, getTransactions } from "./api";
 import { TransactionsPage } from "./transactions-page";
 
@@ -47,28 +48,35 @@ const workspace = vi.hoisted(() => ({
 vi.mock("./workspace", () => ({
   useTransactionWorkspace: () => workspace.current,
 }));
+const ledgerList = (role: string) => ({
+  items: [
+    {
+      id: "l1",
+      name: "Personal",
+      baseCurrency: "USD",
+      timeZone: null,
+      version: 1,
+      role,
+    },
+  ],
+});
 vi.mock("../../lib/api", async (original) => ({
   ...(await original<typeof import("../../lib/api")>()),
-  getLedgers: vi.fn(async () => ({
-    items: [
-      {
-        id: "l1",
-        name: "Personal",
-        baseCurrency: "USD",
-        timeZone: null,
-        version: 1,
-        role: "owner",
-      },
-    ],
-  })),
+  getLedgers: vi.fn(),
 }));
 vi.mock("./api", async (original) => ({
   ...(await original<typeof import("./api")>()),
   getTransactions: vi.fn(),
   getAllAccounts: vi.fn(),
 }));
-vi.mock("../categories/api", () => ({ getCategories: vi.fn() }));
-vi.mock("../tags/api", () => ({ getTags: vi.fn() }));
+vi.mock("../categories/api", () => ({
+  getCategories: vi.fn(),
+  prepareCategorySave: vi.fn(),
+}));
+vi.mock("../tags/api", () => ({
+  getTags: vi.fn(),
+  prepareTagCreate: vi.fn(),
+}));
 vi.mock("../exports/export-button", () => ({
   ExportButton: ({
     filters,
@@ -175,6 +183,9 @@ beforeEach(() => {
   router.search = {};
   workspace.current = null;
   vi.mocked(getTransactions).mockReset();
+  vi.mocked(getLedgers).mockResolvedValue(ledgerList("owner") as never);
+  vi.mocked(prepareCategorySave).mockReset();
+  vi.mocked(prepareTagCreate).mockReset();
   vi.mocked(getAllAccounts).mockResolvedValue(accounts as never);
   vi.mocked(getCategories).mockResolvedValue(categories as never);
   vi.mocked(getTags).mockResolvedValue(tags as never);
@@ -194,7 +205,7 @@ describe("the page", () => {
     ).toHaveAttribute("id", "transactions-title");
     expect(
       screen.getByLabelText("Search payer, payee or note"),
-    ).toHaveAttribute("placeholder", "Search transactions");
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /^Filters/ }),
     ).toBeInTheDocument();
@@ -299,6 +310,55 @@ describe("the page", () => {
         "Pagination stopped advancing. Refresh the list before continuing.",
       ),
     ).toBeInTheDocument();
+  });
+});
+
+describe("the search box", () => {
+  it("says what it searches", async () => {
+    pages([entry()]);
+    mount();
+    const box = await screen.findByLabelText("Search payer, payee or note");
+    expect(box).toHaveAttribute("placeholder", "Search payee, payer or note");
+  });
+});
+
+describe("a new search or filter", () => {
+  it("keeps the rows on screen while the next ones load, instead of a loading line", async () => {
+    pages([entry({ payee: "Corner Cafe" })]);
+    const { rerender } = mount();
+    await rowOf(/Corner Cafe/);
+    let finish: (page: unknown) => void = () => {};
+    vi.mocked(getTransactions).mockReturnValueOnce(
+      new Promise((resolve) => {
+        finish = resolve;
+      }) as never,
+    );
+    rerender({ text: "tea" });
+    await waitFor(() => expect(getTransactions).toHaveBeenCalledTimes(2));
+    expect(
+      screen.getByRole("button", { name: /Corner Cafe/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(document.querySelector(".tx-days")).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
+    finish({ items: [entry({ payee: "Green Tea Shop" })], nextCursor: null });
+    await rowOf(/Green Tea Shop/);
+    expect(screen.queryByRole("button", { name: /Corner Cafe/ })).toBeNull();
+    expect(document.querySelector(".tx-days")).toHaveAttribute(
+      "aria-busy",
+      "false",
+    );
+  });
+
+  it("still shows the loading line the very first time", async () => {
+    pages([entry()]);
+    mount();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Loading transactions",
+    );
+    await screen.findByRole("button", { name: /Open transaction/ });
   });
 });
 
@@ -674,6 +734,13 @@ describe("the Filters sheet", () => {
     await userEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     return screen.findByRole("dialog", { name: "Filters" });
   }
+  const field = (dialog: HTMLElement, name: string) =>
+    within(dialog).getByRole("combobox", { name });
+  const sent = (search: Record<string, unknown>) => ({
+    to: "/transactions",
+    search,
+    replace: true,
+  });
 
   it("shows how many of its filters are set on the button", async () => {
     pages([entry()]);
@@ -689,6 +756,15 @@ describe("the Filters sheet", () => {
     ).toBeInTheDocument();
   });
 
+  it("has no Apply button: it closes with Done", async () => {
+    const dialog = await open();
+    expect(within(dialog).queryByRole("button", { name: "Apply" })).toBeNull();
+    expect(within(dialog).queryByRole("button", { name: "Cancel" })).toBeNull();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
   it("starts from the applied filters", async () => {
     const dialog = await open({
       accountId: "a2",
@@ -698,15 +774,9 @@ describe("the Filters sheet", () => {
       to: "2026-10-31",
       status: "cleared",
     });
-    expect(
-      within(dialog).getByLabelText("Account", { exact: true }),
-    ).toHaveValue("a2");
-    expect(
-      within(dialog).getByLabelText("Category", { exact: true }),
-    ).toHaveValue("c3");
-    expect(within(dialog).getByLabelText("Tag", { exact: true })).toHaveValue(
-      "g1",
-    );
+    expect(field(dialog, "Account")).toHaveValue("Cash");
+    expect(field(dialog, "Category")).toHaveValue("Pay");
+    expect(field(dialog, "Tag")).toHaveValue("Holiday");
     expect(
       within(dialog).getByLabelText("From date", { exact: true }),
     ).toHaveValue("2026-10-01");
@@ -718,113 +788,105 @@ describe("the Filters sheet", () => {
     ).toBeChecked();
   });
 
-  it("lists every account, category and tag with archived ones marked", async () => {
+  it("lists every account, category and tag, with archived ones marked", async () => {
     const dialog = await open();
-    const account = within(dialog).getByLabelText("Account", { exact: true });
+    await userEvent.click(field(dialog, "Account"));
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+      "All accounts",
+      "Checking",
+      "Cash",
+      "Old account (archived)",
+    ]);
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(field(dialog, "Category"));
     expect(
-      within(account).getByRole("option", { name: "All accounts" }),
+      screen.getByRole("option", { name: "Food / Groceries" }),
     ).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(field(dialog, "Tag"));
     expect(
-      within(account).getByRole("option", { name: "Old account (archived)" }),
-    ).toBeInTheDocument();
-    const category = within(dialog).getByLabelText("Category", { exact: true });
-    expect(
-      within(category).getByRole("option", { name: "Food / Groceries" }),
-    ).toBeInTheDocument();
-    const tagBox = within(dialog).getByLabelText("Tag", { exact: true });
-    expect(
-      within(tagBox).getByRole("option", { name: "Old trip (archived)" }),
+      screen.getByRole("option", { name: "Old trip (archived)" }),
     ).toBeInTheDocument();
   });
 
-  it("keeps the draft until Apply: Cancel changes nothing", async () => {
-    const dialog = await open();
-    await userEvent.selectOptions(
-      within(dialog).getByLabelText("Account", { exact: true }),
-      "a2",
-    );
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Cancel" }),
-    );
-    expect(router.navigate).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    // Reopened, it starts from what is applied, not from the dropped draft.
-    await userEvent.click(screen.getByRole("button", { name: /^Filters/ }));
-    expect(
-      within(await screen.findByRole("dialog")).getByLabelText("Account", {
-        exact: true,
-      }),
-    ).toHaveValue("");
-  });
-
-  it("applies the draft over the search and the kind, and closes", async () => {
+  it("applies a choice at once and keeps the search and the kind", async () => {
     const dialog = await open({ text: "x", kind: "income" });
-    await userEvent.selectOptions(
-      within(dialog).getByLabelText("Account", { exact: true }),
-      "a2",
+    await userEvent.click(field(dialog, "Account"));
+    await userEvent.click(screen.getByRole("option", { name: "Cash" }));
+    expect(router.navigate).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(
+      sent({ text: "x", kind: "income", accountId: "a2" }),
     );
-    await userEvent.selectOptions(
-      within(dialog).getByLabelText("Category", { exact: true }),
-      "c1",
-    );
-    await userEvent.click(
-      within(dialog).getByRole("radio", { name: "Pending" }),
-    );
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Apply" }),
-    );
-    expect(router.navigate).toHaveBeenCalledWith({
-      to: "/transactions",
-      search: {
-        text: "x",
-        kind: "income",
-        accountId: "a2",
-        categoryId: "c1",
-        includeSubcategories: true,
-        status: "pending",
-      },
-    });
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
-  it("Reset all empties the draft but applies nothing until Apply", async () => {
-    const dialog = await open({ accountId: "a2", status: "pending" });
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Reset all" }),
-    );
-    expect(router.navigate).not.toHaveBeenCalled();
-    expect(
-      within(dialog).getByLabelText("Account", { exact: true }),
-    ).toHaveValue("");
-    expect(within(dialog).getByRole("radio", { name: "All" })).toBeChecked();
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Apply" }),
-    );
-    expect(router.navigate).toHaveBeenCalledWith({
-      to: "/transactions",
-      search: {},
-    });
-  });
-
-  it("says a category includes its subcategories, only for one that has them", async () => {
+  it("finds an account by typing its name", async () => {
     const dialog = await open();
-    const category = within(dialog).getByLabelText("Category", { exact: true });
-    await userEvent.selectOptions(category, "c1");
+    await userEvent.type(field(dialog, "Account"), "cas");
+    await userEvent.click(screen.getByRole("option", { name: "Cash" }));
+    expect(router.navigate).toHaveBeenCalledWith(sent({ accountId: "a2" }));
+  });
+
+  it("clears a filter with the All choice", async () => {
+    const dialog = await open({ accountId: "a2", tagId: "g1" });
+    await userEvent.click(field(dialog, "Account"));
+    await userEvent.click(screen.getByRole("option", { name: "All accounts" }));
+    expect(router.navigate).toHaveBeenCalledWith(sent({ tagId: "g1" }));
+  });
+
+  it("applies a category with its subcategories, and says so only for one that has them", async () => {
+    const dialog = await open();
+    await userEvent.click(field(dialog, "Category"));
+    await userEvent.click(screen.getByRole("option", { name: "Food" }));
+    expect(router.navigate).toHaveBeenLastCalledWith(
+      sent({ categoryId: "c1", includeSubcategories: true }),
+    );
+  });
+
+  it("says a chosen category includes its subcategories, only for one that has them", async () => {
+    const dialog = await open({ categoryId: "c1", includeSubcategories: true });
     expect(
       within(dialog).getByText("Includes its subcategories."),
     ).toBeInTheDocument();
-    await userEvent.selectOptions(category, "c3");
-    expect(
-      within(dialog).queryByText("Includes its subcategories."),
-    ).toBeNull();
+    cleanup();
+    const other = await open({ categoryId: "c3", includeSubcategories: true });
+    expect(within(other).queryByText("Includes its subcategories.")).toBeNull();
   });
 
-  it("refuses an end date before the start: it says so and cannot apply", async () => {
+  it("applies a status at once", async () => {
+    const dialog = await open({ text: "x" });
+    await userEvent.click(
+      within(dialog).getByRole("radio", { name: "Pending" }),
+    );
+    expect(router.navigate).toHaveBeenCalledWith(
+      sent({ text: "x", status: "pending" }),
+    );
+    router.navigate.mockClear();
+    await userEvent.click(within(dialog).getByRole("radio", { name: "All" }));
+    expect(router.navigate).toHaveBeenCalledWith(sent({ text: "x" }));
+  });
+
+  it("applies a date once it is a whole date, and accepts the same day for both ends", async () => {
     const dialog = await open();
     fireEvent.change(
       within(dialog).getByLabelText("From date", { exact: true }),
       { target: { value: "2026-10-10" } },
     );
+    expect(router.navigate).toHaveBeenLastCalledWith(
+      sent({ from: "2026-10-10" }),
+    );
+    router.search = { from: "2026-10-10" };
+    fireEvent.change(
+      within(dialog).getByLabelText("To date", { exact: true }),
+      { target: { value: "2026-10-10" } },
+    );
+    expect(router.navigate).toHaveBeenLastCalledWith(
+      sent({ from: "2026-10-10", to: "2026-10-10" }),
+    );
+    expect(within(dialog).queryByRole("alert")).toBeNull();
+  });
+
+  it("refuses an end date before the start: it says so and applies nothing", async () => {
+    const dialog = await open({ from: "2026-10-10" });
     fireEvent.change(
       within(dialog).getByLabelText("To date", { exact: true }),
       { target: { value: "2026-10-01" } },
@@ -832,49 +894,54 @@ describe("the Filters sheet", () => {
     expect(within(dialog).getByRole("alert")).toHaveTextContent(
       "Choose an end date on or after the start date.",
     );
-    expect(
-      within(dialog).getByRole("button", { name: "Apply" }),
-    ).toBeDisabled();
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Apply" }),
-    );
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it("accepts the same day as both ends of a range", async () => {
-    const dialog = await open();
-    fireEvent.change(
-      within(dialog).getByLabelText("From date", { exact: true }),
-      { target: { value: "2026-10-10" } },
-    );
-    fireEvent.change(
-      within(dialog).getByLabelText("To date", { exact: true }),
-      { target: { value: "2026-10-10" } },
-    );
-    expect(within(dialog).queryByRole("alert")).toBeNull();
-    expect(within(dialog).getByRole("button", { name: "Apply" })).toBeEnabled();
-  });
-
-  it("sends no status once All is chosen again", async () => {
-    const dialog = await open({ status: "pending" });
+  it("follows the address when the filters change behind it", async () => {
+    pages([entry()]);
+    const { rerender } = mount({ from: "2026-10-01", accountId: "a2" });
+    await screen.findByRole("button", { name: /Open transaction/ });
+    await userEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Filters" });
     expect(
-      within(dialog).getByRole("radio", { name: "Pending" }),
-    ).toBeChecked();
-    await userEvent.click(within(dialog).getByRole("radio", { name: "All" }));
-    await userEvent.click(
-      within(dialog).getByRole("button", { name: "Apply" }),
+      within(dialog).getByLabelText("From date", { exact: true }),
+    ).toHaveValue("2026-10-01");
+    rerender({});
+    await waitFor(() =>
+      expect(
+        within(dialog).getByLabelText("From date", { exact: true }),
+      ).toHaveValue(""),
     );
-    expect(router.navigate).toHaveBeenCalledWith({
-      to: "/transactions",
-      search: {},
-    });
+    expect(field(dialog, "Account")).toHaveValue("");
   });
 
-  it("closes on Escape without applying", async () => {
-    await open();
+  it("Reset all clears the sheet's filters, keeps the search and the kind, and empties the dates", async () => {
+    const dialog = await open({
+      text: "x",
+      kind: "income",
+      accountId: "a2",
+      from: "2026-10-01",
+      status: "pending",
+    });
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Reset all" }),
+    );
+    expect(router.navigate).toHaveBeenCalledWith(
+      sent({ text: "x", kind: "income" }),
+    );
+    expect(
+      within(dialog).getByLabelText("From date", { exact: true }),
+    ).toHaveValue("");
+  });
+
+  it("closes the open list on Escape first, then the sheet", async () => {
+    const dialog = await open();
+    await userEvent.click(field(dialog, "Account"));
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("listbox")).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Filters" })).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it("gives focus back to the Filters button", async () => {
@@ -884,5 +951,137 @@ describe("the Filters sheet", () => {
     await waitFor(() =>
       expect(screen.getByRole("button", { name: /^Filters/ })).toHaveFocus(),
     );
+  });
+
+  describe("creating a category or a tag that does not exist", () => {
+    const saved = (id: string) => async () => ({ id }) as never;
+
+    it("offers to create an expense or an income category, then applies the new one", async () => {
+      vi.mocked(prepareCategorySave).mockReturnValue(saved("new-cat"));
+      const dialog = await open({ text: "x" });
+      await userEvent.type(field(dialog, "Category"), "Pets");
+      expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([
+        "Create expense category “Pets”",
+        "Create income category “Pets”",
+      ]);
+      await userEvent.click(
+        screen.getByRole("option", { name: "Create income category “Pets”" }),
+      );
+      expect(prepareCategorySave).toHaveBeenCalledWith("l1", undefined, {
+        name: "Pets",
+        kind: "income",
+        parentId: null,
+        icon: null,
+        color: null,
+      });
+      await waitFor(() =>
+        expect(router.navigate).toHaveBeenCalledWith(
+          sent({
+            text: "x",
+            categoryId: "new-cat",
+            includeSubcategories: true,
+          }),
+        ),
+      );
+    });
+
+    it("offers to create a tag, then applies it", async () => {
+      vi.mocked(prepareTagCreate).mockReturnValue(saved("new-tag"));
+      const dialog = await open();
+      await userEvent.type(field(dialog, "Tag"), "Trip");
+      await userEvent.click(
+        screen.getByRole("option", { name: "Create tag “Trip”" }),
+      );
+      expect(prepareTagCreate).toHaveBeenCalledWith("l1", "Trip");
+      await waitFor(() =>
+        expect(router.navigate).toHaveBeenCalledWith(
+          sent({ tagId: "new-tag" }),
+        ),
+      );
+    });
+
+    it("refreshes the lists after it creates, so the new name is there", async () => {
+      vi.mocked(prepareTagCreate).mockReturnValue(saved("new-tag"));
+      const dialog = await open();
+      const invalidate = vi.spyOn(client, "invalidateQueries");
+      await userEvent.type(field(dialog, "Tag"), "Trip");
+      await userEvent.click(
+        screen.getByRole("option", { name: "Create tag “Trip”" }),
+      );
+      await waitFor(() =>
+        expect(invalidate).toHaveBeenCalledWith({ queryKey: ["tags", "l1"] }),
+      );
+    });
+
+    it("refreshes the category list after it creates one", async () => {
+      vi.mocked(prepareCategorySave).mockReturnValue(saved("new-cat"));
+      const dialog = await open();
+      const invalidate = vi.spyOn(client, "invalidateQueries");
+      await userEvent.type(field(dialog, "Category"), "Pets");
+      await userEvent.click(
+        screen.getByRole("option", { name: "Create expense category “Pets”" }),
+      );
+      await waitFor(() =>
+        expect(invalidate).toHaveBeenCalledWith({
+          queryKey: ["categories", "l1"],
+        }),
+      );
+    });
+
+    it("says a tag with that name already exists when the server says so", async () => {
+      vi.mocked(prepareTagCreate).mockReturnValue(async () => {
+        throw new ApiError(409, "conflict");
+      });
+      const dialog = await open();
+      await userEvent.type(field(dialog, "Tag"), "Trip");
+      await userEvent.click(
+        screen.getByRole("option", { name: "Create tag “Trip”" }),
+      );
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        "A tag with this name already exists. Pick it from the list.",
+      );
+    });
+
+    it("offers nothing to create for a name that exists, and never for an account", async () => {
+      const dialog = await open();
+      await userEvent.type(field(dialog, "Tag"), "holiday");
+      expect(screen.queryByRole("option", { name: /Create/ })).toBeNull();
+      await userEvent.keyboard("{Escape}");
+      await userEvent.type(field(dialog, "Account"), "Brand new");
+      expect(screen.queryByRole("option", { name: /Create/ })).toBeNull();
+      expect(screen.getByText("No matching accounts.")).toBeInTheDocument();
+    });
+
+    it("offers nothing to create to a viewer", async () => {
+      vi.mocked(getLedgers).mockResolvedValue(ledgerList("viewer") as never);
+      const dialog = await open();
+      await userEvent.type(field(dialog, "Category"), "Pets");
+      expect(screen.queryByRole("option", { name: /Create/ })).toBeNull();
+    });
+
+    it("says why a create failed and applies nothing", async () => {
+      vi.mocked(prepareTagCreate).mockReturnValue(async () => {
+        throw new Error("Boom");
+      });
+      const dialog = await open();
+      await userEvent.type(field(dialog, "Tag"), "Trip");
+      await userEvent.click(
+        screen.getByRole("option", { name: "Create tag “Trip”" }),
+      );
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        /Couldn't add the tag|Boom/,
+      );
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it("refuses a tag name that is too long without asking the server", async () => {
+      const dialog = await open();
+      await userEvent.type(field(dialog, "Tag"), "x".repeat(41));
+      await userEvent.click(
+        screen.getByRole("option", { name: /^Create tag/ }),
+      );
+      expect(await within(dialog).findByRole("alert")).toBeInTheDocument();
+      expect(prepareTagCreate).not.toHaveBeenCalled();
+    });
   });
 });

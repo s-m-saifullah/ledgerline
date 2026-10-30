@@ -1,22 +1,24 @@
-import type { Category } from "@ledgerline/shared";
 import { SegmentedControl } from "@ledgerline/ui";
 import { useState } from "react";
+import {
+  type ComboCreate,
+  ComboField,
+  type ComboOption,
+} from "../../components/combo-field";
 import { DateTimeInput } from "../../components/date-time-input";
-import { NativeSelect } from "../../components/native-select";
 import { Overlay } from "../../components/overlay";
 import type { TransactionFilters } from "./filters";
 import { type SheetFilters, sheetFilters } from "./list-model";
 
-type Option = { id: string; name: string };
 export const rangeMessage = "Choose an end date on or after the start date.";
-export const isBackwards = (draft: SheetFilters) =>
-  !!draft.from && !!draft.to && draft.from > draft.to;
+export const isBackwards = (filters: SheetFilters) =>
+  !!filters.from && !!filters.to && filters.from > filters.to;
 
 type StatusChoice = "all" | "cleared" | "pending";
 
 /**
- * The filters that do not apply as you type: account, category, tag, dates and status. The draft is the sheet's
- * own until Apply; Cancel, Escape and a click outside drop it.
+ * The filters that do not apply as you type in the search: account, category, tag, dates and status. Each
+ * change applies at once (there is no Apply button), so the list behind the sheet follows; Done closes it.
  */
 export function FiltersSheet({
   open,
@@ -24,41 +26,62 @@ export function FiltersSheet({
   accounts,
   categories,
   tags,
-  categoryName,
-  onApply,
+  categoryHasChildren,
+  createCategories,
+  createTags,
+  onChange,
   onDismiss,
 }: {
   open: boolean;
   applied: TransactionFilters;
-  accounts: Option[];
-  categories: Category[];
-  tags: Option[];
-  categoryName: (id: string) => string;
-  onApply: (draft: SheetFilters) => void;
+  accounts: ComboOption[];
+  categories: ComboOption[];
+  tags: ComboOption[];
+  categoryHasChildren: (id: string) => boolean;
+  /** Ways to make a category or a tag from what was typed; empty for someone who cannot add them. */
+  createCategories: ComboCreate[];
+  createTags: ComboCreate[];
+  onChange: (next: SheetFilters) => void;
   onDismiss: () => void;
 }) {
-  const [draft, setDraft] = useState<SheetFilters>(() => sheetFilters(applied));
-  const [wasOpen, setWasOpen] = useState(open);
-  // Each opening starts from what is applied, not from a draft that was dropped.
-  if (open !== wasOpen) {
-    setWasOpen(open);
-    if (open) setDraft(sheetFilters(applied));
+  const current = sheetFilters(applied);
+  // A date is typed or picked in its own box; it applies once it is a whole date (or emptied) and the range
+  // is not backwards. The boxes follow the address when something else changes the filters.
+  const [dates, setDates] = useState({
+    from: current.from ?? "",
+    to: current.to ?? "",
+  });
+  const [seen, setSeen] = useState({
+    from: current.from ?? "",
+    to: current.to ?? "",
+  });
+  if (seen.from !== (current.from ?? "") || seen.to !== (current.to ?? "")) {
+    const next = { from: current.from ?? "", to: current.to ?? "" };
+    setSeen(next);
+    setDates(next);
   }
-  const set = (key: keyof SheetFilters, value: string) =>
-    setDraft((previous) => {
-      const next = { ...previous };
-      if (value) Object.assign(next, { [key]: value });
-      else delete next[key];
-      return next;
-    });
-  const backwards = isBackwards(draft);
-  const hasSubcategories = categories.some(
-    (item) => item.parentId === draft.categoryId,
-  );
+  const change = (key: keyof SheetFilters, value: string) => {
+    const next = { ...current };
+    if (value) Object.assign(next, { [key]: value });
+    else delete next[key];
+    onChange(next);
+  };
+  const setDate = (key: "from" | "to", value: string) => {
+    const nextDates = { ...dates, [key]: value };
+    setDates(nextDates);
+    const next: SheetFilters = { ...current };
+    if (nextDates.from) next.from = nextDates.from;
+    else delete next.from;
+    if (nextDates.to) next.to = nextDates.to;
+    else delete next.to;
+    if (!isBackwards(next)) onChange(next);
+  };
+  const backwards = !!dates.from && !!dates.to && dates.from > dates.to;
   return (
     <Overlay
       open={open}
       title="Filters"
+      cancelLabel="Done"
       busy={false}
       onDismiss={onDismiss}
       returnFocusId="open-filters"
@@ -67,71 +90,47 @@ export function FiltersSheet({
         <button
           type="button"
           className="ui-btn ui-btn-text"
-          onClick={() => setDraft({})}
+          onClick={() => {
+            setDates({ from: "", to: "" });
+            onChange({});
+          }}
         >
           Reset all
         </button>
       }
-      footer={
-        <button
-          type="button"
-          className="ui-btn ui-btn-primary"
-          disabled={backwards}
-          onClick={() => onApply(draft)}
-        >
-          Apply
-        </button>
-      }
     >
       <div className="tx-sheet">
+        <ComboField
+          label="Account"
+          allLabel="All accounts"
+          emptyText="No matching accounts."
+          options={accounts}
+          value={current.accountId ?? null}
+          onChange={(id) => change("accountId", id ?? "")}
+        />
         <div>
-          <label htmlFor="filter-account">Account</label>
-          <NativeSelect
-            id="filter-account"
-            value={draft.accountId ?? ""}
-            onChange={(event) => set("accountId", event.target.value)}
-          >
-            <option value="">All accounts</option>
-            {accounts.map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-        <div>
-          <label htmlFor="filter-category">Category</label>
-          <NativeSelect
-            id="filter-category"
-            value={draft.categoryId ?? ""}
-            onChange={(event) => set("categoryId", event.target.value)}
-          >
-            <option value="">All categories</option>
-            {categories.map((row) => (
-              <option key={row.id} value={row.id}>
-                {categoryName(row.id)}
-              </option>
-            ))}
-          </NativeSelect>
-          {hasSubcategories && (
+          <ComboField
+            label="Category"
+            allLabel="All categories"
+            emptyText="No matching categories."
+            options={categories}
+            value={current.categoryId ?? null}
+            onChange={(id) => change("categoryId", id ?? "")}
+            creates={createCategories}
+          />
+          {!!current.categoryId && categoryHasChildren(current.categoryId) && (
             <p className="muted">Includes its subcategories.</p>
           )}
         </div>
-        <div>
-          <label htmlFor="filter-tag">Tag</label>
-          <NativeSelect
-            id="filter-tag"
-            value={draft.tagId ?? ""}
-            onChange={(event) => set("tagId", event.target.value)}
-          >
-            <option value="">All tags</option>
-            {tags.map((row) => (
-              <option key={row.id} value={row.id}>
-                {row.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
+        <ComboField
+          label="Tag"
+          allLabel="All tags"
+          emptyText="No matching tags."
+          options={tags}
+          value={current.tagId ?? null}
+          onChange={(id) => change("tagId", id ?? "")}
+          creates={createTags}
+        />
         <div className="tx-sheet-dates">
           <div>
             <label htmlFor="filter-from">From date</label>
@@ -141,8 +140,8 @@ export function FiltersSheet({
               type="date"
               min="0001-01-01"
               max="9999-12-31"
-              value={draft.from ?? ""}
-              onChange={(event) => set("from", event.target.value)}
+              value={dates.from}
+              onChange={(event) => setDate("from", event.target.value)}
             />
           </div>
           <div>
@@ -153,8 +152,8 @@ export function FiltersSheet({
               type="date"
               min="0001-01-01"
               max="9999-12-31"
-              value={draft.to ?? ""}
-              onChange={(event) => set("to", event.target.value)}
+              value={dates.to}
+              onChange={(event) => setDate("to", event.target.value)}
             />
           </div>
         </div>
@@ -170,8 +169,8 @@ export function FiltersSheet({
             { value: "cleared", label: "Cleared" },
             { value: "pending", label: "Pending" },
           ]}
-          value={draft.status ?? "all"}
-          onChange={(value) => set("status", value === "all" ? "" : value)}
+          value={current.status ?? "all"}
+          onChange={(value) => change("status", value === "all" ? "" : value)}
         />
       </div>
     </Overlay>
