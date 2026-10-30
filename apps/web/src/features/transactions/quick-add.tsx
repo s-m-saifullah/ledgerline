@@ -2,11 +2,12 @@ import type { Category, Transaction } from "@ledgerline/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { Toast } from "../../components/toast";
 import { ApiError } from "../../lib/api";
 import { getCategories } from "../categories/api";
 import { getActiveAccounts, prepareTransactionUndo } from "./api";
+import { type EntryType, TypePill } from "./entry-sheet";
 import { TransferForm } from "./transfer-form";
 import { useTransactionWorkspace } from "./workspace";
 
@@ -29,7 +30,13 @@ export function QuickAdd({
   onDismiss: () => void;
   returnFocusId: string;
 }) {
-  const [mode, setMode] = useState<"entry" | "transfer">("entry");
+  // What the pill shows. Moving to Transfer and back keeps the kind of entry that was chosen.
+  const [type, setType] = useState<EntryType>("expense");
+  const [kind, setKind] = useState<"expense" | "income">("expense");
+  const changeType = (next: EntryType) => {
+    setType(next);
+    if (next !== "transfer") setKind(next);
+  };
   const workspace = useTransactionWorkspace();
   const externalBlocked = workspace?.editorLocked ?? false;
   const setQuickAddLocked = workspace?.setQuickAddLocked;
@@ -112,35 +119,9 @@ export function QuickAdd({
     await Promise.all([accounts.refetch(), categories.refetch()]);
   };
   const hasData = accounts.data && categories.data;
-  const modeControl = (
-    <fieldset
-      className="balance-direction"
-      disabled={formLocked || undoBusy || undoUncertain || externalBlocked}
-    >
-      <legend>Add mode</legend>
-      <label>
-        <input
-          type="radio"
-          name="add-mode"
-          checked={mode === "entry"}
-          onChange={() => setMode("entry")}
-        />
-        Income / expense
-      </label>
-      <label>
-        <input
-          type="radio"
-          name="add-mode"
-          checked={mode === "transfer"}
-          onChange={() => setMode("transfer")}
-        />
-        Transfer
-      </label>
-    </fieldset>
-  );
   return (
     <>
-      {hasData && mode === "transfer" ? (
+      {hasData && type === "transfer" ? (
         <TransferForm
           actorId={actorId}
           ledgerId={ledgerId}
@@ -152,7 +133,16 @@ export function QuickAdd({
           onDismiss={onDismiss}
           onLock={setFormLocked}
           returnFocusId={returnFocusId}
-          modeControl={modeControl}
+          typeControl={
+            <TypePill
+              value="transfer"
+              withTransfer
+              disabled={
+                formLocked || undoBusy || undoUncertain || externalBlocked
+              }
+              onChange={changeType}
+            />
+          }
           onSaved={(transaction, info) => {
             setSaved(transaction);
             setSavedBonus(!!info?.bonus);
@@ -166,7 +156,8 @@ export function QuickAdd({
         />
       ) : hasData ? (
         <QuickAddForm
-          modeControl={modeControl}
+          startKind={kind}
+          onTypeChange={changeType}
           returnFocusId={returnFocusId}
           actorId={actorId}
           ledgerId={ledgerId}
@@ -203,7 +194,7 @@ export function QuickAdd({
           }}
         />
       ) : (
-        <EditorDialog
+        <Overlay
           open={open}
           title="Add transaction"
           description="Record money coming in or going out."
@@ -211,25 +202,22 @@ export function QuickAdd({
           onDismiss={onDismiss}
           returnFocusId={returnFocusId}
           fallbackFocusId="main-content"
-          closeLabel="Close transaction dialog"
         >
           {accounts.isError || categories.isError ? (
-            <div className="account-error">
+            <div className="entry-setup">
               <p role="alert">Couldn't load accounts and categories.</p>
               <button
                 type="button"
-                className="secondary-button"
+                className="ui-btn ui-btn-secondary"
                 onClick={() => void refreshed()}
               >
                 Try again
               </button>
             </div>
           ) : (
-            <p role="status" className="account-error">
-              Opening transaction entry…
-            </p>
+            <p role="status">Opening transaction entry…</p>
           )}
-        </EditorDialog>
+        </Overlay>
       )}
       {saved && (
         <Toast

@@ -5,16 +5,16 @@ import {
   createCategorySchema,
   type Transaction,
 } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { Link } from "@tanstack/react-router";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import { PrivacyContext } from "../../lib/preferences";
 import { prepareCategorySave } from "../categories/api";
 import { categoryOptions } from "../categories/tree";
 import { prepareTransactionCreate } from "./api";
+import { changeKind, EntryFields } from "./entry-fields";
+import { type EntryType, TypePill } from "./entry-sheet";
 import {
   rememberAccount,
   type TransactionFormValues,
@@ -22,14 +22,7 @@ import {
   transactionDefaults,
   transactionFormSchema,
 } from "./form";
-import type { QuickAddContext } from "./quick-add/context";
-import {
-  renderAccountAndDate,
-  renderCategoryFields,
-  renderKindAndAmount,
-  renderMoreDetails,
-  renderRetryAndErrors,
-} from "./quick-add/fields";
+import { NewCategory, SaveErrors } from "./quick-add/fields";
 
 const uncertainFailure = (failure: unknown) =>
   !(failure instanceof ApiError) || failure.status >= 500;
@@ -47,9 +40,12 @@ export function QuickAddForm({
   onRefresh,
   onLock,
   returnFocusId = "add-transaction",
-  modeControl,
+  startKind = "expense",
+  onTypeChange,
 }: {
-  modeControl?: React.ReactNode;
+  /** The kind the form opens on: Add remembers it when the pill moves to Transfer and back. */
+  startKind?: "expense" | "income";
+  onTypeChange?: ((type: EntryType) => void) | undefined;
   returnFocusId?: string | undefined;
   actorId: string;
   ledgerId: string;
@@ -64,7 +60,6 @@ export function QuickAddForm({
   onRefresh: () => Promise<void>;
   onLock?: ((locked: boolean) => void) | undefined;
 }) {
-  const privateMode = useContext(PrivacyContext);
   const [error, setError] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -78,20 +73,15 @@ export function QuickAddForm({
   const [categoryUncertain, setCategoryUncertain] = useState(false);
   const categoryAttempt = useRef<(() => Promise<Category>) | null>(null);
   const categoryInFlight = useRef(false);
+  const defaults = () => ({
+    ...transactionDefaults(actorId, ledgerId, accounts),
+    kind: startKind,
+  });
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
-    defaultValues: transactionDefaults(actorId, ledgerId, accounts),
+    defaultValues: defaults(),
   });
-  const {
-    register,
-    control,
-    watch,
-    reset,
-    setValue,
-    setError: fieldError,
-    handleSubmit,
-    formState: { errors },
-  } = form;
+  const { watch, reset, setValue, setError: fieldError, handleSubmit } = form;
   const kind = watch("kind");
   const busy = saving || categoryBusy || refreshing;
   useEffect(() => {
@@ -117,13 +107,16 @@ export function QuickAddForm({
       !inFlight.current &&
       !categoryInFlight.current
     ) {
-      reset(transactionDefaults(actorId, ledgerId, accounts));
+      reset({
+        ...transactionDefaults(actorId, ledgerId, accounts),
+        kind: startKind,
+      });
       setError("");
       setNewCategory(false);
       setCategoryName("");
       setCategoryError("");
     }
-  }, [open, reset, actorId, ledgerId, accounts]);
+  }, [open, reset, actorId, ledgerId, accounts, startKind]);
   const executeSave = async (values?: TransactionFormValues) => {
     if (inFlight.current || categoryAttempt.current || blocked || !writable)
       return;
@@ -155,7 +148,10 @@ export function QuickAddForm({
       attempt.current = null;
       setUncertain(false);
       rememberAccount(actorId, ledgerId, transaction.accountId);
-      reset(transactionDefaults(actorId, ledgerId, accounts));
+      reset({
+        ...transactionDefaults(actorId, ledgerId, accounts),
+        kind: startKind,
+      });
       onSaved(transaction);
     } catch (failure) {
       if (uncertainFailure(failure)) {
@@ -229,79 +225,74 @@ export function QuickAddForm({
       setCategoryBusy(false);
     }
   };
-  const ctx: QuickAddContext = {
-    form,
-    register,
-    control,
-    watch,
-    setValue,
-    errors,
-    ledgerId,
-    privateMode,
-    frozen,
-    kind,
-    accounts,
-    activeAccounts,
-    categories,
-    newCategory,
-    setNewCategory,
-    categoryName,
-    setCategoryName,
-    createCategory,
-    categoryError,
-    categoryUncertain,
-    error,
-    uncertain,
-    busy,
-    blocked,
-    writable,
-    setRefreshing,
-    onRefresh,
-  };
+  const setup =
+    activeAccounts.length === 0 && !attempt.current && !categoryAttempt.current;
   return (
-    <EditorDialog
+    <Overlay
       open={open}
       title="Add transaction"
       description="Amount, category, save."
       busy={busy}
       onDismiss={onDismiss}
-      contentClassName="transaction-dialog"
+      cancelLabel={uncertain || categoryUncertain ? "Close for now" : "Cancel"}
       initialFocusId={
         uncertain
           ? "retry-transaction-save"
           : categoryUncertain
             ? "retry-transaction-category"
             : blocked
-              ? "transaction-dialog-cancel"
+              ? undefined
               : "transaction-amount"
       }
       returnFocusId={returnFocusId}
       fallbackFocusId="main-content"
-      closeLabel="Close transaction dialog"
+      footer={
+        setup ? undefined : (
+          <button
+            id="retry-transaction-save"
+            type="submit"
+            form="entry-form"
+            className="ui-btn ui-btn-primary"
+            disabled={busy || blocked || categoryUncertain || !writable}
+          >
+            {saving ? "Saving…" : uncertain ? "Retry save" : "Save transaction"}
+          </button>
+        )
+      }
     >
-      {modeControl}
+      <TypePill
+        value={kind}
+        withTransfer
+        disabled={frozen}
+        onChange={(type) => {
+          onTypeChange?.(type);
+          if (type !== "transfer") changeKind(form, type);
+        }}
+      />
       {!writable && (
-        <p role="status" className="account-error">
-          You have read-only access to this ledger.
-        </p>
+        <p role="status">You have read-only access to this ledger.</p>
       )}
       {blocked && (
-        <p role="alert" className="account-error">
+        <p role="alert">
           Confirm the earlier transaction action before adding another entry.
         </p>
       )}
-      {activeAccounts.length === 0 &&
-      !attempt.current &&
-      !categoryAttempt.current ? (
-        <div className="account-error transaction-setup">
+      {setup ? (
+        <div className="entry-setup">
           <p>Create an active account before recording entries.</p>
-          <Link to="/accounts" className="button" onClick={onDismiss}>
+          <Link
+            to="/accounts"
+            className="ui-btn ui-btn-secondary"
+            onClick={onDismiss}
+          >
             Set up accounts
           </Link>
         </div>
       ) : (
         <form
+          id="entry-form"
           noValidate
+          className="entry-form"
           onSubmit={(event) => {
             if (attempt.current) {
               event.preventDefault();
@@ -309,40 +300,46 @@ export function QuickAddForm({
             } else void handleSubmit((values) => executeSave(values))(event);
           }}
         >
-          <fieldset
-            disabled={frozen}
-            className="account-fields transaction-fields"
-          >
-            {renderKindAndAmount(ctx)}
-            {renderCategoryFields(ctx)}
-            {renderAccountAndDate(ctx)}
-            {renderMoreDetails(ctx)}
+          <fieldset disabled={frozen} className="entry-fields">
+            <EntryFields
+              form={form}
+              ledgerId={ledgerId}
+              categories={categories}
+              accounts={activeAccounts}
+              idPrefix="transaction"
+              frozen={frozen}
+              accountError="Choose an active account."
+              afterCategory={
+                <NewCategory
+                  open={newCategory}
+                  onToggle={() => setNewCategory((value) => !value)}
+                  name={categoryName}
+                  onName={setCategoryName}
+                  onAdd={() => void createCategory()}
+                />
+              }
+            />
           </fieldset>
-          {renderRetryAndErrors(ctx)}
-          <div className="account-dialog-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={busy}
-              id="transaction-dialog-cancel"
-              onClick={onDismiss}
-            >
-              {uncertain || categoryUncertain ? "Close for now" : "Cancel"}
-            </button>
-            <Button
-              id="retry-transaction-save"
-              type="submit"
-              disabled={busy || blocked || categoryUncertain || !writable}
-            >
-              {saving
-                ? "Saving…"
-                : uncertain
-                  ? "Retry save"
-                  : "Save transaction"}
-            </Button>
-          </div>
+          <SaveErrors
+            categoryError={categoryError}
+            categoryUncertain={categoryUncertain}
+            busy={busy}
+            blocked={blocked}
+            writable={writable}
+            onRetryCategory={() => void createCategory()}
+            error={error}
+            uncertain={uncertain}
+            onRefresh={async () => {
+              setRefreshing(true);
+              try {
+                await onRefresh();
+              } finally {
+                setRefreshing(false);
+              }
+            }}
+          />
         </form>
       )}
-    </EditorDialog>
+    </Overlay>
   );
 }

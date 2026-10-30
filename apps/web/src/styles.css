@@ -1004,9 +1004,6 @@ select {
 }
 
 /* Everyday transaction entry */
-.transaction-setup .button {
-  margin-top: 16px;
-}
 .transaction-fields .balance-direction {
   margin-top: 0;
 }
@@ -1024,14 +1021,6 @@ select {
   gap: 8px;
   justify-self: start;
   min-height: 44px;
-}
-.inline-category {
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  background: var(--accent-soft);
-  border-radius: 8px;
-  min-width: 0;
 }
 .transaction-details {
   margin-top: 8px;
@@ -1212,36 +1201,10 @@ select {
     font-size: 16px;
   }
 }
-.transaction-dialog {
-  padding: 24px;
-}
-.transaction-dialog .transaction-fields {
-  margin-top: 16px;
-  gap: 8px;
-}
-.transaction-dialog .account-dialog-actions {
-  position: sticky;
-  bottom: -24px;
-  margin-top: 16px;
-  padding: 12px 0 0;
-  background: var(--surface);
-}
-@media (max-width: 700px) {
-  .transaction-dialog {
-    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
-  }
-  .transaction-dialog .account-dialog-actions {
-    bottom: calc(-24px - env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
 @media (max-width: 380px) {
   .transaction-context {
     grid-template-columns: 1fr;
   }
-}
-.transaction-editor-actions {
-  flex-wrap: wrap;
 }
 
 .split-toggle {

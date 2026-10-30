@@ -50,10 +50,7 @@ export function SplitFields({
             entry’s direction.
           </p>
           {fields.map((field, index) => (
-            <fieldset
-              key={field.fieldKey}
-              className="account-fields split-line"
-            >
+            <fieldset key={field.fieldKey} className="split-line">
               <legend>Split {index + 1}</legend>
               <CategoryPicker
                 label={`Split ${index + 1} category`}
