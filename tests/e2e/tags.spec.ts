@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
-import { applyFilters, openFilters, rows } from "./filters";
+import { chooseFilter, closeFilters, openFilters, rows } from "./filters";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -96,10 +96,8 @@ test("tags an entry in Add, finds it by tag, edits the tags and keeps the balanc
   await page.goto("/transactions");
   await expect(page.locator(".tag-chip", { hasText: "Holiday" })).toBeVisible();
   const filters = await openFilters(page);
-  await filters
-    .getByLabel("Tag", { exact: true })
-    .selectOption({ label: "Holiday" });
-  await applyFilters(filters);
+  await chooseFilter(filters, "Tag", "Holiday");
+  await closeFilters(filters);
   await expect(page).toHaveURL(/tagId=/);
   await expect(rows(page)).toHaveCount(1);
 

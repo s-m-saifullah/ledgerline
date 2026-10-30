@@ -11,9 +11,19 @@ export async function openFilters(page: Page): Promise<Locator> {
   return dialog;
 }
 
-/** Press Apply and wait for the sheet to close. */
-export async function applyFilters(dialog: Locator) {
-  await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+/** Pick a name in one of the sheet's combo boxes (Account, Category or Tag): open it, then click the option. */
+export async function chooseFilter(
+  dialog: Locator,
+  field: "Account" | "Category" | "Tag",
+  name: string,
+) {
+  await dialog.getByRole("combobox", { name: field, exact: true }).click();
+  await dialog.getByRole("option", { name, exact: true }).click();
+}
+
+/** Close the sheet with Done; what was chosen has already been applied. */
+export async function closeFilters(dialog: Locator) {
+  await dialog.getByRole("button", { name: "Done", exact: true }).click();
   await expect(dialog).toBeHidden();
 }
 

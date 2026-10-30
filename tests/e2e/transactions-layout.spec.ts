@@ -300,20 +300,109 @@ test("the search, the Filters button and the chips are 44 px targets and keep on
   }
 });
 
-test("applies a filter from the sheet and shows it on the button", async ({
+test("applies a filter from the sheet at once, found by typing, and shows it on the button", async ({
   page,
 }) => {
   await openList(page, 1280);
   const dialog = await openFilters(page);
-  await dialog.getByLabel("Account", { exact: true }).selectOption(cash);
-  await dialog.getByRole("button", { name: "Apply", exact: true }).click();
+  await dialog
+    .getByRole("combobox", { name: "Account", exact: true })
+    .fill("cas");
+  await dialog.getByRole("option", { name: "Cash", exact: true }).click();
+  // No Apply button: the list behind the sheet follows, and the button counts it.
+  await expect(dialog.getByRole("button", { name: "Apply" })).toHaveCount(0);
   await expect(page).toHaveURL(new RegExp(`accountId=${cash}`));
-  await expect(page.getByRole("button", { name: /^Filters.*1/ })).toBeVisible();
-  // Only the cash leg is loaded now, so the transfer shows as the one leg.
+  // The sheet hides the page from the accessibility tree, so the page is read by its own selectors.
+  await expect(page.locator("#open-filters")).toContainText("1");
   await expect(page.locator(".tx-row")).toHaveCount(1);
   await expect(
-    page.getByRole("button", { name: "Open transaction: Transfer to Cash" }),
+    page.locator(".tx-row", { hasText: "Transfer to Cash" }),
   ).toBeVisible();
+  await dialog.getByRole("button", { name: "Reset all" }).click();
+  await expect(page).not.toHaveURL(/accountId=/);
+  await expect(page.locator(".tx-row")).toHaveCount(5);
+});
+
+test("offers to create a category or a tag that does not exist, and applies the new one", async ({
+  page,
+}) => {
+  await openList(page, 1280);
+  const dialog = await openFilters(page);
+  await dialog
+    .getByRole("combobox", { name: "Tag", exact: true })
+    .fill("Road trip");
+  await dialog.getByRole("option", { name: "Create tag “Road trip”" }).click();
+  await expect(page).toHaveURL(/tagId=/);
+  await expect(
+    dialog.getByRole("combobox", { name: "Tag", exact: true }),
+  ).toHaveValue("Road trip");
+  await dialog
+    .getByRole("combobox", { name: "Category", exact: true })
+    .fill("Pets");
+  await expect(
+    dialog.getByRole("option", { name: "Create expense category “Pets”" }),
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("option", { name: "Create income category “Pets”" }),
+  ).toBeVisible();
+  await dialog
+    .getByRole("option", { name: "Create expense category “Pets”" })
+    .click();
+  await expect(page).toHaveURL(/categoryId=/);
+  await expect(page).toHaveURL(/includeSubcategories=true/);
+  await expect(
+    dialog.getByRole("combobox", { name: "Category", exact: true }),
+  ).toHaveValue("Pets");
+});
+
+test("the search says what it searches", async ({ page }) => {
+  await openList(page, 390);
+  await expect(
+    page.getByPlaceholder("Search payee, payer or note"),
+  ).toBeVisible();
+});
+
+test("nothing moves when a search applies or Clear filters appears", async ({
+  page,
+}) => {
+  await openList(page, 390);
+  // Slow the next answer, so the time between the search and its result can be looked at.
+  await page.route(
+    /\/api\/v1\/ledgers\/[^/]+\/transactions\?/,
+    async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      await route.continue();
+    },
+  );
+  const top = async (selector: string) =>
+    Math.round((await box(page, selector)).top);
+  const before = {
+    search: await top("#transaction-search"),
+    chips: await top(".tx-chips"),
+    chipsHeight: Math.round((await box(page, ".tx-chips")).height),
+    list: await top(".tx-days"),
+  };
+  const field = page.getByLabel("Search payer, payee or note");
+  await field.fill("Lunch");
+  await field.press("Enter");
+  // While the answer is on its way the old rows stay, and the page does not shift.
+  await expect(
+    page.getByRole("button", { name: "Clear filters" }),
+  ).toBeVisible();
+  await expect(page.locator(".tx-days")).toHaveAttribute("aria-busy", "true");
+  expect(await top("#transaction-search")).toBe(before.search);
+  expect(await top(".tx-chips")).toBe(before.chips);
+  expect(Math.round((await box(page, ".tx-chips")).height)).toBe(
+    before.chipsHeight,
+  );
+  expect(await top(".tx-days")).toBe(before.list);
+  await expect(page.locator(".tx-days")).toHaveAttribute("aria-busy", "false");
+  await expect(page.locator(".tx-row")).toHaveCount(1);
+  expect(await top(".tx-days")).toBe(before.list);
+  // And back again.
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.locator(".tx-row")).toHaveCount(5);
+  expect(await top(".tx-days")).toBe(before.list);
 });
 
 for (const theme of ["light", "dark"] as const)

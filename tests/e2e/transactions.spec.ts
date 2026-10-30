@@ -3,8 +3,9 @@ import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import {
-  applyFilters,
+  chooseFilter,
   chooseKind,
+  closeFilters,
   openFilters,
   rows,
   searchFor,
@@ -199,12 +200,15 @@ test("groups days, loads stable cursor pages, retains URL filters and hides amou
     rows(page).filter({ hasText: "Checking" }).filter({ hasText: "9:05 AM" }),
   ).toBeVisible();
   const filters = await openFilters(page);
-  await filters.getByLabel("Account", { exact: true }).selectOption(bankId);
-  await filters.getByLabel("Category", { exact: true }).selectOption(expenseId);
+  // Each choice applies at once; the account and the category are found by typing their names.
+  await chooseFilter(filters, "Account", "Checking");
+  await chooseFilter(filters, "Category", "Food");
   await filters.getByLabel("From date", { exact: true }).fill("2026-10-06");
   await filters.getByLabel("To date", { exact: true }).fill("2026-10-06");
   await filters.getByRole("radio", { name: "Cleared", exact: true }).click();
-  await applyFilters(filters);
+  await expect(page).toHaveURL(/status=cleared/);
+  await expect(page).toHaveURL(new RegExp(`accountId=${bankId}`));
+  await closeFilters(filters);
   await chooseKind(page, "Expenses");
   await search(page, "Older");
   await expect(rows(page)).toHaveCount(1);
