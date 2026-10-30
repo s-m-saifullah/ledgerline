@@ -1,6 +1,7 @@
 import { useContext } from "react";
 import { formatMoney } from "../lib/money";
 import { PrivacyContext } from "../lib/preferences";
+import "./amount-text.css";
 
 /**
  * Privacy mode removes the digits from the page, not just from view. `plus` puts a plus sign before an

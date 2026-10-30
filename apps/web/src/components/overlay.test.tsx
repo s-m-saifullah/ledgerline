@@ -40,6 +40,16 @@ describe("Overlay as a sheet", () => {
     expect(save.closest(".ui-sheet-body")).toBe(null);
   });
 
+  it("adds no page landmark: a sheet's head and foot are not a second banner and footer", () => {
+    render(
+      <Overlay {...base} footer={<button type="button">Save</button>}>
+        <p>Name field</p>
+      </Overlay>,
+    );
+    const dialog = screen.getByRole("dialog", { name: "Add account" });
+    expect(dialog.querySelector("header, footer")).toBeNull();
+  });
+
   it("draws no footer when there is no primary button", () => {
     render(<Overlay {...base}>content</Overlay>);
     expect(document.querySelector(".ui-sheet-foot")).toBeNull();

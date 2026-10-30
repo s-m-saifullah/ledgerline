@@ -1,0 +1,6 @@
+/* "About $12.00" under an amount in a row's trailing column. */
+.ui-row-end .base-note {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}

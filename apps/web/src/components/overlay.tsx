@@ -147,13 +147,13 @@ export function Overlay({
           ) : (
             <>
               <div className="ui-grab" aria-hidden="true" />
-              <header className="ui-sheet-head">
+              <div className="ui-sheet-head">
                 {cancel}
                 <Dialog.Title className="ui-sheet-title">{title}</Dialog.Title>
                 <div className="ui-sheet-action">{action}</div>
-              </header>
+              </div>
               <div className="ui-sheet-body">{children}</div>
-              {footer && <footer className="ui-sheet-foot">{footer}</footer>}
+              {footer && <div className="ui-sheet-foot">{footer}</div>}
             </>
           )}
         </Dialog.Content>
