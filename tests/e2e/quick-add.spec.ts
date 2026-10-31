@@ -562,7 +562,7 @@ test("type amounts from the cents: the setting is saved and digits fill in from 
     await page.setViewportSize({ width: 320, height: 800 });
     await page.emulateMedia({ colorScheme: theme });
     await page
-      .locator(".settings-card")
+      .locator(".ui-list")
       .filter({ has: toggle })
       .screenshot({
         path: join(tmpdir(), `ledgerline-amount-entry-320-${theme}.png`),

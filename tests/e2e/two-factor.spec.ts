@@ -87,9 +87,9 @@ test("set up two-factor, sign in with a code and a backup code, then turn it off
 
   // Set it up: password, then the first code from the "app".
   await page.goto("/settings");
-  await expect(page.getByText(/^Off\./)).toBeVisible();
+  await expect(page.locator(".ui-pill", { hasText: /^Off$/ })).toBeVisible();
   await page.getByRole("button", { name: "Set up two-factor" }).click();
-  await page.getByLabel("Your password").fill(password);
+  await page.locator("#two-factor-password").fill(password);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
     page.getByRole("img", { name: "QR code for your authenticator app" }),
@@ -112,7 +112,7 @@ test("set up two-factor, sign in with a code and a backup code, then turn it off
   await page.getByLabel("I saved these codes").check();
   await page.getByRole("button", { name: "Done" }).click();
   await expect(page.getByRole("status")).toContainText("Two-factor is on.");
-  await expect(page.getByText(/^On\./)).toBeVisible();
+  await expect(page.locator(".ui-pill", { hasText: /^On$/ })).toBeVisible();
   await expect(page.getByRole("list", { name: "Backup codes" })).toHaveCount(0);
 
   // A new sign-in now needs a code: the password alone does not open the app.
@@ -149,9 +149,8 @@ test("set up two-factor, sign in with a code and a backup code, then turn it off
 
   // Turn it off with the password; sign-in is password-only again.
   await page.goto("/settings");
-  await page.getByText("Manage").click();
   await page.getByRole("button", { name: "Turn off two-factor" }).click();
-  await page.getByLabel("Your password").fill(password);
+  await page.locator("#two-factor-password").fill(password);
   await page.getByRole("button", { name: "Turn off two-factor" }).click();
   await expect(page.getByRole("status")).toContainText("Two-factor is off.");
   await page.context().clearCookies();

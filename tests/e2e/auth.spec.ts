@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
 
 // These tests sign out and check the sign-in form, so they start signed out, not from the shared session.
@@ -73,9 +74,11 @@ test("owner signs in, navigates, changes theme, and signs out", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  // Sign out is on Settings now (a phone has no button for it in the top bar).
+  await openMorePage(page, "Settings");
   await page
+    .getByRole("main")
     .getByRole("button", { name: "Sign out", exact: true })
-    .filter({ visible: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Welcome back" }),
@@ -94,7 +97,7 @@ test("Appearance setting can return to the system theme", async ({ page }) => {
     .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.goto("/settings");
-  const theme = page.getByRole("group", { name: "Theme" });
+  const theme = page.getByRole("radiogroup", { name: "Theme" });
   await expect(theme.getByRole("radio", { name: "Dark" })).toBeChecked();
   await theme.getByRole("radio", { name: "System" }).check();
   // Following the system again: light now, dark when the device switches.
@@ -107,7 +110,7 @@ test("Appearance setting can return to the system theme", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(
     page
-      .getByRole("group", { name: "Theme" })
+      .getByRole("radiogroup", { name: "Theme" })
       .getByRole("radio", { name: "Light" }),
   ).toBeChecked();
 });

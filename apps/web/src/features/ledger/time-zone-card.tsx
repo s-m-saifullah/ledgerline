@@ -1,4 +1,4 @@
-import { Button } from "@ledgerline/ui";
+import { ListCard, SectionLabel } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { NativeSelect } from "../../components/native-select";
@@ -12,50 +12,57 @@ function zoneNames(): string[] {
       : [];
   return names.includes("UTC") ? names : ["UTC", ...names];
 }
-const deviceZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-/** The ledger's time zone decides what "today" means for scheduled work such as recurring entries. */
-export function TimeZoneCard() {
+/**
+ * The ledger's time zone decides what "today" means for scheduled work such as recurring entries. Choosing a
+ * zone saves it at once, as the prototype's row has no Save button; the owner sees a short notice.
+ */
+export function TimeZoneCard({
+  onNotice,
+}: {
+  onNotice: (text: string) => void;
+}) {
   const client = useQueryClient();
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
-  const options = useMemo(zoneNames, []);
-  const [choice, setChoice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState("");
   const attempt = useRef<{ sig: string; run: () => Promise<unknown> } | null>(
     null,
   );
   const isOwner = ledger?.role === "owner";
-  const suggested = deviceZone();
-  const selected =
-    choice ??
-    ledger?.timeZone ??
-    (options.includes(suggested) ? suggested : "UTC");
-  const save = async () => {
+  const saved = ledger?.timeZone ?? "";
+  const options = useMemo(() => {
+    const names = zoneNames();
+    return [
+      { value: "", label: "Choose a time zone", disabled: true as boolean },
+      // A zone this browser does not list is still shown when it is the saved one.
+      ...(saved && !names.includes(saved) ? [saved, ...names] : names).map(
+        (name) => ({
+          value: name,
+          label: name.replaceAll("_", " "),
+          disabled: false,
+        }),
+      ),
+    ];
+  }, [saved]);
+  const save = async (zone: string) => {
     if (!ledger) return;
-    const sig = `${ledger.version}|${selected}`;
+    const sig = `${ledger.version}|${zone}`;
     if (attempt.current?.sig !== sig)
-      attempt.current = {
-        sig,
-        run: prepareLedgerTimeZone(ledger, selected),
-      };
+      attempt.current = { sig, run: prepareLedgerTimeZone(ledger, zone) };
     setBusy(true);
-    setMessage("");
-    setFailed(false);
+    setFailure("");
     try {
       await attempt.current.run();
       attempt.current = null;
-      setChoice(null);
-      setMessage("Time zone saved.");
       await client.invalidateQueries({ queryKey: ["ledgers"] });
-    } catch (failure) {
+      onNotice("Time zone saved.");
+    } catch (error) {
       attempt.current = null;
-      setFailed(true);
-      setMessage(
-        failure instanceof ApiError && failure.status < 500
-          ? failure.message
+      setFailure(
+        error instanceof ApiError && error.status < 500
+          ? error.message
           : "We couldn't save that. Please try again.",
       );
     } finally {
@@ -63,66 +70,52 @@ export function TimeZoneCard() {
     }
   };
   return (
-    <section className="settings-card" aria-labelledby="ledger-title">
-      <h2 id="ledger-title">Ledger</h2>
-      {ledgers.isError ? (
-        <p role="alert" className="field-error">
-          Couldn't load your ledger.
-        </p>
-      ) : (
-        ledger && (
-          <p>
-            {ledger.timeZone
-              ? `Today follows the ${ledger.timeZone} time zone.`
-              : "No time zone yet. Set one so scheduled entries know what today is."}
-          </p>
-        )
-      )}
-      {ledger && isOwner && (
-        <form
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            void save();
-          }}
-        >
-          <fieldset disabled={busy} className="account-fields">
-            <label htmlFor="ledger-time-zone">Time zone</label>
+    <section aria-labelledby="ledger-title" className="set-sect">
+      <SectionLabel as="h2" id="ledger-title">
+        Ledger
+      </SectionLabel>
+      <ListCard>
+        <div className="ui-row ui-row-static set-zone-row">
+          <span className="ui-row-main">
+            <label htmlFor="ledger-time-zone" className="ui-row-title">
+              Time zone
+            </label>
+            <span id="ledger-time-zone-hint" className="ui-row-hint">
+              {ledger && !isOwner
+                ? "Only the owner can change this"
+                : "Decides what today is"}
+            </span>
+          </span>
+          <span className="set-zone">
             <NativeSelect
               id="ledger-time-zone"
-              value={selected}
-              onChange={(event) => {
-                setChoice(event.target.value);
-                setMessage("");
-              }}
+              aria-describedby="ledger-time-zone-hint"
+              value={saved}
+              disabled={!ledger || !isOwner || busy}
+              onChange={(event) => void save(event.target.value)}
             >
-              {options.map((name) => (
-                <option key={name} value={name}>
-                  {name.replaceAll("_", " ")}
+              {options.map((option) => (
+                <option
+                  key={option.value}
+                  value={option.value}
+                  disabled={option.disabled}
+                >
+                  {option.label}
                 </option>
               ))}
             </NativeSelect>
-          </fieldset>
-          {message && (
-            <p
-              role={failed ? "alert" : "status"}
-              className={failed ? "field-error" : undefined}
-            >
-              {message}
-            </p>
-          )}
-          <div className="account-dialog-actions">
-            <Button
-              type="submit"
-              disabled={busy || selected === ledger.timeZone}
-            >
-              {busy ? "Saving…" : "Save time zone"}
-            </Button>
-          </div>
-        </form>
+          </span>
+        </div>
+      </ListCard>
+      {ledgers.isError && (
+        <p role="alert" className="field-error">
+          Couldn't load your ledger.
+        </p>
       )}
-      {ledger && !isOwner && (
-        <p className="muted">Only the owner can change this.</p>
+      {failure && (
+        <p role="alert" className="field-error">
+          {failure}
+        </p>
       )}
     </section>
   );

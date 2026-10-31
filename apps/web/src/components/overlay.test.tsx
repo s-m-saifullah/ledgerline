@@ -128,6 +128,16 @@ describe("Overlay dismissing", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
+  it("when it cannot be dismissed it has no Cancel, and neither Escape nor a click outside closes it", async () => {
+    const onDismiss = vi.fn();
+    render(<Overlay {...base} dismissible={false} onDismiss={onDismiss} />);
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(document.querySelector(".ui-scrim") as Element);
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
+    expect(onDismiss).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
   it("Escape closes an open list inside it first, not the dialog", async () => {
     const onDismiss = vi.fn();
     render(

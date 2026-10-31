@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DevicesCard } from "./devices-card";
@@ -74,16 +74,19 @@ function server(
   vi.stubGlobal("fetch", fetchMock);
   return { calls };
 }
-const mount = () =>
+const mount = () => {
+  const onNotice = vi.fn();
   render(
     <QueryClientProvider
       client={
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <DevicesCard />
+      <DevicesCard onNotice={onNotice} />
     </QueryClientProvider>,
   );
+  return { onNotice };
+};
 
 afterEach(() => {
   cleanup();
@@ -95,7 +98,10 @@ describe("DevicesCard", () => {
     server();
     mount();
     expect(await screen.findByText("Chrome on macOS")).toBeTruthy();
-    expect(screen.getByText("Current device")).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Signed-in devices" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Current device").className).toContain("ui-pill");
     expect(screen.getByText("Ledgerline Android app (Pixel 8)")).toBeTruthy();
     expect(
       screen.getAllByRole("button", { name: /^Sign out [A-Z]/ }),
@@ -104,6 +110,18 @@ describe("DevicesCard", () => {
       screen.queryByRole("button", { name: "Sign out Chrome on macOS" }),
     ).toBeNull();
     expect(screen.getAllByText(/^Last used /)).toHaveLength(3);
+    expect(screen.queryByText(/older device/)).toBeNull();
+    // A row is an icon, the device, one hint and what it can do; the Sign out button is a 44 px target.
+    const phone = screen
+      .getByText("Ledgerline Android app (Pixel 8)")
+      .closest(".ui-row");
+    expect(phone?.querySelector(".ui-tile svg")).toBeTruthy();
+    expect(phone?.querySelectorAll(".ui-row-main .ui-row-hint")).toHaveLength(
+      1,
+    );
+    expect(
+      within(phone as HTMLElement).getByRole("button", { name: /^Sign out/ }),
+    ).toHaveClass("ui-btn");
   });
 
   it("shows the ten most recent devices and keeps the older ones behind a disclosure", async () => {
@@ -119,9 +137,14 @@ describe("DevicesCard", () => {
     mount();
     expect(await screen.findByText("Firefox on Linux 0")).toBeTruthy();
     const older = screen.getByText("Show 4 older devices").closest("details");
-    expect(older?.querySelectorAll("li")).toHaveLength(4);
-    expect(document.querySelectorAll(".device-list > li")).toHaveLength(14);
-    expect(document.querySelectorAll(".device-older li")).toHaveLength(4);
+    expect(older).not.toHaveAttribute("open");
+    expect(older?.querySelectorAll(".ui-row")).toHaveLength(4);
+    expect(
+      document.querySelectorAll(".set-sect > .ui-list > .ui-row"),
+    ).toHaveLength(
+      // ten devices and the row that signs the others out
+      11,
+    );
   });
 
   it("says so when this is the only device", async () => {
@@ -137,15 +160,19 @@ describe("DevicesCard", () => {
 
   it("signs one device out and shows the list without it", async () => {
     const { calls } = server();
-    mount();
+    const { onNotice } = mount();
     await userEvent.click(
       await screen.findByRole("button", {
         name: "Sign out Ledgerline Android app (Pixel 8)",
       }),
     );
-    expect(await screen.findByRole("status")).toHaveProperty(
-      "textContent",
-      "Signed out Ledgerline Android app (Pixel 8).",
+    await vi.waitFor(() =>
+      expect(onNotice).toHaveBeenCalledWith(
+        "Signed out Ledgerline Android app (Pixel 8).",
+      ),
+    );
+    await vi.waitFor(() =>
+      expect(screen.queryByText("Ledgerline Android app (Pixel 8)")).toBeNull(),
     );
     expect(screen.queryByText("Ledgerline Android app (Pixel 8)")).toBeNull();
     const removal = calls.find((call) => call.method === "DELETE");
@@ -153,23 +180,35 @@ describe("DevicesCard", () => {
     expect(removal?.body).toBe("{}");
   });
 
-  it("asks once before signing every other device out, and can be cancelled", async () => {
+  it("asks once, in a centred question, before signing every other device out, and can be cancelled", async () => {
     const { calls } = server();
-    mount();
+    const { onNotice } = mount();
     await userEvent.click(
       await screen.findByRole("button", { name: "Sign out all other devices" }),
     );
-    expect(screen.getByText(/Sign out all your other devices\?/)).toBeTruthy();
-    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    const question = screen.getByRole("dialog", {
+      name: "Sign out all other devices?",
+    });
+    expect(question).toHaveClass("ui-question");
+    expect(
+      within(question).getByText("They will need to sign in again."),
+    ).toBeTruthy();
+    await userEvent.click(
+      within(question).getByRole("button", { name: "Cancel" }),
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(calls.some((call) => call.method === "DELETE")).toBe(false);
     await userEvent.click(
       screen.getByRole("button", { name: "Sign out all other devices" }),
     );
     await userEvent.click(screen.getByRole("button", { name: "Sign out all" }));
+    await vi.waitFor(() =>
+      expect(onNotice).toHaveBeenCalledWith("Signed out your other devices."),
+    );
     expect(
-      await screen.findByText("Signed out your other devices."),
+      await screen.findByText("This is the only device signed in."),
     ).toBeTruthy();
-    expect(screen.getByText("This is the only device signed in.")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(calls.filter((call) => call.method === "DELETE")).toEqual([
       { method: "DELETE", path: "/sessions", body: "{}" },
     ]);
@@ -194,6 +233,65 @@ describe("DevicesCard", () => {
     expect(await screen.findByRole("alert")).toHaveProperty(
       "textContent",
       "That device is gone.",
+    );
+  });
+
+  it("closes the question and shows the server's reason when signing every other device out fails", async () => {
+    server(undefined, { failRemove: 409 });
+    const { onNotice } = mount();
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Sign out all other devices" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Sign out all" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That device is gone.",
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(onNotice).not.toHaveBeenCalled();
+  });
+
+  it("shows when a device was last used as a short date, with the year only when it is not this year", async () => {
+    const thisYear = new Date().getFullYear();
+    server([
+      device(
+        ids.here,
+        "Chrome on macOS",
+        true,
+        `${thisYear}-03-04T12:00:00.000Z`,
+      ),
+      device(ids.phone, "Safari on iOS", false, "2019-11-20T12:00:00.000Z"),
+    ]);
+    mount();
+    expect(await screen.findByText("Last used Mar 4")).toBeTruthy();
+    expect(screen.getByText("Last used Nov 20, 2019")).toBeTruthy();
+  });
+
+  it("switches the other Sign out buttons off while one device is being signed out", async () => {
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server();
+    const base = globalThis.fetch;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === "DELETE") await held;
+        return base(url, init);
+      }),
+    );
+    mount();
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Sign out Ledgerline Android app (Pixel 8)",
+      }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Sign out Safari on iOS" }),
+    ).toBeDisabled();
+    release();
+    await vi.waitFor(() =>
+      expect(screen.queryByText("Ledgerline Android app (Pixel 8)")).toBeNull(),
     );
   });
 });
