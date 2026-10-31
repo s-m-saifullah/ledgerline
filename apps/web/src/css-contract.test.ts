@@ -14,6 +14,7 @@ const files = [
   "components/amount-text.css",
   "components/pick-row.css",
   "components/entry-amount.css",
+  "components/month-head.css",
   "features/home/home.css",
   "features/transactions/transactions.css",
   "features/transactions/entry-sheet.css",
@@ -21,6 +22,7 @@ const files = [
   "features/shell/more.css",
   "features/settings/settings.css",
   "features/budgets/budgets.css",
+  "features/insights/insights.css",
 ];
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(

@@ -30,7 +30,6 @@ import { getAccounts } from "./api";
 import { ArchiveAccountDialog } from "./archive";
 import { AccountEditor } from "./editor";
 import { accountTypes, isLiability } from "./form";
-import { NetWorthCard } from "./net-worth-card";
 
 const icons = {
   bank: Landmark,
@@ -163,7 +162,6 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
             </Button>
           )}
       </div>
-      <NetWorthCard ledgerId={ledger.id} />
       {notice && (
         <p className="account-notice" role="status">
           {notice}

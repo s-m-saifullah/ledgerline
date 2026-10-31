@@ -175,13 +175,11 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
       0,
     ),
   ).toBe(135785);
-  // Net worth moved to More > Accounts, with the amount owed on cards and loans.
-  await page.goto("/accounts");
-  const netWorth = page.locator(".net-worth-card");
-  await expect(netWorth).toContainText("Net worth");
-  await expect(netWorth.locator(".amount")).toHaveText("$1,357.85");
-  await expect(netWorth).toContainText("Owed on cards and loans");
-  await expect(netWorth.locator(".net-worth-owed")).toContainText("$300.00");
+  // Net worth moved to Insights as Net worth now, with what is held and what is owed on cards and loans.
+  await page.goto("/insights");
+  const netWorth = page.getByRole("region", { name: "Net worth now" });
+  await expect(netWorth).toContainText("$1,357.85");
+  await expect(netWorth).toContainText("Liabilities-$300.00");
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
   expect(await netWorth.innerText()).not.toMatch(/\$\s?\d/);
   await page.getByRole("button", { name: "Show amounts", exact: true }).click();

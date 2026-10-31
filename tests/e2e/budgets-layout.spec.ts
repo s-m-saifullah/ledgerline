@@ -290,12 +290,12 @@ test("the month control sits under the top bar on a phone and in the head from 7
   const title = page.getByRole("heading", { level: 1, name: "Budgets" });
   // The phone's title is the top bar's; the page's own is for screen readers and focus.
   expect((await box(title)).width).toBeLessThanOrEqual(1);
-  const month = await box(page.locator(".bud-month"));
+  const month = await box(page.locator(".month-head-control"));
   expect(Math.abs(month.x + month.width / 2 - 195)).toBeLessThan(3);
 
   await open(page, 1280);
   const head = await box(title);
-  const wide = await box(page.locator(".bud-month"));
+  const wide = await box(page.locator(".month-head-control"));
   const list = await box(page.locator(".bud-list"));
   expect(head.width).toBeGreaterThan(40);
   expect(wide.x).toBeGreaterThan(head.x + head.width);

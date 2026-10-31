@@ -1,0 +1,23 @@
+/*
+ * A page head with a month control (ADR 0047). The phone's own heading is only for screen readers, so the control
+ * is centred under the top bar; from a 700 px page the title and the control share the head.
+ */
+.month-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.month-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@container app (min-width: 700px) {
+  .month-head {
+    justify-content: space-between;
+  }
+}
