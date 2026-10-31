@@ -221,7 +221,7 @@ it("clears wrong-kind selections and masks amounts in privacy mode", async () =>
     screen.queryByRole("option", { name: "Food" }),
   ).not.toBeInTheDocument();
 });
-it("creates a category inline and replays an uncertain category before another write", async () => {
+it("creates a category from the Category field and replays an uncertain one before another write", async () => {
   const created = category("Coffee"),
     saved = vi.fn();
   const fetchMock = vi
@@ -230,22 +230,31 @@ it("creates a category inline and replays an uncertain category before another w
     .mockResolvedValue(json(created, 201));
   vi.stubGlobal("fetch", fetchMock);
   render(<QuickAddForm {...props} open onCategorySaved={saved} />);
-  await userEvent.click(screen.getByRole("button", { name: "New category" }));
-  await userEvent.type(screen.getByLabelText("New category name"), "Coffee");
-  await userEvent.click(screen.getByRole("button", { name: "Add category" }));
+  const box = screen.getByLabelText("Category", { exact: true });
+  await userEvent.type(box, "Coffee");
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  );
   expect(
     await screen.findByText(/couldn't confirm the category/),
   ).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Save transaction" }),
   ).toBeDisabled();
-  await userEvent.click(screen.getByRole("button", { name: "Retry category" }));
+  await userEvent.click(
+    screen.getByRole("option", { name: "Create expense category “Coffee”" }),
+  );
   await waitFor(() => expect(saved).toHaveBeenCalledWith(created));
   const [first, retry] = fetchMock.mock.calls.map((call) => call[1]);
   expect(retry?.body).toBe(first?.body);
   expect(new Headers(retry?.headers).get("Idempotency-Key")).toBe(
     new Headers(first?.headers).get("Idempotency-Key"),
   );
+  expect(
+    screen.getByRole("button", { name: "Save transaction" }),
+  ).toBeEnabled();
 });
 it("permits correction after a definitive validation/reference error with a new key", async () => {
   const fetchMock = vi

@@ -21,11 +21,15 @@ function Harness({
   creates,
   onChange = () => {},
   disabled,
+  clearable,
+  selectedLabel,
 }: {
   value?: string | null;
   creates?: ComboCreate[];
   onChange?: (id: string | null) => void;
   disabled?: boolean;
+  clearable?: boolean;
+  selectedLabel?: string;
 }) {
   const [current, setCurrent] = useState(value);
   return (
@@ -41,12 +45,28 @@ function Harness({
       }}
       {...(creates ? { creates } : {})}
       {...(disabled ? { disabled } : {})}
+      {...(clearable === undefined ? {} : { clearable })}
+      {...(selectedLabel ? { selectedLabel } : {})}
     />
   );
 }
 const box = () => screen.getByRole("combobox", { name: "Account" });
 
 describe("ComboField", () => {
+  it("can leave out the All row when a choice is required", async () => {
+    render(<Harness clearable={false} />);
+    await userEvent.click(box());
+    const list = within(screen.getByRole("listbox"));
+    expect(list.queryByRole("option", { name: "All accounts" })).toBeNull();
+    expect(list.getAllByRole("option")).toHaveLength(3);
+    expect(box()).toHaveAttribute("placeholder", "All accounts");
+  });
+
+  it("names a chosen value that is not in the list, such as an archived category", () => {
+    render(<Harness value="gone" selectedLabel="Old (archived)" />);
+    expect(box()).toHaveValue("Old (archived)");
+  });
+
   it("shows the chosen option's name, or the All text as a placeholder", () => {
     render(<Harness />);
     expect(box()).toHaveValue("");

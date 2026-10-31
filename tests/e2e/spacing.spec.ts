@@ -71,6 +71,8 @@ async function fieldGaps(page: Page) {
       let nearest: { text: string; gap: number } | undefined;
       for (const text of texts) {
         if (text.contains(control) || control.contains(text)) continue;
+        // A sheet's body scrolls under its head, so the title can sit just above a field that has scrolled up.
+        if (text.closest(".ui-sheet-head")) continue;
         const other = text.getBoundingClientRect();
         const overlap =
           Math.min(box.right, other.right) - Math.max(box.left, other.left);
@@ -149,11 +151,10 @@ test("fields keep 8 px between their label and the focus ring on every main form
       },
     ],
     [
-      "quick add with more details",
+      "quick add",
       async (p) => {
         await p.goto("/");
         await add(p).click();
-        await p.getByText("More details", { exact: true }).click();
       },
     ],
     [
@@ -248,7 +249,7 @@ test("sign-in and the two-factor code step keep the same spacing", async ({
   await context.close();
 });
 
-test("on a phone the edit dialog keeps Close, the trash icon and Save on one row", async ({
+test("on a phone the edit sheet keeps the trash icon and Save on one row, with Close in its head", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "desktop");
@@ -295,12 +296,13 @@ test("on a phone the edit dialog keeps Close, the trash icon and Save on one row
       save.boundingBox(),
     ]);
     expect(r && c && s).toBeTruthy();
-    // One row, a square 48 px icon button, and the primary button gets the room that is left.
-    expect(Math.abs((r?.y ?? 0) - (c?.y ?? 99))).toBeLessThan(2);
+    // The foot is one row: a square icon button, and the primary button gets the room that is left.
+    // Close sits above it, in the sheet's head.
     expect(Math.abs((r?.y ?? 0) - (s?.y ?? 99))).toBeLessThan(2);
+    expect((c?.y ?? 99) + (c?.height ?? 0)).toBeLessThan(r?.y ?? 0);
     expect(r?.width ?? 0).toBeLessThanOrEqual(48);
     expect(r?.height ?? 0).toBeGreaterThanOrEqual(44);
-    expect(s?.width ?? 0).toBeGreaterThan(c?.width ?? 0);
+    expect(s?.width ?? 0).toBeGreaterThan(r?.width ?? 0);
     await expect(remove).toHaveAttribute("title", "Delete transaction");
     await page.keyboard.press("Escape");
   }

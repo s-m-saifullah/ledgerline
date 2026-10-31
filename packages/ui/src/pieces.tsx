@@ -198,11 +198,13 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  disabled,
 }: {
   label: string;
   options: SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  disabled?: boolean;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const move = (event: KeyboardEvent, from: number) => {
@@ -239,6 +241,7 @@ export function SegmentedControl<T extends string>({
           type="button"
           role="radio"
           aria-checked={option.value === value}
+          disabled={disabled}
           tabIndex={option.value === value ? 0 : -1}
           onClick={() => onChange(option.value)}
           onKeyDown={(event) => move(event, index)}

@@ -7,16 +7,15 @@ import {
   type Transaction,
   type Transfer,
 } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { DialogDeleteButton } from "../../components/dialog-delete-button";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { prepareTransactionUndo } from "./api";
+import { DeleteTrigger } from "./entry-sheet";
 import { defaultFeeText, feeMinor, parseFee } from "./fee";
 import { amountMinor, rememberAccount } from "./form";
 import { buildTransferBody } from "./transfer/build-body";
@@ -47,7 +46,7 @@ export function TransferForm({
   onDeleted,
   onLock,
   returnFocusId = "add-transaction",
-  modeControl,
+  typeControl,
 }: {
   actorId?: string;
   ledgerId: string;
@@ -63,7 +62,8 @@ export function TransferForm({
   onDeleted?: (row: Transaction) => void;
   onLock: (locked: boolean) => void;
   returnFocusId?: string;
-  modeControl?: React.ReactNode;
+  /** Add only: the type pill, with Transfer chosen. */
+  typeControl?: React.ReactNode;
 }) {
   const client = useQueryClient();
   const privateMode = useContext(PrivacyContext);
@@ -282,8 +282,12 @@ export function TransferForm({
     hasFee,
     hasBonus,
   };
+  const saveDisabled =
+    busy ||
+    blocked ||
+    (!baseline && accounts.filter((row) => !row.archivedAt).length < 2);
   return (
-    <EditorDialog
+    <Overlay
       open={open}
       title={
         baseline
@@ -295,15 +299,72 @@ export function TransferForm({
       description="Move money between accounts. Both balances change together; this does not count as income or spending."
       busy={busy}
       onDismiss={onDismiss}
+      cancelLabel={uncertain ? "Close for now" : baseline ? "Close" : "Cancel"}
       returnFocusId={returnFocusId}
       fallbackFocusId="main-content"
-      closeLabel={
-        baseline ? "Close transfer editor" : "Close transaction dialog"
-      }
-      contentClassName="transaction-dialog"
       initialFocusId={uncertain ? "retry-transfer" : "transfer-amount"}
+      footer={
+        writable ? (
+          uncertain ? (
+            <button
+              id="retry-transfer"
+              type="button"
+              className="ui-btn ui-btn-primary"
+              disabled={busy || blocked}
+              onClick={() => void execute(operation.current)}
+            >
+              Retry {operation.current === "delete" ? "delete" : "save"}
+            </button>
+          ) : conflict ? (
+            <button
+              type="button"
+              className="ui-btn ui-btn-primary"
+              disabled={busy}
+              onClick={() => void reload()}
+            >
+              Reload latest details
+            </button>
+          ) : confirmDelete ? (
+            <>
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                onClick={() => setConfirmDelete(false)}
+              >
+                Keep transfer
+              </button>
+              <button
+                type="button"
+                className="ui-btn ui-btn-danger-filled"
+                disabled={busy}
+                onClick={() => void execute("delete")}
+              >
+                Confirm delete
+              </button>
+            </>
+          ) : (
+            <>
+              {baseline && (
+                <DeleteTrigger
+                  label="Delete transfer"
+                  disabled={busy}
+                  onClick={() => setConfirmDelete(true)}
+                />
+              )}
+              <button
+                type="submit"
+                form="transfer-form"
+                className="ui-btn ui-btn-primary"
+                disabled={saveDisabled}
+              >
+                {busy ? "Saving…" : baseline ? "Save changes" : "Save transfer"}
+              </button>
+            </>
+          )
+        ) : undefined
+      }
     >
-      {modeControl}
+      {typeControl}
       {blocked && (
         <p role="alert">
           Confirm the earlier transaction action before adding a transfer.
@@ -318,7 +379,9 @@ export function TransferForm({
         </p>
       )}
       <form
+        id="transfer-form"
         noValidate
+        className="entry-form"
         onSubmit={(event) => {
           if (attempt.current) {
             event.preventDefault();
@@ -327,7 +390,7 @@ export function TransferForm({
         }}
       >
         <fieldset
-          className="account-fields transaction-fields"
+          className="account-fields transaction-fields entry-fields"
           disabled={
             busy ||
             uncertain ||
@@ -346,7 +409,7 @@ export function TransferForm({
           {renderWhenAndNote(form)}
         </fieldset>
         {error && (
-          <p role="alert" className="field-error account-error">
+          <p role="alert" className="field-error">
             {error}
           </p>
         )}
@@ -378,79 +441,7 @@ export function TransferForm({
             )}
           </>
         )}
-        <div className="account-dialog-actions transaction-editor-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onDismiss}
-          >
-            {uncertain ? "Close for now" : "Close"}
-          </button>
-          {writable &&
-            (uncertain ? (
-              <Button
-                id="retry-transfer"
-                type="button"
-                disabled={busy || blocked}
-                onClick={() => void execute(operation.current)}
-              >
-                Retry {operation.current === "delete" ? "delete" : "save"}
-              </Button>
-            ) : conflict ? (
-              <Button
-                type="button"
-                disabled={busy}
-                onClick={() => void reload()}
-              >
-                Reload latest details
-              </Button>
-            ) : confirmDelete ? (
-              <>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Keep transfer
-                </button>
-                <Button
-                  type="button"
-                  className="danger-action"
-                  disabled={busy}
-                  onClick={() => void execute("delete")}
-                >
-                  Confirm delete
-                </Button>
-              </>
-            ) : (
-              <>
-                {baseline && (
-                  <DialogDeleteButton
-                    label="Delete transfer"
-                    disabled={busy}
-                    onClick={() => setConfirmDelete(true)}
-                  />
-                )}
-                <Button
-                  type="submit"
-                  disabled={
-                    busy ||
-                    blocked ||
-                    (!baseline &&
-                      accounts.filter((row) => !row.archivedAt).length < 2)
-                  }
-                >
-                  {busy
-                    ? "Saving…"
-                    : baseline
-                      ? "Save changes"
-                      : "Save transfer"}
-                </Button>
-              </>
-            ))}
-        </div>
       </form>
-    </EditorDialog>
+    </Overlay>
   );
 }

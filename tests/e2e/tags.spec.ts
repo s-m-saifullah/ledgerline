@@ -81,9 +81,7 @@ test("tags an entry in Add, finds it by tag, edits the tags and keeps the balanc
   await addEntry(page).click();
   await page.getByLabel("Amount (USD)").fill("12.50");
   await chooseCategory(page, "Category", "Food");
-  // Tags live under More details, so a plain Add stays short.
-  await expect(page.getByLabel("Tags", { exact: true })).toBeHidden();
-  await page.getByText("More details", { exact: true }).click();
+  await expect(page.getByLabel("Tags", { exact: true })).toBeVisible();
   await page.getByLabel("Tags", { exact: true }).fill("Holiday");
   await page.getByLabel("Tags", { exact: true }).press("Enter");
   await expect(

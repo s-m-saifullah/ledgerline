@@ -284,7 +284,7 @@ test("replays an interrupted committed merge across navigation and blocks compet
     .click();
   const quick = page.getByRole("dialog", { name: "Add transaction" });
   await expect(quick.getByRole("button", { name: /Save/ })).toBeDisabled();
-  await quick.getByRole("button", { name: "Close transaction dialog" }).click();
+  await quick.getByRole("button", { name: "Cancel", exact: true }).click();
   await openMorePage(page, "Clients");
   await expect(
     page.getByRole("button", { name: "Add client", exact: true }),
