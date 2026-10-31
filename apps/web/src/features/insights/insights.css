@@ -1,0 +1,341 @@
+/*
+ * Insights (ADR 0047): this month across the top, the spending card beside money in and out and net worth now
+ * from 700 px, net worth over time across the foot, then the figures. One column on a phone. Widths are the layout
+ * system's two (700 and 1100 px).
+ */
+.ins-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .ins-page {
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .ins-page {
+    gap: 20px;
+  }
+}
+.ins-error {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.ins-cols,
+.ins-stack {
+  display: grid;
+  gap: inherit;
+  align-items: start;
+  min-width: 0;
+}
+.ins-cols {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.ins-stack {
+  gap: 12px;
+}
+@container app (min-width: 700px) {
+  .ins-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+  .ins-cols-one {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ins-stack {
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .ins-cols {
+    gap: 20px;
+  }
+  .ins-stack {
+    gap: 20px;
+  }
+}
+.ins-card-title {
+  margin-bottom: 8px;
+}
+.ins-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ins-fig {
+  font-size: 19px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.ins-fig .amount {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+.ins-pos {
+  color: var(--accent);
+}
+.ins-muted {
+  color: var(--muted);
+}
+
+/* This month: spent against kept, then the three figures. They wrap before an amount can be cut. */
+.ins-segbar {
+  display: flex;
+  height: 10px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--chart-5);
+  gap: 2px;
+}
+.ins-segbar > i {
+  display: block;
+  height: 100%;
+  background: var(--chart-2);
+}
+.ins-segbar-over {
+  background: var(--danger);
+}
+.ins-sum-cols,
+.ins-now-cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 14px;
+}
+.ins-now-cols {
+  margin-top: 12px;
+}
+/* A figure keeps its whole width and drops to the next line when there is no room: never cut, never broken. */
+.ins-sum-cols > div,
+.ins-now-cols > div {
+  flex: 1 1 auto;
+  min-width: max-content;
+}
+
+/* Spending: a bar split by category, then a row each. */
+.ins-spending {
+  padding: 0;
+}
+.ins-spending .ins-card-title {
+  padding: 16px 16px 0;
+}
+.ins-segbar-cats {
+  margin: 8px 16px 4px;
+  background: var(--track);
+}
+.ins-segbar-cats > i {
+  flex: none;
+}
+.ins-cats {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ins-cats > li + li {
+  border-top: 1px solid var(--border);
+}
+.ui-row.ins-cat {
+  min-height: 56px;
+}
+.ins-cat-main {
+  gap: 4px;
+}
+.ins-cat-main .ui-row-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ins-swatch {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+.ins-swatch > i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+.ins-chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.ins-chevron-open {
+  transform: rotate(180deg);
+}
+.ins-kids .ui-row {
+  padding-left: 64px;
+  border-top: 1px solid var(--border);
+}
+
+/* The charts: twelve months in a row. */
+.ins-chart {
+  padding: 8px 0 0;
+}
+[data-privacy="true"] .ins-chart {
+  filter: blur(6px);
+}
+.ins-months {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ins-month {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 4px 0;
+  border-radius: var(--shape-field);
+}
+.ins-selected {
+  background: var(--accent-soft);
+}
+.ins-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  height: 120px;
+}
+.ins-bar {
+  display: block;
+  width: 40%;
+  max-width: 12px;
+  border-radius: 999px;
+}
+.ins-in {
+  background: var(--chart-2);
+}
+.ins-out {
+  background: var(--neutral-chart);
+}
+.ins-month-label {
+  font-size: 10px;
+  text-align: center;
+  color: var(--muted);
+}
+.ins-selected .ins-month-label {
+  color: var(--text);
+  font-weight: 600;
+}
+.ins-nw-bars {
+  position: relative;
+  display: block;
+  height: 120px;
+}
+.ins-nw-bar {
+  position: absolute;
+  left: 50%;
+  width: 60%;
+  max-width: 16px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: var(--chart-3);
+}
+.ins-neg {
+  background: var(--neutral-chart);
+}
+.ins-zero {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--field-border);
+}
+.ins-partial {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--chart-3) 0 3px,
+    var(--accent-soft) 3px 6px
+  );
+  outline: 1px solid var(--chart-3);
+}
+.ins-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ins-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 999px;
+  vertical-align: -1px;
+}
+.ins-note {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The figures: the global disclosure style (a bordered button with its own arrow) gives way to a plain first row. */
+.ins-figures > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.ins-figures > summary:hover {
+  background: transparent;
+}
+.ins-figures > summary::-webkit-details-marker,
+.ins-figures > summary::before {
+  display: none;
+}
+.ins-figures > summary > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.ins-figures[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.ins-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ins-table th,
+.ins-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.ins-table + .ins-table {
+  margin-top: 20px;
+}
+.ins-table td,
+.ins-table thead th:not(:first-child) {
+  text-align: right;
+}
+.ins-table th {
+  text-align: left;
+  font-weight: 400;
+  white-space: nowrap;
+}

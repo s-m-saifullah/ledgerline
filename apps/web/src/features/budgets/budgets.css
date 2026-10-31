@@ -1,32 +1,12 @@
 /*
  * Budgets (ADR 0047): the Left this month hero beside one grouped list, 5 to 7 from 1100 px, one column below.
- * The month control sits under the title on a phone, whose own heading is only for screen readers, and in the
- * head from 700 px. Widths are the layout system's two (700 and 1100 px).
+ * The head with the month control is `components/month-head`. Widths are the layout system's two (700 and 1100 px).
  */
 .bud-page {
   display: grid;
   gap: 12px;
   align-content: start;
   min-width: 0;
-}
-.bud-head {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 0;
-}
-.bud-head h1 {
-  margin-bottom: 0;
-  font-size: 27px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-@container app (min-width: 700px) {
-  .bud-head {
-    justify-content: space-between;
-  }
 }
 .bud-cols {
   display: grid;

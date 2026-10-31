@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Amount } from "../../components/amount-text";
-import { MonthControl } from "../../components/month-control";
+import { MonthHead } from "../../components/month-head";
 import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { monthLabel, shiftMonth, useCurrentMonth } from "../../lib/month";
@@ -181,14 +181,12 @@ export function BudgetsPage() {
     : 0;
   return (
     <div className="bud-page">
-      <div className="page-heading bud-head">
-        <h1 id="budgets-title" tabIndex={-1}>
-          Budgets
-        </h1>
-        <div className="bud-month">
-          <MonthControl month={month} onChange={setChosen} />
-        </div>
-      </div>
+      <MonthHead
+        title="Budgets"
+        id="budgets-title"
+        month={month}
+        onChange={setChosen}
+      />
       {(ledgers.isError || view.isError) && (
         <div className="ui-card bud-error">
           <p role="alert">

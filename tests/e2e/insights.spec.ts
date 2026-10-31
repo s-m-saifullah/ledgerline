@@ -112,8 +112,9 @@ test("insights shows spending by category and opens the entries", async ({
   page,
 }) => {
   await page.goto("/insights");
-  await expect(page.getByText(`Spent in ${monthName(month)}`)).toBeVisible();
-  await expect(page.locator(".stat-card .amount")).toHaveText("$155.00");
+  const summary = page.getByRole("region", { name: "This month" });
+  await expect(summary).toContainText("Spent$155.00");
+  await expect(summary).toContainText("Money in$2,500.00");
   const food = page.getByRole("button", { name: /Food/ });
   await expect(food).toContainText("$100.00");
   await food.click();
@@ -131,11 +132,24 @@ test("insights moves between months and lists the figures", async ({
 }) => {
   await page.goto("/insights");
   await page.getByRole("button", { name: "Previous month" }).click();
-  await expect(page.getByText(`Spent in ${monthName(previous)}`)).toBeVisible();
-  await expect(page.locator(".stat-card .amount")).toHaveText("$7.00");
+  await expect(page.locator(".ui-month-label")).toHaveText(monthName(previous));
+  await expect(page.getByRole("region", { name: "This month" })).toContainText(
+    "Spent$7.00",
+  );
   await expect(page.getByRole("link", { name: /Fun/ })).toContainText("100.0%");
-  await page.getByText("Show the figures").first().click();
+  await page.getByText("Show the figures").click();
   await expect(page.getByRole("table").first()).toContainText("-$7.00");
+});
+
+test("insights shows net worth now from the account balances", async ({
+  page,
+}) => {
+  await page.goto("/insights");
+  // 250000 - 1000 - 9000 - 5500 - 700 cents held in the one bank account, and nothing owed.
+  const now = page.getByRole("region", { name: "Net worth now" });
+  await expect(now).toContainText("$2,338.00");
+  await expect(now).toContainText("Assets$2,338.00");
+  await expect(now).toContainText("Liabilities$0.00");
 });
 
 test("insights shows net worth over time and flags a month with no rate", async ({
@@ -152,17 +166,21 @@ test("insights shows net worth over time and flags a month with no rate", async 
   );
   await page.goto("/insights");
   await expect(
-    // The synthetic ledger has data from the previous month on, so earlier months are left out (ADR 0036).
-    page.getByRole("heading", { name: /^Net worth, since / }),
+    page.getByRole("heading", { name: "Net worth over time" }),
   ).toBeVisible();
+  // A second currency leaves Net worth now out: adding the two needs rates.
+  await expect(page.getByRole("region", { name: "Net worth now" })).toHaveCount(
+    0,
+  );
   await expect(
     page.getByRole("img", { name: /Net worth at the end/ }),
   ).toBeVisible();
-  await expect(page.locator(".nw-note").first()).toContainText(
+  // The synthetic ledger has data from the previous month on, so earlier months are left out (ADR 0036).
+  await expect(page.locator(".ins-note").first()).toContainText(
     `History starts in ${monthName(previous)}`,
   );
-  await expect(page.locator(".nw-note").last()).toContainText("EUR");
-  await page.getByText("Show the figures").last().click();
+  await expect(page.locator(".ins-note").last()).toContainText("EUR");
+  await page.getByText("Show the figures").click();
   const table = page.getByRole("table").last();
   // 250000 - 1000 - 9000 - 5500 - 700 cents; the euro account has no rate, so it is left out.
   await expect(table).toContainText("$2,338.00");
