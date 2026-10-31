@@ -2,7 +2,7 @@ import type { Category, Transaction } from "@ledgerline/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { Overlay } from "../../components/overlay";
+import { LoadingSheet } from "../../components/loading-sheet";
 import { Toast } from "../../components/toast";
 import { ApiError } from "../../lib/api";
 import { getCategories } from "../categories/api";
@@ -194,30 +194,17 @@ export function QuickAdd({
           }}
         />
       ) : (
-        <Overlay
+        <LoadingSheet
           open={open}
           title="Add transaction"
           description="Record money coming in or going out."
-          busy={false}
+          loadingText="Opening transaction entry…"
+          failedText="Couldn't load accounts and categories."
+          failed={accounts.isError || categories.isError}
+          onRetry={() => void refreshed()}
           onDismiss={onDismiss}
           returnFocusId={returnFocusId}
-          fallbackFocusId="main-content"
-        >
-          {accounts.isError || categories.isError ? (
-            <div className="entry-setup">
-              <p role="alert">Couldn't load accounts and categories.</p>
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => void refreshed()}
-              >
-                Try again
-              </button>
-            </div>
-          ) : (
-            <p role="status">Opening transaction entry…</p>
-          )}
-        </Overlay>
+        />
       )}
       {saved && (
         <Toast

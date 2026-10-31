@@ -3,17 +3,20 @@ import { Trash2 } from "lucide-react";
 import { useContext } from "react";
 import { type UseFormReturn, useFieldArray } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
+import type { ComboCreate } from "../../components/combo-field";
 import { PrivacyContext } from "../../lib/preferences";
-import { CategoryPicker } from "../categories/picker";
+import { CategoryCombo } from "./category-combo";
 import type { TransactionFormValues } from "./form";
 export function SplitFields({
   form,
   categories,
   kind,
+  categoryCreate,
 }: {
   form: UseFormReturn<TransactionFormValues>;
   categories: readonly Category[];
   kind: "expense" | "income";
+  categoryCreate?: ComboCreate | undefined;
 }) {
   const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
@@ -52,14 +55,15 @@ export function SplitFields({
           {fields.map((field, index) => (
             <fieldset key={field.fieldKey} className="split-line">
               <legend>Split {index + 1}</legend>
-              <CategoryPicker
+              <CategoryCombo
                 label={`Split ${index + 1} category`}
                 categories={categories}
                 kind={kind}
-                value={form.watch(`splits.${index}.categoryId`) ?? null}
+                value={form.watch(`splits.${index}.categoryId`) || null}
                 onChange={(id) =>
-                  form.setValue(`splits.${index}.categoryId`, id ?? "")
+                  form.setValue(`splits.${index}.categoryId`, id)
                 }
+                create={categoryCreate}
               />
               {form.formState.errors.splits?.[index]?.categoryId && (
                 <p className="field-error">Choose a category.</p>

@@ -1,17 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  type Account,
-  type Category,
-  createCategorySchema,
-  type Transaction,
-} from "@ledgerline/shared";
+import type { Account, Category, Transaction } from "@ledgerline/shared";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import { prepareCategorySave } from "../categories/api";
 import { categoryOptions } from "../categories/tree";
+import { useCategoryCreate } from "../categories/use-category-create";
 import { prepareTransactionCreate } from "./api";
 import { changeKind, EntryFields } from "./entry-fields";
 import { type EntryType, TypePill } from "./entry-sheet";
@@ -22,7 +17,7 @@ import {
   transactionDefaults,
   transactionFormSchema,
 } from "./form";
-import { NewCategory, SaveErrors } from "./quick-add/fields";
+import { SaveErrors } from "./quick-add/fields";
 
 const uncertainFailure = (failure: unknown) =>
   !(failure instanceof ApiError) || failure.status >= 500;
@@ -66,13 +61,6 @@ export function QuickAddForm({
   const [refreshing, setRefreshing] = useState(false);
   const attempt = useRef<(() => Promise<Transaction>) | null>(null);
   const inFlight = useRef(false);
-  const [newCategory, setNewCategory] = useState(false);
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryError, setCategoryError] = useState("");
-  const [categoryBusy, setCategoryBusy] = useState(false);
-  const [categoryUncertain, setCategoryUncertain] = useState(false);
-  const categoryAttempt = useRef<(() => Promise<Category>) | null>(null);
-  const categoryInFlight = useRef(false);
   const defaults = () => ({
     ...transactionDefaults(actorId, ledgerId, accounts),
     kind: startKind,
@@ -81,45 +69,35 @@ export function QuickAddForm({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: defaults(),
   });
-  const { watch, reset, setValue, setError: fieldError, handleSubmit } = form;
+  const { watch, reset, setError: fieldError, handleSubmit } = form;
   const kind = watch("kind");
-  const busy = saving || categoryBusy || refreshing;
+  const { create: categoryCreate, uncertain: categoryUncertain } =
+    useCategoryCreate(ledgerId, kind, onCategorySaved);
+  const busy = saving || refreshing;
   useEffect(() => {
     onLock?.(busy || uncertain || categoryUncertain);
   }, [busy, uncertain, categoryUncertain, onLock]);
   useEffect(() => {
-    if (open && (uncertain || categoryUncertain))
-      document
-        .getElementById(
-          uncertain ? "retry-transaction-save" : "retry-transaction-category",
-        )
-        ?.focus();
-  }, [open, uncertain, categoryUncertain]);
-  const frozen = busy || uncertain || categoryUncertain || blocked || !writable;
+    if (open && uncertain)
+      document.getElementById("retry-transaction-save")?.focus();
+  }, [open, uncertain]);
+  // The fields stay open while a category is unconfirmed: choosing its suggestion again is the retry.
+  const fieldsFrozen = busy || uncertain || blocked || !writable;
+  const frozen = fieldsFrozen || categoryUncertain;
   const activeAccounts = accounts.filter((row) => !row.archivedAt);
   const choices = categoryOptions(categories, kind, "");
   useEffect(() => {
     // Keep every original payload intact across close/resume while its outcome is unknown.
-    if (
-      !open &&
-      !attempt.current &&
-      !categoryAttempt.current &&
-      !inFlight.current &&
-      !categoryInFlight.current
-    ) {
+    if (!open && !attempt.current && !inFlight.current && !categoryUncertain) {
       reset({
         ...transactionDefaults(actorId, ledgerId, accounts),
         kind: startKind,
       });
       setError("");
-      setNewCategory(false);
-      setCategoryName("");
-      setCategoryError("");
     }
-  }, [open, reset, actorId, ledgerId, accounts, startKind]);
+  }, [open, reset, actorId, ledgerId, accounts, startKind, categoryUncertain]);
   const executeSave = async (values?: TransactionFormValues) => {
-    if (inFlight.current || categoryAttempt.current || blocked || !writable)
-      return;
+    if (inFlight.current || categoryUncertain || blocked || !writable) return;
     if (!attempt.current) {
       if (!values) return;
       if (!activeAccounts.some((row) => row.id === values.accountId)) {
@@ -173,60 +151,7 @@ export function QuickAddForm({
       setSaving(false);
     }
   };
-  const createCategory = async () => {
-    if (categoryInFlight.current || attempt.current || blocked || !writable)
-      return;
-    if (!categoryAttempt.current) {
-      const parsed = createCategorySchema.safeParse({
-        name: categoryName,
-        kind,
-        parentId: null,
-        icon: null,
-        color: null,
-      });
-      if (!parsed.success) {
-        setCategoryError("Give the category a name of 1–100 characters.");
-        return;
-      }
-      categoryAttempt.current = prepareCategorySave(
-        ledgerId,
-        undefined,
-        parsed.data,
-      );
-    }
-    categoryInFlight.current = true;
-    setCategoryBusy(true);
-    setCategoryError("");
-    try {
-      const category = await categoryAttempt.current();
-      categoryAttempt.current = null;
-      setCategoryUncertain(false);
-      onCategorySaved(category);
-      setValue("categoryId", category.id, { shouldValidate: true });
-      setNewCategory(false);
-      setCategoryName("");
-    } catch (failure) {
-      if (uncertainFailure(failure)) {
-        setCategoryUncertain(true);
-        setCategoryError(
-          "We couldn't confirm the category. Retry to confirm the same action.",
-        );
-      } else {
-        categoryAttempt.current = null;
-        setCategoryUncertain(false);
-        setCategoryError(
-          failure instanceof ApiError
-            ? failure.message
-            : "Couldn't add the category.",
-        );
-      }
-    } finally {
-      categoryInFlight.current = false;
-      setCategoryBusy(false);
-    }
-  };
-  const setup =
-    activeAccounts.length === 0 && !attempt.current && !categoryAttempt.current;
+  const setup = activeAccounts.length === 0 && !attempt.current;
   return (
     <Overlay
       open={open}
@@ -238,11 +163,9 @@ export function QuickAddForm({
       initialFocusId={
         uncertain
           ? "retry-transaction-save"
-          : categoryUncertain
-            ? "retry-transaction-category"
-            : blocked
-              ? undefined
-              : "transaction-amount"
+          : blocked
+            ? undefined
+            : "transaction-amount"
       }
       returnFocusId={returnFocusId}
       fallbackFocusId="main-content"
@@ -300,33 +223,20 @@ export function QuickAddForm({
             } else void handleSubmit((values) => executeSave(values))(event);
           }}
         >
-          <fieldset disabled={frozen} className="entry-fields">
+          <fieldset disabled={fieldsFrozen} className="entry-fields">
             <EntryFields
               form={form}
               ledgerId={ledgerId}
               categories={categories}
               accounts={activeAccounts}
               idPrefix="transaction"
-              frozen={frozen}
+              frozen={fieldsFrozen}
               accountError="Choose an active account."
-              afterCategory={
-                <NewCategory
-                  open={newCategory}
-                  onToggle={() => setNewCategory((value) => !value)}
-                  name={categoryName}
-                  onName={setCategoryName}
-                  onAdd={() => void createCategory()}
-                />
-              }
+              categoryCreate={categoryCreate}
             />
           </fieldset>
           <SaveErrors
-            categoryError={categoryError}
-            categoryUncertain={categoryUncertain}
             busy={busy}
-            blocked={blocked}
-            writable={writable}
-            onRetryCategory={() => void createCategory()}
             error={error}
             uncertain={uncertain}
             onRefresh={async () => {

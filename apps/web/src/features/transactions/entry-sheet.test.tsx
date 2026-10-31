@@ -8,7 +8,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import {
   category,
@@ -365,4 +365,185 @@ it("freezes the whole sheet, pill included, until a stale edit is reloaded", asy
   expect(screen.getByRole("switch", { name: "Pending" })).toBeDisabled();
   for (const radio of screen.getAllByRole("radio"))
     expect(radio).toBeDisabled();
+});
+
+it("has no New category button: the Category field itself offers to create a missing one", async () => {
+  render(<QuickAddForm {...addProps} open />);
+  expect(screen.queryByRole("button", { name: "New category" })).toBeNull();
+  const box = screen.getByLabelText("Category", { exact: true });
+  await userEvent.type(box, "Coffee");
+  expect(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  ).toBeInTheDocument();
+});
+
+it("offers to create an income category once the type is income, and not for a name that exists", async () => {
+  render(<QuickAddForm {...addProps} open />);
+  await userEvent.click(screen.getByRole("radio", { name: "Income" }));
+  const box = screen.getByLabelText("Category", { exact: true });
+  await userEvent.type(box, "Gift");
+  expect(
+    await screen.findByRole("option", {
+      name: "Create income category “Gift”",
+    }),
+  ).toBeInTheDocument();
+  await userEvent.clear(box);
+  await userEvent.type(box, "salary");
+  expect(screen.queryByRole("option", { name: /^Create/ })).toBeNull();
+});
+
+it("selects the category it created, so Save sends it", async () => {
+  const coffee = category("Coffee");
+  const fetchMock = vi.fn<typeof fetch>(async (path, options) =>
+    options?.method === "POST" && String(path).includes("/categories")
+      ? json(coffee, 201)
+      : json(row, 201),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  const saved = vi.fn();
+  // The page keeps the list in its query cache; this stands in for it.
+  function Host() {
+    const [list, setList] = useState([food, salary]);
+    return (
+      <QuickAddForm
+        {...addProps}
+        categories={list}
+        open
+        onSaved={saved}
+        onCategorySaved={(made) => setList((items) => [...items, made])}
+      />
+    );
+  }
+  render(<Host />);
+  await userEvent.type(screen.getByLabelText("Amount (USD)"), "3.50");
+  await userEvent.type(
+    screen.getByLabelText("Category", { exact: true }),
+    "Coffee",
+  );
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  );
+  expect(screen.getByLabelText("Category", { exact: true })).toHaveValue(
+    "Coffee",
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save transaction" }),
+  );
+  await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+  const body = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
+  expect(body.categoryId).toBe(coffee.id);
+});
+
+it("offers the same creation on a split line", async () => {
+  render(<QuickAddForm {...addProps} open />);
+  await userEvent.click(screen.getByLabelText("Split across categories"));
+  await userEvent.type(screen.getByLabelText("Split 1 category"), "Coffee");
+  expect(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  ).toBeInTheDocument();
+});
+
+it("offers to create a category when editing, and the edit saves with it", async () => {
+  const coffee = category("Coffee");
+  const fetchMock = vi.fn<typeof fetch>(async (_path, options) =>
+    options?.method === "POST"
+      ? json(coffee, 201)
+      : json({ ...row, version: 2, categoryId: coffee.id }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+  render(<TransactionEditor {...editProps} />);
+  await userEvent.type(
+    screen.getByLabelText("Category", { exact: true }),
+    "Coffee",
+  );
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(editProps.onSaved).toHaveBeenCalled());
+  const patch = fetchMock.mock.calls.find(
+    (call) => call[1]?.method === "PATCH",
+  );
+  expect(JSON.parse(String(patch?.[1]?.body)).categoryId).toBe(coffee.id);
+});
+
+it("will not make a different category while an earlier one is unconfirmed", async () => {
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockRejectedValueOnce(new TypeError("Lost response"));
+  vi.stubGlobal("fetch", fetchMock);
+  render(<QuickAddForm {...addProps} open />);
+  const box = screen.getByLabelText("Category", { exact: true });
+  await userEvent.type(box, "Coffee");
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  );
+  await screen.findByText(/couldn't confirm the category/);
+  await userEvent.clear(box);
+  await userEvent.type(box, "Tea");
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Tea”",
+    }),
+  );
+  expect(await screen.findByText(/Confirm “Coffee” first/)).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledOnce();
+});
+
+it("lets a refused category name be corrected with a new request", async () => {
+  const tea = category("Tea");
+  const saved = vi.fn();
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      json(
+        {
+          status: 409,
+          title: "Conflict",
+          type: "about:blank",
+          detail: "That name is taken",
+          errors: [],
+        },
+        409,
+      ),
+    )
+    .mockResolvedValue(json(tea, 201));
+  vi.stubGlobal("fetch", fetchMock);
+  render(<QuickAddForm {...addProps} open onCategorySaved={saved} />);
+  const box = screen.getByLabelText("Category", { exact: true });
+  await userEvent.type(box, "Coffee");
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Coffee”",
+    }),
+  );
+  expect(await screen.findByText("That name is taken")).toBeInTheDocument();
+  // A refusal is final: nothing is waiting, so Save is not held.
+  expect(
+    screen.getByRole("button", { name: "Save transaction" }),
+  ).toBeEnabled();
+  await userEvent.clear(box);
+  await userEvent.type(box, "Tea");
+  await userEvent.click(
+    await screen.findByRole("option", {
+      name: "Create expense category “Tea”",
+    }),
+  );
+  await waitFor(() => expect(saved).toHaveBeenCalledWith(tea));
+  const [first, second] = fetchMock.mock.calls.map((call) => call[1]);
+  expect(JSON.parse(String(first?.body)).name).toBe("Coffee");
+  expect(JSON.parse(String(second?.body)).name).toBe("Tea");
+  expect(new Headers(second?.headers).get("Idempotency-Key")).not.toBe(
+    new Headers(first?.headers).get("Idempotency-Key"),
+  );
 });

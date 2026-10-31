@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { useCategoryCreate } from "../categories/use-category-create";
 import {
   getTransaction,
   prepareTransactionEdit,
@@ -58,6 +59,8 @@ export function TransactionEditor({
   });
   const { watch, handleSubmit, reset } = form;
   const kind = watch("kind");
+  const { create: categoryCreate, uncertain: categoryUncertain } =
+    useCategoryCreate(ledgerId, kind);
   const canWrite = writable && !baseline.transferId;
   // A transfer's fee or bonus, or a payment's tip, keeps its kind and is never split (ADRs 0023, 0025, 0027).
   const linkedToTransfer =
@@ -65,8 +68,8 @@ export function TransactionEditor({
     !!baseline.relatedTransferId ||
     !!baseline.tipPaymentId;
   useEffect(() => {
-    onLock(busy || uncertain);
-  }, [busy, uncertain, onLock]);
+    onLock(busy || uncertain || categoryUncertain);
+  }, [busy, uncertain, categoryUncertain, onLock]);
   useEffect(() => {
     if (open && uncertain)
       document.getElementById("retry-transaction-editor")?.focus();
@@ -197,7 +200,7 @@ export function TransactionEditor({
                   type="submit"
                   form="edit-entry-form"
                   className="ui-btn ui-btn-primary"
-                  disabled={busy}
+                  disabled={busy || categoryUncertain}
                 >
                   {busy ? "Saving…" : "Save changes"}
                 </button>
@@ -209,7 +212,7 @@ export function TransactionEditor({
         <TypePill
           value={kind}
           withTransfer={false}
-          disabled={linkedToTransfer || frozen}
+          disabled={linkedToTransfer || frozen || categoryUncertain}
           onChange={(type) => {
             if (type !== "transfer") changeKind(form, type);
           }}
@@ -255,6 +258,7 @@ export function TransactionEditor({
                   : undefined
               }
               linked={linkedToTransfer}
+              categoryCreate={categoryCreate}
             />
           </fieldset>
           {error && (

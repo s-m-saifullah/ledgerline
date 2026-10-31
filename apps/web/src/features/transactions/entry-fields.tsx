@@ -1,12 +1,12 @@
 import type { Account, Category } from "@ledgerline/shared";
 import { SwitchRow } from "@ledgerline/ui";
-import type { ReactNode } from "react";
-import { Controller, type UseFormReturn } from "react-hook-form";
+import type { UseFormReturn } from "react-hook-form";
+import type { ComboCreate } from "../../components/combo-field";
 import { DateTimeInput } from "../../components/date-time-input";
 import { NativeSelect } from "../../components/native-select";
-import { CategoryPicker } from "../categories/picker";
 import { EntryRate } from "../currencies/entry-rate";
 import { TagPicker } from "../tags/tag-picker";
+import { CategoryCombo } from "./category-combo";
 import { EntryAmount, EntryCard } from "./entry-sheet";
 import { amountMinor, type TransactionFormValues } from "./form";
 import { SplitFields } from "./split-fields";
@@ -47,7 +47,7 @@ export function EntryFields({
   accountError,
   savedRate,
   linked = false,
-  afterCategory,
+  categoryCreate,
 }: {
   form: UseFormReturn<TransactionFormValues>;
   ledgerId: string;
@@ -63,14 +63,13 @@ export function EntryFields({
   savedRate?: ((currency: string) => string | undefined) | undefined;
   /** A transfer's fee or bonus and a payment's tip keep their kind and are never split. */
   linked?: boolean;
-  /** Under the category: Add's "New category". */
-  afterCategory?: ReactNode;
+  /** Offered in the category fields (and the split lines) for a name nobody has yet; none for a viewer. */
+  categoryCreate?: ComboCreate | undefined;
 }) {
   const {
     register,
     watch,
     setValue,
-    control,
     formState: { errors },
   } = form;
   const kind = watch("kind");
@@ -148,26 +147,26 @@ export function EntryFields({
         </div>
         <div className="entry-field">
           {!watch("splitEnabled") && (
-            <Controller
-              name="categoryId"
-              control={control}
-              render={({ field }) => (
-                <CategoryPicker
-                  categories={categories}
-                  kind={kind}
-                  value={field.value || null}
-                  onChange={(id) => field.onChange(id ?? "")}
-                  disabled={frozen}
-                />
-              )}
+            <CategoryCombo
+              categories={categories}
+              kind={kind}
+              value={watch("categoryId") || null}
+              onChange={(id) =>
+                setValue("categoryId", id, { shouldValidate: true })
+              }
+              create={categoryCreate}
             />
           )}
           {errors.categoryId && (
             <p className="field-error">Choose a category.</p>
           )}
-          {afterCategory}
           {!linked && (
-            <SplitFields form={form} categories={categories} kind={kind} />
+            <SplitFields
+              form={form}
+              categories={categories}
+              kind={kind}
+              categoryCreate={categoryCreate}
+            />
           )}
         </div>
         <div className="entry-when">
