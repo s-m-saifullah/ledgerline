@@ -212,7 +212,9 @@ test("category combobox filters in place, selects by keyboard and keeps Escape l
     (await list.getByRole("option").first().boundingBox())?.height ?? 0;
   expect(optionHeight).toBeGreaterThanOrEqual(44);
   await box.fill("zzz");
-  await expect(page.getByText("No matching active categories.")).toBeVisible();
+  await expect(
+    list.getByRole("option", { name: "Create expense category “zzz”" }),
+  ).toBeVisible();
   await box.fill("foo");
   await box.press("Enter");
   await expect(box).toHaveValue("Food");
@@ -290,7 +292,7 @@ test("confirms interrupted create and Undo with the same immutable request", asy
   expect(await posted(page)).toBe(10000);
 });
 
-test("adds an inline category, records pending income and opens through the palette", async ({
+test("creates a category from the Category field, records pending income and opens through the palette", async ({
   page,
 }, info) => {
   await signIn(page);
@@ -301,8 +303,12 @@ test("adds an inline category, records pending income and opens through the pale
     .click();
   await expect(page.getByLabel("Amount (USD)")).toBeFocused();
   await page.getByRole("radio", { name: "Income", exact: true }).check();
-  await page.getByRole("button", { name: "New category" }).click();
-  await page.getByLabel("New category name").fill("Gift");
+  await expect(page.getByRole("button", { name: "New category" })).toHaveCount(
+    0,
+  );
+  const suggestion = page.getByRole("option", {
+    name: "Create income category “Gift”",
+  });
   const requests: { key: string | undefined; body: string | null }[] = [];
   await page.route(
     `**/api/v1/ledgers/${ledgerId}/categories`,
@@ -317,13 +323,15 @@ test("adds an inline category, records pending income and opens through the pale
       else await route.fulfill({ response });
     },
   );
-  await page.getByRole("button", { name: "Add category", exact: true }).click();
+  await page.getByLabel("Category", { exact: true }).fill("Gift");
+  await suggestion.click();
   await expect(page.getByText(/couldn't confirm the category/)).toBeVisible();
   await page.getByRole("button", { name: "Close for now" }).click();
   await openAdd(page);
-  await page.getByRole("button", { name: "Retry category" }).click();
-  await expect(page.getByLabel("Category", { exact: true })).not.toHaveValue(
-    "",
+  await page.getByLabel("Category", { exact: true }).fill("Gift");
+  await suggestion.click();
+  await expect(page.getByLabel("Category", { exact: true })).toHaveValue(
+    "Gift",
   );
   expect(requests[1]).toEqual(requests[0]);
   const gift = (

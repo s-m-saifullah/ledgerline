@@ -207,3 +207,90 @@ test("the type pill moves an Add between expense, income and transfer without lo
   await expect(sheet.getByLabel("Payee", { exact: true })).toBeVisible();
   await expect(sheet.getByRole("radio", { name: "Expense" })).toBeChecked();
 });
+
+/**
+ * Every kind of dialog that exists at any moment after the click, so a placeholder that flashes up and goes
+ * again (the old centred "Transaction details") is caught even when it lasts a few frames.
+ */
+async function dialogsSeen(page: Page, what: "add" | "edit") {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 390, height: 900 });
+  await signIn(page);
+  await page.goto("/transactions");
+  await page.waitForFunction(
+    () => getComputedStyle(document.body).containerType === "inline-size",
+  );
+  await expect(page.locator(".tx-row").first()).toBeEnabled();
+  await page.evaluate(() => {
+    const seen = new Set<string>();
+    (window as unknown as { __seen: Set<string> }).__seen = seen;
+    const note = () => {
+      for (const element of Array.from(
+        document.querySelectorAll("[role=dialog]"),
+      )) {
+        const title = document.getElementById(
+          element.getAttribute("aria-labelledby") ?? "",
+        )?.textContent;
+        const loading = /Loading entry|Opening transaction entry/.test(
+          element.textContent ?? "",
+        );
+        seen.add(
+          `${element.className.split(" ")[0]}: ${title}${loading ? " (loading)" : ""}`,
+        );
+      }
+    };
+    new MutationObserver(note).observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+    });
+  });
+  if (what === "add")
+    await page
+      .getByRole("button", { name: "Add transaction", exact: true })
+      .filter({ visible: true })
+      .click();
+  else await page.locator(".tx-row").first().click();
+  await expect(
+    page.getByRole("dialog", {
+      name: what === "add" ? "Add transaction" : "Edit transaction",
+    }),
+  ).toBeVisible();
+  await page.waitForTimeout(500);
+  return page.evaluate(() => [
+    ...(window as unknown as { __seen: Set<string> }).__seen,
+  ]);
+}
+
+test("opening Add shows only the sheet, never a dialog in the middle of the screen", async ({
+  page,
+}) => {
+  expect(await dialogsSeen(page, "add")).toEqual(["ui-sheet: Add transaction"]);
+});
+
+test("opening an existing entry shows only the sheet, never the old centred loading dialog", async ({
+  page,
+}) => {
+  expect(await dialogsSeen(page, "edit")).toEqual([
+    "ui-sheet: Edit transaction",
+  ]);
+});
+
+test("the Category field offers to create a missing category and uses it", async ({
+  page,
+}) => {
+  const sheet = await open(page, 390, "add");
+  const box = sheet.getByLabel("Category", { exact: true });
+  await box.fill("Coffee");
+  await page
+    .getByRole("option", { name: "Create expense category “Coffee”" })
+    .click();
+  await expect(box).toHaveValue("Coffee");
+  await sheet.getByLabel("Amount (USD)").fill("3.50");
+  await sheet.getByRole("button", { name: "Save transaction" }).click();
+  await expect(page.getByText("Transaction saved.")).toBeVisible();
+  const saved = await pool.query(
+    "SELECT c.name FROM transactions t JOIN categories c ON c.id=t.category_id JOIN ledgers l ON l.id=t.ledger_id WHERE l.name LIKE 'E2E entry sheet ledger%' AND t.amount=-350 AND t.deleted_at IS NULL",
+  );
+  expect(saved.rows.map((row) => row.name)).toEqual(["Coffee"]);
+});
