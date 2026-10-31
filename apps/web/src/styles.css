@@ -1004,32 +1004,13 @@ select {
 }
 
 /* Everyday transaction entry */
-.transaction-fields .balance-direction {
-  margin-top: 0;
-}
-.transaction-amount {
-  font-size: 28px;
-  font-variant-numeric: tabular-nums;
-  min-width: 0;
-}
-.transaction-fields .category-picker {
-  margin: 6px 0 0;
-}
-.inline-category-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-self: start;
-  min-height: 44px;
-}
 .transaction-details {
   margin-top: 8px;
 }
 .transaction-details .account-fields {
   margin-top: 8px;
 }
-.transfer-fee,
-.transfer-bonus {
+.transfer-fee {
   display: grid;
   gap: 4px;
   margin-top: 8px;
@@ -1046,11 +1027,7 @@ select {
 .transfer-fee #transfer-fee-preview:empty {
   display: none;
 }
-.transfer-more-hint {
-  font-size: 13px;
-}
-.transaction-details textarea,
-.transaction-fields textarea {
+.transaction-details textarea {
   width: 100%;
   min-height: 64px;
   resize: vertical;
@@ -1170,40 +1147,6 @@ select {
 @media (max-width: 700px) {
   .combobox input {
     font-size: 16px;
-  }
-}
-.transaction-context {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-}
-.transaction-context > div {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  min-width: 0;
-}
-.transaction-context label {
-  font-size: 12px;
-  font-weight: 500;
-}
-.transaction-fields .category-select select {
-  width: 100%;
-  min-height: 48px;
-  font-size: 14px;
-}
-.transaction-context input {
-  width: 100%;
-  min-width: 0;
-}
-@media (max-width: 700px) {
-  .transaction-fields .category-select select {
-    font-size: 16px;
-  }
-}
-@media (max-width: 380px) {
-  .transaction-context {
-    grid-template-columns: 1fr;
   }
 }
 

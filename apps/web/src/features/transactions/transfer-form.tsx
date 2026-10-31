@@ -20,13 +20,10 @@ import { defaultFeeText, feeMinor, parseFee } from "./fee";
 import { amountMinor, rememberAccount } from "./form";
 import { buildTransferBody } from "./transfer/build-body";
 import {
-  renderAccountPickers,
+  renderAccountsAndWhen,
   renderAmountFields,
-  renderBonusFields,
-  renderFeeField,
-  renderLinkedNotes,
-  renderMoreCategories,
-  renderWhenAndNote,
+  renderFeeAndBonus,
+  renderTagsAndNote,
 } from "./transfer/fields";
 import type { TransferFormContext } from "./transfer/form-context";
 import { defaults, makeSchema, type Values } from "./transfer/schema";
@@ -81,9 +78,11 @@ export function TransferForm({
     register,
     reset,
     watch,
+    getValues,
     setValue,
+    trigger,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: defaults(transfer, accounts, actorId, ledgerId),
@@ -253,6 +252,24 @@ export function TransferForm({
       setBusy(false);
     }
   };
+  // Both accounts must be offered in the other field: an archived one is offered only in its own.
+  const canSwap =
+    !!fromAccount &&
+    !!toAccount &&
+    !fromAccount.archivedAt &&
+    !toAccount.archivedAt;
+  const swap = () => {
+    const values = getValues();
+    setValue("fromAccountId", values.toAccountId);
+    setValue("toAccountId", values.fromAccountId);
+    // Each figure stays with its own currency; a rate set by hand belonged to the old way round.
+    if (crossCurrency) {
+      setValue("amount", values.receivedAmount);
+      setValue("receivedAmount", values.amount);
+    }
+    setValue("fxRate", "");
+    if (isSubmitted) void trigger();
+  };
   const form: TransferFormContext = {
     register,
     watch,
@@ -281,167 +298,168 @@ export function TransferForm({
     setMoreOpen,
     hasFee,
     hasBonus,
+    swap,
+    canSwap,
   };
   const saveDisabled =
     busy ||
     blocked ||
     (!baseline && accounts.filter((row) => !row.archivedAt).length < 2);
   return (
-    <Overlay
-      open={open}
-      title={
-        baseline
-          ? writable
-            ? "Edit transfer"
-            : "Transfer details"
-          : "Add transaction"
-      }
-      description="Move money between accounts. Both balances change together; this does not count as income or spending."
-      busy={busy}
-      onDismiss={onDismiss}
-      cancelLabel={uncertain ? "Close for now" : baseline ? "Close" : "Cancel"}
-      returnFocusId={returnFocusId}
-      fallbackFocusId="main-content"
-      initialFocusId={uncertain ? "retry-transfer" : "transfer-amount"}
-      footer={
-        writable ? (
-          uncertain ? (
-            <button
-              id="retry-transfer"
-              type="button"
-              className="ui-btn ui-btn-primary"
-              disabled={busy || blocked}
-              onClick={() => void execute(operation.current)}
-            >
-              Retry {operation.current === "delete" ? "delete" : "save"}
-            </button>
-          ) : conflict ? (
-            <button
-              type="button"
-              className="ui-btn ui-btn-primary"
-              disabled={busy}
-              onClick={() => void reload()}
-            >
-              Reload latest details
-            </button>
-          ) : confirmDelete ? (
-            <>
+    <>
+      <Overlay
+        open={open}
+        title={
+          baseline
+            ? writable
+              ? "Edit transfer"
+              : "Transfer details"
+            : "Add transaction"
+        }
+        description="Move money between accounts. Both balances change together; this does not count as income or spending."
+        busy={busy}
+        onDismiss={onDismiss}
+        cancelLabel={
+          uncertain ? "Close for now" : baseline ? "Close" : "Cancel"
+        }
+        returnFocusId={returnFocusId}
+        fallbackFocusId="main-content"
+        initialFocusId={uncertain ? "retry-transfer" : "transfer-amount"}
+        footer={
+          writable ? (
+            uncertain ? (
               <button
+                id="retry-transfer"
                 type="button"
-                className="ui-btn ui-btn-secondary"
-                onClick={() => setConfirmDelete(false)}
-              >
-                Keep transfer
-              </button>
-              <button
-                type="button"
-                className="ui-btn ui-btn-danger-filled"
-                disabled={busy}
-                onClick={() => void execute("delete")}
-              >
-                Confirm delete
-              </button>
-            </>
-          ) : (
-            <>
-              {baseline && (
-                <DeleteTrigger
-                  label="Delete transfer"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(true)}
-                />
-              )}
-              <button
-                type="submit"
-                form="transfer-form"
                 className="ui-btn ui-btn-primary"
-                disabled={saveDisabled}
+                disabled={busy || blocked}
+                onClick={() => void execute(operation.current)}
               >
-                {busy ? "Saving…" : baseline ? "Save changes" : "Save transfer"}
+                Retry {operation.current === "delete" ? "delete" : "save"}
               </button>
-            </>
-          )
-        ) : undefined
-      }
-    >
-      {typeControl}
-      {blocked && (
-        <p role="alert">
-          Confirm the earlier transaction action before adding a transfer.
-        </p>
-      )}
-      {!writable && (
-        <p role="status">You have read-only access to this ledger.</p>
-      )}
-      {!baseline && accounts.filter((row) => !row.archivedAt).length < 2 && (
-        <p role="status" className="form-help">
-          Create two active accounts to record a transfer.
-        </p>
-      )}
-      <form
-        id="transfer-form"
-        noValidate
-        className="entry-form"
-        onSubmit={(event) => {
-          if (attempt.current) {
-            event.preventDefault();
-            void execute(operation.current);
-          } else void handleSubmit((values) => execute("save", values))(event);
-        }}
+            ) : conflict ? (
+              <button
+                type="button"
+                className="ui-btn ui-btn-primary"
+                disabled={busy}
+                onClick={() => void reload()}
+              >
+                Reload latest details
+              </button>
+            ) : (
+              <>
+                {baseline && (
+                  <DeleteTrigger
+                    id="delete-transfer"
+                    label="Delete transfer"
+                    disabled={busy}
+                    onClick={() => setConfirmDelete(true)}
+                  />
+                )}
+                <button
+                  type="submit"
+                  form="transfer-form"
+                  className="ui-btn ui-btn-primary"
+                  disabled={saveDisabled}
+                >
+                  {busy
+                    ? "Saving…"
+                    : baseline
+                      ? "Save changes"
+                      : "Save transfer"}
+                </button>
+              </>
+            )
+          ) : undefined
+        }
       >
-        <fieldset
-          className="account-fields transaction-fields entry-fields"
-          disabled={
-            busy ||
-            uncertain ||
-            conflict ||
-            confirmDelete ||
-            blocked ||
-            !writable
-          }
-        >
-          {renderAmountFields(form)}
-          {renderAccountPickers(form)}
-          {renderFeeField(form)}
-          {renderBonusFields(form)}
-          {renderMoreCategories(form)}
-          {renderLinkedNotes(form)}
-          {renderWhenAndNote(form)}
-        </fieldset>
-        {error && (
-          <p role="alert" className="field-error">
-            {error}
+        {typeControl}
+        {blocked && (
+          <p role="alert">
+            Confirm the earlier transaction action before adding a transfer.
           </p>
         )}
-        {confirmDelete && !uncertain && !conflict && (
-          <>
-            <p role="alert">
-              Delete this transfer? Both legs will be deleted. You can undo the
-              deletion.
-            </p>
-            {hasBonus && (
-              <label className="split-toggle">
-                <input
-                  type="checkbox"
-                  checked={alsoDeleteBonus}
-                  onChange={(event) => setAlsoDeleteBonus(event.target.checked)}
-                />{" "}
-                Also delete its bonus entry
-              </label>
-            )}
-            {hasFee && (
-              <label className="split-toggle">
-                <input
-                  type="checkbox"
-                  checked={alsoDeleteFee}
-                  onChange={(event) => setAlsoDeleteFee(event.target.checked)}
-                />{" "}
-                Also delete its fee entry
-              </label>
-            )}
-          </>
+        {!writable && (
+          <p role="status">You have read-only access to this ledger.</p>
         )}
-      </form>
-    </Overlay>
+        {!baseline && accounts.filter((row) => !row.archivedAt).length < 2 && (
+          <p role="status" className="form-help">
+            Create two active accounts to record a transfer.
+          </p>
+        )}
+        <form
+          id="transfer-form"
+          noValidate
+          className="entry-form"
+          onSubmit={(event) => {
+            if (attempt.current) {
+              event.preventDefault();
+              void execute(operation.current);
+            } else
+              void handleSubmit((values) => execute("save", values))(event);
+          }}
+        >
+          <fieldset
+            className="entry-fields"
+            disabled={busy || uncertain || conflict || blocked || !writable}
+          >
+            {renderAmountFields(form)}
+            {renderAccountsAndWhen(form)}
+            {renderFeeAndBonus(form)}
+            {renderTagsAndNote(form)}
+          </fieldset>
+          {error && (
+            <p role="alert" className="field-error">
+              {error}
+            </p>
+          )}
+        </form>
+      </Overlay>
+      <Overlay
+        kind="question"
+        open={confirmDelete}
+        title="Delete this transfer?"
+        busy={busy}
+        onDismiss={() => setConfirmDelete(false)}
+        cancelLabel="Keep transfer"
+        returnFocusId="delete-transfer"
+        fallbackFocusId="main-content"
+        footer={
+          <button
+            type="button"
+            className="ui-btn ui-btn-danger-filled"
+            disabled={busy}
+            onClick={() => {
+              setConfirmDelete(false);
+              void execute("delete");
+            }}
+          >
+            Confirm delete
+          </button>
+        }
+      >
+        <p>Both legs will be deleted. You can undo the deletion.</p>
+        {hasBonus && (
+          <label className="split-toggle">
+            <input
+              type="checkbox"
+              checked={alsoDeleteBonus}
+              onChange={(event) => setAlsoDeleteBonus(event.target.checked)}
+            />{" "}
+            Also delete its bonus entry
+          </label>
+        )}
+        {hasFee && (
+          <label className="split-toggle">
+            <input
+              type="checkbox"
+              checked={alsoDeleteFee}
+              onChange={(event) => setAlsoDeleteFee(event.target.checked)}
+            />{" "}
+            Also delete its fee entry
+          </label>
+        )}
+      </Overlay>
+    </>
   );
 }

@@ -151,3 +151,29 @@
     clip: auto;
   }
 }
+
+/* A transfer: Swap sits between From and To, and the fee and bonus card keeps its categories under More. */
+.entry-swap {
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+}
+.entry-card > .ui-switch-row:not(:last-child) {
+  border-radius: 0;
+}
+.entry-more > summary .muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+.entry-more-body {
+  display: grid;
+  gap: 12px;
+}
+/* What the fee comes to reads as a result, not as more help text. */
+.entry-card #transfer-fee-preview {
+  color: var(--text);
+  font-weight: 500;
+}
+.entry-card #transfer-fee-preview:empty {
+  display: none;
+}
