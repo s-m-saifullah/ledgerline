@@ -92,10 +92,12 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
     mimeType: "text/csv",
     buffer: Buffer.from(STATEMENT),
   });
-  await expect(page.getByText("Match your columns")).toBeVisible();
+  await expect(
+    page.getByRole("switch", { name: "The first row holds column names" }),
+  ).toBeVisible();
   await expect(page.getByText(/We can read/)).toContainText("3 rows");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByText("Choose categories")).toBeVisible();
+  await expect(page.getByLabel(/“Travel”/)).toBeVisible();
   await page.getByLabel(/“Travel”/).selectOption({ label: "Fun" });
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Possible duplicates")).toBeVisible();
@@ -118,7 +120,7 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
   // Undo from the recent imports list.
   await page.goto("/import");
   await expect(page.getByText("Recent imports")).toBeVisible();
-  await page.getByRole("button", { name: "Undo this import" }).click();
+  await page.getByRole("button", { name: /^statement\.csv/ }).click();
   await page.getByRole("button", { name: "Delete these entries" }).click();
   await expect(
     page.getByText("Removed 2 entries from statement.csv."),

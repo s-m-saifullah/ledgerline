@@ -290,6 +290,16 @@ test("on a phone the edit sheet keeps the trash icon and Save on one row, with C
     const remove = dialog.getByRole("button", { name: "Delete transaction" });
     const close = dialog.getByRole("button", { name: "Close", exact: true });
     const save = dialog.getByRole("button", { name: "Save changes" });
+    // The sheet may still be sliding in: wait until the two foot buttons sit on one row, then measure.
+    await expect
+      .poll(async () => {
+        const [first, second] = await Promise.all([
+          remove.boundingBox(),
+          save.boundingBox(),
+        ]);
+        return Math.abs((first?.y ?? 0) - (second?.y ?? 99));
+      })
+      .toBeLessThan(2);
     const [r, c, s] = await Promise.all([
       remove.boundingBox(),
       close.boundingBox(),

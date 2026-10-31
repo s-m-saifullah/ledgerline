@@ -9,8 +9,9 @@ import {
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
 
-// The Import and export page in a real browser (ADR 0047, PR 6a): jsdom cannot run container queries, so the
-// cards, the date columns, the sideways scroll of a wide file and the Undo question are measured here.
+// The Import and export page in a real browser (ADR 0047, PR 6a), against the approved prototype: jsdom cannot run
+// container queries, so the two columns, the aligned card tops, the pick rows, the drop zone, the sideways scroll of
+// a wide file and the Undo question are measured here.
 const { env, pool } = connectLocalDatabase("Import layout browser tests");
 const fixtures: string[] = [];
 test.beforeEach(async ({ page }, testInfo) => {
@@ -82,7 +83,7 @@ async function open(page: Page, width: number, theme?: "light" | "dark") {
     () => getComputedStyle(document.body).containerType === "inline-size",
   );
   if (theme) await setTheme(page, theme);
-  await expect(page.getByLabel("CSV file")).toBeVisible();
+  await expect(page.getByLabel("CSV file")).toBeAttached();
 }
 const upload = (page: Page, text: string) =>
   page.getByLabel("CSV file").setInputFiles({
@@ -113,7 +114,9 @@ async function is44(page: Page, locator: Locator) {
         [x, y + 21],
       ].every(([px, py]) => {
         const element = hit(px as number, py as number);
-        const control = target?.closest("button, a, label, [role=switch]");
+        const control = target?.closest(
+          "button, a, label, select, [role=switch], [role=radio]",
+        );
         return !!element && !!control && control.contains(element);
       });
     },
@@ -134,54 +137,166 @@ async function settled(locator: Locator) {
     })
     .toBe(true);
 }
+const importCard = (page: Page) => page.locator(".imp-stack .ui-card").first();
+const exportCard = (page: Page) =>
+  page.locator("section[aria-labelledby=export-title]");
 
 for (const theme of ["light", "dark"] as const)
   for (const width of [320, 390, 1280]) {
-    test(`the file step fits ${width} px in ${theme}: the import card, the export and real targets`, async ({
+    test(`the file step fits ${width} px in ${theme}: pick row, drop zone, export and real targets`, async ({
       page,
     }) => {
       await open(page, width, theme);
       expect(await noSideways(page)).toBe(true);
-      await expect(
-        page.getByRole("heading", { name: "Export", exact: true }),
-      ).toBeVisible();
+      // "Import into" is a pick row: the whole row is the select, and it is at least 56 px tall.
+      const pick = page.locator(".ui-pick-row").first();
+      expect((await box(pick)).height).toBeGreaterThanOrEqual(56);
+      expect(await is44(page, page.getByLabel("Import into"))).toBe(true);
+      // The drop zone is one dashed target.
+      const drop = page.locator(".imp-drop");
+      await expect(drop).toBeVisible();
+      expect(
+        await drop.evaluate((node) => getComputedStyle(node).borderTopStyle),
+      ).toBe("dashed");
+      for (const name of [
+        "Download CSV template",
+        "Download transactions",
+        "Download accounts",
+        "Download categories",
+      ])
+        expect(await is44(page, page.getByRole("button", { name }))).toBe(true);
+      // The three downloads are one width.
+      const widths = [];
       for (const name of [
         "Download transactions",
         "Download accounts",
         "Download categories",
-        "Download CSV template",
       ])
-        expect(await is44(page, page.getByRole("button", { name }))).toBe(true);
+        widths.push((await box(page.getByRole("button", { name }))).width);
+      expect(Math.max(...widths) - Math.min(...widths)).toBeLessThan(1);
+      // The steps are numbered circles.
+      const circle = page.locator(".imp-steps li i").first();
+      const round = await box(circle);
+      expect(Math.round(round.width)).toBe(24);
       const from = await box(page.getByLabel("From date", { exact: true }));
       const to = await box(page.getByLabel("To date", { exact: true }));
-      if (width >= 700) {
+      // From and To sit side by side where each date fits beside its calendar button (320 px stacks them), and
+      // neither date is ever cut off.
+      if (width >= 390) {
         expect(Math.abs(from.y - to.y)).toBeLessThan(2);
         expect(to.x).toBeGreaterThan(from.x + from.width - 1);
-        // The page is a column of at most 760 px, not stretched across a desktop.
-        const card = await box(page.locator(".imp-card").first());
-        expect(card.width).toBeLessThanOrEqual(761);
-      } else {
-        expect(to.y).toBeGreaterThan(from.y + from.height - 1);
-        expect(from.width).toBeGreaterThan(220);
       }
+      expect(from.width).toBeGreaterThan(100);
+      for (const date of ["From date", "To date"])
+        expect(
+          // A date input hides its overflow, so measure the longest date, typed into a text input of the same
+          // font, against the room the field leaves (6 px for the date field's own inner margins).
+          await page.getByLabel(date, { exact: true }).evaluate((node) => {
+            const css = getComputedStyle(node);
+            const probe = document.createElement("input");
+            probe.value = "12/31/2026";
+            probe.style.cssText = `position:absolute;visibility:hidden;width:1px;padding:0;border:0;font-family:${css.fontFamily};font-size:${css.fontSize};font-weight:${css.fontWeight};font-variant-numeric:${css.fontVariantNumeric}`;
+            document.body.append(probe);
+            const needed = probe.scrollWidth;
+            probe.remove();
+            const room =
+              node.clientWidth -
+              Number.parseFloat(css.paddingLeft) -
+              Number.parseFloat(css.paddingRight);
+            return room >= needed + 6;
+          }),
+        ).toBe(true);
+      if (width < 700)
+        // On a phone the export sits under the import.
+        expect((await box(exportCard(page))).y).toBeGreaterThan(
+          (await box(importCard(page))).y,
+        );
     });
   }
+
+test("from 700 px the import and the export are two columns whose cards start on one line, and 2 to 1 from 1100 px", async ({
+  page,
+}) => {
+  await open(page, 900);
+  const left = await box(importCard(page));
+  const right = await box(exportCard(page));
+  expect(Math.abs(left.y - right.y)).toBeLessThan(1);
+  expect(right.x).toBeGreaterThan(left.x + left.width - 1);
+  expect(Math.abs(left.width - right.width)).toBeLessThan(2);
+  // Their first rows are one row tall each, so the two cards open alike.
+  const rows = [
+    await box(importCard(page).locator(".ui-row").first()),
+    await box(exportCard(page).locator(".ui-row").first()),
+  ];
+  expect(
+    Math.abs((rows[0]?.height ?? 0) - (rows[1]?.height ?? 1)),
+  ).toBeLessThan(1);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.waitForTimeout(200);
+  const wide = [await box(importCard(page)), await box(exportCard(page))];
+  expect(Math.abs((wide[0]?.y ?? 0) - (wide[1]?.y ?? 1))).toBeLessThan(1);
+  expect((wide[0]?.width ?? 0) / (wide[1]?.width ?? 1)).toBeGreaterThan(1.8);
+  expect((wide[0]?.width ?? 0) / (wide[1]?.width ?? 1)).toBeLessThan(2.2);
+  // The steps are above both columns, so they do not push the import card below the export card.
+  const steps = await box(page.locator(".imp-steps"));
+  expect(steps.y + steps.height).toBeLessThanOrEqual((wide[0]?.y ?? 0) + 1);
+});
+
+test("the export card's title is the same row as 'Import into', and the Done card opens the same way", async ({
+  page,
+}) => {
+  await open(page, 1280);
+  const style = (locator: Locator) =>
+    locator.evaluate((node) => {
+      const css = getComputedStyle(node);
+      return [css.fontSize, css.fontWeight];
+    });
+  const title = await style(page.locator("#export-title"));
+  const pickTitle = await style(
+    page.locator(".ui-pick-row .ui-row-title").first(),
+  );
+  expect(title).toEqual(pickTitle);
+});
+
+test("the focus ring of the first row follows the card's curve instead of being cut at its corners", async ({
+  page,
+}) => {
+  await open(page, 390);
+  const select = page.getByLabel("Import into");
+  await select.focus();
+  const row = page.locator(".ui-pick-row").first();
+  const corners = await row.evaluate((node) => {
+    const css = getComputedStyle(node);
+    return {
+      outline: css.outlineStyle,
+      topLeft: Number.parseFloat(css.borderTopLeftRadius),
+      topRight: Number.parseFloat(css.borderTopRightRadius),
+      card: Number.parseFloat(
+        getComputedStyle(node.closest(".ui-card") as Element)
+          .borderTopLeftRadius,
+      ),
+    };
+  });
+  expect(corners.outline).toBe("solid");
+  // One pixel less than the card, which has a one pixel border.
+  expect(corners.topLeft).toBe(corners.card - 1);
+  expect(corners.topRight).toBe(corners.card - 1);
+});
 
 test("the end of the page is clear of the phone's bottom bar", async ({
   page,
 }) => {
   await open(page, 320);
-  const last = page.locator(".imp-note").last();
+  const last = page.getByRole("button", { name: "Download categories" });
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-  await page.evaluate(() => document.querySelector("main")?.scrollTo(0, 1e6));
   await expect(last).toBeVisible();
   const found = await box(last);
   const covered = await page.evaluate(
     ({ x, y }) => {
       const hit = document.elementFromPoint(x, y);
-      return !hit?.closest(".imp-note");
+      return !hit?.closest("button");
     },
-    { x: found.x + 4, y: found.y + found.height - 2 },
+    { x: found.x + found.width / 2, y: found.y + found.height - 2 },
   );
   expect(covered).toBe(false);
 });
@@ -191,26 +306,39 @@ test("a wide file scrolls inside its card and never widens the page", async ({
 }) => {
   await open(page, 320);
   await upload(page, WIDE);
-  await expect(page.getByText("Match your columns")).toBeVisible();
+  await expect(
+    page.getByRole("switch", { name: "The first row holds column names" }),
+  ).toBeVisible();
   expect(await noSideways(page)).toBe(true);
-  const table = page.locator(".imp-sample-wrap");
+  const table = page.locator(".imp-sample-card");
   expect(
     await table.evaluate((node) => node.scrollWidth > node.clientWidth),
   ).toBe(true);
   for (const name of ["Back", "Continue"])
     expect(await is44(page, page.getByRole("button", { name }))).toBe(true);
-  // The three amount styles are real 44 px targets, and the two switches too.
-  for (const row of await page.locator(".imp-choice").all())
-    expect((await box(row)).height).toBeGreaterThanOrEqual(44);
+  // The amount style is a segmented control of real targets, and the switch row too.
+  for (const name of [
+    "One amount column",
+    "Amount and type",
+    "Money in and out",
+  ])
+    expect(await is44(page, page.getByRole("radio", { name }))).toBe(true);
   expect(
     await is44(
       page,
-      page.getByRole("switch", { name: "First row is a header" }),
+      page.getByRole("switch", { name: "The first row holds column names" }),
     ),
+  ).toBe(true);
+  // A long switch title wraps rather than being cut off.
+  const title = page
+    .getByRole("switch", { name: "The first row holds column names" })
+    .locator(".ui-row-title");
+  expect(
+    await title.evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
   ).toBe(true);
 });
 
-test("Undo asks in a centred question that has real targets, and keeping the entries returns to the button", async ({
+test("a recent import's row opens a centred Undo question with real targets, and keeping the entries returns to the row", async ({
   page,
 }) => {
   await open(page, 390);
@@ -219,8 +347,9 @@ test("Undo asks in a centred question that has real targets, and keeping the ent
   await page.getByRole("button", { name: /^Import \d+ entr/ }).click();
   await expect(page.getByText(/^Imported 2 entries/)).toBeVisible();
   await page.goto("/import");
-  const undo = page.getByRole("button", { name: "Undo this import" });
-  await undo.click();
+  const row = page.getByRole("button", { name: /^statement\.csv/ });
+  await expect(row.getByText("Undo", { exact: true })).toBeVisible();
+  await row.click();
   const question = page.getByRole("dialog", { name: "Undo this import?" });
   await expect(question).toBeVisible();
   await settled(question);
@@ -231,7 +360,7 @@ test("Undo asks in a centred question that has real targets, and keeping the ent
     expect(await is44(page, question.getByRole("button", { name }))).toBe(true);
   await question.getByRole("button", { name: "Keep them" }).click();
   await expect(question).toBeHidden();
-  await expect(undo).toBeFocused();
+  await expect(row).toBeFocused();
 });
 
 for (const theme of ["light", "dark"] as const)
@@ -246,10 +375,14 @@ for (const theme of ["light", "dark"] as const)
     await open(page, 1280, theme);
     expect(await found()).toEqual([]);
     await upload(page, STATEMENT);
-    await expect(page.getByText("Match your columns")).toBeVisible();
+    await expect(
+      page.getByRole("switch", { name: "The first row holds column names" }),
+    ).toBeVisible();
     expect(await found()).toEqual([]);
     await page.getByRole("button", { name: "Continue" }).click();
-    await expect(page.getByText("Review before importing")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /^Import \d+ entr/ }),
+    ).toBeVisible();
     await expect(page.getByText("Ready", { exact: true })).toBeVisible();
     expect(await found()).toEqual([]);
   });
