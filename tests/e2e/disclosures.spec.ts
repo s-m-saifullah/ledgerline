@@ -70,8 +70,10 @@ test("disclosures show a marker, are tall enough and work from the keyboard", as
   const summaries = dialog.locator("details > summary");
   expect(await summaries.count()).toBeGreaterThanOrEqual(1);
   for (const summary of await summaries.all()) {
-    const box = await summary.boundingBox();
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    // The sheet may still be sliding in (the mobile project does not reduce motion): wait for it to settle.
+    await expect
+      .poll(async () => (await summary.boundingBox())?.height ?? 0)
+      .toBeGreaterThanOrEqual(44);
     const style = await summary.evaluate((element) => ({
       marker: getComputedStyle(element, "::before").content,
       listStyle: getComputedStyle(element).listStyleType,
