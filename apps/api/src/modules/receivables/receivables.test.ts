@@ -1031,7 +1031,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const doc = (
       await app.inject({ url: "/api/v1/openapi.json", headers: { cookie } })
     ).json();
-    expect(doc.info.version).toBe("0.1.50");
+    expect(doc.info.version).toBe("0.1.51");
     const prefix = "/api/v1/ledgers/{ledgerId}";
     for (const resource of [
       "/contacts",

@@ -30,7 +30,12 @@ data class Contact(
     val openBalances: List<Money>,
     val unconvertedCurrencies: List<String>,
     val oldestOpenServiceDate: String?,
+    val paidThisMonth: PaidThisMonth,
 )
+
+/** What a client paid in one month: [base] in the base currency as saved with each payment, [amounts] per service currency. */
+@Serializable
+data class PaidThisMonth(val base: Money, val amounts: List<Money>)
 
 @Serializable
 data class ServiceList(val items: List<Service>, val nextCursor: String?)

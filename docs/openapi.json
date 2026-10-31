@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.50"
+    "version": "0.1.51"
   },
   "components": {
     "schemas": {
@@ -5395,6 +5395,15 @@
           {
             "schema": {
               "type": "string",
+              "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])$"
+            },
+            "in": "query",
+            "name": "month",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
             },
@@ -5569,6 +5578,66 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "paidThisMonth": {
+                            "default": {
+                              "base": {
+                                "amount": 0,
+                                "currency": "USD"
+                              },
+                              "amounts": []
+                            },
+                            "type": "object",
+                            "properties": {
+                              "base": {
+                                "type": "object",
+                                "properties": {
+                                  "amount": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "currency": {
+                                    "type": "string",
+                                    "enum": [
+                                      "USD"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "amount",
+                                  "currency"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "amounts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "amount": {
+                                      "type": "integer",
+                                      "minimum": -9007199254740991,
+                                      "maximum": 9007199254740991
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "pattern": "^[A-Z]{3}$"
+                                    }
+                                  },
+                                  "required": [
+                                    "amount",
+                                    "currency"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "base",
+                              "amounts"
+                            ],
+                            "additionalProperties": false
                           }
                         },
                         "required": [
@@ -5586,7 +5655,8 @@
                           "openBalance",
                           "openBalances",
                           "unconvertedCurrencies",
-                          "oldestOpenServiceDate"
+                          "oldestOpenServiceDate",
+                          "paidThisMonth"
                         ],
                         "additionalProperties": false
                       }
@@ -6193,6 +6263,66 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "paidThisMonth": {
+                      "default": {
+                        "base": {
+                          "amount": 0,
+                          "currency": "USD"
+                        },
+                        "amounts": []
+                      },
+                      "type": "object",
+                      "properties": {
+                        "base": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "amounts"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -6210,7 +6340,8 @@
                     "openBalance",
                     "openBalances",
                     "unconvertedCurrencies",
-                    "oldestOpenServiceDate"
+                    "oldestOpenServiceDate",
+                    "paidThisMonth"
                   ],
                   "additionalProperties": false
                 }
@@ -6554,6 +6685,15 @@
           {
             "schema": {
               "type": "string",
+              "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])$"
+            },
+            "in": "query",
+            "name": "month",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$"
             },
@@ -6733,6 +6873,66 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "paidThisMonth": {
+                      "default": {
+                        "base": {
+                          "amount": 0,
+                          "currency": "USD"
+                        },
+                        "amounts": []
+                      },
+                      "type": "object",
+                      "properties": {
+                        "base": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "amounts"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -6750,7 +6950,8 @@
                     "openBalance",
                     "openBalances",
                     "unconvertedCurrencies",
-                    "oldestOpenServiceDate"
+                    "oldestOpenServiceDate",
+                    "paidThisMonth"
                   ],
                   "additionalProperties": false
                 }
@@ -7346,6 +7547,66 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "paidThisMonth": {
+                      "default": {
+                        "base": {
+                          "amount": 0,
+                          "currency": "USD"
+                        },
+                        "amounts": []
+                      },
+                      "type": "object",
+                      "properties": {
+                        "base": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "amounts"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -7363,7 +7624,8 @@
                     "openBalance",
                     "openBalances",
                     "unconvertedCurrencies",
-                    "oldestOpenServiceDate"
+                    "oldestOpenServiceDate",
+                    "paidThisMonth"
                   ],
                   "additionalProperties": false
                 }
@@ -18376,6 +18638,66 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "paidThisMonth": {
+                      "default": {
+                        "base": {
+                          "amount": 0,
+                          "currency": "USD"
+                        },
+                        "amounts": []
+                      },
+                      "type": "object",
+                      "properties": {
+                        "base": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "amounts"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -18393,7 +18715,8 @@
                     "openBalance",
                     "openBalances",
                     "unconvertedCurrencies",
-                    "oldestOpenServiceDate"
+                    "oldestOpenServiceDate",
+                    "paidThisMonth"
                   ],
                   "additionalProperties": false
                 }
@@ -18947,6 +19270,66 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "paidThisMonth": {
+                      "default": {
+                        "base": {
+                          "amount": 0,
+                          "currency": "USD"
+                        },
+                        "amounts": []
+                      },
+                      "type": "object",
+                      "properties": {
+                        "base": {
+                          "type": "object",
+                          "properties": {
+                            "amount": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "currency": {
+                              "type": "string",
+                              "enum": [
+                                "USD"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "amount",
+                            "currency"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "amounts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "amount": {
+                                "type": "integer",
+                                "minimum": -9007199254740991,
+                                "maximum": 9007199254740991
+                              },
+                              "currency": {
+                                "type": "string",
+                                "pattern": "^[A-Z]{3}$"
+                              }
+                            },
+                            "required": [
+                              "amount",
+                              "currency"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "amounts"
+                      ],
+                      "additionalProperties": false
                     }
                   },
                   "required": [
@@ -18964,7 +19347,8 @@
                     "openBalance",
                     "openBalances",
                     "unconvertedCurrencies",
-                    "oldestOpenServiceDate"
+                    "oldestOpenServiceDate",
+                    "paidThisMonth"
                   ],
                   "additionalProperties": false
                 }

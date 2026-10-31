@@ -1,5 +1,6 @@
 import {
   type ClientListQuery,
+  type ContactReadQuery,
   type CreateContact,
   contactSchema,
   type JsonValue,
@@ -12,6 +13,8 @@ import { accountsForContact, renameContactAccounts } from "../accounts/service";
 import { requireLedgerRead } from "../ledgers/service";
 import {
   clientBalances,
+  clientPayments,
+  paidMonth,
   requireNoReceivables,
 } from "../receivables/balance-service";
 import { runFinancialWrite, type WriteIdentity } from "../writes/service";
@@ -27,10 +30,16 @@ async function dto(
   ledgerId: string,
   row: ContactRow,
   balances?: Awaited<ReturnType<typeof clientBalances>>,
+  payments?: Awaited<ReturnType<typeof clientPayments>>,
+  month?: string,
 ) {
   const balance = (balances ?? (await clientBalances(db, ledgerId))).get(
     row.id,
   );
+  const paid = (
+    payments ??
+    (await clientPayments(db, ledgerId, await paidMonth(db, ledgerId, month)))
+  ).get(row.id);
   return contactSchema.parse({
     ...row,
     // The base currency is USD for every ledger today (ADR 0020).
@@ -38,6 +47,11 @@ async function dto(
     openBalances: balance?.amounts ?? [],
     unconvertedCurrencies: balance?.unconverted ?? [],
     oldestOpenServiceDate: balance?.oldest ?? null,
+    // The base currency is USD for every ledger today (ADR 0020).
+    paidThisMonth: {
+      base: { amount: paid?.base ?? 0, currency: "USD" },
+      amounts: paid?.amounts ?? [],
+    },
     archivedAt: row.archivedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -79,9 +93,16 @@ export async function listContacts(
       await requireLedgerRead(tx, actorId, ledgerId);
       const rows = await contactRepository(tx, ledgerId).list(q);
       const balances = await clientBalances(tx, ledgerId);
+      const payments = await clientPayments(
+        tx,
+        ledgerId,
+        await paidMonth(tx, ledgerId, q.month),
+      );
       return {
         items: await Promise.all(
-          rows.slice(0, q.limit).map((r) => dto(tx, ledgerId, r, balances)),
+          rows
+            .slice(0, q.limit)
+            .map((r) => dto(tx, ledgerId, r, balances, payments)),
         ),
         nextCursor:
           rows.length > q.limit ? (rows[q.limit - 1]?.id ?? null) : null,
@@ -95,6 +116,7 @@ export async function getContact(
   actorId: string,
   ledgerId: string,
   id: string,
+  q: ContactReadQuery = {},
 ) {
   return db.transaction(
     async (tx) => {
@@ -103,6 +125,9 @@ export async function getContact(
         tx,
         ledgerId,
         required(await contactRepository(tx, ledgerId).find(id)),
+        undefined,
+        undefined,
+        q.month,
       );
     },
     { isolationLevel: "repeatable read" },

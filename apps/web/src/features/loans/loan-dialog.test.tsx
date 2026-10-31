@@ -42,6 +42,7 @@ const client: Contact = {
   openBalances: [],
   unconvertedCurrencies: [],
   oldestOpenServiceDate: null,
+  paidThisMonth: { base: { amount: 0, currency: "USD" }, amounts: [] },
 };
 const loan = (amount: number): LoanBalance => ({
   accountId: newId(),

@@ -8,6 +8,7 @@ import {
   versionSchema,
 } from "./contracts";
 import { rateSchema } from "./currency";
+import { homeMonthSchema } from "./home";
 import {
   transactionDateSchema,
   transactionSchema,
@@ -56,6 +57,17 @@ export const clientListQuerySchema = z.object({
   text: z.string().trim().min(1).max(200).optional(),
   // "clients" leaves out people who were only added for loans and have no services (ADR 0030).
   kind: z.enum(["all", "clients"]).default("all"),
+  // The month "paid this month" covers; omitted means the current month in the ledger's time zone.
+  month: homeMonthSchema.optional(),
+});
+export const contactReadQuerySchema = clientListQuerySchema.pick({
+  month: true,
+});
+// Money received from a client in one month: what its payments settled, in each service
+// currency, and their worth in the base currency at the rates saved with the payments.
+export const paidThisMonthSchema = z.object({
+  base: usdMoneySchema,
+  amounts: z.array(moneySchema),
 });
 const timestamps = { createdAt: z.iso.datetime(), updatedAt: z.iso.datetime() };
 export const contactSchema = z.object({
@@ -73,6 +85,11 @@ export const contactSchema = z.object({
   openBalances: z.array(moneySchema).default([]),
   unconvertedCurrencies: z.array(currencySchema).default([]),
   oldestOpenServiceDate: transactionDateSchema.nullable(),
+  // Payments dated in the asked month (tips left out); zero when there are none.
+  paidThisMonth: paidThisMonthSchema.default({
+    base: { amount: 0, currency: "USD" },
+    amounts: [],
+  }),
 });
 export const contactListSchema = z.object({
   items: z.array(contactSchema),
@@ -265,6 +282,7 @@ export type Contact = z.infer<typeof contactSchema>;
 export type CreateContact = z.infer<typeof createContactSchema>;
 export type UpdateContact = z.infer<typeof updateContactSchema>;
 export type ClientListQuery = z.infer<typeof clientListQuerySchema>;
+export type ContactReadQuery = z.infer<typeof contactReadQuerySchema>;
 export type Receivable = z.infer<typeof receivableSchema>;
 export type CreateReceivable = z.infer<typeof createReceivableSchema>;
 export type UpdateReceivable = z.infer<typeof updateReceivableSchema>;

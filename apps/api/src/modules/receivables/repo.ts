@@ -8,6 +8,7 @@ import type {
 import { and, asc, desc, eq, gt, gte, isNull, lt, lte, sql } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import {
+  ledgers,
   receivableEvents,
   receivablePayments,
   receivables,
@@ -125,6 +126,26 @@ export function receivableRepository(db: DatabaseConnection, ledgerId: string) {
       }>(
         sql`select contact_id as "contactId",currency,coalesce(sum(amount-${received}::numeric),0)::text as total,min(service_date)::text as oldest from receivables where ledger_id=${ledgerId} and deleted_at is null and written_off_at is null and amount>${received}::numeric group by contact_id,currency`,
       ),
+    /**
+     * Payments by client and service currency dated from `start` to `end` (the payment entry's
+     * date), with the base value saved on each entry; tips are separate entries and not counted.
+     */
+    paidBetween: (start: string, end: string) =>
+      db.execute<{
+        contactId: string;
+        currency: string;
+        total: string;
+        base: string;
+      }>(
+        sql`select r.contact_id as "contactId",p.currency,sum(p.amount)::text as total,sum(t.base_amount)::text as base from receivable_payments p join receivables r on r.ledger_id=p.ledger_id and r.id=p.receivable_id join transactions t on t.ledger_id=p.ledger_id and t.id=p.transaction_id where p.ledger_id=${ledgerId} and p.deleted_at is null and t.date>=${start} and t.date<=${end} group by r.contact_id,p.currency`,
+      ),
+    timeZone: async () =>
+      (
+        await db
+          .select({ timeZone: ledgers.timeZone })
+          .from(ledgers)
+          .where(eq(ledgers.id, ledgerId))
+      )[0]?.timeZone ?? null,
     hasContact: async (id: string) =>
       (
         await db

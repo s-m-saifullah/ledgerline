@@ -2,6 +2,7 @@ import {
   clientListQuerySchema,
   contactListSchema,
   contactParamsSchema,
+  contactReadQuerySchema,
   contactSchema,
   ledgerParamsSchema,
   pageQuerySchema,
@@ -56,11 +57,18 @@ export function registerClientReadRoutes(
         tags: ["Clients"],
         security: [{ sessionCookie: [] }],
         params: contactParamsSchema,
+        querystring: contactReadQuerySchema,
         response: { 200: contactSchema, ...errors },
       },
     },
     async (r) =>
-      getContact(db, await actor(r), r.params.ledgerId, r.params.contactId),
+      getContact(
+        db,
+        await actor(r),
+        r.params.ledgerId,
+        r.params.contactId,
+        r.query,
+      ),
   );
   app.get(
     "/api/v1/ledgers/:ledgerId/contacts/:contactId/history",

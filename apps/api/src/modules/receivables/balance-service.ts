@@ -1,4 +1,4 @@
-import type { Money } from "@ledgerline/shared";
+import { localDate, type Money, monthRange } from "@ledgerline/shared";
 import type { DatabaseConnection } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { latestRates } from "../currencies/service";
@@ -82,6 +82,43 @@ export async function clientBalances(
     });
   }
   return result;
+}
+/** The month asked for, or the current one in the ledger's time zone (UTC when none is set). */
+export async function paidMonth(
+  db: DatabaseConnection,
+  ledgerId: string,
+  month?: string,
+) {
+  if (month) return month;
+  const zone = await receivableRepository(db, ledgerId).timeZone();
+  return localDate(new Date(), zone).slice(0, 7);
+}
+/** What each client paid in a month: per service currency, and in the base currency as saved. */
+export async function clientPayments(
+  db: DatabaseConnection,
+  ledgerId: string,
+  month: string,
+) {
+  const { start, end } = monthRange(month);
+  const rows = (
+    await receivableRepository(db, ledgerId).paidBetween(start, end)
+  ).rows;
+  const clients = new Map<string, { amounts: Money[]; base: bigint }>();
+  for (const r of rows) {
+    const client = clients.get(r.contactId) ?? { amounts: [], base: 0n };
+    client.amounts.push({ amount: safeOwed(r.total), currency: r.currency });
+    client.base += BigInt(r.base);
+    clients.set(r.contactId, client);
+  }
+  return new Map(
+    [...clients].map(([id, client]) => [
+      id,
+      {
+        amounts: client.amounts.sort(byCurrency),
+        base: safeOwed(client.base),
+      },
+    ]),
+  );
 }
 /** Call under the category ledger lock for writes. */
 async function owedTotal(db: DatabaseConnection, ledgerId: string) {
