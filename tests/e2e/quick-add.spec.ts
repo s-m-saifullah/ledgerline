@@ -130,13 +130,18 @@ test("records exact expenses quickly, reuses the last account and undoes with fo
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   const start = Date.now();
   await openAdd(page);
-  const saveBounds = await page
-    .getByRole("button", { name: "Save transaction" })
-    .boundingBox();
-  expect(
-    saveBounds &&
-      saveBounds.y + saveBounds.height <= (page.viewportSize()?.height ?? 0),
-  ).toBe(true);
+  // The sheet rises into place first, so wait for Save to settle inside the screen.
+  await expect
+    .poll(async () => {
+      const saveBounds = await page
+        .getByRole("button", { name: "Save transaction" })
+        .boundingBox();
+      return (
+        !!saveBounds &&
+        saveBounds.y + saveBounds.height <= (page.viewportSize()?.height ?? 0)
+      );
+    })
+    .toBe(true);
   await fill(page);
   await page.getByLabel("Account").selectOption(cashId);
   await page.getByRole("button", { name: "Save transaction" }).click();
@@ -207,7 +212,9 @@ test("category combobox filters in place, selects by keyboard and keeps Escape l
     (await list.getByRole("option").first().boundingBox())?.height ?? 0;
   expect(optionHeight).toBeGreaterThanOrEqual(44);
   await box.fill("zzz");
-  await expect(page.getByText("No matching active categories.")).toBeVisible();
+  await expect(
+    list.getByRole("option", { name: "Create expense category “zzz”" }),
+  ).toBeVisible();
   await box.fill("foo");
   await box.press("Enter");
   await expect(box).toHaveValue("Food");
@@ -285,7 +292,7 @@ test("confirms interrupted create and Undo with the same immutable request", asy
   expect(await posted(page)).toBe(10000);
 });
 
-test("adds an inline category, records pending income and opens through the palette", async ({
+test("creates a category from the Category field, records pending income and opens through the palette", async ({
   page,
 }, info) => {
   await signIn(page);
@@ -296,8 +303,12 @@ test("adds an inline category, records pending income and opens through the pale
     .click();
   await expect(page.getByLabel("Amount (USD)")).toBeFocused();
   await page.getByRole("radio", { name: "Income", exact: true }).check();
-  await page.getByRole("button", { name: "New category" }).click();
-  await page.getByLabel("New category name").fill("Gift");
+  await expect(page.getByRole("button", { name: "New category" })).toHaveCount(
+    0,
+  );
+  const suggestion = page.getByRole("option", {
+    name: "Create income category “Gift”",
+  });
   const requests: { key: string | undefined; body: string | null }[] = [];
   await page.route(
     `**/api/v1/ledgers/${ledgerId}/categories`,
@@ -312,13 +323,15 @@ test("adds an inline category, records pending income and opens through the pale
       else await route.fulfill({ response });
     },
   );
-  await page.getByRole("button", { name: "Add category", exact: true }).click();
+  await page.getByLabel("Category", { exact: true }).fill("Gift");
+  await suggestion.click();
   await expect(page.getByText(/couldn't confirm the category/)).toBeVisible();
   await page.getByRole("button", { name: "Close for now" }).click();
   await openAdd(page);
-  await page.getByRole("button", { name: "Retry category" }).click();
-  await expect(page.getByLabel("Category", { exact: true })).not.toHaveValue(
-    "",
+  await page.getByLabel("Category", { exact: true }).fill("Gift");
+  await suggestion.click();
+  await expect(page.getByLabel("Category", { exact: true })).toHaveValue(
+    "Gift",
   );
   expect(requests[1]).toEqual(requests[0]);
   const gift = (
@@ -330,8 +343,7 @@ test("adds an inline category, records pending income and opens through the pale
   expect(gift).toHaveLength(1);
   expect(gift[0].kind).toBe("income");
   await page.getByLabel("Amount (USD)").fill("15.29");
-  await page.locator("summary").filter({ hasText: "More details" }).click();
-  await page.getByLabel("Status", { exact: true }).selectOption("pending");
+  await page.getByRole("switch", { name: "Pending" }).click();
   await page.getByLabel("Time (optional)", { exact: true }).fill("23:59");
   await page.getByLabel("Payer", { exact: true }).fill("Synthetic giver");
   await page.getByLabel("Note", { exact: true }).fill("Synthetic pending gift");
@@ -349,7 +361,6 @@ test("adds an inline category, records pending income and opens through the pale
   await setTheme(page, "dark");
   await page.setViewportSize({ width: 320, height: 800 });
   await openAdd(page);
-  await page.locator("summary").filter({ hasText: "More details" }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(
     await page.evaluate(
@@ -373,7 +384,6 @@ test("payer labels and themed date/time pickers save exact local values with nes
     await page.setViewportSize({ width: 320, height: 740 });
   await signIn(page);
   await openAdd(page);
-  await page.locator("summary").filter({ hasText: "More details" }).click();
   await page.getByLabel("Payee", { exact: true }).fill("Synthetic giver");
   await page.getByRole("radio", { name: "Income", exact: true }).check();
   await expect(page.getByLabel("Payer", { exact: true })).toHaveValue(

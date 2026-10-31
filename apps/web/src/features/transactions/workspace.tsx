@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { LoadingSheet } from "../../components/loading-sheet";
 import { Toast } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
@@ -270,46 +270,27 @@ export function TransactionWorkspace({
                 }}
               />
             ) : (
-              <EditorDialog
+              <LoadingSheet
                 open={open}
                 title="Transaction details"
                 description="Load the latest entry and its historical labels."
-                busy={false}
-                onDismiss={dismiss}
-                returnFocusId={`transaction-${selected.id}`}
-                fallbackFocusId="main-content"
-                closeLabel="Close transaction editor"
-              >
-                <p
-                  role={
-                    detail.isError ||
-                    transfer.isError ||
-                    accounts.isError ||
-                    categories.isError
-                      ? "alert"
-                      : "status"
-                  }
-                >
-                  {detail.isError ||
+                loadingText="Loading entry…"
+                failedText="Couldn't load this entry. It may no longer be available."
+                failed={
+                  detail.isError ||
                   transfer.isError ||
                   accounts.isError ||
                   categories.isError
-                    ? "Couldn't load this entry. It may no longer be available."
-                    : "Loading entry…"}
-                </p>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    void detail.refetch();
-                    if (selected.transferId) void transfer.refetch();
-                    void accounts.refetch();
-                    void categories.refetch();
-                  }}
-                >
-                  Try again
-                </button>
-              </EditorDialog>
+                }
+                onRetry={() => {
+                  void detail.refetch();
+                  if (selected.transferId) void transfer.refetch();
+                  void accounts.refetch();
+                  void categories.refetch();
+                }}
+                onDismiss={dismiss}
+                returnFocusId={`transaction-${selected.id}`}
+              />
             ))}
           {deleted && dismissedId === toastId && (
             <UndoPill
