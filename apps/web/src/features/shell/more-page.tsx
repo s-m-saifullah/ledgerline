@@ -116,8 +116,8 @@ export function MorePage() {
             <FileUp size={22} />
           </span>
           <div>
-            <h2>Import</h2>
-            <p>Bring in a bank statement or spreadsheet saved as CSV.</p>
+            <h2>Import and export</h2>
+            <p>Bring in a statement saved as CSV, or download your data.</p>
           </div>
           <ChevronRight size={20} aria-hidden="true" />
         </Link>

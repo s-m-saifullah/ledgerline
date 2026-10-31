@@ -15,6 +15,7 @@ const files = [
   "features/home/home.css",
   "features/transactions/transactions.css",
   "features/transactions/entry-sheet.css",
+  "features/imports/import.css",
 ];
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(

@@ -1,0 +1,232 @@
+/*
+ * Import and export (ADR 0047): one page with the four-step import and, on its first step, the export. Fields
+ * sit in bordered cards like the entry sheet's; a row is a title with at most one short hint. Widths are the
+ * layout system's two (700 and 1100 px).
+ */
+.imp-page,
+.imp-section {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.imp-page {
+  max-width: 760px;
+}
+.imp-page > *,
+.imp-section > * {
+  min-width: 0;
+}
+.imp-page > .page-heading {
+  margin-bottom: 0;
+}
+.imp-page > .page-heading h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.imp-section > .ui-section-label {
+  padding-top: 8px;
+}
+
+/* Lists of lines: problems, duplicates, ready rows. */
+.imp-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.imp-lines li {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.imp-list > li + li {
+  border-top: 1px solid var(--border);
+}
+/* The four steps as small pills; the current one is filled, the ones behind it keep the text colour. */
+.imp-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.imp-step {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.imp-step.done {
+  color: var(--text);
+}
+.imp-step.current {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* On a phone only the current step keeps its name, so the four fit on one line. */
+.imp-step:not(.current) .imp-step-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@container app (min-width: 700px) {
+  .imp-step:not(.current) .imp-step-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+.imp-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.imp-card > * + * {
+  border-top: 1px solid var(--border);
+}
+.imp-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+}
+.imp-card label.imp-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.imp-field .field-error,
+.imp-hint {
+  margin: 0;
+}
+.imp-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.imp-card > .imp-hint,
+.imp-card > .field-error {
+  padding: 12px 16px;
+}
+.imp-card > .ui-switch-row:not(:last-child) {
+  border-radius: 0;
+}
+.imp-card > .ui-switch-row:last-child {
+  border-radius: 0 0 var(--shape-card) var(--shape-card);
+}
+.imp-range {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.imp-range > * + * {
+  border-top: 1px solid var(--border);
+}
+@container app (min-width: 700px) {
+  .imp-range > * + * {
+    border-top: 0;
+    border-left: 1px solid var(--border);
+  }
+}
+
+/* The buttons that end a step: side by side where they fit, one under the other where they do not. */
+.imp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.imp-actions > .ui-btn {
+  flex: 1 1 150px;
+  text-decoration: none;
+}
+.imp-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The first rows of the file. A long cell is cut off rather than widening the page. */
+.imp-sample-wrap {
+  overflow-x: auto;
+}
+.imp-sample {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.imp-sample td {
+  max-width: 160px;
+  padding: 8px 12px;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp-sample tr:first-child td {
+  border-top: 0;
+}
+
+/* The amount styles are three rows of one choice. */
+.imp-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.imp-choice input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.imp-choice-text {
+  display: grid;
+  min-width: 0;
+}
+.imp-choice-text > span:first-child {
+  font-size: 14px;
+  font-weight: 500;
+}
+fieldset.imp-group {
+  display: grid;
+  gap: 8px;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.imp-dup {
+  cursor: pointer;
+}
+.imp-dup input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.imp-recent-row {
+  flex-wrap: wrap;
+}
+.imp-recent-row .ui-row-main {
+  flex: 1 1 160px;
+}
+.imp-ready > summary {
+  margin: 0;
+}

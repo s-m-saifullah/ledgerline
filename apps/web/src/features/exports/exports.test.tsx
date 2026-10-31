@@ -5,8 +5,8 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ExportButton } from "./export-button";
+import { ExportCard } from "./export-card";
 import { exportPath } from "./paths";
-import { YourDataCard } from "./your-data-card";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({
@@ -98,11 +98,11 @@ const downloads = (fetcher: ReturnType<typeof stubDownloads>) =>
     .map(([url]) => String(url))
     .filter((u) => u.includes("/exports/"));
 
-describe("YourDataCard", () => {
+describe("ExportCard", () => {
   const mount = () =>
     render(
       <QueryClientProvider client={new QueryClient()}>
-        <YourDataCard />
+        <ExportCard />
       </QueryClientProvider>,
     );
 
@@ -129,17 +129,39 @@ describe("YourDataCard", () => {
     ]);
   });
 
-  it("explains the file is not kept and blocks a backwards date range", async () => {
+  it("says in one line the file is not kept and blocks a backwards date range", async () => {
     stubDownloads();
     mount();
     const user = userEvent.setup();
-    expect(screen.getByText(/not kept on the server/)).toBeTruthy();
+    expect(screen.getByText(/not kept on the server/i)).toBeTruthy();
+    expect(screen.queryByText(/open in any spreadsheet/)).toBeNull();
     await user.type(screen.getByLabelText("From date"), "2026-10-09");
     await user.type(screen.getByLabelText("To date"), "2026-10-01");
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Download transactions" }),
     ).toHaveProperty("disabled", true);
+  });
+
+  it("is the Export part of the page: a heading, the dates and three downloads, with no Import link", () => {
+    stubDownloads();
+    mount();
+    expect(screen.getByRole("heading", { name: "Export" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Import from CSV" })).toBeNull();
+    expect(screen.queryByText("Bring data in")).toBeNull();
+  });
+
+  it("keeps the accounts and categories files available when the range is backwards", async () => {
+    stubDownloads();
+    mount();
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("From date"), "2026-10-09");
+    await user.type(screen.getByLabelText("To date"), "2026-10-01");
+    const accounts = screen.getByRole("button", { name: "Download accounts" });
+    await waitFor(() => expect(accounts).toHaveProperty("disabled", false));
+    expect(
+      screen.getByRole("button", { name: "Download categories" }),
+    ).toHaveProperty("disabled", false);
   });
 
   it("shows the API's message when a download fails", async () => {

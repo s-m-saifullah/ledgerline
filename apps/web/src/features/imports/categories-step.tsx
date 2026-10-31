@@ -1,4 +1,5 @@
 import type { Category } from "@ledgerline/shared";
+import { SectionLabel } from "@ledgerline/ui";
 import { NativeSelect } from "../../components/native-select";
 import { categoryOptions } from "../categories/tree";
 import type { Wizard } from "./wizard";
@@ -23,8 +24,10 @@ function CategorySelect({
   withDefault: boolean;
 }) {
   return (
-    <div>
-      <label htmlFor={id}>{label}</label>
+    <div className="imp-field">
+      <label className="imp-label" htmlFor={id}>
+        {label}
+      </label>
       <NativeSelect
         id={id}
         value={value}
@@ -56,18 +59,11 @@ export function CategoriesStep({ w }: { w: Wizard }) {
       (word) => word.kind === kind && choices.byWording[word.key] === DEFAULT,
     );
   return (
-    <section
-      className="settings-card"
-      aria-labelledby="import-categories-title"
-    >
-      <h2 id="import-categories-title">Choose categories</h2>
-      <p className="muted">
-        Every entry needs one of your categories. Pick one for each name below,
-        or send them to a default.
-        {matched > 0 &&
-          ` ${matched} ${matched === 1 ? "name matched" : "names matched"} one of yours automatically.`}
-      </p>
-      <div className="import-fields">
+    <section className="imp-section" aria-labelledby="import-categories-title">
+      <SectionLabel as="h2" id="import-categories-title">
+        Choose categories
+      </SectionLabel>
+      <div className="imp-card">
         {unmatched.map((word) => (
           <CategorySelect
             key={word.key}
@@ -105,24 +101,31 @@ export function CategoriesStep({ w }: { w: Wizard }) {
           ) : null,
         )}
       </div>
-      {w.unresolved.length > 0 && (
-        <p className="muted" role="status">
+      {w.unresolved.length > 0 ? (
+        <p className="imp-note" role="status">
           {w.unresolved.length}{" "}
           {w.unresolved.length === 1 ? "row still needs" : "rows still need"} a
           category.
         </p>
+      ) : (
+        matched > 0 && (
+          <p className="imp-note">
+            {matched} {matched === 1 ? "name matched" : "names matched"} one of
+            yours.
+          </p>
+        )
       )}
-      <div className="export-actions">
+      <div className="imp-actions">
         <button
           type="button"
-          className="secondary-button"
+          className="ui-btn ui-btn-secondary"
           onClick={() => w.go("columns")}
         >
           Back
         </button>
         <button
           type="button"
-          className="button"
+          className="ui-btn ui-btn-primary"
           disabled={w.unresolved.length > 0}
           onClick={() => w.go("review")}
         >

@@ -1,3 +1,4 @@
+import { RowBody, SectionLabel } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { getImports } from "./api";
@@ -14,27 +15,27 @@ export function RecentImports({ ledgerId }: { ledgerId: string | undefined }) {
   });
   if (!ledgerId || (!imports.data?.length && !notice)) return null;
   return (
-    <section className="settings-card" aria-labelledby="recent-imports-title">
-      <h2 id="recent-imports-title">Recent imports</h2>
+    <section className="imp-section" aria-labelledby="recent-imports-title">
+      <SectionLabel as="h2" id="recent-imports-title">
+        Recent imports
+      </SectionLabel>
       {notice && (
-        <p role="status" className="muted">
+        <p role="status" className="imp-note">
           {notice}
         </p>
       )}
-      <ul className="import-recent">
+      <ul className="ui-card ui-list imp-list">
         {(imports.data ?? []).map((batch) => (
-          <li key={batch.id}>
-            <div>
-              <strong>{batch.sourceName ?? "Imported file"}</strong>
-              <p className="muted import-note">
-                {new Date(batch.createdAt).toLocaleDateString("en-US", {
-                  dateStyle: "medium",
-                })}{" "}
-                · {batch.remaining} of {batch.rowCount}{" "}
-                {batch.rowCount === 1 ? "entry" : "entries"} still in your
-                ledger
-              </p>
-            </div>
+          <li key={batch.id} className="ui-row ui-row-static imp-recent-row">
+            <RowBody
+              title={batch.sourceName ?? "Imported file"}
+              hint={`${new Date(batch.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })} · ${batch.remaining} of ${batch.rowCount} ${
+                batch.rowCount === 1 ? "entry" : "entries"
+              } left`}
+            />
             <UndoImport
               ledgerId={ledgerId}
               batch={batch}

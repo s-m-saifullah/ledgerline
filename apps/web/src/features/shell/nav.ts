@@ -73,10 +73,9 @@ export const moreGroups: readonly {
   {
     label: "Data and preferences",
     pages: [
-      // Named "Import" until the page becomes Import and export (ADR 0047, PR 6).
       {
         to: "/import",
-        label: "Import",
+        label: "Import and export",
         icon: FileUp,
         paletteLabel: "Import from CSV",
       },

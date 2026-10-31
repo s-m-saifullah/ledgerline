@@ -1,9 +1,10 @@
 import type { ImportBatch } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Overlay } from "../../components/overlay";
 import { prepareUndoImport } from "./api";
 
-/** Undo an import in two taps: the first says what will go, the second (red, a delete) does it. */
+/** Undo an import in two steps: the button asks in a centred question that says what will go; its red button does it. */
 export function UndoImport({
   ledgerId,
   batch,
@@ -20,20 +21,9 @@ export function UndoImport({
   const [removed, setRemoved] = useState<number | null>(null);
   if (removed !== null)
     return (
-      <p role="status" className="muted">
+      <p role="status" className="imp-note">
         Removed {removed} {removed === 1 ? "entry" : "entries"}.
       </p>
-    );
-  if (!asking)
-    return (
-      <button
-        type="button"
-        className="secondary-button"
-        disabled={batch.remaining === 0}
-        onClick={() => setAsking(true)}
-      >
-        Undo this import
-      </button>
     );
   const run = async () => {
     setBusy(true);
@@ -61,37 +51,52 @@ export function UndoImport({
       setBusy(false);
     }
   };
+  const opener = `undo-import-${batch.id}`;
   return (
-    <fieldset className="import-undo">
-      <legend className="sr-only">Confirm undo</legend>
-      <p className="import-undo-text">
-        This deletes the {batch.remaining}{" "}
-        {batch.remaining === 1 ? "entry" : "entries"} from this import that{" "}
-        {batch.remaining === 1 ? "is" : "are"} still in your ledger.
-      </p>
-      <div className="export-actions">
-        <button
-          type="button"
-          className="button danger-action"
-          disabled={busy}
-          onClick={run}
-        >
-          {busy ? "Removing…" : "Delete these entries"}
-        </button>
-        <button
-          type="button"
-          className="secondary-button"
-          disabled={busy}
-          onClick={() => setAsking(false)}
-        >
-          Keep them
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="field-error">
-          {error}
+    <>
+      <button
+        id={opener}
+        type="button"
+        className="ui-btn ui-btn-secondary"
+        disabled={batch.remaining === 0}
+        onClick={() => setAsking(true)}
+      >
+        Undo this import
+      </button>
+      <Overlay
+        kind="question"
+        open={asking}
+        title="Undo this import?"
+        busy={busy}
+        onDismiss={() => {
+          setAsking(false);
+          setError("");
+        }}
+        cancelLabel="Keep them"
+        returnFocusId={opener}
+        fallbackFocusId="main-content"
+        footer={
+          <button
+            type="button"
+            className="ui-btn ui-btn-danger-filled"
+            disabled={busy}
+            onClick={run}
+          >
+            {busy ? "Removing…" : "Delete these entries"}
+          </button>
+        }
+      >
+        <p>
+          This deletes the {batch.remaining}{" "}
+          {batch.remaining === 1 ? "entry" : "entries"} from this import that{" "}
+          {batch.remaining === 1 ? "is" : "are"} still in your ledger.
         </p>
-      )}
-    </fieldset>
+        {error && (
+          <p role="alert" className="field-error">
+            {error}
+          </p>
+        )}
+      </Overlay>
+    </>
   );
 }

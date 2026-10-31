@@ -1,3 +1,4 @@
+import { SectionLabel, SwitchRow } from "@ledgerline/ui";
 import { NativeSelect } from "../../components/native-select";
 import {
   type AmountStyle,
@@ -44,8 +45,10 @@ function ColumnSelect({
   };
   const value = w.mapping[name];
   return (
-    <div>
-      <label htmlFor={`map-${name}`}>{label}</label>
+    <div className="imp-field">
+      <label className="imp-label" htmlFor={`map-${name}`}>
+        {label}
+      </label>
       <NativeSelect
         id={`map-${name}`}
         value={value === null ? NONE : String(value)}
@@ -97,39 +100,39 @@ export function ColumnsStep({ w }: { w: Wizard }) {
   const first = (w.file?.table ?? []).slice(0, 4);
   return (
     <>
-      <section className="settings-card" aria-labelledby="import-columns-title">
-        <h2 id="import-columns-title">Match your columns</h2>
-        <p className="muted">
-          We guessed from the column names. Check each one against the first
-          rows below.
-        </p>
-        <table className="import-sample" aria-label="First rows of the file">
-          <tbody>
-            {first.map((row, at) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
-              <tr key={at}>
-                {row.map((cell, column) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
-                  <td key={column} className="import-cell" title={cell}>
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <label className="budget-rollover amount-entry-toggle">
-          <input
-            type="checkbox"
+      <section className="imp-section" aria-labelledby="import-columns-title">
+        <SectionLabel as="h2" id="import-columns-title">
+          Match your columns
+        </SectionLabel>
+        <div className="imp-card imp-sample-wrap">
+          <table className="imp-sample" aria-label="First rows of the file">
+            <tbody>
+              {first.map((row, at) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
+                <tr key={at}>
+                  {row.map((cell, column) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
+                    <td key={column} title={cell}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="imp-card">
+          <SwitchRow
+            title="First row is a header"
+            hint="Column names"
             checked={mapping.hasHeader}
-            onChange={(event) => set({ hasHeader: event.target.checked })}
+            onChange={(on) => set({ hasHeader: on })}
           />
-          <span className="check-text">The first row holds column names</span>
-        </label>
-        <div className="import-fields">
           <ColumnSelect w={w} name="date" label="Date" required />
-          <div>
-            <label htmlFor="map-date-format">Date format</label>
+          <div className="imp-field">
+            <label className="imp-label" htmlFor="map-date-format">
+              Date format
+            </label>
             <NativeSelect
               id="map-date-format"
               value={mapping.dateFormat}
@@ -143,24 +146,26 @@ export function ColumnsStep({ w }: { w: Wizard }) {
             </NativeSelect>
           </div>
         </div>
-        <fieldset className="import-styles">
-          <legend className="import-legend">How are amounts written?</legend>
-          {styles.map(([value, label, hint]) => (
-            <label key={value} className="budget-rollover amount-entry-toggle">
-              <input
-                type="radio"
-                name="amount-style"
-                checked={mapping.amountStyle === value}
-                onChange={() => set({ amountStyle: value })}
-              />
-              <span className="check-text">
-                {label}
-                <span className="muted import-hint">{hint}</span>
-              </span>
-            </label>
-          ))}
+        <fieldset className="imp-group">
+          <legend className="ui-section-label">How are amounts written?</legend>
+          <div className="imp-card">
+            {styles.map(([value, label, hint]) => (
+              <label key={value} className="imp-choice">
+                <input
+                  type="radio"
+                  name="amount-style"
+                  checked={mapping.amountStyle === value}
+                  onChange={() => set({ amountStyle: value })}
+                />
+                <span className="imp-choice-text">
+                  <span>{label}</span>
+                  <span className="imp-note">{hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
         </fieldset>
-        <div className="import-fields">
+        <div className="imp-card">
           {mapping.amountStyle !== "split" && (
             <ColumnSelect w={w} name="amount" label="Amount" required />
           )}
@@ -188,8 +193,10 @@ export function ColumnsStep({ w }: { w: Wizard }) {
               />
             </>
           )}
-          <div>
-            <label htmlFor="map-decimal">Numbers look like</label>
+          <div className="imp-field">
+            <label className="imp-label" htmlFor="map-decimal">
+              Numbers look like
+            </label>
             <NativeSelect
               id="map-decimal"
               value={mapping.decimal}
@@ -201,23 +208,17 @@ export function ColumnsStep({ w }: { w: Wizard }) {
               <option value="comma">1.234,56</option>
             </NativeSelect>
           </div>
-        </div>
-        {mapping.amountStyle === "signed" && (
-          <label className="budget-rollover amount-entry-toggle">
-            <input
-              type="checkbox"
+          {mapping.amountStyle === "signed" && (
+            <SwitchRow
+              title="Positive is spending"
+              hint="Some card statements"
               checked={mapping.positiveIsSpending}
-              onChange={(event) =>
-                set({ positiveIsSpending: event.target.checked })
-              }
+              onChange={(on) => set({ positiveIsSpending: on })}
             />
-            <span className="check-text">
-              Positive amounts are spending (some card statements)
-            </span>
-          </label>
-        )}
-        <h3 className="import-subheading">Also in the file (optional)</h3>
-        <div className="import-fields">
+          )}
+        </div>
+        <SectionLabel>Also in the file (optional)</SectionLabel>
+        <div className="imp-card">
           <ColumnSelect w={w} name="payee" label="Payee or description" />
           <ColumnSelect w={w} name="note" label="Note" />
           <ColumnSelect w={w} name="category" label="Category" />
@@ -235,21 +236,23 @@ export function ColumnsStep({ w }: { w: Wizard }) {
           />
         </div>
       </section>
-      <section className="settings-card" aria-live="polite">
+      <section className="imp-section" aria-live="polite">
         {w.columnsProblem ? (
-          <p className="muted">{w.columnsProblem}</p>
+          <p className="imp-note">{w.columnsProblem}</p>
         ) : (
-          <>
-            <p>
-              We can read <strong>{count}</strong>{" "}
-              {count === 1 ? "row" : "rows"}
-              {skipped
-                ? `, and leave out ${skipped} (transfers and split entries can't be imported yet)`
-                : ""}
-              {problems.length ? `. ${problems.length} can't be read:` : "."}
+          <div className="imp-card">
+            <p className="imp-field">
+              <span>
+                We can read <strong>{count}</strong>{" "}
+                {count === 1 ? "row" : "rows"}
+                {skipped
+                  ? `, and leave out ${skipped} (transfers and split entries can't be imported yet)`
+                  : ""}
+                {problems.length ? `. ${problems.length} can't be read:` : "."}
+              </span>
             </p>
             {problems.length > 0 && (
-              <ul className="import-problems">
+              <ul className="imp-list imp-lines">
                 {problems.slice(0, 5).map((row) => (
                   <li key={row.line}>
                     Line {row.line}: {row.reason}
@@ -260,19 +263,19 @@ export function ColumnsStep({ w }: { w: Wizard }) {
                 )}
               </ul>
             )}
-          </>
+          </div>
         )}
-        <div className="export-actions">
+        <div className="imp-actions">
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             onClick={() => w.go("file")}
           >
             Back
           </button>
           <button
             type="button"
-            className="button"
+            className="ui-btn ui-btn-primary"
             disabled={!!w.columnsProblem || count === 0}
             onClick={w.continueFromColumns}
           >

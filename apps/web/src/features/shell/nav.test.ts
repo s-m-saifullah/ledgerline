@@ -33,10 +33,11 @@ describe("the navigation model", () => {
     ]);
   });
 
-  it("names the import page Import until its page is renamed", () => {
-    expect(morePages.find((page) => page.to === "/import")?.label).toBe(
-      "Import",
-    );
+  it("names the import page Import and export, and the palette still says Import from CSV", () => {
+    const page = morePages.find((row) => row.to === "/import");
+    expect(page?.label).toBe("Import and export");
+    expect(page?.paletteLabel).toBe("Import from CSV");
+    expect(pageTitle("/import")).toBe("Import and export");
   });
 
   it("lists every page once, and none is also a destination", () => {

@@ -74,6 +74,8 @@ let calls: Calls;
 let client: QueryClient;
 let accountsList: Account[];
 let previewFails: boolean;
+let accountsFail: boolean;
+let undoFails: boolean;
 let recent: (typeof batch)[];
 
 function stub() {
@@ -100,8 +102,10 @@ function stub() {
             },
           ],
         });
-      if (url.includes("/accounts?"))
+      if (url.includes("/accounts?")) {
+        if (accountsFail) return json({}, 500);
         return json({ items: accountsList, nextCursor: null });
+      }
       if (url.includes("/categories?"))
         return json({ items: categories, nextCursor: null });
       if (url.endsWith("/imports") && method === "GET")
@@ -135,7 +139,20 @@ function stub() {
           },
           201,
         );
-      if (url.endsWith("/undo")) return json({ removed: 3 });
+      if (url.endsWith("/undo")) {
+        if (undoFails)
+          return json(
+            {
+              type: "about:blank",
+              title: "Conflict",
+              status: 409,
+              detail: "These entries changed. Reload and try again.",
+              errors: [],
+            },
+            409,
+          );
+        return json({ removed: 3 });
+      }
       return json({}, 404);
     }),
   );
@@ -161,6 +178,8 @@ const STATEMENT =
 beforeEach(() => {
   accountsList = [checking];
   previewFails = false;
+  accountsFail = false;
+  undoFails = false;
   recent = [];
   stub();
 });
@@ -240,9 +259,10 @@ describe("ImportPage", () => {
     );
     // Undo asks first, then deletes.
     await user.click(screen.getByRole("button", { name: "Undo this import" }));
-    expect(screen.getByText(/deletes the 3 entries/)).toBeTruthy();
+    const question = screen.getByRole("dialog", { name: "Undo this import?" });
+    expect(within(question).getByText(/deletes the 3 entries/)).toBeTruthy();
     await user.click(
-      screen.getByRole("button", { name: "Delete these entries" }),
+      within(question).getByRole("button", { name: "Delete these entries" }),
     );
     expect(await screen.findByText("Removed 3 entries.")).toBeTruthy();
     const undo = calls.find((c) => c.url.endsWith("/undo"));
@@ -371,9 +391,7 @@ describe("ImportPage", () => {
     mount();
     const user = userEvent.setup();
     expect(await screen.findByText("Recent imports")).toBeTruthy();
-    expect(
-      screen.getByText(/3 of 3 entries still in your ledger/),
-    ).toBeTruthy();
+    expect(screen.getByText(/3 of 3 entries left/)).toBeTruthy();
     recent = [];
     await user.click(screen.getByRole("button", { name: "Undo this import" }));
     await user.click(
@@ -382,6 +400,221 @@ describe("ImportPage", () => {
     expect(
       await screen.findByText("Removed 3 entries from statement.csv."),
     ).toBeTruthy();
+  });
+
+  it("is one page, Import and export, with its heading as the one h1", async () => {
+    mount();
+    await screen.findByLabelText("Import into");
+    const h1 = screen.getAllByRole("heading", { level: 1 });
+    expect(h1.map((node) => node.textContent)).toEqual(["Import and export"]);
+    expect(screen.queryByText(/Add entries from a bank statement/)).toBeNull();
+    expect(screen.queryByText("BRING IN YOUR HISTORY")).toBeNull();
+  });
+
+  it("offers the export on the file step, with the dates and the three files, and not on later steps", async () => {
+    mount();
+    const user = userEvent.setup();
+    await screen.findByLabelText("Import into");
+    expect(screen.getByRole("heading", { name: "Export" })).toBeTruthy();
+    expect(screen.getByLabelText("From date")).toBeTruthy();
+    expect(screen.getByLabelText("To date")).toBeTruthy();
+    for (const name of [
+      "Download transactions",
+      "Download accounts",
+      "Download categories",
+    ])
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    await upload(STATEMENT);
+    await screen.findByText("Match your columns");
+    expect(screen.queryByRole("heading", { name: "Export" })).toBeNull();
+    expect(screen.queryByLabelText("From date")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { name: "Export" })).toBeTruthy();
+  });
+
+  it("still offers the export when there is no account to import into", async () => {
+    accountsList = [];
+    mount();
+    expect(await screen.findByText(/Add an account first/)).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Download accounts" }),
+    ).toBeTruthy();
+  });
+
+  it("says in one line that the file stays in the browser", async () => {
+    mount();
+    await screen.findByLabelText("Import into");
+    expect(screen.getByText(/Read in your browser/)).toBeTruthy();
+    expect(screen.queryByText(/Not sure how to lay out/)).toBeNull();
+  });
+
+  it("marks the current step in the progress list and moves it on", async () => {
+    mount();
+    await screen.findByLabelText("Import into");
+    const steps = () =>
+      within(screen.getByRole("list", { name: "Progress" })).getAllByRole(
+        "listitem",
+      );
+    expect(steps().map((node) => node.textContent)).toEqual([
+      "1. File",
+      "2. Columns",
+      "3. Categories",
+      "4. Review",
+    ]);
+    expect(steps()[0]?.getAttribute("aria-current")).toBe("step");
+    await upload(STATEMENT);
+    await screen.findByText("Match your columns");
+    expect(steps()[0]?.getAttribute("aria-current")).toBeNull();
+    expect(steps()[1]?.getAttribute("aria-current")).toBe("step");
+  });
+
+  it("asks before undoing in a centred question and does nothing when the owner keeps the entries", async () => {
+    recent = [batch];
+    mount();
+    const user = userEvent.setup();
+    await screen.findByText("Recent imports");
+    await user.click(screen.getByRole("button", { name: "Undo this import" }));
+    const question = await screen.findByRole("dialog", {
+      name: "Undo this import?",
+    });
+    await user.click(
+      within(question).getByRole("button", { name: "Keep them" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Undo this import?" })).toBe(
+        null,
+      ),
+    );
+    expect(calls.some((c) => c.url.endsWith("/undo"))).toBe(false);
+  });
+
+  it("cannot undo an import with nothing left in the ledger", async () => {
+    recent = [{ ...batch, remaining: 0 }];
+    mount();
+    await screen.findByText("Recent imports");
+    expect(
+      screen.getByRole("button", { name: "Undo this import" }),
+    ).toHaveProperty("disabled", true);
+  });
+
+  it("shows the column and amount choices as switches and rows", async () => {
+    mount();
+    const user = userEvent.setup();
+    await screen.findByLabelText("Import into");
+    await upload(STATEMENT);
+    await screen.findByText("Match your columns");
+    const header = screen.getByRole("switch", {
+      name: "First row is a header",
+    });
+    expect(header.getAttribute("aria-checked")).toBe("true");
+    expect(
+      screen.getByRole("switch", {
+        name: "Positive is spending",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getAllByRole("option", { name: "Description (Corner shop)" })
+        .length,
+    ).toBeGreaterThan(0);
+    await user.click(header);
+    expect(header.getAttribute("aria-checked")).toBe("false");
+    expect(
+      screen.getAllByRole("option", { name: "Column 2 (Description)" }).length,
+    ).toBeGreaterThan(0);
+    await user.click(
+      screen.getByRole("radio", { name: /An amount and a type column/ }),
+    );
+    expect(
+      screen.queryByRole("switch", {
+        name: "Positive is spending",
+      }),
+    ).toBeNull();
+  });
+
+  it("shows no export while the page is loading or when it could not load", async () => {
+    accountsFail = true;
+    mount();
+    expect(
+      await screen.findByText(/Couldn't load your accounts and categories/),
+    ).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Export" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Download accounts" }),
+    ).toBeNull();
+  });
+
+  it("marks the steps behind as done and the current one as current", async () => {
+    mount();
+    await screen.findByLabelText("Import into");
+    await upload(STATEMENT);
+    await screen.findByText("Match your columns");
+    const items = within(
+      screen.getByRole("list", { name: "Progress" }),
+    ).getAllByRole("listitem");
+    expect(items.map((node) => node.className)).toEqual([
+      "imp-step done",
+      "imp-step current",
+      "imp-step",
+      "imp-step",
+    ]);
+  });
+
+  it("treats an export range that starts and ends on one day as valid", async () => {
+    mount();
+    const user = userEvent.setup();
+    await screen.findByLabelText("Import into");
+    await user.type(screen.getByLabelText("From date"), "2026-10-09");
+    await user.type(screen.getByLabelText("To date"), "2026-10-09");
+    expect(screen.queryByText(/Choose an end date/)).toBeNull();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Download transactions" }),
+      ).toHaveProperty("disabled", false),
+    );
+  });
+
+  it("shows why an undo failed inside the question, and clears it when the question is closed", async () => {
+    recent = [batch];
+    undoFails = true;
+    mount();
+    const user = userEvent.setup();
+    await screen.findByText("Recent imports");
+    await user.click(screen.getByRole("button", { name: "Undo this import" }));
+    const question = await screen.findByRole("dialog", {
+      name: "Undo this import?",
+    });
+    await user.click(
+      within(question).getByRole("button", { name: "Delete these entries" }),
+    );
+    expect(
+      await within(question).findByText(/These entries changed/),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Removed 3 entries/)).toBeNull();
+    await user.click(
+      within(question).getByRole("button", { name: "Keep them" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: "Undo this import?" }),
+      ).toBeNull(),
+    );
+    await user.click(screen.getByRole("button", { name: "Undo this import" }));
+    const again = await screen.findByRole("dialog", {
+      name: "Undo this import?",
+    });
+    expect(within(again).queryByText(/These entries changed/)).toBeNull();
+  });
+
+  it("says how many of an import's entries are still in the ledger", async () => {
+    recent = [{ ...batch, rowCount: 3, remaining: 1 }];
+    mount();
+    expect(await screen.findByText(/1 of 3 entries left/)).toBeTruthy();
+  });
+
+  it("says one entry in the singular on a recent import", async () => {
+    recent = [{ ...batch, rowCount: 1, remaining: 1 }];
+    mount();
+    expect(await screen.findByText(/1 of 1 entry left/)).toBeTruthy();
   });
 
   it("asks for an account first when there is none", async () => {
