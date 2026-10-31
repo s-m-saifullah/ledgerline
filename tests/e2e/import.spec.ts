@@ -92,10 +92,12 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
     mimeType: "text/csv",
     buffer: Buffer.from(STATEMENT),
   });
-  await expect(page.getByText("Match your columns")).toBeVisible();
+  await expect(
+    page.getByRole("switch", { name: "The first row holds column names" }),
+  ).toBeVisible();
   await expect(page.getByText(/We can read/)).toContainText("3 rows");
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(page.getByText("Choose categories")).toBeVisible();
+  await expect(page.getByLabel(/“Travel”/)).toBeVisible();
   await page.getByLabel(/“Travel”/).selectOption({ label: "Fun" });
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Possible duplicates")).toBeVisible();
@@ -118,7 +120,7 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
   // Undo from the recent imports list.
   await page.goto("/import");
   await expect(page.getByText("Recent imports")).toBeVisible();
-  await page.getByRole("button", { name: "Undo this import" }).click();
+  await page.getByRole("button", { name: /^statement\.csv/ }).click();
   await page.getByRole("button", { name: "Delete these entries" }).click();
   await expect(
     page.getByText("Removed 2 entries from statement.csv."),
@@ -126,17 +128,21 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
   expect(await count()).toBe(1);
 });
 
-test("the template is offered next to the Import button and the file chooser", async ({
+test("Settings leads to Import and export, where the template sits by the file chooser", async ({
   page,
 }) => {
-  // Settings (Your data) holds the Import button and the template; Transactions no longer does.
+  // Settings keeps one row for the data; Transactions has no import or export controls but Export CSV.
   await page.goto("/settings");
   await expect(
-    page.getByRole("link", { name: "Import from CSV" }),
-  ).toBeVisible();
-  await expect(
     page.getByRole("button", { name: "Download CSV template" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  // The desktop sidebar lists the page too, so the link in question is the one in Settings itself.
+  await page
+    .getByRole("main")
+    .getByRole("link", { name: "Import and export" })
+    .click();
+  await expect(page).toHaveURL(/\/import$/);
+  await expect(page.getByLabel("CSV file")).toBeVisible();
   const [download] = await Promise.all([
     page.waitForEvent("download"),
     page.getByRole("button", { name: "Download CSV template" }).click(),
@@ -146,9 +152,4 @@ test("the template is offered next to the Import button and the file chooser", a
   expect(text).toContain(
     "date,time,type,amount,category,subcategory,payee,note,status",
   );
-  await page.getByRole("link", { name: "Import from CSV" }).click();
-  await expect(page).toHaveURL(/\/import$/);
-  await expect(
-    page.getByRole("button", { name: "Download CSV template" }),
-  ).toBeVisible();
 });

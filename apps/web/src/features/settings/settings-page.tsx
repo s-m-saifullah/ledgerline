@@ -1,10 +1,10 @@
+import { Link } from "@tanstack/react-router";
 import { useContext } from "react";
 import {
   AmountEntryContext,
   PrivacyControlContext,
   ThemeContext,
 } from "../../lib/preferences";
-import { YourDataCard } from "../exports/your-data-card";
 import { TimeZoneCard } from "../ledger/time-zone-card";
 import { DevicesCard } from "./devices-card";
 import { TwoFactorCard } from "./two-factor-card";
@@ -82,7 +82,13 @@ export function SettingsPage() {
       <TimeZoneCard />
       <TwoFactorCard />
       <DevicesCard />
-      <YourDataCard />
+      <section className="settings-card" aria-labelledby="your-data-title">
+        <h2 id="your-data-title">Your data</h2>
+        <p className="scope-label">This ledger</p>
+        <Link to="/import" className="ui-btn ui-btn-secondary">
+          Import and export
+        </Link>
+      </section>
     </>
   );
 }

@@ -1,46 +1,36 @@
 import type { ImportBatch } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Overlay } from "../../components/overlay";
 import { prepareUndoImport } from "./api";
 
-/** Undo an import in two taps: the first says what will go, the second (red, a delete) does it. */
-export function UndoImport({
+/**
+ * Undoing an import asks first, in a centred question that says what will go; its red button does it. Whoever
+ * opens it (a recent import's row, or the Done card's button) says when it is open and what to do afterwards.
+ */
+export function UndoQuestion({
   ledgerId,
   batch,
+  open,
+  returnFocusId,
+  onClose,
   onUndone,
 }: {
   ledgerId: string;
   batch: ImportBatch;
-  onUndone?: (removed: number) => void;
+  open: boolean;
+  returnFocusId: string;
+  onClose: () => void;
+  onUndone: (removed: number) => void;
 }) {
   const client = useQueryClient();
-  const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [removed, setRemoved] = useState<number | null>(null);
-  if (removed !== null)
-    return (
-      <p role="status" className="muted">
-        Removed {removed} {removed === 1 ? "entry" : "entries"}.
-      </p>
-    );
-  if (!asking)
-    return (
-      <button
-        type="button"
-        className="secondary-button"
-        disabled={batch.remaining === 0}
-        onClick={() => setAsking(true)}
-      >
-        Undo this import
-      </button>
-    );
   const run = async () => {
     setBusy(true);
     setError("");
     try {
       const done = await prepareUndoImport(ledgerId, batch)();
-      setRemoved(done.removed);
       for (const name of [
         "transactions",
         "accounts",
@@ -50,7 +40,8 @@ export function UndoImport({
         "imports",
       ])
         void client.invalidateQueries({ queryKey: [name] });
-      onUndone?.(done.removed);
+      onUndone(done.removed);
+      onClose();
     } catch (failure) {
       setError(
         failure instanceof Error && failure.message
@@ -62,36 +53,39 @@ export function UndoImport({
     }
   };
   return (
-    <fieldset className="import-undo">
-      <legend className="sr-only">Confirm undo</legend>
-      <p className="import-undo-text">
-        This deletes the {batch.remaining}{" "}
-        {batch.remaining === 1 ? "entry" : "entries"} from this import that{" "}
-        {batch.remaining === 1 ? "is" : "are"} still in your ledger.
-      </p>
-      <div className="export-actions">
+    <Overlay
+      kind="question"
+      open={open}
+      title="Undo this import?"
+      busy={busy}
+      onDismiss={() => {
+        setError("");
+        onClose();
+      }}
+      cancelLabel="Keep them"
+      returnFocusId={returnFocusId}
+      fallbackFocusId="main-content"
+      footer={
         <button
           type="button"
-          className="button danger-action"
+          className="ui-btn ui-btn-danger-filled"
           disabled={busy}
           onClick={run}
         >
           {busy ? "Removing…" : "Delete these entries"}
         </button>
-        <button
-          type="button"
-          className="secondary-button"
-          disabled={busy}
-          onClick={() => setAsking(false)}
-        >
-          Keep them
-        </button>
-      </div>
+      }
+    >
+      <p>
+        This deletes the {batch.remaining}{" "}
+        {batch.remaining === 1 ? "entry" : "entries"} from this import that{" "}
+        {batch.remaining === 1 ? "is" : "are"} still in your ledger.
+      </p>
       {error && (
         <p role="alert" className="field-error">
           {error}
         </p>
       )}
-    </fieldset>
+    </Overlay>
   );
 }

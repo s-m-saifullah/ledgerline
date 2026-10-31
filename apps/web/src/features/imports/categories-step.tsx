@@ -1,11 +1,11 @@
 import type { Category } from "@ledgerline/shared";
-import { NativeSelect } from "../../components/native-select";
+import { PickRow } from "../../components/pick-row";
 import { categoryOptions } from "../categories/tree";
 import type { Wizard } from "./wizard";
 
 const DEFAULT = "default";
 
-function CategorySelect({
+function CategoryRow({
   id,
   label,
   categories,
@@ -23,26 +23,21 @@ function CategorySelect({
   withDefault: boolean;
 }) {
   return (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      <NativeSelect
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="">Choose a category</option>
-        {withDefault && (
-          <option value={DEFAULT}>Use my default {kind} category</option>
-        )}
-        {categoryOptions(categories, kind, "").map(
-          ({ category, label: text }) => (
-            <option key={category.id} value={category.id}>
-              {text}
-            </option>
-          ),
-        )}
-      </NativeSelect>
-    </div>
+    <PickRow
+      id={id}
+      label={label}
+      value={value}
+      options={[
+        { value: "", label: "Choose a category" },
+        ...(withDefault
+          ? [{ value: DEFAULT, label: `Use my default ${kind} category` }]
+          : []),
+        ...categoryOptions(categories, kind, "").map(
+          ({ category, label: text }) => ({ value: category.id, label: text }),
+        ),
+      ]}
+      onChange={onChange}
+    />
   );
 }
 
@@ -56,23 +51,13 @@ export function CategoriesStep({ w }: { w: Wizard }) {
       (word) => word.kind === kind && choices.byWording[word.key] === DEFAULT,
     );
   return (
-    <section
-      className="settings-card"
-      aria-labelledby="import-categories-title"
-    >
-      <h2 id="import-categories-title">Choose categories</h2>
-      <p className="muted">
-        Every entry needs one of your categories. Pick one for each name below,
-        or send them to a default.
-        {matched > 0 &&
-          ` ${matched} ${matched === 1 ? "name matched" : "names matched"} one of yours automatically.`}
-      </p>
-      <div className="import-fields">
+    <>
+      <div className="ui-card ui-list">
         {unmatched.map((word) => (
-          <CategorySelect
+          <CategoryRow
             key={word.key}
             id={`cat-${word.key}`}
-            label={`“${word.wording}” (${word.rows} ${word.rows === 1 ? "row" : "rows"}, ${word.kind})`}
+            label={`“${word.wording}” · ${word.rows} ${word.rows === 1 ? "row" : "rows"} · ${word.kind}`}
             categories={categories}
             kind={word.kind}
             value={choices.byWording[word.key] ?? ""}
@@ -87,7 +72,7 @@ export function CategoriesStep({ w }: { w: Wizard }) {
         ))}
         {(["expense", "income"] as const).map((kind) =>
           usesDefault(kind) ? (
-            <CategorySelect
+            <CategoryRow
               key={kind}
               id={`default-${kind}`}
               label={`Default ${kind} category`}
@@ -105,30 +90,37 @@ export function CategoriesStep({ w }: { w: Wizard }) {
           ) : null,
         )}
       </div>
-      {w.unresolved.length > 0 && (
-        <p className="muted" role="status">
+      {w.unresolved.length > 0 ? (
+        <p className="imp-note" role="status">
           {w.unresolved.length}{" "}
           {w.unresolved.length === 1 ? "row still needs" : "rows still need"} a
           category.
         </p>
+      ) : (
+        matched > 0 && (
+          <p className="imp-note">
+            {matched} {matched === 1 ? "name matched" : "names matched"} one of
+            yours.
+          </p>
+        )
       )}
-      <div className="export-actions">
+      <div className="imp-next">
         <button
           type="button"
-          className="secondary-button"
+          className="ui-btn ui-btn-secondary"
           onClick={() => w.go("columns")}
         >
           Back
         </button>
         <button
           type="button"
-          className="button"
+          className="ui-btn ui-btn-primary"
           disabled={w.unresolved.length > 0}
           onClick={() => w.go("review")}
         >
           Continue
         </button>
       </div>
-    </section>
+    </>
   );
 }

@@ -96,8 +96,8 @@ test("Transactions exports what its filters show", async ({ page }) => {
   await expect(page.getByText("Your file is ready.")).toBeVisible();
 });
 
-test("Settings downloads all three files", async ({ page }) => {
-  await page.goto("/settings");
+test("Import and export downloads all three files", async ({ page }) => {
+  await page.goto("/import");
   const all = await savedText(page, () =>
     page.getByRole("button", { name: "Download transactions" }).click(),
   );

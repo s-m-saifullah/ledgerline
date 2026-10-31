@@ -1,3 +1,5 @@
+import { RowBody, SectionLabel } from "@ledgerline/ui";
+import { ChevronRight } from "lucide-react";
 import { Amount } from "../../components/amount-text";
 import type { Wizard } from "./wizard";
 
@@ -31,158 +33,173 @@ export function ReviewStep({ w }: { w: Wizard }) {
   );
   const skipped = w.parsed?.skipped ?? [];
   const count = w.toImport.length;
-  const row = (line: number) => {
+  const shortDate = (date: string | undefined) =>
+    date
+      ? new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })
+      : "";
+  const title = (line: number) => {
     const entry = byLine.get(line);
-    return (
-      <>
-        <span>
-          Line {line} · {entry?.date}
-          {entry?.payee ? ` · ${entry.payee}` : ""}
-        </span>
-        <Amount cents={signed(line)} currency={currency} />
-        <span className="muted import-row-wide">
-          {entry ? categoryName(entry.categoryId) : ""}
-        </span>
-      </>
-    );
+    return entry?.payee || `Line ${line}`;
   };
+  const counts: [number, string][] = [
+    [readyRows.length, "Ready"],
+    [
+      duplicates.length,
+      duplicates.length === 1 ? "Possible duplicate" : "Possible duplicates",
+    ],
+    [problems.length, "Can't be imported"],
+  ];
   return (
     <>
-      <section
-        className="settings-card"
-        aria-labelledby="import-review-title"
-        aria-live="polite"
-      >
-        <h2 id="import-review-title">Review before importing</h2>
-        {w.preview.failed ? (
-          <>
-            <p role="alert" className="field-error">
-              We couldn't check the rows. Nothing has been imported.
-            </p>
+      {w.preview.failed ? (
+        <div className="ui-card imp-body" aria-live="polite">
+          <p role="alert" className="field-error">
+            We couldn't check the rows. Nothing has been imported.
+          </p>
+          <div className="imp-wrap">
             <button
               type="button"
-              className="secondary-button"
+              className="ui-btn ui-btn-secondary"
               onClick={w.preview.retry}
             >
               Try again
             </button>
-          </>
-        ) : w.preview.loading || !w.preview.data ? (
-          <p className="muted" role="status">
-            Checking your rows…
-          </p>
-        ) : (
-          <div className="import-counts">
-            <p className="import-counts-item">
-              <strong>{readyRows.length}</strong> ready
-            </p>
-            <p className="import-counts-item">
-              <strong>{duplicates.length}</strong> possible{" "}
-              {duplicates.length === 1 ? "duplicate" : "duplicates"}
-            </p>
-            <p className="import-counts-item">
-              <strong>{problems.length}</strong> can't be imported
-            </p>
           </div>
-        )}
-      </section>
+        </div>
+      ) : w.preview.loading || !w.preview.data ? (
+        <p className="imp-note" role="status">
+          Checking your rows…
+        </p>
+      ) : (
+        <div className="imp-counts" aria-live="polite">
+          {counts.map(([figure, text]) => (
+            <div key={text} className="ui-card imp-count">
+              <span className="imp-count-figure">{figure}</span>
+              <span className="imp-count-label">{text}</span>
+            </div>
+          ))}
+        </div>
+      )}
       {w.preview.data && (
         <>
           {w.preview.data.newTags.length > 0 && (
             <section
-              className="settings-card"
+              className="imp-section"
               aria-labelledby="import-tags-title"
             >
-              <h2 id="import-tags-title">New tags</h2>
-              <p className="muted">
-                These tags in the file don't exist yet. Importing creates them
-                (you can delete unused ones later under More, Tags):{" "}
-                {w.preview.data.newTags.join(", ")}.
-              </p>
+              <SectionLabel as="h2" id="import-tags-title">
+                New tags
+              </SectionLabel>
+              <div className="ui-card ui-list">
+                <div className="ui-row ui-row-static">
+                  <RowBody
+                    title={w.preview.data.newTags.join(", ")}
+                    hint="Created when you import"
+                  />
+                </div>
+              </div>
             </section>
           )}
           {duplicates.length > 0 && (
             <section
-              className="settings-card"
+              className="imp-section"
               aria-labelledby="import-dupes-title"
             >
-              <h2 id="import-dupes-title">Possible duplicates</h2>
-              <p className="muted">
-                These look like entries already in this account. They are left
-                out unless you tick them.
-              </p>
-              <div className="export-actions">
+              <SectionLabel as="h2" id="import-dupes-title">
+                Possible duplicates
+              </SectionLabel>
+              <div className="ui-card ui-list">
+                {duplicates.map((item) => (
+                  <label key={item.line} className="ui-row imp-dup">
+                    <input
+                      type="checkbox"
+                      checked={w.included.has(item.line)}
+                      onChange={() => w.toggleDuplicate(item.line)}
+                    />
+                    <span className="ui-row-main">
+                      <span className="ui-row-title">{title(item.line)}</span>
+                      <span className="ui-row-hint" title={item.reason ?? ""}>
+                        Line {item.line} ·{" "}
+                        {shortDate(byLine.get(item.line)?.date)} · Looks like an
+                        entry you already have
+                      </span>
+                    </span>
+                    <span className="ui-row-end">
+                      <Amount cents={signed(item.line)} currency={currency} />
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <div className="imp-wrap">
                 <button
                   type="button"
-                  className="text-button"
+                  className="ui-btn ui-btn-text"
                   onClick={() => w.setAllDuplicates(true)}
                 >
                   Include all
                 </button>
                 <button
                   type="button"
-                  className="text-button"
+                  className="ui-btn ui-btn-text"
                   onClick={() => w.setAllDuplicates(false)}
                 >
                   Include none
                 </button>
               </div>
-              <ul className="import-rows">
-                {duplicates.map((item) => (
-                  <li key={item.line}>
-                    <label className="budget-rollover amount-entry-toggle">
-                      <input
-                        type="checkbox"
-                        checked={w.included.has(item.line)}
-                        onChange={() => w.toggleDuplicate(item.line)}
-                      />
-                      <span className="check-text import-row import-row-field">
-                        {row(item.line)}
-                        <span className="muted import-hint import-row-wide">
-                          {item.reason}
-                        </span>
-                      </span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
             </section>
           )}
           {(problems.length > 0 || skipped.length > 0) && (
             <section
-              className="settings-card"
+              className="imp-section"
               aria-labelledby="import-left-title"
             >
-              <h2 id="import-left-title">Left out</h2>
-              <ul className="import-problems">
-                {problems.map((item) => (
-                  <li key={`p${item.line}`}>
-                    Line {item.line}: {item.reason}
-                  </li>
+              <SectionLabel as="h2" id="import-left-title">
+                Left out
+              </SectionLabel>
+              <div className="ui-card ui-list">
+                {[...problems, ...skipped].map((item, at) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: a line can appear as a problem and a skip
+                  <div key={at} className="ui-row ui-row-static">
+                    <RowBody title={`Line ${item.line}`} hint={item.reason} />
+                  </div>
                 ))}
-                {skipped.map((item) => (
-                  <li key={`s${item.line}`}>
-                    Line {item.line}: {item.reason}
-                  </li>
-                ))}
-              </ul>
+              </div>
             </section>
           )}
           {readyRows.length > 0 && (
-            <details className="settings-card import-ready">
-              <summary>
-                Show the {readyRows.length} ready{" "}
-                {readyRows.length === 1 ? "row" : "rows"}
+            <details className="ui-card ui-list imp-details">
+              <summary className="ui-row">
+                <span className="ui-row-main">
+                  <span className="ui-row-title">
+                    Show the {readyRows.length} ready{" "}
+                    {readyRows.length === 1 ? "row" : "rows"}
+                  </span>
+                </span>
+                <span className="ui-row-chevron" aria-hidden="true">
+                  <ChevronRight size={18} />
+                </span>
               </summary>
-              <ul className="import-rows">
-                {readyRows.slice(0, 100).map((item) => (
-                  <li key={item.line} className="import-row">
-                    {row(item.line)}
-                  </li>
-                ))}
-              </ul>
+              {readyRows.slice(0, 100).map((item) => (
+                <div key={item.line} className="ui-row ui-row-static">
+                  <RowBody
+                    title={title(item.line)}
+                    hint={[
+                      shortDate(byLine.get(item.line)?.date),
+                      categoryName(byLine.get(item.line)?.categoryId ?? ""),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    value={
+                      <Amount cents={signed(item.line)} currency={currency} />
+                    }
+                  />
+                </div>
+              ))}
               {readyRows.length > 100 && (
-                <p className="muted">
+                <p className="ui-row ui-row-static imp-note">
                   Showing the first 100 of {readyRows.length}.
                 </p>
               )}
@@ -190,41 +207,39 @@ export function ReviewStep({ w }: { w: Wizard }) {
           )}
         </>
       )}
-      <section className="settings-card">
-        {w.confirmError && (
-          <p role="alert" className="field-error">
-            {w.confirmError}
-          </p>
-        )}
-        <div className="export-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={w.confirming}
-            onClick={() =>
-              w.go(
-                w.unresolved.length ||
-                  w.needs.wordings.some((x) => !x.match) ||
-                  w.needs.blank.expense + w.needs.blank.income > 0
-                  ? "categories"
-                  : "columns",
-              )
-            }
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            className="button"
-            disabled={w.confirming || count === 0 || !w.preview.data}
-            onClick={() => void w.confirm()}
-          >
-            {w.confirming
-              ? "Importing…"
-              : `Import ${count} ${count === 1 ? "entry" : "entries"}`}
-          </button>
-        </div>
-      </section>
+      {w.confirmError && (
+        <p role="alert" className="field-error">
+          {w.confirmError}
+        </p>
+      )}
+      <div className="imp-next">
+        <button
+          type="button"
+          className="ui-btn ui-btn-secondary"
+          disabled={w.confirming}
+          onClick={() =>
+            w.go(
+              w.unresolved.length ||
+                w.needs.wordings.some((x) => !x.match) ||
+                w.needs.blank.expense + w.needs.blank.income > 0
+                ? "categories"
+                : "columns",
+            )
+          }
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          className="ui-btn ui-btn-primary"
+          disabled={w.confirming || count === 0 || !w.preview.data}
+          onClick={() => void w.confirm()}
+        >
+          {w.confirming
+            ? "Importing…"
+            : `Import ${count} ${count === 1 ? "entry" : "entries"}`}
+        </button>
+      </div>
     </>
   );
 }
