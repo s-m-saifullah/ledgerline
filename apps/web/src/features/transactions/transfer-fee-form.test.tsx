@@ -83,9 +83,7 @@ afterEach(() => {
 it("explains the one Fee box and previews what leaves the sending account", async () => {
   view();
   expect(
-    screen.getByText(
-      /Type 2 for a fixed fee, or 2% for a percentage of the amount sent\./,
-    ),
+    screen.getByText("A fixed amount, or a % of what you send."),
   ).toBeInTheDocument();
   await userEvent.type(screen.getByLabelText("Amount (USD)"), "100");
   const fee = screen.getByLabelText("Fee (optional)");
@@ -250,7 +248,7 @@ it("offers to delete the fee with its transfer", async () => {
     deletedAt: null,
   };
   view({ transfer: saved({ fee }) });
-  expect(screen.getByText(/This transfer has a fee entry/)).toBeInTheDocument();
+  expect(screen.getByText(/Its fee is a separate expense/)).toBeInTheDocument();
   await userEvent.click(
     screen.getByRole("button", { name: "Delete transfer" }),
   );

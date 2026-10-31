@@ -1,32 +1,24 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Account, Category, Transaction } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
-import { AmountInput } from "../../components/amount-input";
-import { DateTimeInput } from "../../components/date-time-input";
-import { DialogDeleteButton } from "../../components/dialog-delete-button";
-import { EditorDialog } from "../../components/editor-dialog";
-import { NativeSelect } from "../../components/native-select";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import { PrivacyContext } from "../../lib/preferences";
-import { CategoryPicker } from "../categories/picker";
-import { EntryRate } from "../currencies/entry-rate";
-import { TagPicker } from "../tags/tag-picker";
+import { useCategoryCreate } from "../categories/use-category-create";
 import {
   getTransaction,
   prepareTransactionEdit,
   prepareTransactionUndo,
 } from "./api";
+import { changeKind, EntryFields } from "./entry-fields";
+import { DeleteTrigger, TypePill } from "./entry-sheet";
 import {
-  amountMinor,
   type TransactionFormValues,
   transactionBody,
   transactionEditDefaults,
   transactionFormSchema,
 } from "./form";
-import { SplitFields } from "./split-fields";
 
 export function TransactionEditor({
   ledgerId,
@@ -52,7 +44,6 @@ export function TransactionEditor({
   onLock: (locked: boolean) => void;
 }) {
   const client = useQueryClient();
-  const privateMode = useContext(PrivacyContext);
   const [baseline, setBaseline] = useState(transaction);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -66,15 +57,10 @@ export function TransactionEditor({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: transactionEditDefaults(transaction),
   });
-  const {
-    register,
-    watch,
-    setValue,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = form;
+  const { watch, handleSubmit, reset } = form;
   const kind = watch("kind");
+  const { create: categoryCreate, uncertain: categoryUncertain } =
+    useCategoryCreate(ledgerId, kind);
   const canWrite = writable && !baseline.transferId;
   // A transfer's fee or bonus, or a payment's tip, keeps its kind and is never split (ADRs 0023, 0025, 0027).
   const linkedToTransfer =
@@ -82,8 +68,8 @@ export function TransactionEditor({
     !!baseline.relatedTransferId ||
     !!baseline.tipPaymentId;
   useEffect(() => {
-    onLock(busy || uncertain);
-  }, [busy, uncertain, onLock]);
+    onLock(busy || uncertain || categoryUncertain);
+  }, [busy, uncertain, categoryUncertain, onLock]);
   useEffect(() => {
     if (open && uncertain)
       document.getElementById("retry-transaction-editor")?.focus();
@@ -166,275 +152,147 @@ export function TransactionEditor({
       setBusy(false);
     }
   };
+  const frozen = !canWrite || busy || uncertain || conflict;
   return (
-    <EditorDialog
-      open={open}
-      title={canWrite ? "Edit transaction" : "Transaction details"}
-      description="Correct the entry using its latest saved version."
-      busy={busy}
-      onDismiss={onDismiss}
-      returnFocusId={`transaction-${baseline.id}`}
-      fallbackFocusId="main-content"
-      closeLabel="Close transaction editor"
-      contentClassName="transaction-dialog"
-      initialFocusId={
-        uncertain ? "retry-transaction-editor" : "edit-transaction-amount"
-      }
-    >
-      {baseline.transferId && (
-        <p className="form-help">Transfer entries must be changed together.</p>
-      )}
-      {baseline.tipPaymentId && (
-        <p className="form-help">
-          This is the tip that came with a payment. You can change its amount,
-          category and date, but it stays one income entry. Deleting the payment
-          deletes it too.
-        </p>
-      )}
-      {baseline.feeTransferId && (
-        <p className="form-help">
-          This is a transfer's fee. You can change its amount, category and
-          date, but it stays one expense.
-        </p>
-      )}
-      <form
-        noValidate
-        onSubmit={handleSubmit((values) => execute("edit", values))}
-      >
-        <fieldset
-          className="account-fields"
-          disabled={!canWrite || busy || uncertain || conflict || confirmDelete}
-        >
-          <label htmlFor="edit-transaction-kind">Entry type</label>
-          <NativeSelect
-            id="edit-transaction-kind"
-            disabled={linkedToTransfer}
-            value={kind}
-            onChange={(event) => {
-              setValue("kind", event.target.value as "expense" | "income");
-              setValue("categoryId", "");
-              setValue(
-                "splits",
-                watch("splits")?.map((line) => ({
-                  ...line,
-                  id: undefined,
-                  categoryId: "",
-                })),
-              );
-            }}
-          >
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </NativeSelect>
-          <label htmlFor="edit-transaction-amount">
-            Amount ({watch("currency")})
-          </label>
-          <AmountInput
-            currency={watch("currency")}
-            id="edit-transaction-amount"
-            type={privateMode ? "password" : "text"}
-            inputMode="decimal"
-            autoComplete="off"
-            aria-invalid={!!errors.amount}
-            {...register("amount")}
-          />
-          {errors.amount && (
-            <p className="field-error">{errors.amount.message}</p>
-          )}
-          <p className="form-help">
-            Enter a positive amount; the entry type sets its direction.
-          </p>
-          <EntryRate
-            ledgerId={ledgerId}
-            currency={watch("currency")}
-            date={watch("date")}
-            amountMinor={amountMinor(watch("amount"), watch("currency"))}
-            manualRate={watch("fxRate")}
-            // An edit keeps the entry's own rate until one is set here or the currency changes.
-            savedRate={
-              watch("currency") === baseline.amount.currency
-                ? baseline.fxRate
-                : undefined
-            }
-            onManualRate={(rate) => setValue("fxRate", rate)}
-            disabled={
-              !canWrite || busy || uncertain || conflict || confirmDelete
-            }
-          />
-          {!linkedToTransfer && (
-            <SplitFields form={form} categories={categories} kind={kind} />
-          )}
-          {!watch("splitEnabled") && (
-            <CategoryPicker
-              categories={categories}
-              kind={kind}
-              value={watch("categoryId")}
-              onChange={(id) => setValue("categoryId", id ?? "")}
-            />
-          )}
-          {errors.categoryId && (
-            <p className="field-error">Choose a category.</p>
-          )}
-          <label htmlFor="edit-transaction-account">Account</label>
-          <NativeSelect
-            id="edit-transaction-account"
-            {...register("accountId", {
-              onChange: (event) => {
-                // The entry follows its account's currency; a rate set by hand was for the old one.
-                setValue(
-                  "currency",
-                  accounts.find((row) => row.id === event.target.value)
-                    ?.currency ?? baseline.amount.currency,
-                );
-                setValue("fxRate", "");
-              },
-            })}
-          >
-            <option value="" disabled>
-              Choose an account
-            </option>
-            {accounts
-              .filter((row) => !row.archivedAt || row.id === baseline.accountId)
-              .map((row) => (
-                <option key={row.id} value={row.id} disabled={!!row.archivedAt}>
-                  {row.name}
-                  {row.archivedAt ? " (archived)" : ""}
-                </option>
-              ))}
-          </NativeSelect>
-          {errors.accountId && (
-            <p className="field-error">Choose an account.</p>
-          )}
-          <div className="transaction-context">
-            <div>
-              <label htmlFor="edit-transaction-date">Date</label>
-              <DateTimeInput
-                label="Date"
-                required
-                id="edit-transaction-date"
-                type="date"
-                min="0001-01-01"
-                max="9999-12-31"
-                {...register("date")}
-              />
-              {errors.date && (
-                <p className="field-error">Choose a valid date.</p>
-              )}
-            </div>
-            <div>
-              <label htmlFor="edit-transaction-time">Time (optional)</label>
-              <DateTimeInput
-                label="Time (optional)"
-                id="edit-transaction-time"
-                type="time"
-                step={60}
-                {...register("time")}
-              />
-              {errors.time && (
-                <p className="field-error">Choose a valid time.</p>
-              )}
-            </div>
-          </div>
-          <label htmlFor="edit-transaction-payee">
-            {kind === "income" ? "Payer" : "Payee"}
-          </label>
-          <input
-            id="edit-transaction-payee"
-            maxLength={200}
-            {...register("payee")}
-          />
-          <label htmlFor="edit-transaction-note">Note</label>
-          <textarea
-            id="edit-transaction-note"
-            rows={2}
-            maxLength={2000}
-            {...register("note")}
-          />
-          <TagPicker
-            id="edit-transaction-tags"
-            ledgerId={ledgerId}
-            value={watch("tagIds")}
-            onChange={(ids) => setValue("tagIds", ids)}
-          />
-          <label htmlFor="edit-transaction-status">Status</label>
-          <NativeSelect id="edit-transaction-status" {...register("status")}>
-            <option value="cleared">Cleared</option>
-            <option value="pending">Pending</option>
-          </NativeSelect>
-          <p className="form-help">
-            Pending entries do not change your posted balance.
-          </p>
-        </fieldset>
-        {error && (
-          <p role="alert" className="field-error account-error">
-            {error}
-          </p>
-        )}
-        {confirmDelete && !uncertain && !conflict && (
-          <p role="alert" className="account-error">
-            Delete this entry? You can undo the deletion after it is confirmed.
-          </p>
-        )}
-        <div className="account-dialog-actions transaction-editor-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onDismiss}
-          >
-            {uncertain ? "Close for now" : "Close"}
-          </button>
-          {canWrite &&
-            (uncertain ? (
-              <Button
+    <>
+      <Overlay
+        open={open}
+        title={canWrite ? "Edit transaction" : "Transaction details"}
+        description="Correct the entry using its latest saved version."
+        busy={busy}
+        onDismiss={onDismiss}
+        cancelLabel={uncertain ? "Close for now" : "Close"}
+        returnFocusId={`transaction-${baseline.id}`}
+        fallbackFocusId="main-content"
+        initialFocusId={
+          uncertain ? "retry-transaction-editor" : "edit-transaction-amount"
+        }
+        footer={
+          canWrite ? (
+            uncertain ? (
+              <button
                 id="retry-transaction-editor"
                 type="button"
+                className="ui-btn ui-btn-primary"
                 disabled={busy}
                 onClick={() => void execute(operation)}
               >
                 Retry {operation === "delete" ? "delete" : "save"}
-              </Button>
+              </button>
             ) : conflict ? (
-              <Button
+              <button
                 type="button"
+                className="ui-btn ui-btn-primary"
                 disabled={busy}
                 onClick={() => void reload()}
               >
                 Reload latest details
-              </Button>
-            ) : confirmDelete ? (
-              <>
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={busy}
-                  onClick={() => setConfirmDelete(false)}
-                >
-                  Keep entry
-                </button>
-                <Button
-                  type="button"
-                  className="danger-action"
-                  disabled={busy}
-                  onClick={() => void execute("delete")}
-                >
-                  Confirm delete
-                </Button>
-              </>
+              </button>
             ) : (
               <>
-                <DialogDeleteButton
+                <DeleteTrigger
+                  id="delete-transaction"
                   label="Delete transaction"
                   disabled={busy}
                   onClick={() => setConfirmDelete(true)}
                 />
-                <Button type="submit" disabled={busy}>
+                <button
+                  type="submit"
+                  form="edit-entry-form"
+                  className="ui-btn ui-btn-primary"
+                  disabled={busy || categoryUncertain}
+                >
                   {busy ? "Saving…" : "Save changes"}
-                </Button>
+                </button>
               </>
-            ))}
-        </div>
-      </form>
-    </EditorDialog>
+            )
+          ) : undefined
+        }
+      >
+        <TypePill
+          value={kind}
+          withTransfer={false}
+          disabled={linkedToTransfer || frozen || categoryUncertain}
+          onChange={(type) => {
+            if (type !== "transfer") changeKind(form, type);
+          }}
+        />
+        {baseline.transferId && (
+          <p className="form-help">
+            Transfer entries must be changed together.
+          </p>
+        )}
+        {baseline.tipPaymentId && (
+          <p className="form-help">
+            This is the tip that came with a payment. You can change its amount,
+            category and date, but it stays one income entry. Deleting the
+            payment deletes it too.
+          </p>
+        )}
+        {baseline.feeTransferId && (
+          <p className="form-help">
+            This is a transfer's fee. You can change its amount, category and
+            date, but it stays one expense.
+          </p>
+        )}
+        <form
+          id="edit-entry-form"
+          noValidate
+          className="entry-form"
+          onSubmit={handleSubmit((values) => execute("edit", values))}
+        >
+          <fieldset className="entry-fields" disabled={frozen}>
+            <EntryFields
+              form={form}
+              ledgerId={ledgerId}
+              categories={categories}
+              accounts={accounts}
+              idPrefix="edit-transaction"
+              frozen={frozen}
+              ownAccountId={baseline.accountId}
+              fallbackCurrency={baseline.amount.currency}
+              accountError="Choose an account."
+              savedRate={(currency) =>
+                currency === baseline.amount.currency
+                  ? baseline.fxRate
+                  : undefined
+              }
+              linked={linkedToTransfer}
+              categoryCreate={categoryCreate}
+            />
+          </fieldset>
+          {error && (
+            <p role="alert" className="field-error">
+              {error}
+            </p>
+          )}
+        </form>
+      </Overlay>
+      <Overlay
+        kind="question"
+        open={confirmDelete}
+        title="Delete this entry?"
+        busy={busy}
+        onDismiss={() => setConfirmDelete(false)}
+        cancelLabel="Keep entry"
+        returnFocusId="delete-transaction"
+        fallbackFocusId="main-content"
+        footer={
+          <button
+            type="button"
+            className="ui-btn ui-btn-danger-filled"
+            disabled={busy}
+            onClick={() => {
+              setConfirmDelete(false);
+              void execute("delete");
+            }}
+          >
+            Confirm delete
+          </button>
+        }
+      >
+        <p>You can undo the deletion after it is confirmed.</p>
+      </Overlay>
+    </>
   );
 }

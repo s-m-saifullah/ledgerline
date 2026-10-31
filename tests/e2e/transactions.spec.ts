@@ -284,9 +284,7 @@ test("reloads stale edits, corrects exact money/time/status and refreshes posted
   await editor(page)
     .getByLabel("Time (optional)", { exact: true })
     .fill("21:25");
-  await editor(page)
-    .getByLabel("Status", { exact: true })
-    .selectOption("pending");
+  await editor(page).getByRole("switch", { name: "Pending" }).click();
   await editor(page).getByRole("button", { name: "Save changes" }).click();
   await expect(
     page.getByText("Transaction updated.", { exact: true }),
@@ -358,7 +356,7 @@ test("replays interrupted edit/delete/restore across navigation and freezes conf
   await expect(
     page.getByRole("button", { name: "Save transaction" }),
   ).toBeDisabled();
-  await page.getByRole("button", { name: "Close transaction dialog" }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("button", { name: "Resume transaction" }).click();
   await editor(page).getByRole("button", { name: "Retry save" }).click();
   await expect(
@@ -374,7 +372,7 @@ test("replays interrupted edit/delete/restore across navigation and freezes conf
   await editor(page)
     .getByRole("button", { name: "Delete transaction" })
     .click();
-  await editor(page).getByRole("button", { name: "Confirm delete" }).click();
+  await page.getByRole("button", { name: "Confirm delete" }).click();
   await expect(
     editor(page).getByRole("button", { name: "Retry delete" }),
   ).toBeVisible();

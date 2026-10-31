@@ -289,6 +289,23 @@ describe("SegmentedControl", () => {
     );
   });
 
+  it("can be disabled: no option takes a click or a key", async () => {
+    const onChange = vi.fn();
+    render(
+      <SegmentedControl
+        label="Theme"
+        options={options}
+        value="dark"
+        onChange={onChange}
+        disabled
+      />,
+    );
+    for (const radio of screen.getAllByRole("radio"))
+      expect(radio).toBeDisabled();
+    await userEvent.click(screen.getByRole("radio", { name: "Light" }));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("chooses on a click", async () => {
     const onChange = vi.fn();
     render(

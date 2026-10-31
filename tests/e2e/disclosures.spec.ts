@@ -10,7 +10,7 @@ import { signIn } from "./sign-in";
 const { env, pool } = connectLocalDatabase("Disclosures browser tests");
 const fixtures: string[] = [];
 
-// The Add dialog shows "More details" only once the ledger has an account, which a fresh database (CI) lacks.
+// The Add dialog shows its form only once the ledger has accounts (two for a transfer), which a fresh database (CI) lacks.
 test.beforeEach(async ({ page }, testInfo) => {
   const ledgerId = newId();
   fixtures.push(ledgerId);
@@ -21,8 +21,8 @@ test.beforeEach(async ({ page }, testInfo) => {
     `E2E disclosures ledger ${testInfo.project.name}`,
   );
   await pool.query(
-    "INSERT INTO accounts (id,ledger_id,name,type,opening_balance) VALUES ($1,$2,'Checking','bank',0)",
-    [newId(), ledgerId],
+    "INSERT INTO accounts (id,ledger_id,name,type,opening_balance) VALUES ($1,$3,'Checking','bank',0),($2,$3,'Savings','bank',0)",
+    [newId(), newId(), ledgerId],
   );
   await prepareBrowser(page, testInfo, {
     ledgerId,
@@ -53,8 +53,8 @@ test.afterAll(async () => {
 });
 
 // ADR 0039: a collapsible section must look pressable (a chevron, at least 44 px tall) and open and close from
-// the keyboard. The Transactions page lost its two disclosures to the Filters sheet (ADR 0047), so this checks
-// the one in the Add transaction dialog.
+// the keyboard. The Transactions page lost its two disclosures to the Filters sheet and the Add sheet lost "More
+// details" (ADR 0047), so this checks the one left in a transfer's fee and bonus categories.
 test("disclosures show a marker, are tall enough and work from the keyboard", async ({
   page,
 }) => {
@@ -63,14 +63,17 @@ test("disclosures show a marker, are tall enough and work from the keyboard", as
     .filter({ visible: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "Add transaction" });
-  const more = dialog.getByText("More details", { exact: true });
+  await dialog.getByRole("radio", { name: "Transfer", exact: true }).click();
+  const more = dialog.locator("details > summary").first();
   await expect(more).toBeVisible();
 
   const summaries = dialog.locator("details > summary");
   expect(await summaries.count()).toBeGreaterThanOrEqual(1);
   for (const summary of await summaries.all()) {
-    const box = await summary.boundingBox();
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    // The sheet may still be sliding in (the mobile project does not reduce motion): wait for it to settle.
+    await expect
+      .poll(async () => (await summary.boundingBox())?.height ?? 0)
+      .toBeGreaterThanOrEqual(44);
     const style = await summary.evaluate((element) => ({
       marker: getComputedStyle(element, "::before").content,
       listStyle: getComputedStyle(element).listStyleType,
@@ -79,9 +82,7 @@ test("disclosures show a marker, are tall enough and work from the keyboard", as
     expect(style.listStyle).toBe("none");
   }
 
-  const details = page.locator("details", {
-    has: page.getByText("More details", { exact: true }),
-  });
+  const details = more.locator("xpath=..");
   await more.focus();
   await expect(details).not.toHaveAttribute("open", "");
   await page.keyboard.press("Enter");

@@ -251,9 +251,7 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
   await expect(
     page.getByRole("button", { name: "Save transaction", exact: true }),
   ).toBeEnabled();
-  await page
-    .getByRole("button", { name: "Close transaction dialog", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page
     .getByRole("button", { name: "Open transaction: Sam", exact: true })
     .click();
@@ -398,9 +396,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   await expect(
     page.getByRole("button", { name: "Save transaction", exact: true }),
   ).toBeDisabled();
-  await page
-    .getByRole("button", { name: "Close transaction dialog", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page
     .getByRole("button", { name: "Resume Client action", exact: true })
     .click();
