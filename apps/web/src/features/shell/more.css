@@ -1,0 +1,51 @@
+/*
+ * More (ADR 0047), as the approved prototype draws it: a phone reads Receivables and lending, Money setup, Data
+ * and preferences; from 700 px Money setup is the right column beside the other two. Widths are the layout
+ * system's two (700 and 1100 px).
+ */
+.more {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.more > .page-heading {
+  margin-bottom: 0;
+}
+.more-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+.more-sect {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .more-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .more-g1 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .more-g3 {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .more-g2 {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+@container app (min-width: 1100px) {
+  .more-grid {
+    gap: 20px;
+  }
+}

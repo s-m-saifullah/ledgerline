@@ -1,8 +1,17 @@
-import { Button } from "@ledgerline/ui";
+import {
+  IconTile,
+  ListCard,
+  ListRow,
+  SectionLabel,
+  StatusPill,
+} from "@ledgerline/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Smartphone } from "lucide-react";
 import { useState } from "react";
 import { LoadError } from "../../components/load-error";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { ActionRow } from "./action-row";
 import {
   devicesKey,
   getDevices,
@@ -13,28 +22,36 @@ import {
 /** The most recently used devices shown at once; the rest sit behind a disclosure. */
 const shownDevices = 10;
 
-const when = (iso: string) =>
-  new Intl.DateTimeFormat("en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(iso));
+/** A short date, with the year only when it is not this year, so the hint stays on one line beside the button. */
+const when = (iso: string) => {
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(date.getFullYear() === new Date().getFullYear()
+      ? {}
+      : { year: "numeric" }),
+  }).format(date);
+};
 
-/** Settings card: where you are signed in, with a way to sign other devices out (ADR 0042). */
-export function DevicesCard() {
+/** Settings, Signed-in devices: where you are signed in, with a way to sign other devices out (ADR 0042). */
+export function DevicesCard({
+  onNotice,
+}: {
+  onNotice: (text: string) => void;
+}) {
   const client = useQueryClient();
   const devices = useQuery({ queryKey: devicesKey, queryFn: getDevices });
-  const [confirming, setConfirming] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [asking, setAsking] = useState(false);
   const [failure, setFailure] = useState("");
   const done = (message: string) => {
-    setConfirming(false);
+    setAsking(false);
     setFailure("");
-    setNotice(message);
+    onNotice(message);
     return client.invalidateQueries({ queryKey: devicesKey });
   };
   const failed = (error: unknown) => {
-    setConfirming(false);
-    setNotice("");
+    setAsking(false);
     setFailure(
       error instanceof ApiError
         ? error.message
@@ -56,107 +73,111 @@ export function DevicesCard() {
   const recent = items.slice(0, shownDevices);
   const older = items.slice(shownDevices);
   const row = (item: (typeof items)[number]) => (
-    <li key={item.id} className="device-row">
-      <div className="device-info">
-        <strong>{item.device}</strong>
-        {item.current && <span className="account-badge">Current device</span>}
-        <span className="muted">Last used {when(item.lastUsedAt)}</span>
-      </div>
-      {!item.current && (
-        <button
-          type="button"
-          className="text-button"
-          aria-label={`Sign out ${item.device}`}
-          disabled={one.isPending || others.isPending}
-          onClick={() => {
-            setNotice("");
-            one.mutate({ id: item.id, name: item.device });
-          }}
-        >
-          Sign out
-        </button>
-      )}
-    </li>
+    <ListRow
+      key={item.id}
+      lead={
+        <IconTile>
+          <Smartphone size={18} />
+        </IconTile>
+      }
+      title={item.device}
+      hint={`Last used ${when(item.lastUsedAt)}`}
+      value={
+        item.current ? (
+          <StatusPill>Current device</StatusPill>
+        ) : (
+          <button
+            type="button"
+            className="ui-btn ui-btn-text"
+            aria-label={`Sign out ${item.device}`}
+            disabled={one.isPending || others.isPending}
+            onClick={() => {
+              setFailure("");
+              one.mutate({ id: item.id, name: item.device });
+            }}
+          >
+            Sign out
+          </button>
+        )
+      }
+    />
   );
   return (
-    <section className="settings-card" aria-labelledby="devices-title">
-      <h2 id="devices-title">Signed-in devices</h2>
-      <p className="scope-label">Your account</p>
-      <p>
-        Where you are signed in. Sign out a device you no longer use or have
-        lost.
-      </p>
+    <section aria-labelledby="devices-title" className="set-sect">
+      <SectionLabel as="h2" id="devices-title">
+        Signed-in devices
+      </SectionLabel>
       {devices.isError ? (
         <LoadError
           message="We couldn't load your devices."
           onRetry={() => void devices.refetch()}
         />
       ) : devices.isPending ? (
-        <p>Loading your devices…</p>
+        <ListCard>
+          <div className="ui-row ui-row-static">
+            <span className="ui-row-hint">Loading your devices…</span>
+          </div>
+        </ListCard>
       ) : (
         <>
-          <ul className="device-list">{recent.map(row)}</ul>
+          <ListCard>
+            {recent.map(row)}
+            {elsewhere.length === 0 && (
+              <div className="ui-row ui-row-static">
+                <span className="ui-row-hint">
+                  This is the only device signed in.
+                </span>
+              </div>
+            )}
+            {elsewhere.length > 0 && (
+              <ActionRow
+                id="sign-out-others"
+                title="Sign out all other devices"
+                disabled={others.isPending}
+                onClick={() => {
+                  setFailure("");
+                  setAsking(true);
+                }}
+              />
+            )}
+          </ListCard>
           {older.length > 0 && (
-            <details className="device-older">
+            <details className="set-older">
               <summary>
                 Show {older.length} older{" "}
                 {older.length === 1 ? "device" : "devices"}
               </summary>
-              <ul className="device-list">{older.map(row)}</ul>
+              <ListCard>{older.map(row)}</ListCard>
             </details>
           )}
         </>
-      )}
-      {devices.isSuccess && elsewhere.length === 0 && (
-        <p>This is the only device signed in.</p>
-      )}
-      {notice && (
-        <p role="status" className="two-factor-notice">
-          {notice}
-        </p>
       )}
       {failure && (
         <p role="alert" className="field-error">
           {failure}
         </p>
       )}
-      {devices.isSuccess && elsewhere.length > 0 && !confirming && (
-        <div className="two-factor-actions">
+      <Overlay
+        kind="question"
+        open={asking}
+        title="Sign out all other devices?"
+        busy={others.isPending}
+        onDismiss={() => setAsking(false)}
+        returnFocusId="sign-out-others"
+        fallbackFocusId="main-content"
+        footer={
           <button
             type="button"
-            className="secondary-button"
-            onClick={() => {
-              setNotice("");
-              setConfirming(true);
-            }}
+            className="ui-btn ui-btn-primary"
+            disabled={others.isPending}
+            onClick={() => others.mutate()}
           >
-            Sign out all other devices
+            Sign out all
           </button>
-        </div>
-      )}
-      {confirming && (
-        <div className="two-factor-step">
-          <p>
-            Sign out all your other devices? They will need to sign in again.
-          </p>
-          <div className="two-factor-actions">
-            <Button
-              type="button"
-              disabled={others.isPending}
-              onClick={() => others.mutate()}
-            >
-              Sign out all
-            </Button>
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => setConfirming(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+        }
+      >
+        <p>They will need to sign in again.</p>
+      </Overlay>
     </section>
   );
 }

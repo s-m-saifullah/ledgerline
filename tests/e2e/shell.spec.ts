@@ -109,7 +109,7 @@ test.describe("a phone, under 700 px", () => {
     ).toHaveCount(0);
   });
 
-  test("keeps sign out in the top bar until Settings has it", async ({
+  test("has no Sign out in a phone's top bar: Settings carries it", async ({
     page,
   }) => {
     await at(page, 390);
@@ -117,7 +117,13 @@ test.describe("a phone, under 700 px", () => {
       page
         .getByRole("button", { name: "Sign out", exact: true })
         .filter({ visible: true }),
-    ).toHaveCount(1);
+    ).toHaveCount(0);
+    await page.goto("/settings");
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("button", { name: "Sign out", exact: true }),
+    ).toBeVisible();
   });
 
   test("shows the sync state only when it is not Synced", async ({

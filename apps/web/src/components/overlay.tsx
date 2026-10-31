@@ -25,6 +25,7 @@ export function Overlay({
   footer,
   action,
   cancelLabel = "Cancel",
+  dismissible = true,
   kind = "sheet",
   size = "default",
   returnFocusId,
@@ -43,6 +44,8 @@ export function Overlay({
   /** An optional action in a sheet's header, such as Reset. */
   action?: ReactNode;
   cancelLabel?: string;
+  /** False for a step that must be finished, such as backup codes shown only once: no Cancel, and Escape and a click outside do nothing. */
+  dismissible?: boolean;
   kind?: "sheet" | "question";
   size?: "default" | "wide";
   returnFocusId: string;
@@ -66,7 +69,7 @@ export function Overlay({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next && !busy) onDismiss();
+        if (!next && !busy && dismissible) onDismiss();
       }}
     >
       <Dialog.Portal>
@@ -148,7 +151,7 @@ export function Overlay({
             <>
               <div className="ui-grab" aria-hidden="true" />
               <div className="ui-sheet-head">
-                {cancel}
+                {dismissible ? cancel : <span aria-hidden="true" />}
                 <Dialog.Title className="ui-sheet-title">{title}</Dialog.Title>
                 <div className="ui-sheet-action">{action}</div>
               </div>

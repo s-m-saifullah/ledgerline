@@ -19,6 +19,8 @@ function mount(
     new Response("{}", { status: 500 }),
 ) {
   const calls: { url: string; init: RequestInit }[] = [];
+  const reads = { count: 0 };
+  const onNotice = vi.fn();
   vi.stubGlobal(
     "fetch",
     vi.fn(async (target: RequestInfo | URL, init?: RequestInit) => {
@@ -26,6 +28,7 @@ function mount(
         calls.push({ url: String(target), init });
         return save(init);
       }
+      reads.count++;
       return new Response(
         JSON.stringify({
           items: [
@@ -45,46 +48,118 @@ function mount(
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <TimeZoneCard />
+      <TimeZoneCard onNotice={onNotice} />
     </QueryClientProvider>,
   );
-  return calls;
+  return { calls, reads, onNotice };
 }
 
-describe("ledger time zone card", () => {
-  it("says no time zone is set and offers to save one", async () => {
-    mount("owner", null);
-    expect(await screen.findByText(/No time zone yet/)).toBeTruthy();
-    expect(screen.getByLabelText("Time zone")).toBeTruthy();
+/** The select is drawn at once but stays off until the ledger has loaded. */
+async function loadedSelect() {
+  const select = await screen.findByLabelText("Time zone");
+  await vi.waitFor(() => expect(select).toBeEnabled());
+  return select;
+}
+
+describe("ledger time zone row", () => {
+  it("is one row named Time zone with a select and a one-line hint, and no Save button", async () => {
+    mount("owner", "UTC");
+    const select = await loadedSelect();
+    expect(select).toHaveProperty("value", "UTC");
+    expect(select).toHaveAccessibleDescription("Decides what today is");
+    expect(screen.getByRole("heading", { name: "Ledger" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Save/ })).toBeNull();
   });
 
-  it("saves the chosen zone with the ledger's version and one key", async () => {
+  it("shows a placeholder when no zone is set, and that choice cannot be picked again", async () => {
+    mount("owner", null);
+    const select = await loadedSelect();
+    expect(select).toHaveProperty("value", "");
+    expect(
+      screen.getByRole("option", { name: "Choose a time zone" }),
+    ).toBeDisabled();
+  });
+
+  it("saves the chosen zone at once, with the ledger's version and one key, and says so", async () => {
     const user = userEvent.setup();
-    const calls = mount(
+    const { calls, reads, onNotice } = mount(
       "owner",
       "UTC",
-      () => new Response("{}", { status: 500 }),
+      () =>
+        new Response(
+          JSON.stringify({
+            id: ledgerId,
+            name: "Personal",
+            baseCurrency: "USD",
+            timeZone: "America/Chicago",
+            version: 5,
+            role: "owner",
+          }),
+        ),
     );
-    await user.selectOptions(
-      await screen.findByLabelText("Time zone"),
-      "America/Chicago",
+    await user.selectOptions(await loadedSelect(), "America/Chicago");
+    await vi.waitFor(() =>
+      expect(onNotice).toHaveBeenCalledWith("Time zone saved."),
     );
-    await user.click(screen.getByRole("button", { name: "Save time zone" }));
-    expect(await screen.findByRole("alert")).toBeTruthy();
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe(`/api/v1/ledgers/${ledgerId}`);
     expect(JSON.parse(String(calls[0]?.init.body))).toEqual({
       timeZone: "America/Chicago",
       expectedVersion: 4,
     });
+    expect(
+      new Headers(calls[0]?.init.headers).get("idempotency-key"),
+    ).toBeTruthy();
+    // The ledger is read again, so the row shows what the server now holds.
+    await vi.waitFor(() => expect(reads.count).toBeGreaterThan(1));
   });
 
-  it("shows a read-only sentence to editors and viewers", async () => {
+  it("shows an alert and no notice when the save fails, and the row keeps the saved zone", async () => {
+    const user = userEvent.setup();
+    const { calls, onNotice } = mount("owner", "UTC");
+    const select = await loadedSelect();
+    await user.selectOptions(select, "America/Chicago");
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "We couldn't save that. Please try again.",
+    );
+    expect(calls).toHaveLength(1);
+    expect(onNotice).not.toHaveBeenCalled();
+    expect(select).toHaveProperty("value", "UTC");
+  });
+
+  it("is switched off for editors and viewers, with the reason as its hint", async () => {
     mount("viewer", "Asia/Dhaka");
-    expect(
-      await screen.findByText("Today follows the Asia/Dhaka time zone."),
-    ).toBeTruthy();
-    expect(screen.queryByLabelText("Time zone")).toBeNull();
-    expect(screen.getByText("Only the owner can change this.")).toBeTruthy();
+    const select = await screen.findByLabelText("Time zone");
+    await vi.waitFor(() =>
+      expect(select).toHaveProperty("value", "Asia/Dhaka"),
+    );
+    expect(select).toBeDisabled();
+    expect(select).toHaveAccessibleDescription(
+      "Only the owner can change this",
+    );
+  });
+
+  it("still shows a saved zone that this browser does not list", async () => {
+    mount("owner", "US/Pacific");
+    const select = await loadedSelect();
+    expect(select).toHaveProperty("value", "US/Pacific");
+    expect(screen.getByRole("option", { name: "US/Pacific" })).toBeTruthy();
+  });
+
+  it("says when the ledger cannot be loaded", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("{}", { status: 500 })),
+    );
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <TimeZoneCard onNotice={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Couldn't load your ledger.",
+    );
+    expect(screen.getByLabelText("Time zone")).toBeDisabled();
   });
 });

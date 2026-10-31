@@ -12,6 +12,9 @@ export const AmountEntryContext = createContext<{
   setCentsFirst: (on: boolean) => void;
 }>({ centsFirst: false, setCentsFirst: () => {} });
 
+/** Signs the owner out of this device, for the Settings page (the sidebar's owner row and the palette do the same). */
+export const SignOutContext = createContext<() => void>(() => {});
+
 type Theme = "light" | "dark" | "system";
 /** The saved theme choice, including "system", for the Appearance setting. */
 export const ThemeContext = createContext<{

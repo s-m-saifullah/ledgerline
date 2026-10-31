@@ -1,6 +1,7 @@
-import { Button } from "@ledgerline/ui";
+import { ListCard, ListRow, SectionLabel, StatusPill } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { Overlay } from "../../components/overlay";
 import { getSession } from "../../lib/api";
 import {
   makeBackupCodes,
@@ -10,136 +11,206 @@ import {
   twoFactorMessage,
   verifyCode,
 } from "../auth/two-factor-api";
+import { ActionRow } from "./action-row";
 import { QrCode } from "./qr-code";
 
+type Action = "setup" | "codes" | "off";
 type Step =
   | { name: "idle" }
-  | { name: "password"; action: "setup" | "codes" | "off" }
+  | { name: "password"; action: Action }
   | { name: "scan"; totpURI: string; backupCodes: string[] }
   | { name: "codes"; backupCodes: string[]; fresh: boolean };
 
-/** Settings card: turn two-factor sign-in on or off and renew the backup codes (ADR 0038). */
-export function TwoFactorCard() {
+const openerOf: Record<Action, string> = {
+  setup: "two-factor-setup",
+  codes: "two-factor-codes",
+  off: "two-factor-off",
+};
+
+/**
+ * Settings, Security: turn two-factor sign-in on or off and renew the backup codes (ADR 0038). The prototype's
+ * rows open one sheet that changes step in place (password, then the scan for a new setup, then the codes), so
+ * the sheet never closes and reopens between steps.
+ */
+export function TwoFactorCard({
+  onNotice,
+}: {
+  onNotice: (text: string) => void;
+}) {
   const client = useQueryClient();
   const session = useQuery({ queryKey: ["session"], queryFn: getSession });
   const ready = session.isSuccess;
   const enabled = session.data?.user?.twoFactorEnabled === true;
   const [step, setStep] = useState<Step>({ name: "idle" });
-  const [notice, setNotice] = useState("");
+  const [opener, setOpener] = useState<Action>("setup");
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
   const refresh = () => client.invalidateQueries({ queryKey: ["session"] });
+  const begin = (action: Action) => {
+    setOpener(action);
+    setSaved(false);
+    setStep({ name: "password", action });
+  };
+  const close = () => setStep({ name: "idle" });
+  const title =
+    step.name === "scan"
+      ? "Scan the code"
+      : step.name === "codes"
+        ? "Backup codes"
+        : "Your password";
   return (
-    <section className="settings-card" aria-labelledby="two-factor-title">
-      <h2 id="two-factor-title">Two-factor sign-in</h2>
-      <p className="scope-label">Your account</p>
-      {session.isError ? (
-        <p role="alert" className="field-error">
-          Couldn't check your two-factor setting. Please try again later.
-        </p>
-      ) : session.isPending ? (
-        <p>Checking your two-factor setting…</p>
-      ) : (
-        <p>
-          {enabled
-            ? "On. Signing in asks for a code from your authenticator app after your password."
-            : "Off. Add a second step to signing in: a 6-digit code from an authenticator app on your phone."}
-        </p>
-      )}
-      {notice && (
-        <p role="status" className="two-factor-notice">
-          {notice}
-        </p>
-      )}
-      {ready && step.name === "idle" && !enabled && (
-        <div className="two-factor-actions">
-          <Button
-            type="button"
-            onClick={() => {
-              setNotice("");
-              setStep({ name: "password", action: "setup" });
-            }}
-          >
-            Set up two-factor
-          </Button>
-        </div>
-      )}
-      {ready && step.name === "idle" && enabled && (
-        <details className="two-factor-manage">
-          <summary>Manage</summary>
-          <div className="two-factor-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              onClick={() => {
-                setNotice("");
-                setStep({ name: "password", action: "codes" });
-              }}
-            >
-              Make new backup codes
-            </button>
-            <button
-              type="button"
-              className="secondary-button danger-action"
-              onClick={() => {
-                setNotice("");
-                setStep({ name: "password", action: "off" });
-              }}
-            >
-              Turn off two-factor
-            </button>
+    <section aria-labelledby="two-factor-title" className="set-sect">
+      <SectionLabel as="h2" id="two-factor-title">
+        Security
+      </SectionLabel>
+      <ListCard>
+        {session.isError ? (
+          <div className="ui-row ui-row-static">
+            <p role="alert" className="field-error">
+              Couldn't check your two-factor setting. Please try again later.
+            </p>
           </div>
-        </details>
-      )}
-      {step.name === "password" && (
-        <PasswordStep
-          action={step.action}
-          onCancel={() => setStep({ name: "idle" })}
-          onDone={async (next) => {
-            if (next === "off") {
-              setStep({ name: "idle" });
-              setNotice("Two-factor is off.");
-              await refresh();
-            } else setStep(next);
-          }}
-        />
-      )}
-      {step.name === "scan" && (
-        <ScanStep
-          totpURI={step.totpURI}
-          onCancel={() => setStep({ name: "idle" })}
-          onConfirmed={() =>
-            setStep({
-              name: "codes",
-              backupCodes: step.backupCodes,
-              fresh: true,
-            })
-          }
-        />
-      )}
-      {step.name === "codes" && (
-        <CodesStep
-          backupCodes={step.backupCodes}
-          onDone={async () => {
-            setStep({ name: "idle" });
-            setNotice(
-              step.fresh
-                ? "Two-factor is on. Use a code from your app the next time you sign in."
-                : "New backup codes are ready. The old ones no longer work.",
-            );
-            await refresh();
-          }}
-        />
-      )}
+        ) : (
+          <ListRow
+            title="Two-factor"
+            hint={
+              session.isPending
+                ? "Checking your two-factor setting…"
+                : enabled
+                  ? "Asks for a code after your password"
+                  : "A code from an app on your phone"
+            }
+            {...(ready
+              ? {
+                  value: (
+                    <StatusPill tone={enabled ? "accent" : "neutral"}>
+                      {enabled ? "On" : "Off"}
+                    </StatusPill>
+                  ),
+                }
+              : {})}
+          />
+        )}
+        {ready && !enabled && (
+          <ActionRow
+            id={openerOf.setup}
+            title="Set up two-factor"
+            tone="accent"
+            onClick={() => begin("setup")}
+          />
+        )}
+        {ready && enabled && (
+          <>
+            <ActionRow
+              id={openerOf.codes}
+              title="Make new backup codes"
+              onClick={() => begin("codes")}
+            />
+            <ActionRow
+              id={openerOf.off}
+              title="Turn off two-factor"
+              tone="danger"
+              onClick={() => begin("off")}
+            />
+          </>
+        )}
+      </ListCard>
+      <Overlay
+        open={step.name !== "idle"}
+        title={title}
+        busy={busy}
+        dismissible={step.name !== "codes"}
+        onDismiss={close}
+        returnFocusId={openerOf[opener]}
+        fallbackFocusId="main-content"
+        footer={
+          step.name === "password" ? (
+            <button
+              type="submit"
+              form="two-factor-password-form"
+              disabled={busy}
+              className={`ui-btn ${step.action === "off" ? "ui-btn-danger-filled" : "ui-btn-primary"}`}
+            >
+              {step.action === "off"
+                ? "Turn off two-factor"
+                : step.action === "setup"
+                  ? "Continue"
+                  : "Make new codes"}
+            </button>
+          ) : step.name === "scan" ? (
+            <button
+              type="submit"
+              form="two-factor-code-form"
+              disabled={busy}
+              className="ui-btn ui-btn-primary"
+            >
+              Turn on
+            </button>
+          ) : step.name === "codes" ? (
+            <button
+              type="button"
+              disabled={!saved}
+              className="ui-btn ui-btn-primary"
+              onClick={() => {
+                close();
+                onNotice(
+                  step.fresh
+                    ? "Two-factor is on. Use a code from your app the next time you sign in."
+                    : "New backup codes are ready. The old ones no longer work.",
+                );
+                void refresh();
+              }}
+            >
+              Done
+            </button>
+          ) : undefined
+        }
+      >
+        {step.name === "password" && (
+          <PasswordStep
+            action={step.action}
+            onBusy={setBusy}
+            onDone={async (next) => {
+              if (next === "off") {
+                close();
+                onNotice("Two-factor is off.");
+                await refresh();
+              } else setStep(next);
+            }}
+          />
+        )}
+        {step.name === "scan" && (
+          <ScanStep
+            totpURI={step.totpURI}
+            onBusy={setBusy}
+            onConfirmed={() =>
+              setStep({
+                name: "codes",
+                backupCodes: step.backupCodes,
+                fresh: true,
+              })
+            }
+          />
+        )}
+        {step.name === "codes" && (
+          <CodesStep
+            backupCodes={step.backupCodes}
+            saved={saved}
+            onSaved={setSaved}
+          />
+        )}
+      </Overlay>
     </section>
   );
 }
 
 function PasswordStep({
   action,
-  onCancel,
+  onBusy,
   onDone,
 }: {
-  action: "setup" | "codes" | "off";
-  onCancel: () => void;
+  action: Action;
+  onBusy: (busy: boolean) => void;
   onDone: (
     next:
       | "off"
@@ -149,19 +220,20 @@ function PasswordStep({
 }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const field = useRef<HTMLInputElement>(null);
   useEffect(() => field.current?.focus(), []);
   const submit = async () => {
     if (!password) return setError("Enter your password.");
-    setBusy(true);
+    onBusy(true);
     setError("");
     try {
       if (action === "setup") {
         const setup = await startTwoFactor(password);
+        onBusy(false);
         await onDone({ name: "scan", ...setup });
       } else if (action === "codes") {
         const result = await makeBackupCodes(password);
+        onBusy(false);
         await onDone({
           name: "codes",
           backupCodes: result.backupCodes,
@@ -169,17 +241,19 @@ function PasswordStep({
         });
       } else {
         await turnOffTwoFactor(password);
+        onBusy(false);
         await onDone("off");
       }
     } catch (failure) {
       setError(twoFactorMessage(failure, "password"));
-      setBusy(false);
+      onBusy(false);
     }
   };
   return (
     <form
       noValidate
-      className="two-factor-step"
+      id="two-factor-password-form"
+      className="set-step"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -203,72 +277,63 @@ function PasswordStep({
           {error}
         </p>
       )}
-      <div className="two-factor-actions">
-        {action === "off" ? (
-          <Button type="submit" className="danger-action" disabled={busy}>
-            Turn off two-factor
-          </Button>
-        ) : (
-          <Button type="submit" disabled={busy}>
-            {action === "setup" ? "Continue" : "Make new codes"}
-          </Button>
-        )}
-        <button type="button" className="secondary-button" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
     </form>
   );
 }
 
 function ScanStep({
   totpURI,
-  onCancel,
+  onBusy,
   onConfirmed,
 }: {
   totpURI: string;
-  onCancel: () => void;
+  onBusy: (busy: boolean) => void;
   onConfirmed: () => void;
 }) {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const secret = secretFromUri(totpURI);
   const submit = async () => {
     const value = code.replace(/\s+/g, "");
     if (!value) return setError("Enter the 6-digit code.");
-    setBusy(true);
+    onBusy(true);
     setError("");
     try {
       await verifyCode(value);
+      onBusy(false);
       onConfirmed();
     } catch (failure) {
       setError(twoFactorMessage(failure, "code"));
-      setBusy(false);
+      onBusy(false);
     }
   };
   return (
-    <div className="two-factor-step">
-      <p>
-        Scan this with an authenticator app (Google Authenticator, Authy,
-        1Password and others), or add it by hand with the key below. Two-factor
-        only turns on once you enter a code from the app.
+    <div className="set-step">
+      <p className="set-line">
+        Scan with an authenticator app. It turns on once you enter a code.
       </p>
       <QrCode text={totpURI} label="QR code for your authenticator app" />
-      <p>
-        <a className="two-factor-link" href={totpURI}>
-          Open in my authenticator app
-        </a>
-      </p>
-      <p>
-        Key to type by hand:{" "}
+      <ListCard>
+        <ListRow
+          title="Open in my authenticator app"
+          chevron
+          render={(inner, className) => (
+            <a className={className} href={totpURI}>
+              {inner}
+            </a>
+          )}
+        />
+      </ListCard>
+      <div className="set-key">
+        <span className="set-key-label">Key to type by hand</span>
         <code className="two-factor-key">
           {secret.replace(/(.{4})/g, "$1 ").trim()}
         </code>
-      </p>
+      </div>
       <form
         noValidate
-        className="two-factor-code-form"
+        id="two-factor-code-form"
+        className="set-step"
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
@@ -292,14 +357,6 @@ function ScanStep({
             {error}
           </p>
         )}
-        <div className="two-factor-actions">
-          <Button type="submit" disabled={busy}>
-            Turn on
-          </Button>
-          <button type="button" className="secondary-button" onClick={onCancel}>
-            Cancel
-          </button>
-        </div>
       </form>
     </div>
   );
@@ -307,12 +364,13 @@ function ScanStep({
 
 function CodesStep({
   backupCodes,
-  onDone,
+  saved,
+  onSaved,
 }: {
   backupCodes: string[];
-  onDone: () => Promise<void>;
+  saved: boolean;
+  onSaved: (saved: boolean) => void;
 }) {
-  const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -323,11 +381,9 @@ function CodesStep({
     }
   };
   return (
-    <div className="two-factor-step">
-      <p>
-        Backup codes. Each one signs you in once if you lose your phone. They
-        are shown only now, so keep them somewhere safe, like a password
-        manager.
+    <div className="set-step">
+      <p className="set-line">
+        Each one signs you in once. They are shown only now.
       </p>
       <ul className="backup-codes" aria-label="Backup codes">
         {backupCodes.map((code) => (
@@ -336,28 +392,21 @@ function CodesStep({
           </li>
         ))}
       </ul>
-      <div className="two-factor-actions">
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => void copy()}
-        >
-          {copied ? "Copied" : "Copy all"}
-        </button>
-      </div>
-      <label className="budget-rollover amount-entry-toggle">
+      <button
+        type="button"
+        className="ui-btn ui-btn-secondary"
+        onClick={() => void copy()}
+      >
+        {copied ? "Copied" : "Copy all"}
+      </button>
+      <label className="set-check">
         <input
           type="checkbox"
           checked={saved}
-          onChange={(event) => setSaved(event.target.checked)}
+          onChange={(event) => onSaved(event.target.checked)}
         />
-        <span className="check-text">I saved these codes</span>
+        <span>I saved these codes</span>
       </label>
-      <div className="two-factor-actions">
-        <Button type="button" disabled={!saved} onClick={() => void onDone()}>
-          Done
-        </Button>
-      </div>
     </div>
   );
 }

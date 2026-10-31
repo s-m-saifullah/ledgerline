@@ -21,7 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { TopBar } from "../../components/top-bar";
 import { api, getLedgers, type Session } from "../../lib/api";
-import type { Preferences } from "../../lib/preferences";
+import { type Preferences, SignOutContext } from "../../lib/preferences";
 import { useLiveChanges } from "../../lib/use-live-changes";
 import { usePageAnnouncement } from "../../lib/use-page-announcement";
 import { QuickAdd } from "../transactions/quick-add";
@@ -292,8 +292,6 @@ export function Shell({
                     <Moon size={20} aria-hidden="true" />
                   )}
                 </button>
-                {/* Until Settings has Sign out (PR 6): the sidebar carries it from 1100 px. */}
-                {signOutButton("ui-icon-btn ui-topbar-signout")}
               </>
             }
           />
@@ -307,7 +305,9 @@ export function Shell({
           {pageAnnouncement}
         </p>
         <main id="main-content" className="main-content" tabIndex={-1}>
-          <Outlet />
+          <SignOutContext value={() => void signOut()}>
+            <Outlet />
+          </SignOutContext>
         </main>
       </div>
       <nav className="ui-bottom" aria-label="Mobile navigation">
@@ -406,12 +406,9 @@ export function EmptyPage({
   );
 }
 /** The deployed release tag, small and quiet. */
-export function AppVersion({ phoneOnly = false }: { phoneOnly?: boolean }) {
+export function AppVersion() {
   return (
-    <p
-      className={phoneOnly ? "app-version phone-only" : "app-version"}
-      data-testid="app-version"
-    >
+    <p className="app-version" data-testid="app-version">
       Ledgerline {__APP_VERSION__}
     </p>
   );

@@ -12,6 +12,7 @@ import {
   Settings,
   Shapes,
   Tags,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -56,7 +57,7 @@ export const moreGroups: readonly {
   {
     label: "Receivables and lending",
     pages: [
-      { to: "/clients", label: "Clients", icon: Wallet },
+      { to: "/clients", label: "Clients", icon: Users },
       { to: "/loans", label: "Loans", icon: HandCoins },
     ],
   },

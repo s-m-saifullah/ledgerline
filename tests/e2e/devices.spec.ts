@@ -38,22 +38,21 @@ test("Settings lists a second device and signs it out, and its token stops worki
     page.getByRole("heading", { name: "Signed-in devices" }),
   ).toBeVisible();
   const row = page
-    .getByRole("listitem")
+    .locator(".ui-row")
     .filter({ hasText: `Ledgerline Android app (${model})` });
   await expect(row).toBeVisible();
   await expect(
-    page.locator(".account-badge", { hasText: "Current device" }),
+    page.locator(".ui-pill", { hasText: "Current device" }),
   ).toBeVisible();
 
   // The confirmation for signing everything out can be cancelled and signs nobody out.
   await page
     .getByRole("button", { name: "Sign out all other devices" })
     .click();
-  await expect(
-    page.getByText(
-      /Sign out all your other devices\? They will need to sign in again\./,
-    ),
-  ).toBeVisible();
+  const question = page.getByRole("dialog", {
+    name: "Sign out all other devices?",
+  });
+  await expect(question).toContainText("They will need to sign in again.");
   await page.getByRole("button", { name: "Cancel" }).click();
   expect((await asPhone()).status()).toBe(200);
 
