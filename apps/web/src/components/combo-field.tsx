@@ -27,6 +27,8 @@ export function ComboField({
   onChange,
   creates = [],
   disabled = false,
+  clearable = true,
+  selectedLabel,
 }: {
   label: string;
   /** The text of the choice that clears the field, and the placeholder while nothing is chosen. */
@@ -37,6 +39,10 @@ export function ComboField({
   onChange: (id: string | null) => void;
   creates?: readonly ComboCreate[];
   disabled?: boolean;
+  /** False when a choice is required: there is no "All" row, and `allLabel` is only the placeholder. */
+  clearable?: boolean;
+  /** What to show for a chosen value that is not among the options (an archived category, say). */
+  selectedLabel?: string | undefined;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -55,7 +61,7 @@ export function ComboField({
     (option) => option.label.toLocaleLowerCase() === term,
   );
   const rows: Row[] = [
-    ...(term ? [] : [{ kind: "all" } as const]),
+    ...(term || !clearable ? [] : [{ kind: "all" } as const]),
     ...matches.map((option) => ({ kind: "option", option }) as const),
     ...(term && !exact
       ? creates.map((create) => ({ kind: "create", create }) as const)
@@ -119,7 +125,11 @@ export function ComboField({
           spellCheck={false}
           disabled={disabled || busy}
           placeholder={allLabel}
-          value={open && query !== null ? query : (selected?.label ?? "")}
+          value={
+            open && query !== null
+              ? query
+              : (selected?.label ?? (value ? (selectedLabel ?? "") : ""))
+          }
           // Focus alone does not open the list (a sheet starts on its first field); a click, typing or an arrow does.
           onFocus={(event) => event.currentTarget.select()}
           onClick={show}

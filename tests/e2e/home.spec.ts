@@ -141,7 +141,7 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
   await latestRows(page).filter({ hasText: "Food" }).click();
   const editor = page.getByRole("dialog", { name: "Edit transaction" });
   await editor.getByRole("button", { name: "Delete transaction" }).click();
-  await editor.getByRole("button", { name: "Confirm delete" }).click();
+  await page.getByRole("button", { name: "Confirm delete" }).click();
   await expect(month(page, "Money out")).toHaveText("$0.00");
   await expect(hero(page)).toHaveText("$1,200.00");
   await page

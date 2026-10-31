@@ -38,4 +38,7 @@ export type TransferFormContext = {
   setMoreOpen: (open: boolean) => void;
   hasFee: boolean;
   hasBonus: boolean;
+  /** Swaps From and To with their amounts and clears a rate set by hand. */
+  swap: () => void;
+  canSwap: boolean;
 };

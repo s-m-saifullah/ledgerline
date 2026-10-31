@@ -1,11 +1,12 @@
-import { Plus } from "lucide-react";
+import { SwitchRow } from "@ledgerline/ui";
+import { ArrowUpDown } from "lucide-react";
 import { AmountInput } from "../../../components/amount-input";
 import { DateTimeInput } from "../../../components/date-time-input";
 import { NativeSelect } from "../../../components/native-select";
 import { CategoryPicker } from "../../categories/picker";
 import { EntryRate } from "../../currencies/entry-rate";
 import { TagPicker } from "../../tags/tag-picker";
-import { feeHint } from "../fee";
+import { EntryAmount, EntryCard } from "../entry-sheet";
 import { FeePreview } from "../fee-preview";
 import { amountMinor } from "../form";
 import type { TransferFormContext } from "./form-context";
@@ -18,44 +19,46 @@ export function renderAmountFields(form: TransferFormContext) {
     watch,
     setValue,
     errors,
-    privateMode,
     ledgerId,
     fromCurrency,
     toCurrency,
     crossCurrency,
   } = form;
   return (
-    <>
-      <label htmlFor="transfer-amount">
-        {crossCurrency
-          ? `Amount sent (${fromCurrency})`
-          : `Amount (${fromCurrency})`}
-      </label>
-      <AmountInput
-        currency={fromCurrency}
+    <div className="entry-amount-block">
+      <EntryAmount
         id="transfer-amount"
-        className="transaction-amount"
-        type={privateMode ? "password" : "text"}
-        inputMode="decimal"
-        autoComplete="off"
-        {...register("amount")}
+        label={
+          crossCurrency
+            ? `Amount sent (${fromCurrency})`
+            : `Amount (${fromCurrency})`
+        }
+        currency={fromCurrency}
+        invalid={!!errors.amount}
+        describedBy={errors.amount ? "transfer-amount-error" : undefined}
+        inputProps={register("amount")}
       />
-      {errors.amount && <p className="field-error">{errors.amount.message}</p>}
+      {errors.amount && (
+        <p id="transfer-amount-error" className="field-error">
+          {errors.amount.message}
+        </p>
+      )}
       {crossCurrency && (
         <>
-          <label htmlFor="transfer-received">
-            Amount received ({toCurrency})
-          </label>
-          <AmountInput
-            currency={toCurrency}
+          <EntryAmount
             id="transfer-received"
-            type={privateMode ? "password" : "text"}
-            inputMode="decimal"
-            autoComplete="off"
-            {...register("receivedAmount")}
+            label={`Amount received (${toCurrency})`}
+            currency={toCurrency}
+            invalid={!!errors.receivedAmount}
+            describedBy={
+              errors.receivedAmount ? "transfer-received-error" : undefined
+            }
+            inputProps={register("receivedAmount")}
           />
           {errors.receivedAmount && (
-            <p className="field-error">{errors.receivedAmount.message}</p>
+            <p id="transfer-received-error" className="field-error">
+              {errors.receivedAmount.message}
+            </p>
           )}
           <TransferRate
             sent={amountMinor(watch("amount"), fromCurrency)}
@@ -75,69 +78,120 @@ export function renderAmountFields(form: TransferFormContext) {
           )}
         </>
       )}
-    </>
-  );
-}
-
-/** The from and to account pickers. */
-export function renderAccountPickers(form: TransferFormContext) {
-  const { register, setValue, errors, accounts, baseline } = form;
-  return (
-    <div className="transaction-context">
-      {(["fromAccountId", "toAccountId"] as const).map((field) => (
-        <div key={field}>
-          <label htmlFor={`transfer-${field}`}>
-            {field === "fromAccountId" ? "From account" : "To account"}
-          </label>
-          <NativeSelect
-            id={`transfer-${field}`}
-            {...register(field, {
-              // A rate set by hand belonged to the old accounts.
-              onChange: () => setValue("fxRate", ""),
-            })}
-          >
-            <option value="" disabled>
-              Choose an account
-            </option>
-            {accounts
-              .filter((row) => !row.archivedAt || row.id === baseline?.[field])
-              .map((row) => (
-                <option key={row.id} value={row.id} disabled={!!row.archivedAt}>
-                  {row.name}
-                  {row.archivedAt ? " (archived)" : ""}
-                </option>
-              ))}
-          </NativeSelect>
-          {errors[field] && (
-            <p className="field-error">{errors[field]?.message}</p>
-          )}
-        </div>
-      ))}
     </div>
   );
 }
 
-/** The optional fee box on a new transfer. */
-export function renderFeeField(form: TransferFormContext) {
+/** From and To with the swap between them, then the date and time. */
+export function renderAccountsAndWhen(form: TransferFormContext) {
+  const { register, setValue, errors, accounts, baseline, swap, canSwap } =
+    form;
+  const field = (name: "fromAccountId" | "toAccountId") => (
+    <div className="entry-field">
+      <label htmlFor={`transfer-${name}`}>
+        {name === "fromAccountId" ? "From account" : "To account"}
+      </label>
+      <NativeSelect
+        id={`transfer-${name}`}
+        {...register(name, {
+          // A rate set by hand belonged to the old accounts.
+          onChange: () => setValue("fxRate", ""),
+        })}
+      >
+        <option value="" disabled>
+          Choose an account
+        </option>
+        {accounts
+          .filter((row) => !row.archivedAt || row.id === baseline?.[name])
+          .map((row) => (
+            <option key={row.id} value={row.id} disabled={!!row.archivedAt}>
+              {row.name}
+              {row.archivedAt ? " (archived)" : ""}
+            </option>
+          ))}
+      </NativeSelect>
+      {errors[name] && <p className="field-error">{errors[name]?.message}</p>}
+    </div>
+  );
+  return (
+    <EntryCard>
+      {field("fromAccountId")}
+      <div className="entry-swap">
+        <button
+          type="button"
+          className="ui-btn ui-btn-secondary"
+          aria-label="Swap accounts"
+          disabled={!canSwap}
+          onClick={swap}
+        >
+          <ArrowUpDown size={16} aria-hidden="true" />
+          Swap
+        </button>
+      </div>
+      {field("toAccountId")}
+      <div className="entry-when">
+        <div className="entry-field">
+          <label htmlFor="transfer-date">Date</label>
+          <DateTimeInput
+            label="Date"
+            required
+            id="transfer-date"
+            type="date"
+            min="0001-01-01"
+            max="9999-12-31"
+            aria-invalid={!!errors.date}
+            {...register("date")}
+          />
+          {errors.date && <p className="field-error">Choose a valid date.</p>}
+        </div>
+        <div className="entry-field">
+          <label htmlFor="transfer-time">Time (optional)</label>
+          <DateTimeInput
+            label="Time (optional)"
+            id="transfer-time"
+            type="time"
+            step={60}
+            aria-invalid={!!errors.time}
+            {...register("time")}
+          />
+          {errors.time && <p className="field-error">Choose a valid time.</p>}
+        </div>
+      </div>
+    </EntryCard>
+  );
+}
+
+/** The fee, the bonus and their categories: only on a new transfer. */
+export function renderFeeAndBonus(form: TransferFormContext) {
   const {
     register,
+    setValue,
     errors,
     baseline,
+    categories,
     privateMode,
+    toCurrency,
     fromCurrency,
     fromAccount,
+    toAccount,
+    bps,
+    bonusOn,
+    bonusEdited,
     feeInput,
     feeCost,
     sentMinor,
     feeEdited,
+    feeCategoryId,
+    bonusCategoryId,
+    moreOpen,
+    setMoreOpen,
   } = form;
+  if (baseline) return null;
   return (
-    <>
-      {!baseline && fromAccount && (
-        <div className="transfer-fee">
-          <label className="field-label" htmlFor="transfer-fee">
-            Fee (optional)
-          </label>
+    <EntryCard>
+      {fromAccount && (
+        <div className="entry-field">
+          <label htmlFor="transfer-fee">Fee (optional)</label>
           <input
             id="transfer-fee"
             type={privateMode ? "password" : "text"}
@@ -153,8 +207,7 @@ export function renderFeeField(form: TransferFormContext) {
             })}
           />
           <p id="transfer-fee-help" className="form-help">
-            {feeHint} Charged to {fromAccount.name} in {fromCurrency}; the
-            amount received stays the same.
+            A fixed amount, or a % of what you send.
           </p>
           {errors.feeText && (
             <p className="field-error">{errors.feeText.message}</p>
@@ -170,109 +223,49 @@ export function renderFeeField(form: TransferFormContext) {
           </p>
         </div>
       )}
-    </>
-  );
-}
-
-/** The optional bonus on a new transfer. */
-export function renderBonusFields(form: TransferFormContext) {
-  const {
-    register,
-    setValue,
-    errors,
-    baseline,
-    privateMode,
-    toCurrency,
-    toAccount,
-    bps,
-    bonusOn,
-    bonusEdited,
-  } = form;
-  return (
-    <>
-      {!baseline && toAccount && (bps || bonusOn) && (
-        <div className="transfer-bonus">
-          <label className="split-toggle">
-            <input
-              type="checkbox"
-              checked={bonusOn}
-              onChange={(event) => setValue("bonusOn", event.target.checked)}
-            />{" "}
-            Add a bonus{bps ? ` (${bps / 100}% of what arrives)` : ""}
-          </label>
-          {bonusOn && (
-            <>
-              <label htmlFor="transfer-bonus-amount">
-                Bonus ({toCurrency})
-              </label>
-              <AmountInput
-                currency={toCurrency}
-                id="transfer-bonus-amount"
-                type={privateMode ? "password" : "text"}
-                inputMode="decimal"
-                autoComplete="off"
-                {...register("bonusAmount", {
-                  onChange: () => {
-                    bonusEdited.current = true;
-                  },
-                })}
-              />
-              {errors.bonusAmount && (
-                <p className="field-error">{errors.bonusAmount.message}</p>
-              )}
-              <p className="form-help">
-                Saved as income in {toAccount.name} together with the transfer.
-                Switch it off to save the transfer alone.
-              </p>
-            </>
+      {toAccount && (
+        <SwitchRow
+          title="Add a bonus"
+          {...(bps ? { hint: `${bps / 100}% of what arrives` } : {})}
+          checked={bonusOn}
+          onChange={(on) => setValue("bonusOn", on)}
+        />
+      )}
+      {toAccount && bonusOn && (
+        <div className="entry-field">
+          <label htmlFor="transfer-bonus-amount">Bonus ({toCurrency})</label>
+          <AmountInput
+            currency={toCurrency}
+            id="transfer-bonus-amount"
+            type={privateMode ? "password" : "text"}
+            inputMode="decimal"
+            autoComplete="off"
+            {...register("bonusAmount", {
+              onChange: () => {
+                bonusEdited.current = true;
+              },
+            })}
+          />
+          {errors.bonusAmount && (
+            <p className="field-error">{errors.bonusAmount.message}</p>
           )}
         </div>
       )}
-      {!baseline && toAccount && !bps && !bonusOn && (
-        <button
-          type="button"
-          className="text-button inline-category-toggle"
-          onClick={() => setValue("bonusOn", true)}
-        >
-          <Plus size={16} />
-          Add a bonus
-        </button>
-      )}
-    </>
-  );
-}
-
-/** The fee and bonus categories under More. */
-export function renderMoreCategories(form: TransferFormContext) {
-  const {
-    setValue,
-    errors,
-    baseline,
-    categories,
-    bps,
-    bonusOn,
-    feeCategoryId,
-    bonusCategoryId,
-    moreOpen,
-    setMoreOpen,
-  } = form;
-  return (
-    <>
-      {!baseline && (
+      <div className="entry-field">
         <details
-          className="transaction-details transfer-more"
+          className="entry-more"
           open={moreOpen}
           onToggle={(event) => setMoreOpen(event.currentTarget.open)}
         >
           <summary>
             <span>
               More{" "}
-              <span className="muted transfer-more-hint">
+              <span className="muted">
                 fee {bonusOn || bps ? "and bonus " : ""}categories
               </span>
             </span>
           </summary>
-          <div className="account-fields">
+          <div className="entry-more-body">
             <CategoryPicker
               categories={categories}
               kind="expense"
@@ -299,83 +292,45 @@ export function renderMoreCategories(form: TransferFormContext) {
                 )}
               </>
             )}
-            <p className="form-help">
-              Used only when the transfer has a fee
-              {bonusOn ? " or a bonus" : ""}. An account can remember its
-              default categories when you edit it.
-            </p>
           </div>
         </details>
-      )}
-    </>
+      </div>
+    </EntryCard>
   );
 }
 
-/** Notes about an existing fee or bonus entry. */
-export function renderLinkedNotes(form: TransferFormContext) {
-  const { hasFee, hasBonus } = form;
+/** Tags and note, and on a saved transfer one line for a fee or bonus entry that is edited elsewhere. */
+export function renderTagsAndNote(form: TransferFormContext) {
+  const { register, watch, setValue, ledgerId, hasFee, hasBonus } = form;
   return (
-    <>
+    <EntryCard>
+      <div className="entry-field">
+        <TagPicker
+          id="transfer-tags"
+          ledgerId={ledgerId}
+          value={watch("tagIds")}
+          onChange={(ids) => setValue("tagIds", ids)}
+        />
+      </div>
+      <div className="entry-field">
+        <label htmlFor="transfer-note">Note</label>
+        <textarea
+          id="transfer-note"
+          rows={2}
+          maxLength={2000}
+          {...register("note")}
+        />
+      </div>
       {hasFee && (
-        <p className="form-help">
-          This transfer has a fee entry. It is a separate expense, so edit it
-          from the transaction list.
+        <p className="entry-field form-help">
+          Its fee is a separate expense: edit it from the list.
         </p>
       )}
       {hasBonus && (
-        <p className="form-help">
-          This transfer has a bonus entry. It is separate income, so edit it
-          from the transaction list.
+        <p className="entry-field form-help">
+          Its bonus is separate income: edit it from the list.
         </p>
       )}
-    </>
-  );
-}
-
-/** Date, time and note. */
-export function renderWhenAndNote(form: TransferFormContext) {
-  const { register, errors, watch, setValue, ledgerId } = form;
-  return (
-    <>
-      <div className="transaction-context">
-        <div>
-          <label htmlFor="transfer-date">Date</label>
-          <DateTimeInput
-            label="Date"
-            required
-            id="transfer-date"
-            type="date"
-            min="0001-01-01"
-            max="9999-12-31"
-            {...register("date")}
-          />
-          {errors.date && <p className="field-error">Choose a valid date.</p>}
-        </div>
-        <div>
-          <label htmlFor="transfer-time">Time (optional)</label>
-          <DateTimeInput
-            label="Time (optional)"
-            id="transfer-time"
-            type="time"
-            step={60}
-            {...register("time")}
-          />
-          {errors.time && <p className="field-error">Choose a valid time.</p>}
-        </div>
-      </div>
-      <label htmlFor="transfer-note">Note</label>
-      <textarea
-        id="transfer-note"
-        rows={2}
-        maxLength={2000}
-        {...register("note")}
-      />
-      <TagPicker
-        id="transfer-tags"
-        ledgerId={ledgerId}
-        value={watch("tagIds")}
-        onChange={(ids) => setValue("tagIds", ids)}
-      />
-    </>
+    </EntryCard>
   );
 }

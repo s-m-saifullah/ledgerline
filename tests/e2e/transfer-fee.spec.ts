@@ -110,7 +110,7 @@ test("a transfer's fee starts from the account's remembered fee, is saved with i
   const fee = page.getByLabel("Fee (optional)");
   await expect(fee).toHaveValue("1%");
   await expect(
-    page.getByText(/Type 2 for a fixed fee, or 2% for a percentage/),
+    page.getByText("A fixed amount, or a % of what you send."),
   ).toBeVisible();
   await expect(page.locator("#transfer-fee-preview")).toContainText(
     "Fee $1.00 · $101.00 leaves Checking",

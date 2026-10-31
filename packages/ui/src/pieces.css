@@ -389,6 +389,10 @@
   position: absolute;
   inset: -4px 0;
 }
+.ui-seg > button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .ui-seg > button[aria-checked="true"] {
   border-color: var(--border);
   background: var(--surface);

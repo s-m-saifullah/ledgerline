@@ -187,7 +187,6 @@ for (const width of [390, 1280]) {
               .getByRole("button", { name: /Add transaction/ })
               .first()
               .click();
-            await page.getByText("More details", { exact: true }).click();
           },
         ],
         [
