@@ -184,7 +184,8 @@ test("moves exact cents, edits both legs, deletes and restores with historical i
   await transferEditor(page)
     .getByRole("button", { name: "Delete transfer" })
     .click();
-  await transferEditor(page)
+  await page
+    .getByRole("dialog", { name: "Delete this transfer?", exact: true })
     .getByRole("button", { name: "Confirm delete" })
     .click();
   await expect(
@@ -330,7 +331,8 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
   await transferEditor(page)
     .getByRole("button", { name: "Delete transfer" })
     .click();
-  await transferEditor(page)
+  await page
+    .getByRole("dialog", { name: "Delete this transfer?", exact: true })
     .getByRole("button", { name: "Confirm delete" })
     .click();
   await expect(
