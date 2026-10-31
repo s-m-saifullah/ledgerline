@@ -2,6 +2,12 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.51 — Paid this month on a client
+
+No migration. Every client in `GET /api/v1/ledgers/{ledgerId}/contacts` and `GET .../contacts/{contactId}` (and in the responses that return a client) has a new `paidThisMonth`: `{ base, amounts }`. `amounts` is what its payments settled in the month, one `{ amount, currency }` per service currency (sorted by currency code); `base` is the same money in the base currency (USD), the sum of the base values saved on the payment entries when they were made, so a later rate change never moves an old month and no currency is left out. A payment counts in the month of its entry's date; deleted payments and tips (separate income entries) do not count. A client with no payments in the month has `base` of zero and no `amounts`.
+
+Both reads take an optional `month` (`YYYY-MM`, the format Home uses); an invalid value is a 400. Without it the figure covers the current month in the ledger's time zone (UTC when none is set). The Android `Contact` type carries the field and its contract test checks it; the phone does not show it yet.
+
 ## 0.1.50 — Change marker for live updates
 
 No migration (ADR 0044). `GET /api/v1/ledgers/{ledgerId}/changes` in the `Sync` group returns `{ marker }`, an opaque string that moves whenever any row of the ledger changes (an insert, an update, a soft delete or a hard delete in any ledger table, and the ledger's own settings and members), whoever made the change. It says nothing about what changed: compare it with the last one and reload when it differs. Read in one read-only snapshot from per-table row counts and newest updates; sent with `Cache-Control: no-store`. Works with the session cookie or a bearer token; viewers can read; a ledger the caller is not a member of is `404`. The web app polls it every 15 seconds while a page is visible.

@@ -9,6 +9,7 @@ import app.ledgerline.api.HistorySnapshot
 import app.ledgerline.api.LoanBalance
 import app.ledgerline.api.LoanPerson
 import app.ledgerline.api.Money
+import app.ledgerline.api.PaidThisMonth
 import app.ledgerline.api.PaymentEntry
 import app.ledgerline.api.PaymentTip
 import app.ledgerline.api.Service
@@ -31,6 +32,7 @@ internal fun contact(
     note: String? = null,
     balances: List<Money>? = null,
     unconverted: List<String> = emptyList(),
+    paid: Long = 0,
 ) = Contact(
     name = name,
     phone = phone,
@@ -47,6 +49,7 @@ internal fun contact(
     openBalances = balances ?: if (owed > 0) listOf(usd(owed)) else emptyList(),
     unconvertedCurrencies = unconverted,
     oldestOpenServiceDate = oldest,
+    paidThisMonth = PaidThisMonth(usd(paid), if (paid > 0) listOf(usd(paid)) else emptyList()),
 )
 
 /** A service of [cents] with [received] paid; its status and what is outstanding follow from them. */
