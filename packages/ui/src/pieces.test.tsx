@@ -223,6 +223,20 @@ describe("StatusPill, SectionLabel, EmptyState", () => {
     await userEvent.click(screen.getByRole("button", { name: "Add" }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it("can turn its action off while it works", async () => {
+    const onClick = vi.fn();
+    render(
+      <EmptyState
+        text="Nothing here yet."
+        action={{ label: "Copying…", onClick, disabled: true }}
+      />,
+    );
+    const button = screen.getByRole("button", { name: "Copying…" });
+    expect(button).toBeDisabled();
+    await userEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+  });
 });
 
 describe("FilterChip", () => {
@@ -414,6 +428,32 @@ describe("Hero", () => {
     expect(screen.getByText("In hand")).toBeInTheDocument();
     expect(screen.getByText("$12,400.00")).toBeInTheDocument();
     expect(screen.getByText("Clients owe")).toHaveClass("ui-hero-fig-label");
+  });
+
+  it("can be red, with a meter and a note between the figure and the small figures", () => {
+    const { container } = render(
+      <Hero
+        label="Left this month"
+        figure="-$5.00"
+        tone="danger"
+        meter={<span>100% used</span>}
+        note="Spent without a budget $1.00"
+      />,
+    );
+    expect(container.querySelector(".ui-hero")).toHaveClass("ui-hero-danger");
+    expect(screen.getByText("100% used")).toBeInTheDocument();
+    expect(screen.getByText("Spent without a budget $1.00")).toHaveClass(
+      "ui-hero-note",
+    );
+  });
+
+  it("is the accent by default and draws no meter or note unless given", () => {
+    const { container } = render(<Hero label="In hand" figure="$1.00" />);
+    expect(container.querySelector(".ui-hero")).not.toHaveClass(
+      "ui-hero-danger",
+    );
+    expect(container.querySelector(".ui-hero-meter")).toBeNull();
+    expect(container.querySelector(".ui-hero-note")).toBeNull();
   });
 
   it("draws no figures row when there are none", () => {

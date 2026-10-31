@@ -143,7 +143,7 @@ export function EmptyState({
   action,
 }: {
   text: string;
-  action?: { label: string; onClick: () => void };
+  action?: { label: string; onClick: () => void; disabled?: boolean };
 }) {
   return (
     <div className="ui-empty">
@@ -152,6 +152,7 @@ export function EmptyState({
         <button
           type="button"
           className="ui-btn ui-btn-secondary"
+          disabled={action.disabled ?? false}
           onClick={action.onClick}
         >
           {action.label}
@@ -389,17 +390,28 @@ export function SwitchRow({
 export function Hero({
   label,
   figure,
+  tone,
+  meter,
+  note,
   children,
 }: {
   label: string;
   figure: ReactNode;
+  /** Red, for money that went past a limit. */
+  tone?: "danger";
+  /** A bar and its line in words, under the figure. */
+  meter?: ReactNode;
+  /** One small line at the foot. */
+  note?: ReactNode;
   children?: ReactNode;
 }) {
   return (
-    <section className="ui-hero">
+    <section className={cn("ui-hero", tone === "danger" && "ui-hero-danger")}>
       <p className="ui-hero-label">{label}</p>
       <p className="ui-hero-figure">{figure}</p>
+      {meter && <div className="ui-hero-meter">{meter}</div>}
       {children && <div className="ui-hero-figs">{children}</div>}
+      {note && <p className="ui-hero-note">{note}</p>}
     </section>
   );
 }
