@@ -1,0 +1,151 @@
+/*
+ * Budgets (ADR 0047): the Left this month hero beside one grouped list, 5 to 7 from 1100 px, one column below.
+ * The month control sits under the title on a phone, whose own heading is only for screen readers, and in the
+ * head from 700 px. Widths are the layout system's two (700 and 1100 px).
+ */
+.bud-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.bud-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.bud-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@container app (min-width: 700px) {
+  .bud-head {
+    justify-content: space-between;
+  }
+}
+.bud-cols {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+@container app (min-width: 700px) {
+  .bud-page,
+  .bud-cols {
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .bud-page,
+  .bud-cols {
+    gap: 20px;
+  }
+  .bud-cols {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+.bud-side,
+.bud-list {
+  min-width: 0;
+}
+.bud-error {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 16px;
+}
+
+/* A row: the name and what is left on one line, the bar, one hint. */
+.ui-row.bud-row {
+  align-items: flex-start;
+  padding: 12px 16px;
+}
+.bud-main {
+  gap: 6px;
+}
+.bud-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+/* A hint on a narrow phone wraps instead of being cut: "Carried over" is part of what it says. */
+.bud-row .ui-row-hint {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+.bud-left {
+  flex: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bud-over {
+  color: var(--danger);
+}
+.bud-fold {
+  display: block;
+}
+.bud-list .ui-list > .bud-fold {
+  border-top: 0;
+}
+.bud-list .ui-list > .ui-row + .bud-fold {
+  border-top: 1px solid var(--border);
+}
+/* The global disclosure style (a bordered button with its own arrow) gives way: the summary is the first row. */
+.bud-list .bud-fold > summary {
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  list-style: none;
+}
+.bud-list .bud-fold > summary:hover {
+  background: var(--tint);
+}
+.bud-fold > summary::-webkit-details-marker,
+.bud-fold > summary::before {
+  display: none;
+}
+.bud-fold-title {
+  color: var(--muted);
+}
+.bud-fold > summary > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.bud-fold[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.bud-fold > .ui-row {
+  border-top: 1px solid var(--border);
+}
+
+/* The Set limit sheet. */
+.bud-form,
+.bud-fields {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.bud-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.bud-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

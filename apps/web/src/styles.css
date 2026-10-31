@@ -1835,18 +1835,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
 .budget-summary {
   margin-bottom: 16px;
 }
-/* Stat cards turn into a label-and-amount grid on phones; this one is just text and a button. */
-.budget-summary-empty {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: start;
-  align-items: start;
-  gap: 8px;
-}
-.budget-summary-empty .account-dialog-actions {
-  margin-top: 8px;
-  justify-content: flex-start;
-}
 .budget-list {
   list-style: none;
   margin: 0;
@@ -1899,9 +1887,6 @@ button.budget-line:hover {
 }
 .budget-bar.over .budget-bar-fill {
   background: var(--danger);
-}
-.budget-over {
-  color: var(--danger);
 }
 /* Insights */
 .insight-heading {

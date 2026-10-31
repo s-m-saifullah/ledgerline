@@ -13,12 +13,14 @@ const files = [
   "features/shell/palette.css",
   "components/amount-text.css",
   "components/pick-row.css",
+  "components/entry-amount.css",
   "features/home/home.css",
   "features/transactions/transactions.css",
   "features/transactions/entry-sheet.css",
   "features/imports/import.css",
   "features/shell/more.css",
   "features/settings/settings.css",
+  "features/budgets/budgets.css",
 ];
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(

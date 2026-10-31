@@ -159,6 +159,20 @@
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
+.ui-hero-danger {
+  background: var(--danger);
+  color: var(--danger-foreground);
+}
+.ui-hero-meter {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.ui-hero-note {
+  margin-top: 6px;
+  font-size: 10px;
+  opacity: 0.9;
+}
 /* The small figures flow onto a new row before a label can wrap. */
 .ui-hero-figs {
   display: flex;
@@ -448,6 +462,13 @@
 }
 .ui-bar-over > i {
   background: var(--danger);
+}
+/* A bar on the hero is light on the hero's own colour (the accent on the deep accent would not show). */
+.ui-hero-meter .ui-bar {
+  background: color-mix(in oklab, currentColor 25%, transparent);
+}
+.ui-hero-meter .ui-bar > i {
+  background: currentColor;
 }
 .ui-empty {
   display: grid;

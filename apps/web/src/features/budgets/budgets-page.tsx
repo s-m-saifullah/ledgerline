@@ -1,33 +1,43 @@
 import type { BudgetLine } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import {
+  Avatar,
+  cn,
+  EmptyState,
+  Hero,
+  ListCard,
+  ProportionBar,
+  RowBody,
+} from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Amount } from "../../components/amount-text";
-import { MonthSwitcher } from "../../components/month-switcher";
+import { MonthControl } from "../../components/month-control";
+import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { monthLabel, shiftMonth, useCurrentMonth } from "../../lib/month";
 import { getBudgetMonth, prepareBudgetCopy } from "./api";
-import { BudgetEditor } from "./budget-editor";
+import { LimitSheet } from "./limit-sheet";
+import {
+  allowanceOf,
+  daysLeft,
+  lineState,
+  percentUsed,
+  shareOf,
+  splitLines,
+  usedShare,
+} from "./model";
+import "./budgets.css";
 
-/** How much of the month's allowance (budget plus carried-in) is used, capped to the bar. */
-export function usedShare(line: BudgetLine) {
-  if (!line.budget) return 0;
-  const allowance = line.budget.amount.amount + line.carriedIn.amount;
-  if (allowance <= 0) return line.spent.amount > 0 ? 1 : 0;
-  return Math.min(1, Math.max(0, line.spent.amount / allowance));
+/** The days left in the month, in words, for the hero's line; nothing for another month. */
+function daysText(days: number | null) {
+  if (days === null) return "";
+  if (days === 0) return " · Last day";
+  return ` · ${days} ${days === 1 ? "day" : "days"} left`;
 }
 
-function LeftText({ line }: { line: BudgetLine }) {
-  if (!line.left) return <span className="muted">No budget</span>;
-  const over = line.left.amount < 0;
-  return (
-    <span className={over ? "budget-over" : undefined}>
-      <Amount cents={Math.abs(line.left.amount)} /> {over ? "over" : "left"}
-    </span>
-  );
-}
-
-function Line({
+/** One budgeted category: avatar, name, what is left, the bar and one hint. */
+function BudgetRow({
   line,
   writable,
   onOpen,
@@ -36,64 +46,83 @@ function Line({
   writable: boolean;
   onOpen: () => void;
 }) {
-  const over = (line.left?.amount ?? 0) < 0;
+  const left = line.left?.amount ?? 0;
+  const over = left < 0;
+  const share = usedShare(line);
+  const carried = line.carriedIn.amount;
   const body = (
     <>
-      <span className="budget-line-top">
-        <strong>{line.name}</strong>
-        <LeftText line={line} />
-      </span>
-      {line.budget && (
-        <span className={`budget-bar${over ? " over" : ""}`} aria-hidden="true">
-          <span
-            className="budget-bar-fill"
-            style={{ width: `${Math.round(usedShare(line) * 100)}%` }}
-          />
+      <Avatar name={line.name} />
+      <span className="ui-row-main bud-main">
+        <span className="bud-top">
+          <span className="ui-row-title">{line.name}</span>
+          <span className={cn("bud-left", over && "bud-over")}>
+            <Amount cents={Math.abs(left)} /> {over ? "over" : "left"}
+          </span>
         </span>
-      )}
-      <span className="budget-line-detail muted">
-        {line.budget ? (
-          <>
-            Spent <Amount cents={line.spent.amount} /> of{" "}
-            <Amount cents={line.budget.amount.amount} />
-            {line.carriedIn.amount !== 0 && (
-              <>
-                {" "}
-                · {line.carriedIn.amount > 0 ? "Carried over " : "Overspent "}
-                <Amount cents={Math.abs(line.carriedIn.amount)} />
-              </>
-            )}
-          </>
-        ) : (
-          <>
-            {line.spent.amount > 0 ? (
-              <>
-                Spent <Amount cents={line.spent.amount} />
-              </>
-            ) : (
-              "Nothing spent"
-            )}
-            {writable && " · Tap to set a budget"}
-          </>
-        )}
+        <ProportionBar
+          share={share}
+          state={lineState(line)}
+          label={`${Math.round(share * 100)}% used`}
+        />
+        <span className="ui-row-hint">
+          <Amount cents={line.spent.amount} /> of{" "}
+          <Amount cents={allowanceOf(line)} />
+          {carried !== 0 && (
+            <>
+              {" "}
+              · {carried > 0 ? "Carried over " : "Overspent "}
+              <Amount cents={Math.abs(carried)} />
+            </>
+          )}
+        </span>
       </span>
     </>
   );
-  return (
-    <li>
-      {writable ? (
-        <button
-          type="button"
-          id={`budget-line-${line.categoryId}`}
-          className="budget-line"
-          onClick={onOpen}
-        >
-          {body}
-        </button>
-      ) : (
-        <div className="budget-line">{body}</div>
-      )}
-    </li>
+  return writable ? (
+    <button
+      type="button"
+      id={`budget-line-${line.categoryId}`}
+      className="ui-row ui-row-press bud-row"
+      onClick={onOpen}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className="ui-row ui-row-static bud-row">{body}</div>
+  );
+}
+
+/** A category without a budget, inside the fold: what it spent, and for a writer a tap to set a limit. */
+function FoldRow({
+  line,
+  writable,
+  onOpen,
+}: {
+  line: BudgetLine;
+  writable: boolean;
+  onOpen: () => void;
+}) {
+  const body = (
+    <RowBody
+      lead={<Avatar name={line.name} />}
+      title={line.name}
+      {...(line.spent.amount > 0
+        ? { value: <Amount cents={line.spent.amount} /> }
+        : {})}
+    />
+  );
+  return writable ? (
+    <button
+      type="button"
+      id={`budget-line-${line.categoryId}`}
+      className="ui-row ui-row-press"
+      onClick={onOpen}
+    >
+      {body}
+    </button>
+  ) : (
+    <div className="ui-row ui-row-static">{body}</div>
   );
 }
 
@@ -102,7 +131,9 @@ export function BudgetsPage() {
   const [chosen, setChosen] = useState<string | null>(null);
   const month = chosen ?? current;
   const [editing, setEditing] = useState<string | null>(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<{ id: number; text: string } | null>(
+    null,
+  );
   const [copying, setCopying] = useState(false);
   const client = useQueryClient();
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
@@ -120,38 +151,46 @@ export function BudgetsPage() {
     void client.invalidateQueries({ queryKey: ["budgets", ledger?.id] });
     // Budgets feed no Home number yet, but keep the cache honest if that changes.
   };
-  const hasBudgets = !!data?.items.some((line) => line.budget);
+  // One notice for the page; its number restarts the timer when the same words come twice in a row.
+  const tell = (text: string) =>
+    setNotice((last) => ({ id: (last?.id ?? 0) + 1, text }));
+  const { budgeted, unbudgeted } = splitLines(data?.items ?? []);
+  const hasBudgets = budgeted.length > 0;
   const editingLine = data?.items.find((line) => line.categoryId === editing);
   const previous = shiftMonth(month, -1);
   const copy = async () => {
     if (!ledger) return;
     setCopying(true);
-    setNotice("");
     try {
       const result = await prepareBudgetCopy(ledger.id, previous, month)();
-      setNotice(
+      tell(
         result.items.length
           ? `Copied ${result.items.length} ${result.items.length === 1 ? "budget" : "budgets"} from ${monthLabel(previous)}.`
           : `Nothing to copy from ${monthLabel(previous)}.`,
       );
       refresh();
     } catch {
-      setNotice("Couldn't copy the budgets. Please try again.");
+      tell("Couldn't copy the budgets. Please try again.");
     } finally {
       setCopying(false);
     }
   };
+  const totals = data?.totals;
+  const allowance = totals
+    ? totals.budgeted.amount + totals.carriedIn.amount
+    : 0;
   return (
-    <>
-      <div className="page-heading">
-        <p className="eyebrow">YOUR PERSONAL LEDGER</p>
+    <div className="bud-page">
+      <div className="page-heading bud-head">
         <h1 id="budgets-title" tabIndex={-1}>
           Budgets
         </h1>
-        <MonthSwitcher month={month} onChange={setChosen} />
+        <div className="bud-month">
+          <MonthControl month={month} onChange={setChosen} />
+        </div>
       </div>
       {(ledgers.isError || view.isError) && (
-        <div className="account-error">
+        <div className="ui-card bud-error">
           <p role="alert">
             {data
               ? "Couldn't refresh. Showing the last numbers we loaded."
@@ -159,7 +198,7 @@ export function BudgetsPage() {
           </p>
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             onClick={() => {
               void ledgers.refetch();
               if (ledger) void view.refetch();
@@ -177,83 +216,125 @@ export function BudgetsPage() {
       {ledgers.data && !ledger && (
         <p className="account-error">No ledger is available.</p>
       )}
-      {data && (
-        <>
-          {hasBudgets ? (
-            <section className="stat-card budget-summary">
-              <p>Left this month</p>
-              <div
-                className={`amount${data.totals.left.amount < 0 ? " budget-over" : ""}`}
-              >
-                <Amount cents={data.totals.left.amount} />
-              </div>
-              <span className="muted">
-                Budgeted <Amount cents={data.totals.budgeted.amount} /> · Spent{" "}
-                <Amount cents={data.totals.spent.amount} />
-                {data.totals.carriedIn.amount !== 0 && (
-                  <>
-                    {" "}
-                    · Carried in <Amount cents={data.totals.carriedIn.amount} />
-                  </>
-                )}
-              </span>
-            </section>
-          ) : (
-            <section className="stat-card budget-summary budget-summary-empty">
-              <p>No budgets for {monthLabel(month)} yet.</p>
-              <span className="muted">
-                {writable
-                  ? "Pick a category below to set one, or start from last month."
-                  : "Nothing has been budgeted for this month."}
-              </span>
-              {writable && (
-                <div className="account-dialog-actions">
-                  <Button type="button" disabled={copying} onClick={copy}>
-                    {copying ? "Copying…" : `Copy from ${monthLabel(previous)}`}
-                  </Button>
+      {data &&
+        totals &&
+        (data.items.length === 0 ? (
+          <p className="muted">
+            Add an expense category first, then budget it here.
+          </p>
+        ) : (
+          <div className="bud-cols">
+            <div className="bud-side">
+              {hasBudgets ? (
+                <Hero
+                  label="Left this month"
+                  figure={<Amount cents={totals.left.amount} />}
+                  {...(totals.left.amount < 0
+                    ? { tone: "danger" as const }
+                    : {})}
+                  meter={
+                    <>
+                      <ProportionBar
+                        share={shareOf(totals.spent.amount, allowance)}
+                        label={`${percentUsed({ spent: totals.spent.amount, allowance })}% used`}
+                      />
+                      <span>
+                        {percentUsed({ spent: totals.spent.amount, allowance })}
+                        % used{daysText(daysLeft(month, new Date()))}
+                      </span>
+                    </>
+                  }
+                  {...(totals.unbudgetedSpent.amount > 0
+                    ? {
+                        note: (
+                          <>
+                            Spent without a budget{" "}
+                            <Amount cents={totals.unbudgetedSpent.amount} />
+                          </>
+                        ),
+                      }
+                    : {})}
+                />
+              ) : (
+                <div className="ui-card">
+                  <EmptyState
+                    text={
+                      writable
+                        ? `No budgets for ${monthLabel(month)} yet.`
+                        : "Nothing has been budgeted for this month."
+                    }
+                    {...(writable
+                      ? {
+                          action: {
+                            label: copying
+                              ? "Copying…"
+                              : `Copy from ${monthLabel(previous).split(" ")[0]}`,
+                            onClick: () => void copy(),
+                            disabled: copying,
+                          },
+                        }
+                      : {})}
+                  />
                 </div>
               )}
+            </div>
+            <section className="bud-list" aria-label="Budgets by category">
+              <ListCard>
+                {budgeted.map((line) => (
+                  <BudgetRow
+                    key={line.categoryId}
+                    line={line}
+                    writable={writable}
+                    onOpen={() => setEditing(line.categoryId)}
+                  />
+                ))}
+                {unbudgeted.length > 0 && (
+                  <details className="bud-fold" open={!hasBudgets}>
+                    <summary className="ui-row ui-row-press bud-fold-head">
+                      <span className="ui-row-main">
+                        <span className="ui-row-title bud-fold-title">
+                          {unbudgeted.length} without a budget
+                        </span>
+                      </span>
+                      <ChevronDown size={18} aria-hidden="true" />
+                    </summary>
+                    {unbudgeted.map((line) => (
+                      <FoldRow
+                        key={line.categoryId}
+                        line={line}
+                        writable={writable}
+                        onOpen={() => setEditing(line.categoryId)}
+                      />
+                    ))}
+                  </details>
+                )}
+              </ListCard>
             </section>
-          )}
-          {notice && (
-            <p role="status" className="muted">
-              {notice}
-            </p>
-          )}
-          {data.items.length === 0 ? (
-            <p className="muted">
-              Add an expense category first, then budget it here.
-            </p>
-          ) : (
-            <ul className="budget-list" aria-label="Budgets by category">
-              {data.items.map((line) => (
-                <Line
-                  key={line.categoryId}
-                  line={line}
-                  writable={writable}
-                  onOpen={() => setEditing(line.categoryId)}
-                />
-              ))}
-            </ul>
-          )}
-          {hasBudgets && data.totals.unbudgetedSpent.amount > 0 && (
-            <p className="muted">
-              Spent without a budget:{" "}
-              <Amount cents={data.totals.unbudgetedSpent.amount} />
-            </p>
-          )}
-        </>
-      )}
+          </div>
+        ))}
       {ledger && editingLine && (
-        <BudgetEditor
+        <LimitSheet
           key={`${editingLine.categoryId}-${month}-${editingLine.budget?.version ?? 0}`}
           ledgerId={ledger.id}
           month={month}
           line={editingLine}
           onDismiss={() => setEditing(null)}
-          onChanged={refresh}
+          onChanged={(text) => {
+            refresh();
+            if (text) tell(text);
+          }}
         />
       )}
-    </>
+      {notice && (
+        <Toast
+          key={notice.id}
+          label="Budgets notification"
+          durationMs={4000}
+          onExpire={() => setNotice(null)}
+        >
+          <p role="status">{notice.text}</p>
+        </Toast>
+      )}
+    </div>
   );
 }

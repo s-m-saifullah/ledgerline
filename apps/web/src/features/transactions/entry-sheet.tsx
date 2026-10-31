@@ -1,9 +1,6 @@
 import { SegmentedControl } from "@ledgerline/ui";
 import { Trash2 } from "lucide-react";
-import { type ReactNode, useContext } from "react";
-import type { UseFormRegisterReturn } from "react-hook-form";
-import { AmountInput } from "../../components/amount-input";
-import { PrivacyContext } from "../../lib/preferences";
+import type { ReactNode } from "react";
 import "./entry-sheet.css";
 
 export type EntryType = "expense" | "income" | "transfer";
@@ -37,49 +34,6 @@ export function TypePill({
       onChange={onChange}
       {...(disabled ? { disabled } : {})}
     />
-  );
-}
-
-/**
- * The big amount with its currency code beside it. The visible label would only repeat the code, so the
- * label is read aloud and the code is drawn.
- */
-export function EntryAmount({
-  id,
-  label,
-  currency,
-  invalid,
-  describedBy,
-  inputProps,
-}: {
-  id: string;
-  label: string;
-  currency: string;
-  invalid: boolean;
-  describedBy: string | undefined;
-  inputProps: UseFormRegisterReturn;
-}) {
-  const privateMode = useContext(PrivacyContext);
-  return (
-    <div className="entry-amount">
-      <label htmlFor={id} className="sr-only">
-        {label}
-      </label>
-      <AmountInput
-        currency={currency}
-        id={id}
-        className="entry-amount-input"
-        type={privateMode ? "password" : "text"}
-        inputMode="decimal"
-        autoComplete="off"
-        aria-invalid={invalid}
-        aria-describedby={describedBy}
-        {...inputProps}
-      />
-      <span className="entry-amount-code" aria-hidden="true">
-        {currency}
-      </span>
-    </div>
   );
 }
 
