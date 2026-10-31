@@ -1,5 +1,6 @@
-import { SectionLabel, SwitchRow } from "@ledgerline/ui";
-import { NativeSelect } from "../../components/native-select";
+import { SegmentedControl, SwitchRow } from "@ledgerline/ui";
+import { ChevronRight } from "lucide-react";
+import { PickRow } from "../../components/pick-row";
 import {
   type AmountStyle,
   type DateFormat,
@@ -24,7 +25,7 @@ type ColumnKey =
   | "status"
   | "tags";
 
-function ColumnSelect({
+function ColumnRow({
   w,
   name,
   label,
@@ -45,35 +46,31 @@ function ColumnSelect({
   };
   const value = w.mapping[name];
   return (
-    <div className="imp-field">
-      <label className="imp-label" htmlFor={`map-${name}`}>
-        {label}
-      </label>
-      <NativeSelect
-        id={`map-${name}`}
-        value={value === null ? NONE : String(value)}
-        onChange={(event) =>
-          w.setMapping(
-            withColumn(
-              table,
-              w.mapping,
-              name,
-              event.target.value === NONE ? null : Number(event.target.value),
-            ),
-          )
-        }
-      >
-        <option value={NONE}>
-          {required ? "Choose a column" : "Not in the file"}
-        </option>
-        {Array.from({ length: width }, (_, at) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: columns are positional
-          <option key={at} value={at}>
-            {title(at)}
-          </option>
-        ))}
-      </NativeSelect>
-    </div>
+    <PickRow
+      id={`map-${name}`}
+      label={label}
+      value={value === null ? NONE : String(value)}
+      options={[
+        {
+          value: NONE,
+          label: required ? "Choose a column" : "Not in the file",
+        },
+        ...Array.from({ length: width }, (_, at) => ({
+          value: String(at),
+          label: title(at),
+        })),
+      ]}
+      onChange={(next) =>
+        w.setMapping(
+          withColumn(
+            table,
+            w.mapping,
+            name,
+            next === NONE ? null : Number(next),
+          ),
+        )
+      }
+    />
   );
 }
 
@@ -81,178 +78,156 @@ export function ColumnsStep({ w }: { w: Wizard }) {
   const { mapping } = w;
   const set = (change: Partial<ImportMapping>) =>
     w.setMapping({ ...mapping, ...change });
-  const styles: [AmountStyle, string, string][] = [
-    ["signed", "One amount column", "Spending is negative, income positive."],
-    [
-      "typed",
-      "An amount and a type column",
-      "The type says income or expense.",
-    ],
-    [
-      "split",
-      "Separate money in and money out columns",
-      "Debit and credit columns.",
-    ],
-  ];
   const problems = w.parsed?.problems ?? [];
   const count = w.parsed?.rows.length ?? 0;
   const skipped = w.parsed?.skipped.length ?? 0;
   const first = (w.file?.table ?? []).slice(0, 4);
+  const header = mapping.hasHeader ? first[0] : undefined;
+  const body = mapping.hasHeader ? first.slice(1) : first;
   return (
     <>
-      <section className="imp-section" aria-labelledby="import-columns-title">
-        <SectionLabel as="h2" id="import-columns-title">
-          Match your columns
-        </SectionLabel>
-        <div className="imp-card imp-sample-wrap">
-          <table className="imp-sample" aria-label="First rows of the file">
-            <tbody>
-              {first.map((row, at) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
-                <tr key={at}>
-                  {row.map((cell, column) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
-                    <td key={column} title={cell}>
-                      {cell}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="imp-card">
-          <SwitchRow
-            title="First row is a header"
-            hint="Column names"
-            checked={mapping.hasHeader}
-            onChange={(on) => set({ hasHeader: on })}
-          />
-          <ColumnSelect w={w} name="date" label="Date" required />
-          <div className="imp-field">
-            <label className="imp-label" htmlFor="map-date-format">
-              Date format
-            </label>
-            <NativeSelect
-              id="map-date-format"
-              value={mapping.dateFormat}
-              onChange={(event) =>
-                set({ dateFormat: event.target.value as DateFormat })
-              }
-            >
-              <option value="iso">2026-10-31 (year first)</option>
-              <option value="mdy">10/31/2026 (month first)</option>
-              <option value="dmy">31/10/2026 (day first)</option>
-            </NativeSelect>
-          </div>
-        </div>
-        <fieldset className="imp-group">
-          <legend className="ui-section-label">How are amounts written?</legend>
-          <div className="imp-card">
-            {styles.map(([value, label, hint]) => (
-              <label key={value} className="imp-choice">
-                <input
-                  type="radio"
-                  name="amount-style"
-                  checked={mapping.amountStyle === value}
-                  onChange={() => set({ amountStyle: value })}
-                />
-                <span className="imp-choice-text">
-                  <span>{label}</span>
-                  <span className="imp-note">{hint}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <div className="imp-card">
-          {mapping.amountStyle !== "split" && (
-            <ColumnSelect w={w} name="amount" label="Amount" required />
+      <div className="ui-card imp-sample-card">
+        <table className="imp-sample" aria-label="First rows of the file">
+          {header && (
+            <thead>
+              <tr>
+                {header.map((cell, column) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: cells are positional
+                  <th key={column} title={cell} scope="col">
+                    {cell}
+                  </th>
+                ))}
+              </tr>
+            </thead>
           )}
-          {mapping.amountStyle === "typed" && (
-            <ColumnSelect
+          <tbody>
+            {body.map((row, at) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
+              <tr key={at}>
+                {row.map((cell, column) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: rows and cells are positional
+                  <td key={column} title={cell}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="ui-card ui-list">
+        <SwitchRow
+          title="The first row holds column names"
+          checked={mapping.hasHeader}
+          onChange={(on) => set({ hasHeader: on })}
+        />
+        <ColumnRow w={w} name="date" label="Date" required />
+        <PickRow
+          id="map-date-format"
+          label="Date format"
+          value={mapping.dateFormat}
+          options={[
+            {
+              value: "iso",
+              label: "2026-10-31 (year first)",
+              short: "Year first",
+            },
+            {
+              value: "mdy",
+              label: "10/31/2026 (month first)",
+              short: "Month first",
+            },
+            {
+              value: "dmy",
+              label: "31/10/2026 (day first)",
+              short: "Day first",
+            },
+          ]}
+          onChange={(next) => set({ dateFormat: next as DateFormat })}
+        />
+        {mapping.amountStyle !== "split" && (
+          <ColumnRow w={w} name="amount" label="Amount" required />
+        )}
+        {mapping.amountStyle === "typed" && (
+          <ColumnRow w={w} name="type" label="Income or expense" required />
+        )}
+        {mapping.amountStyle === "split" && (
+          <>
+            <ColumnRow
               w={w}
-              name="type"
-              label="Income or expense"
+              name="moneyOut"
+              label="Money out (spending)"
               required
             />
-          )}
-          {mapping.amountStyle === "split" && (
-            <>
-              <ColumnSelect
-                w={w}
-                name="moneyOut"
-                label="Money out (spending)"
-                required
-              />
-              <ColumnSelect
-                w={w}
-                name="moneyIn"
-                label="Money in (income)"
-                required
-              />
-            </>
-          )}
-          <div className="imp-field">
-            <label className="imp-label" htmlFor="map-decimal">
-              Numbers look like
-            </label>
-            <NativeSelect
-              id="map-decimal"
-              value={mapping.decimal}
-              onChange={(event) =>
-                set({ decimal: event.target.value as DecimalStyle })
-              }
-            >
-              <option value="dot">1,234.56</option>
-              <option value="comma">1.234,56</option>
-            </NativeSelect>
-          </div>
-          {mapping.amountStyle === "signed" && (
-            <SwitchRow
-              title="Positive is spending"
-              hint="Some card statements"
-              checked={mapping.positiveIsSpending}
-              onChange={(on) => set({ positiveIsSpending: on })}
+            <ColumnRow
+              w={w}
+              name="moneyIn"
+              label="Money in (income)"
+              required
             />
-          )}
-        </div>
-        <SectionLabel>Also in the file (optional)</SectionLabel>
-        <div className="imp-card">
-          <ColumnSelect w={w} name="payee" label="Payee or description" />
-          <ColumnSelect w={w} name="note" label="Note" />
-          <ColumnSelect w={w} name="category" label="Category" />
-          <ColumnSelect w={w} name="subcategory" label="Subcategory" />
-          <ColumnSelect
-            w={w}
-            name="tags"
-            label="Tags (names separated by ; or ,)"
+          </>
+        )}
+        <PickRow
+          id="map-decimal"
+          label="Numbers look like"
+          value={mapping.decimal}
+          options={[
+            { value: "dot", label: "1,234.56" },
+            { value: "comma", label: "1.234,56" },
+          ]}
+          onChange={(next) => set({ decimal: next as DecimalStyle })}
+        />
+        {mapping.amountStyle === "signed" && (
+          <SwitchRow
+            title="Positive is spending"
+            hint="Some card statements"
+            checked={mapping.positiveIsSpending}
+            onChange={(on) => set({ positiveIsSpending: on })}
           />
-          <ColumnSelect w={w} name="time" label="Time" />
-          <ColumnSelect
-            w={w}
-            name="status"
-            label="Status (cleared or pending)"
-          />
-        </div>
-      </section>
-      <section className="imp-section" aria-live="polite">
+        )}
+      </div>
+      <SegmentedControl<AmountStyle>
+        label="How are amounts written?"
+        options={[
+          { value: "signed", label: "One amount column" },
+          { value: "typed", label: "Amount and type" },
+          { value: "split", label: "Money in and out" },
+        ]}
+        value={mapping.amountStyle}
+        onChange={(next) => set({ amountStyle: next })}
+      />
+      <details className="ui-card ui-list imp-details">
+        <summary className="ui-row">
+          <span className="ui-row-main">
+            <span className="ui-row-title">Also in the file</span>
+          </span>
+          <span className="ui-row-chevron" aria-hidden="true">
+            <ChevronRight size={18} />
+          </span>
+        </summary>
+        <ColumnRow w={w} name="payee" label="Payee" />
+        <ColumnRow w={w} name="note" label="Note" />
+        <ColumnRow w={w} name="category" label="Category" />
+        <ColumnRow w={w} name="subcategory" label="Subcategory" />
+        <ColumnRow w={w} name="tags" label="Tags" />
+        <ColumnRow w={w} name="time" label="Time" />
+        <ColumnRow w={w} name="status" label="Status" />
+      </details>
+      <div className="imp-banner" aria-live="polite">
         {w.columnsProblem ? (
-          <p className="imp-note">{w.columnsProblem}</p>
+          <p>{w.columnsProblem}</p>
         ) : (
-          <div className="imp-card">
-            <p className="imp-field">
-              <span>
-                We can read <strong>{count}</strong>{" "}
-                {count === 1 ? "row" : "rows"}
-                {skipped
-                  ? `, and leave out ${skipped} (transfers and split entries can't be imported yet)`
-                  : ""}
-                {problems.length ? `. ${problems.length} can't be read:` : "."}
-              </span>
+          <>
+            <p>
+              We can read <strong>{count}</strong>{" "}
+              {count === 1 ? "row" : "rows"}
+              {skipped
+                ? `, and leave out ${skipped} (transfers and split entries can't be imported yet)`
+                : ""}
+              {problems.length ? `. ${problems.length} can't be read:` : "."}
             </p>
             {problems.length > 0 && (
-              <ul className="imp-list imp-lines">
+              <ul className="imp-lines">
                 {problems.slice(0, 5).map((row) => (
                   <li key={row.line}>
                     Line {row.line}: {row.reason}
@@ -263,26 +238,26 @@ export function ColumnsStep({ w }: { w: Wizard }) {
                 )}
               </ul>
             )}
-          </div>
+          </>
         )}
-        <div className="imp-actions">
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={() => w.go("file")}
-          >
-            Back
-          </button>
-          <button
-            type="button"
-            className="ui-btn ui-btn-primary"
-            disabled={!!w.columnsProblem || count === 0}
-            onClick={w.continueFromColumns}
-          >
-            Continue
-          </button>
-        </div>
-      </section>
+      </div>
+      <div className="imp-next">
+        <button
+          type="button"
+          className="ui-btn ui-btn-secondary"
+          onClick={() => w.go("file")}
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          className="ui-btn ui-btn-primary"
+          disabled={!!w.columnsProblem || count === 0}
+          onClick={w.continueFromColumns}
+        >
+          Continue
+        </button>
+      </div>
     </>
   );
 }

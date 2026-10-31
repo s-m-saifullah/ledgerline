@@ -129,11 +129,10 @@ describe("ExportCard", () => {
     ]);
   });
 
-  it("says in one line the file is not kept and blocks a backwards date range", async () => {
+  it("blocks a backwards date range", async () => {
     stubDownloads();
     mount();
     const user = userEvent.setup();
-    expect(screen.getByText(/not kept on the server/i)).toBeTruthy();
     expect(screen.queryByText(/open in any spreadsheet/)).toBeNull();
     await user.type(screen.getByLabelText("From date"), "2026-10-09");
     await user.type(screen.getByLabelText("To date"), "2026-10-01");

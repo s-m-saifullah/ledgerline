@@ -12,6 +12,7 @@ const files = [
   "features/shell/shell.css",
   "features/shell/palette.css",
   "components/amount-text.css",
+  "components/pick-row.css",
   "features/home/home.css",
   "features/transactions/transactions.css",
   "features/transactions/entry-sheet.css",

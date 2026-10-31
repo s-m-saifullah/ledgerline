@@ -1,19 +1,19 @@
 /*
- * Import and export (ADR 0047): one page with the four-step import and, on its first step, the export. Fields
- * sit in bordered cards like the entry sheet's; a row is a title with at most one short hint. Widths are the
- * layout system's two (700 and 1100 px).
+ * Import and export (ADR 0047), as the approved prototype draws it: the steps on a line of their own, then the
+ * import on the left and the export on the right (stacked on a phone), every card the same grouped rows as the
+ * rest of the app. Widths are the layout system's two (700 and 1100 px).
  */
 .imp-page,
+.imp-stack,
 .imp-section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   align-content: start;
   min-width: 0;
 }
-.imp-page {
-  max-width: 760px;
-}
 .imp-page > *,
+.imp-stack > *,
 .imp-section > * {
   min-width: 0;
 }
@@ -27,24 +27,30 @@
   font-weight: 600;
   letter-spacing: -0.02em;
 }
-.imp-section > .ui-section-label {
-  padding-top: 8px;
+.imp-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+.imp-cols > * {
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .imp-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .imp-cols {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 20px;
+  }
 }
 
-/* Lists of lines: problems, duplicates, ready rows. */
-.imp-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.imp-lines li {
-  padding: 8px 16px;
-  font-size: 14px;
-}
-.imp-list > li + li {
-  border-top: 1px solid var(--border);
-}
-/* The four steps as small pills; the current one is filled, the ones behind it keep the text colour. */
+/* The steps: a numbered circle and a name each, joined by short lines; the current and finished ones are filled. */
 .imp-steps {
   display: flex;
   flex-wrap: wrap;
@@ -53,104 +59,83 @@
   padding: 0;
   list-style: none;
 }
-.imp-step {
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+.imp-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
+  font-weight: 500;
   color: var(--muted);
 }
-.imp-step.done {
-  color: var(--text);
+.imp-steps li i {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--field-border);
+  border-radius: 50%;
+  font-size: 12px;
+  font-style: normal;
 }
-.imp-step.current {
-  border-color: transparent;
-  background: var(--accent-soft);
-  color: var(--text);
+.imp-steps li[aria-current="step"] {
   font-weight: 600;
+  color: var(--text);
 }
-
-/* On a phone only the current step keeps its name, so the four fit on one line. */
-.imp-step:not(.current) .imp-step-label {
-  position: absolute;
-  width: 1px;
+.imp-steps li[aria-current="step"] i,
+.imp-steps li.done i {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+.imp-steps li + li::before {
+  content: "";
+  width: 16px;
   height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-@container app (min-width: 700px) {
-  .imp-step:not(.current) .imp-step-label {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip: auto;
-  }
+  background: var(--border);
 }
 
-.imp-card {
-  min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--shape-card);
-  background: var(--surface);
+/* A card of rows. A title row (Export, Imported N entries) is the same row as "Import into", so the cards open alike. */
+.imp-body {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
 }
-.imp-card > * + * {
+.imp-body.imp-top {
   border-top: 1px solid var(--border);
+}
+.imp-card-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+/* From and To sit side by side wherever each date fits beside its calendar button (about 124 px), else stacked. */
+.imp-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+  gap: 12px;
 }
 .imp-field {
   display: grid;
   align-content: start;
   gap: 8px;
   min-width: 0;
-  padding: 16px;
 }
-.imp-card label.imp-label {
-  display: block;
+.imp-field label {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
 }
-.imp-field .field-error,
-.imp-hint {
-  margin: 0;
-}
-.imp-hint {
-  font-size: 12px;
-  color: var(--muted);
-}
-.imp-card > .imp-hint,
-.imp-card > .field-error {
-  padding: 12px 16px;
-}
-.imp-card > .ui-switch-row:not(:last-child) {
-  border-radius: 0;
-}
-.imp-card > .ui-switch-row:last-child {
-  border-radius: 0 0 var(--shape-card) var(--shape-card);
-}
-.imp-range {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-}
-.imp-range > * + * {
-  border-top: 1px solid var(--border);
-}
-@container app (min-width: 700px) {
-  .imp-range > * + * {
-    border-top: 0;
-    border-left: 1px solid var(--border);
-  }
-}
-
-/* The buttons that end a step: side by side where they fit, one under the other where they do not. */
-.imp-actions {
+.imp-wrap {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
-.imp-actions > .ui-btn {
-  flex: 1 1 150px;
+/* The three downloads are one width: one under the other, each as wide as the card. */
+.imp-downloads {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.imp-wrap > .ui-btn {
   text-decoration: none;
 }
 .imp-note {
@@ -158,60 +143,155 @@
   font-size: 12px;
   color: var(--muted);
 }
+.imp-template {
+  justify-self: start;
+}
+/* Long names (the first-row switch) wrap on a narrow phone instead of being cut off. */
+.imp-page .ui-row-title {
+  white-space: normal;
+}
+.imp-page .ui-row-hint {
+  white-space: normal;
+}
 
-/* The first rows of the file. A long cell is cut off rather than widening the page. */
-.imp-sample-wrap {
-  overflow-x: auto;
+/* The drop zone: one dashed target for the file chooser. */
+.imp-drop-row {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 16px;
+}
+.imp-drop {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 28px 16px;
+  border: 1.5px dashed var(--field-border);
+  border-radius: var(--shape-card);
+  color: var(--accent);
+  cursor: pointer;
+}
+.imp-drop:hover {
+  background: var(--accent-soft);
+}
+.imp-drop:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.imp-drop-title {
+  font-weight: 600;
+}
+.imp-drop-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Recent imports: the whole row opens the question; "Undo" is its accent label. */
+.imp-undo {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Columns: the first rows of the file, a short banner, and the two buttons that end a step. */
+.imp-sample-card {
+  overflow: auto;
 }
 .imp-sample {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
+.imp-sample th,
 .imp-sample td {
   max-width: 160px;
   padding: 8px 12px;
   overflow: hidden;
-  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.imp-sample tr:first-child td {
-  border-top: 0;
+.imp-sample th {
+  background: var(--tint);
+  font-weight: 600;
+  color: var(--muted);
 }
-
-/* The amount styles are three rows of one choice. */
-.imp-choice {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding: 8px 16px;
-  cursor: pointer;
+.imp-sample tr:last-child td {
+  border-bottom: 0;
 }
-.imp-choice input {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  accent-color: var(--accent);
+.imp-banner {
+  display: block;
+  padding: 12px 16px;
+  border-radius: var(--shape-card);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-size: 12px;
 }
-.imp-choice-text {
-  display: grid;
-  min-width: 0;
-}
-.imp-choice-text > span:first-child {
-  font-size: 14px;
-  font-weight: 500;
-}
-fieldset.imp-group {
-  display: grid;
-  gap: 8px;
-  min-inline-size: 0;
+.imp-banner p {
   margin: 0;
+}
+.imp-lines {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
   padding: 0;
-  border: 0;
+  list-style: none;
+}
+.imp-next {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
 }
 
+/* A disclosure of rows ("Also in the file", "Show the N ready rows"): the summary is the first row. */
+.imp-details > summary {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  list-style: none;
+}
+.imp-details > summary::-webkit-details-marker {
+  display: none;
+}
+.imp-details > summary::before {
+  display: none;
+}
+.imp-details > summary:hover {
+  background: var(--tint);
+}
+.imp-details > summary .ui-row-chevron {
+  transition: transform 150ms ease-out;
+}
+.imp-details[open] > summary .ui-row-chevron {
+  transform: rotate(90deg);
+}
+.imp-details > summary + * {
+  border-top: 1px solid var(--border);
+}
+
+/* The review: three counts, then rows. */
+.imp-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.imp-count {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+.imp-count-figure {
+  font-size: 31px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.imp-count-label {
+  font-size: 12px;
+  color: var(--muted);
+}
 .imp-dup {
   cursor: pointer;
 }
@@ -221,12 +301,20 @@ fieldset.imp-group {
   height: 20px;
   accent-color: var(--accent);
 }
-.imp-recent-row {
-  flex-wrap: wrap;
+.imp-recent + .imp-recent {
+  border-top: 1px solid var(--border);
 }
-.imp-recent-row .ui-row-main {
-  flex: 1 1 160px;
+
+/* Three amount styles do not fit one line at 320 px: each wraps to two lines inside the control. */
+.imp-page .ui-seg > button {
+  min-width: 0;
+  padding: 4px 8px;
+  line-height: 1.25;
+  white-space: normal;
 }
-.imp-ready > summary {
-  margin: 0;
+
+/* The two dates are narrow: less padding on both sides (the calendar button still sits over the right one) and the 12 px step of the type scale. */
+.imp-fields .date-time-field > input {
+  padding-inline: 10px 36px;
+  font-size: 12px;
 }

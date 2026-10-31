@@ -41,33 +41,40 @@ export function ImportPage() {
             <li
               key={step}
               aria-current={step === w.step ? "step" : undefined}
-              className={`imp-step${step === w.step ? " current" : i < position ? " done" : ""}`}
+              className={i < position ? "done" : undefined}
             >
-              {i + 1}. <span className="imp-step-label">{label}</span>
+              <i aria-hidden="true">{i + 1}</i>
+              <span>{label}</span>
             </li>
           ))}
         </ol>
       )}
-      {w.loadError ? (
-        <p role="alert" className="account-error">
-          Couldn't load your accounts and categories. Please try again.
-        </p>
-      ) : w.loading ? (
-        <p className="imp-note" role="status">
-          Loading…
-        </p>
-      ) : w.accounts.length === 0 ? (
-        <p className="imp-note">Add an account first, then import into it.</p>
-      ) : (
-        <>
-          {w.step === "file" && <FileStep w={w} />}
-          {w.step === "columns" && <ColumnsStep w={w} />}
-          {w.step === "categories" && <CategoriesStep w={w} />}
-          {w.step === "review" && <ReviewStep w={w} />}
-          {w.step === "done" && <DoneStep w={w} />}
-        </>
-      )}
-      {ready && w.step === "file" && <ExportCard />}
+      <div className="imp-cols">
+        <div className="imp-stack">
+          {w.loadError ? (
+            <p role="alert" className="account-error">
+              Couldn't load your accounts and categories. Please try again.
+            </p>
+          ) : w.loading ? (
+            <p className="imp-note" role="status">
+              Loading…
+            </p>
+          ) : w.accounts.length === 0 ? (
+            <p className="imp-note">
+              Add an account first, then import into it.
+            </p>
+          ) : (
+            <>
+              {w.step === "file" && <FileStep w={w} />}
+              {w.step === "columns" && <ColumnsStep w={w} />}
+              {w.step === "categories" && <CategoriesStep w={w} />}
+              {w.step === "review" && <ReviewStep w={w} />}
+              {w.step === "done" && <DoneStep w={w} />}
+            </>
+          )}
+        </div>
+        <div className="imp-stack">{ready && <ExportCard />}</div>
+      </div>
     </div>
   );
 }

@@ -1,12 +1,11 @@
 import type { Category } from "@ledgerline/shared";
-import { SectionLabel } from "@ledgerline/ui";
-import { NativeSelect } from "../../components/native-select";
+import { PickRow } from "../../components/pick-row";
 import { categoryOptions } from "../categories/tree";
 import type { Wizard } from "./wizard";
 
 const DEFAULT = "default";
 
-function CategorySelect({
+function CategoryRow({
   id,
   label,
   categories,
@@ -24,28 +23,21 @@ function CategorySelect({
   withDefault: boolean;
 }) {
   return (
-    <div className="imp-field">
-      <label className="imp-label" htmlFor={id}>
-        {label}
-      </label>
-      <NativeSelect
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="">Choose a category</option>
-        {withDefault && (
-          <option value={DEFAULT}>Use my default {kind} category</option>
-        )}
-        {categoryOptions(categories, kind, "").map(
-          ({ category, label: text }) => (
-            <option key={category.id} value={category.id}>
-              {text}
-            </option>
-          ),
-        )}
-      </NativeSelect>
-    </div>
+    <PickRow
+      id={id}
+      label={label}
+      value={value}
+      options={[
+        { value: "", label: "Choose a category" },
+        ...(withDefault
+          ? [{ value: DEFAULT, label: `Use my default ${kind} category` }]
+          : []),
+        ...categoryOptions(categories, kind, "").map(
+          ({ category, label: text }) => ({ value: category.id, label: text }),
+        ),
+      ]}
+      onChange={onChange}
+    />
   );
 }
 
@@ -59,16 +51,13 @@ export function CategoriesStep({ w }: { w: Wizard }) {
       (word) => word.kind === kind && choices.byWording[word.key] === DEFAULT,
     );
   return (
-    <section className="imp-section" aria-labelledby="import-categories-title">
-      <SectionLabel as="h2" id="import-categories-title">
-        Choose categories
-      </SectionLabel>
-      <div className="imp-card">
+    <>
+      <div className="ui-card ui-list">
         {unmatched.map((word) => (
-          <CategorySelect
+          <CategoryRow
             key={word.key}
             id={`cat-${word.key}`}
-            label={`“${word.wording}” (${word.rows} ${word.rows === 1 ? "row" : "rows"}, ${word.kind})`}
+            label={`“${word.wording}” · ${word.rows} ${word.rows === 1 ? "row" : "rows"} · ${word.kind}`}
             categories={categories}
             kind={word.kind}
             value={choices.byWording[word.key] ?? ""}
@@ -83,7 +72,7 @@ export function CategoriesStep({ w }: { w: Wizard }) {
         ))}
         {(["expense", "income"] as const).map((kind) =>
           usesDefault(kind) ? (
-            <CategorySelect
+            <CategoryRow
               key={kind}
               id={`default-${kind}`}
               label={`Default ${kind} category`}
@@ -115,7 +104,7 @@ export function CategoriesStep({ w }: { w: Wizard }) {
           </p>
         )
       )}
-      <div className="imp-actions">
+      <div className="imp-next">
         <button
           type="button"
           className="ui-btn ui-btn-secondary"
@@ -132,6 +121,6 @@ export function CategoriesStep({ w }: { w: Wizard }) {
           Continue
         </button>
       </div>
-    </section>
+    </>
   );
 }
