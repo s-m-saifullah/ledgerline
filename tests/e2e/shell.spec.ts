@@ -228,7 +228,7 @@ test.describe("the edges at 699, 700, 1099 and 1100 px", () => {
       "Tags",
       "Currencies",
       "Recurring",
-      "Import",
+      "Import and export",
       "Settings",
     ])
       await expect(

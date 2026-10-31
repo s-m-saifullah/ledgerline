@@ -27,7 +27,7 @@ test("each screen has its own title and a screen change moves focus to its headi
   for (const [path, title] of [
     ["/settings", "Settings"],
     ["/accounts", "Accounts"],
-    ["/import", "Import"],
+    ["/import", "Import and export"],
   ] as const) {
     await page.goto(path);
     await expect(page).toHaveTitle(`${title} · Ledgerline`);
