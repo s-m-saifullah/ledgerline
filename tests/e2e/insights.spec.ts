@@ -69,10 +69,11 @@ test.beforeEach(async ({ page }, testInfo) => {
         payee,
       ],
     );
+  // All on the 1st: the net worth history counts only entries up to today, so a later day fails on the 1st to the 3rd.
   await entry(salary, "Pay", `${month}-01`, 250000);
-  await entry(food, "Lunch", `${month}-02`, -1000);
-  await entry(groceries, "Market", `${month}-03`, -9000);
-  await entry(fun, "Cinema", `${month}-04`, -5500);
+  await entry(food, "Lunch", `${month}-01`, -1000);
+  await entry(groceries, "Market", `${month}-01`, -9000);
+  await entry(fun, "Cinema", `${month}-01`, -5500);
   await entry(fun, "Last month", `${previous}-10`, -700);
   await prepareBrowser(page, testInfo, {
     ledgerId,
