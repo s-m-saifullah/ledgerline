@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import { chooseCategory } from "./category-picker";
-import { clickAction } from "./client-actions";
+import { clickAction, clientLink } from "./client-actions";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -101,10 +101,10 @@ test("money owed in euros is shown in euros and settled into a dollar account wi
 }) => {
   await signIn(page);
   await page.goto("/clients");
-  await page.getByRole("button", { name: /Euro client/ }).click();
+  await clientLink(page, "Euro client").click();
 
   // 1. The balance is in euros, with its dollar value at today's rate (1 EUR = 0.80 USD).
-  await expect(page.getByText("€800.00").first()).toBeVisible();
+  await expect(page.locator(".cl-card").getByText("€800.00")).toBeVisible();
   await expect(
     page.getByText(/About \$640\.00 at today's rates/),
   ).toBeVisible();

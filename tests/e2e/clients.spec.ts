@@ -2,7 +2,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
-import { clickAction } from "./client-actions";
+import {
+  clickAction,
+  clientLink,
+  closeSheet,
+  openService,
+  serviceRow,
+} from "./client-actions";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -107,18 +113,17 @@ async function clients(page: Page) {
   ).toBeVisible();
 }
 async function client(page: Page) {
-  await selectFits(page, "Client status");
   await page.getByRole("button", { name: "Add client", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Sam");
   await page.getByLabel("Email", { exact: true }).fill("sam@example.com");
   await page.getByRole("button", { name: "Save client", exact: true }).click();
   await expect(page.getByText("Client saved.", { exact: true })).toBeVisible();
-  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
+  await clientLink(page, "Sam").click();
   await expect(
     page.getByRole("heading", { name: "Sam", exact: true }),
   ).toBeVisible();
   const actionGap = await page
-    .locator(".client-detail .action-bar")
+    .locator(".cl-card-actions")
     .evaluate((actions) => {
       const previous = actions.previousElementSibling;
       if (!previous) throw new Error("Missing client information");
@@ -127,7 +132,7 @@ async function client(page: Page) {
         previous.getBoundingClientRect().bottom
       );
     });
-  expect(actionGap).toBeGreaterThanOrEqual(16);
+  expect(actionGap).toBeGreaterThanOrEqual(12);
 }
 async function log(page: Page, amount = "100.00") {
   await clickAction(page, "Log service");
@@ -145,12 +150,13 @@ async function log(page: Page, amount = "100.00") {
     .fill("08:15");
   await page.getByRole("button", { name: "Save service", exact: true }).click();
   await expect(page.getByText("Service saved.", { exact: true })).toBeVisible();
-  await expect(page.locator(".service-row").first()).toContainText("· 8:15 AM");
+  // The time is in the service's sheet; the row keeps its one short hint.
+  const sheet = await openService(page);
+  await expect(sheet).toContainText("8:15 AM");
+  await closeSheet(sheet);
 }
 async function record(page: Page, amount = "40.00") {
-  await page
-    .getByRole("button", { name: "Record payment", exact: true })
-    .click();
+  await clickAction(page, "Record payment");
   await expect(page.getByLabel("Receiving account")).toBeVisible();
   await selectFits(page, "Receiving account");
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill(amount);
@@ -193,19 +199,19 @@ test("unpaid service and partial/full payments produce exact balances and histor
 }) => {
   await setup(page);
   expect(await balance(page)).toBe(1000);
-  await expect(page.locator(".client-detail")).toContainText("$100.00");
+  await expect(page.locator(".cl-card")).toContainText("$100.00");
   await record(page);
   expect(await balance(page)).toBe(5000);
-  await expect(page.locator(".service-row")).toContainText("$60.00");
+  await expect(serviceRow(page)).toContainText("$60.00");
   await record(page, "60.00");
   expect(await balance(page)).toBe(11000);
-  await expect(page.locator(".service-row")).toContainText("Paid");
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
-  await expect(page.locator(".client-payments article")).toHaveCount(2);
+  await expect(serviceRow(page)).toContainText("Paid");
+  const sheet = await openService(page);
+  await expect(sheet.locator(".cl-pay")).toHaveCount(2);
+  await closeSheet(sheet);
+  await page.getByRole("radio", { name: /^History/ }).click();
   await expect(
-    page.getByRole("heading", { name: "Payment received", exact: true }),
+    page.locator(".ui-row-title").filter({ hasText: "Payment received" }),
   ).toHaveCount(2);
 });
 test("linked history edit, deletion and Undo preserve identities and correct income", async ({
@@ -264,11 +270,8 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
   await expect(page.getByText("Payment saved.", { exact: true })).toBeVisible();
   expect(await balance(page)).toBe(4000);
   await clients(page);
-  await page.locator(".client-card").click();
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
-  await page
+  await clientLink(page).click();
+  await (await openService(page))
     .getByRole("button", { name: "Delete payment", exact: true })
     .click();
   await confirm(page);
@@ -297,18 +300,19 @@ test("write-off and reopen retain received income and immutable correction histo
     .fill("Uncollectible");
   await confirm(page);
   expect(await balance(page)).toBe(5000);
-  await expect(page.locator(".service-row")).toContainText("Written off");
-  await expect(page.locator(".client-detail")).toContainText("$0.00");
+  await expect(serviceRow(page)).toContainText("Written off");
+  await expect(page.locator(".cl-card")).toContainText("$0.00");
   await clickAction(page, "Reopen service");
   await confirm(page);
-  await expect(page.locator(".client-detail")).toContainText("$60.00");
+  await expect(page.locator(".cl-card")).toContainText("$60.00");
   await page
     .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await confirm(page);
-  await expect(page.locator(".client-detail")).toContainText("$0.00");
+  await expect(page.locator(".cl-card")).toContainText("$0.00");
+  await page.getByRole("radio", { name: /^History/ }).click();
   await expect(
-    page.locator(".history-row").filter({ hasText: "Uncollectible" }),
+    page.locator(".ui-row").filter({ hasText: "Uncollectible" }),
   ).toHaveCount(2);
 });
 test("interrupted payment preserves request across close/navigation and blocks Quick-add", async ({
@@ -343,7 +347,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
     page.getByRole("button", { name: "Undo deletion", exact: true }),
   ).toBeEnabled();
   await openMorePage(page, "Clients");
-  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
+  await clientLink(page, "Sam").click();
   let interrupted = false;
   const seen: { key: string | null; body: string | null }[] = [];
   await page.route(
@@ -362,9 +366,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
       return route.continue();
     },
   );
-  await page
-    .getByRole("button", { name: "Record payment", exact: true })
-    .click();
+  await clickAction(page, "Record payment");
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("40.00");
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await expect(
@@ -413,9 +415,6 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
 }) => {
   await setup(page);
   await record(page);
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
   const seen = new Map<
       string,
       { key: string | undefined; body: string | null }[]
@@ -454,17 +453,16 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await openMorePage(page, "Clients");
-    await page.locator(".client-card").click();
+    await clientLink(page).click();
   }
-  await page.getByRole("button", { name: "Edit payment", exact: true }).click();
+  await (await openService(page))
+    .getByRole("button", { name: "Edit payment", exact: true })
+    .click();
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("30.00");
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await retry();
   expect(await balance(page)).toBe(4000);
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
-  await page
+  await (await openService(page))
     .getByRole("button", { name: "Delete payment", exact: true })
     .click();
   await page.getByRole("button", { name: "Confirm", exact: true }).click();
@@ -505,38 +503,43 @@ for (const [name, size] of [
     await expect(
       page.getByRole("button", { name: "All clients", exact: true }),
     ).toHaveCount(0);
-    await expect(page.locator(".client-card")).toHaveCount(0);
+    await expect(clientLink(page)).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Add client", exact: true }),
     ).toBeVisible();
   });
 }
-test("client and service actions use one primary plus a menu on phones and inline buttons on desktop", async ({
+test("the client card and the service sheet keep their actions reachable at 320 px and on desktop", async ({
   page,
 }) => {
   await setup(page);
   await page.setViewportSize({ width: 320, height: 800 });
-  // Phone: every visible control is at least 44 px and nothing overflows.
-  await expect(
-    page.getByRole("button", { name: "More actions for Website work" }),
-  ).toBeVisible();
-  // On the client card Log service is the one visible primary; Record payment sits in the menu.
-  const logService = page.getByRole("button", {
-    name: "Log service",
-    exact: true,
-  });
-  await expect(logService).toBeVisible();
-  await expect(logService).toHaveClass(/action-primary/);
-  await expect(
-    page.getByRole("button", { name: /^Record payment from/ }),
-  ).toHaveCount(0);
-  const cardBar = page.locator(".client-detail .action-bar");
-  const cardButtons = await cardBar.locator("button").all();
-  expect(cardButtons).toHaveLength(2);
-  const heights = await Promise.all(
-    cardButtons.map(async (b) => (await b.boundingBox())?.height ?? 0),
+  const card = page.locator(".cl-card");
+  const red = /^rgb\(185, 28, 28\)$|^rgb\(252, 165, 165\)$/;
+  const touchable = async (items: import("@playwright/test").Locator) => {
+    for (const item of await items.all()) {
+      const box = await item.boundingBox();
+      expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+  };
+  // Phone: the one Add button logs a service, so the card's own Log service waits for a wider page.
+  await expect(page.locator("#mobile-add-page")).toBeVisible();
+  await expect(page.locator("#mobile-add-page")).toHaveAccessibleName(
+    "Log service",
   );
-  expect(heights[0]).toBe(heights[1]);
+  await expect(page.locator("#log-service")).toBeHidden();
+  // The card keeps Record payment and its menu button, each a full touch target.
+  const visible = card.locator(".cl-card-actions button:visible");
+  await expect(visible).toHaveCount(2);
+  await touchable(visible);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+    ),
+  ).toBeLessThanOrEqual(0);
   for (const [width, theme] of [
     [320, "light"],
     [320, "dark"],
@@ -545,75 +548,53 @@ test("client and service actions use one primary plus a menu on phones and inlin
   ] as const) {
     await page.setViewportSize({ width, height: 800 });
     await page.emulateMedia({ colorScheme: theme });
-    await page.locator(".client-detail").screenshot({
+    await card.screenshot({
       path: join(tmpdir(), `ledgerline-client-card-${width}-${theme}.png`),
     });
   }
   await page.setViewportSize({ width: 320, height: 800 });
-  const cardMenu = cardBar.getByRole("button", { name: /^More actions for/ });
-  await cardMenu.focus();
-  await page.keyboard.press("Enter");
-  const payItem = page.getByRole("menuitem", {
-    name: /^Record payment from/,
-  });
-  await expect(payItem).toBeVisible();
-  expect((await payItem.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
-  await expect(page.getByRole("menuitem").first()).toHaveText(
-    /^Record payment from/,
-  );
+  // The menu is a sheet of three rows with Delete last and red; Escape closes it and focus comes back.
+  const menuButton = card.getByRole("button", { name: /^More actions for/ });
+  await menuButton.click();
+  const menu = page.getByRole("dialog", { name: "Sam", exact: true });
+  const menuRows = menu.locator("button.ui-row");
+  await expect(menuRows).toHaveText([
+    "Edit client",
+    "Archive client",
+    "Delete client",
+  ]);
+  await touchable(menuRows);
+  await expect(menuRows.last().locator(".cl-danger")).toHaveCSS("color", red);
   await page.keyboard.press("Escape");
-  await expect(cardMenu).toBeFocused();
-  const bars = page.locator(".action-bar");
-  await expect(bars).toHaveCount(2);
-  for (const button of await page.locator(".action-bar button").all()) {
-    const box = await button.boundingBox();
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-  }
-  const overflow = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth -
-      document.documentElement.clientWidth,
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
-  // The primary shares a row with the menu trigger (one natural line).
-  const row = await page.locator(".service-row .action-bar").boundingBox();
-  expect(row?.height ?? 0).toBeLessThan(60);
-  const trigger = page.getByRole("button", {
-    name: "More actions for Website work",
-  });
-  await trigger.click();
-  const items = page.getByRole("menuitem");
-  await expect(items).toHaveText([
+  await expect(menu).toHaveCount(0);
+  await expect(menuButton).toBeFocused();
+  // A service opens in a sheet that lists its actions in order, Delete last and red.
+  const sheet = await openService(page);
+  const actions = sheet.locator("button.ui-row");
+  await expect(actions).toHaveText([
+    "Record payment",
     "Edit service",
     "Write off remainder",
     "Delete service",
   ]);
-  await expect(items.last()).toHaveCSS(
-    "color",
-    /^rgb\(185, 28, 28\)$|^rgb\(252, 165, 165\)$/,
-  );
+  await touchable(actions);
+  await expect(actions.last().locator(".cl-danger")).toHaveCSS("color", red);
   await page.keyboard.press("Escape");
-  await expect(items).toHaveCount(0);
-  await expect(trigger).toBeFocused();
-  // Desktop: the same actions are inline text buttons.
+  await expect(sheet).toHaveCount(0);
+  await expect(serviceRow(page)).toBeFocused();
+  // Desktop: Log service is on the card and the phone's Add button is gone.
   await page.setViewportSize({ width: 1280, height: 800 });
-  await expect(
-    page.getByRole("button", { name: "Edit client", exact: true }),
-  ).toContainText("Edit client");
-  await expect(
-    page.getByRole("button", { name: "Delete service", exact: true }),
-  ).toHaveCSS("color", /^rgb\(185, 28, 28\)$|^rgb\(252, 165, 165\)$/);
+  await expect(page.locator("#log-service")).toBeVisible();
+  await expect(page.locator("#mobile-add-page")).toBeHidden();
 });
 test("stale reload, privacy/viewer and 320px light/dark details", async ({
   page,
 }, info) => {
   await setup(page);
   await record(page);
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
+  await (await openService(page))
+    .getByRole("button", { name: "Edit payment", exact: true })
     .click();
-  await page.getByRole("button", { name: "Edit payment", exact: true }).click();
   const service = (
     await pool.query(
       "select id,version from receivables where ledger_id=$1 and deleted_at is null",
@@ -649,11 +630,15 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     .getByRole("button", { name: "Close Client editor", exact: true })
     .click();
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
-  await expect(page.locator(".client-detail")).not.toContainText("$");
+  await expect(page.locator(".cl-card")).not.toContainText("$");
+  await page.getByRole("radio", { name: /^History/ }).click();
   await expect(
     page.getByRole("region", { name: "Client history", exact: true }),
   ).not.toContainText("$");
-  await page.getByRole("button", { name: "Edit payment", exact: true }).click();
+  // The service was renamed behind the page's back; either name may still be on the row.
+  await (await openService(page, /Website work|Corrected work/))
+    .getByRole("button", { name: "Edit payment", exact: true })
+    .click();
   await expect(
     page.getByLabel("Payment amount (USD)", { exact: true }),
   ).toHaveAttribute("type", "password");
@@ -695,7 +680,7 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
   });
   expect(renamed.status()).toBe(200);
   await clients(page);
-  await expect(page.locator(".client-card")).toContainText("A".repeat(100));
+  await expect(clientLink(page)).toContainText("A".repeat(100));
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(320);
@@ -726,14 +711,11 @@ test("stale reload, privacy/viewer and 320px light/dark details", async ({
     }),
   );
   await page.reload();
-  await page.locator(".client-card").click();
+  await clientLink(page).click();
   await expect(
     page.getByRole("button", { name: "Log service", exact: true }),
   ).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
-  await page
+  await (await openService(page, "Corrected work"))
     .getByRole("button", { name: "Payment details", exact: true })
     .click();
   await expect(
@@ -770,20 +752,17 @@ test("service deletion Undo and client archive preserve open history; removed ac
   await setup(page);
   await clickAction(page, "Delete service");
   await confirm(page);
-  await expect(page.locator(".service-row")).toHaveCount(0);
+  await expect(serviceRow(page)).toHaveCount(0);
   await page
     .getByRole("button", { name: "Undo Client action", exact: true })
     .click();
   await confirm(page);
-  await expect(page.locator(".service-row")).toHaveCount(1);
+  await expect(serviceRow(page)).toHaveCount(1);
   await record(page);
   await clickAction(page, "Archive client");
   await confirm(page);
-  await expect(page.locator(".client-detail")).toContainText("$60.00");
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
-  await page
+  await expect(page.locator(".cl-card")).toContainText("$60.00");
+  await (await openService(page))
     .getByRole("button", { name: "Delete payment", exact: true })
     .click();
   await confirm(page);
@@ -814,7 +793,7 @@ test("hourly work: hours at a rate fills the amount and a blank description", as
   await signIn(page);
   await clients(page);
   await client(page);
-  await page.getByRole("button", { name: "Log service", exact: true }).click();
+  await clickAction(page, "Log service");
   await page
     .locator("summary")
     .filter({ hasText: "Work paid by the hour" })
@@ -842,10 +821,7 @@ test("hourly work: hours at a rate fills the amount and a blank description", as
   );
   await page.getByRole("button", { name: "Save service", exact: true }).click();
   await expect(page.getByText("Service saved.", { exact: true })).toBeVisible();
-  await expect(page.locator(".service-row").first()).toContainText("$140.00");
-  await expect(page.locator(".service-row").first()).toContainText(
-    "3.5 h at $40.00/h",
-  );
+  await expect(serviceRow(page, "3.5 h at $40.00/h")).toContainText("$140.00");
 });
 async function addTipCategory() {
   const id = newId();
@@ -875,9 +851,7 @@ test("paying more than is owed saves the extra as a separate tip, and Undo remov
   await clients(page);
   await client(page);
   await log(page);
-  await page
-    .getByRole("button", { name: "Record payment", exact: true })
-    .click();
+  await clickAction(page, "Record payment");
   await expect(page.getByLabel("Receiving account")).toBeVisible();
   await expect(page.getByText("Category for the tip")).toHaveCount(0);
   await page.getByLabel("Payment amount (USD)", { exact: true }).fill("120.00");
@@ -897,11 +871,10 @@ test("paying more than is owed saves the extra as a separate tip, and Undo remov
   const saved = await incomeRows();
   expect(saved.map((r) => r.amount)).toEqual(["10000", "2000"]);
   expect(saved.find((r) => r.amount === "2000")?.tip_payment_id).toBeTruthy();
-  await page
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
-  await expect(page.locator(".client-payments")).toContainText("Tip $20.00");
-  await expect(page.locator(".client-detail")).toContainText("$0.00");
+  const sheet = await openService(page);
+  await expect(sheet).toContainText("Tip $20.00");
+  await closeSheet(sheet);
+  await expect(page.locator(".cl-card")).toContainText("$0.00");
   await page
     .getByRole("button", { name: "Undo Client action", exact: true })
     .click();

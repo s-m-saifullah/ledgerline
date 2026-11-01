@@ -13,8 +13,19 @@ import {
 import { api, prepareFinancialWrite } from "../../lib/api";
 
 const clientPath = (ledgerId: string) => `/ledgers/${ledgerId}`;
-export async function getClient(l: string, id: string) {
-  return contactSchema.parse(await api(`${clientPath(l)}/contacts/${id}`));
+/** One client; `month` (YYYY-MM) is the month its `paidThisMonth` covers. */
+export async function getClient(
+  l: string,
+  id: string,
+  month?: string,
+  signal?: AbortSignal,
+) {
+  const q = month ? `?month=${month}` : "";
+  return contactSchema.parse(
+    await api(`${clientPath(l)}/contacts/${id}${q}`, {
+      ...(signal ? { signal } : {}),
+    }),
+  );
 }
 export async function getService(l: string, id: string) {
   return receivableSchema.parse(
@@ -49,10 +60,12 @@ export async function getClients(
   text: string,
   cursor: string | null,
   signal?: AbortSignal,
+  month?: string,
 ) {
   // Clients leave out people who were only added for loans (ADR 0030).
   const q = new URLSearchParams({ status, limit: "50", kind: "clients" });
   if (text) q.set("text", text);
+  if (month) q.set("month", month);
   if (cursor) q.set("cursor", cursor);
   return contactListSchema.parse(
     await api(`${clientPath(l)}/contacts?${q}`, {
@@ -111,12 +124,16 @@ export function prepareClientWrite(
   return prepareFinancialWrite<unknown>(clientPath(l) + path, method, body);
 }
 
-export async function getAllClients(ledgerId: string, signal?: AbortSignal) {
+export async function getAllClients(
+  ledgerId: string,
+  signal?: AbortSignal,
+  month?: string,
+) {
   const items = [];
   let cursor: string | null = null;
   const seen = new Set<string>();
   do {
-    const page = await getClients(ledgerId, "all", "", cursor, signal);
+    const page = await getClients(ledgerId, "all", "", cursor, signal, month);
     items.push(...page.items);
     cursor = page.nextCursor;
     if (cursor && seen.has(cursor))
