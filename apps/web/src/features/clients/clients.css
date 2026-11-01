@@ -1,0 +1,283 @@
+/*
+ * Clients (ADR 0047): the list and one client side by side from 1100 px, one at a time below. A client in the
+ * address (`data-open`) shows its own pane on a phone and a tablet; the list shows otherwise. Widths are the
+ * layout system's two (700 and 1100 px). The amounts are the shared money component's.
+ */
+.cl-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .cl-page {
+    gap: 16px;
+  }
+}
+.cl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.cl-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.cl-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Under 700 px the top bar and the one Add button do this; "All clients" is for a tablet with one client open. */
+.cl-add,
+.cl-back {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .cl-add {
+    display: inline-flex;
+  }
+}
+@container app (min-width: 700px) and (max-width: 1099.98px) {
+  .cl-head[data-open="true"] .cl-back {
+    display: inline-flex;
+  }
+}
+.cl-split {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+.cl-list,
+.cl-detail {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.cl-split[data-open="true"] .cl-list,
+.cl-split[data-open="false"] .cl-detail {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .cl-split,
+  .cl-list,
+  .cl-detail {
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .cl-split {
+    gap: 20px;
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  }
+  .cl-list,
+  .cl-detail,
+  .cl-split[data-open] .cl-list,
+  .cl-split[data-open] .cl-detail {
+    display: grid;
+    gap: 20px;
+  }
+}
+/* The list's total, search and chips */
+.cl-total {
+  display: grid;
+  gap: 2px;
+}
+.cl-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cl-figure {
+  margin: 0;
+  font-size: 31px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.cl-count {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cl-search {
+  position: relative;
+  min-width: 0;
+}
+.cl-search svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.cl-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border-radius: var(--shape-field);
+  background: var(--tint);
+}
+.cl-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.cl-row[data-selected="true"] {
+  background: var(--accent-soft);
+}
+.cl-settled {
+  font-weight: 500;
+  color: var(--muted);
+}
+/* Balances: one amount per currency, and the dollar worth under them */
+.cl-balances {
+  display: inline-grid;
+  justify-items: end;
+  gap: 0;
+}
+.cl-about {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+/* The client card */
+.cl-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.cl-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cl-card-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cl-name {
+  margin: 0 0 4px;
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.cl-card .cl-balances {
+  justify-items: start;
+}
+/* Its line keeps its height whether or not something is overdue, so the card never jumps. */
+.cl-overdue {
+  min-height: 18px;
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--danger);
+}
+.cl-paid {
+  text-align: right;
+  flex: none;
+}
+.cl-paid-figure {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cl-contact {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.cl-note {
+  white-space: pre-wrap;
+}
+.cl-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cl-card-actions .ui-btn-primary {
+  flex: 1 1 auto;
+}
+/* The phone's one Add button logs a service, so the card's button is for a tablet and a desktop. */
+.cl-log {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .cl-card-actions .ui-btn-primary {
+    flex: 0 0 auto;
+  }
+  .cl-log {
+    display: inline-flex;
+  }
+}
+/* Service rows and the service sheet */
+.cl-svc-end {
+  display: inline-grid;
+  justify-items: end;
+  gap: 4px;
+}
+.cl-sheet {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.cl-none {
+  margin: 0;
+  padding: 4px;
+}
+/* Titles and hints wrap instead of being cut, so a long name or a date stays readable at 320 px. */
+.cl-page .ui-row-title,
+.cl-page .ui-row-hint,
+.cl-sheet .ui-row-title,
+.cl-sheet .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+/* A payment's text takes the full line and its two buttons sit under it, so neither is squeezed. */
+.cl-pay {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 0;
+}
+.cl-pay .ui-row-main {
+  flex: 1 1 100%;
+}
+.cl-pay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+.cl-danger {
+  color: var(--danger);
+}
+.cl-danger-tile {
+  display: contents;
+  color: var(--danger);
+}
+.cl-danger-tile .ui-tile {
+  background: color-mix(in oklab, var(--danger) 14%, transparent);
+  color: var(--danger);
+}

@@ -1,6 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
-import { clickAction } from "./client-actions";
+import {
+  clickAction,
+  clientLink,
+  closeSheet,
+  openService,
+  serviceRow,
+} from "./client-actions";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -115,7 +121,7 @@ async function createClient(page: Page) {
     expect(r.status()).toBe(201);
   }
   await page.reload();
-  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
+  await clientLink(page, "Sam").click();
   await expect(
     page.getByRole("heading", { name: "Sam", exact: true }),
   ).toBeVisible();
@@ -131,7 +137,7 @@ test("one payment from a client pays older services first and can be undone as a
   await signIn(page);
   await clients(page);
   await createClient(page);
-  await expect(page.locator(".client-detail")).toContainText("$700.00");
+  await expect(page.locator(".cl-card")).toContainText("$700.00");
   const start = await balance(page);
 
   await clickAction(page, "Record payment from Sam");
@@ -166,37 +172,31 @@ test("one payment from a client pays older services first and can be undone as a
     }),
   ).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);
-  await expect(page.locator(".client-detail")).toContainText("$200.00");
-  await expect(page.locator(".service-row", { hasText: "Logo" })).toContainText(
-    "Paid",
-  );
-  await expect(page.locator(".service-row", { hasText: "App" })).toContainText(
-    "Partly paid",
-  );
+  await expect(page.locator(".cl-card")).toContainText("$200.00");
+  await expect(serviceRow(page, "Logo")).toContainText("Paid");
+  await expect(serviceRow(page, "App")).toContainText("Partly paid");
 
   // Member payments are changed through the receipt, never one by one.
-  const logo = page.locator(".service-row", { hasText: "Logo" });
-  await logo
-    .getByRole("button", { name: "Show payments", exact: true })
-    .click();
+  const logo = await openService(page, "Logo");
   await expect(logo.getByRole("button", { name: "Edit payment" })).toHaveCount(
     0,
   );
   await expect(
     logo.getByRole("button", { name: "Edit receipt" }),
   ).toBeVisible();
+  await closeSheet(logo);
 
   // Undo the whole receipt, then undo the deletion.
   await page.getByRole("button", { name: "Undo Client action" }).click();
   await confirm(page, "Delete receipt");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start);
-  await expect(page.locator(".client-detail")).toContainText("$700.00");
+  await expect(page.locator(".cl-card")).toContainText("$700.00");
   await page.getByRole("button", { name: "Undo Client action" }).click();
   await confirm(page, "Undo receipt deletion");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);
-  await expect(page.locator(".client-detail")).toContainText("$200.00");
+  await expect(page.locator(".cl-card")).toContainText("$200.00");
 });
 
 test("receipt details are editable, amounts are not, and privacy hides allocations", async ({
@@ -217,11 +217,9 @@ test("receipt details are editable, amounts are not, and privacy hides allocatio
       exact: true,
     }),
   ).toBeVisible();
-  const logo = page.locator(".service-row", { hasText: "Logo" });
-  await logo
-    .getByRole("button", { name: "Show payments", exact: true })
+  await (await openService(page, "Logo"))
+    .getByRole("button", { name: "Edit receipt" })
     .click();
-  await logo.getByRole("button", { name: "Edit receipt" }).click();
   const dialog = page.getByRole("dialog", { name: "Edit receipt" });
   await expect(dialog).toContainText("split across 3 services");
   await expect(
@@ -243,5 +241,5 @@ test("receipt details are editable, amounts are not, and privacy hides allocatio
   expect(income.every((row) => row.note === "Corrected note")).toBe(true);
 
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
-  await expect(page.locator(".client-detail")).not.toContainText("$");
+  await expect(page.locator(".cl-card")).not.toContainText("$");
 });

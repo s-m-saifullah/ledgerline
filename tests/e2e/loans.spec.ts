@@ -208,7 +208,8 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
   await expect(
     page.getByRole("heading", { name: "Clients", exact: true }),
   ).toBeVisible();
-  await expect(page.locator(".client-card")).toHaveCount(0);
+  await expect(page.getByText("No clients yet.")).toBeVisible();
+  await expect(page.locator('a[id^="client-"]')).toHaveCount(0);
 
   // Waive the rest: it becomes an expense and the balance settles.
   await page.goto("/loans");

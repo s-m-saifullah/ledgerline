@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   backsToMore,
+  backTarget,
+  basePath,
   destinations,
   isActiveDestination,
   moreGroups,
@@ -88,5 +90,33 @@ describe("the navigation model", () => {
       "/loans",
     ])
       expect(showsAdd(path)).toBe(true);
+  });
+
+  it("treats a client's address as part of Clients", () => {
+    expect(basePath("/clients/abc")).toBe("/clients");
+    expect(basePath("/clients")).toBe("/clients");
+    expect(basePath("/clientsx")).toBe("/clientsx");
+    expect(pageTitle("/clients/abc")).toBe("Clients");
+    expect(isActiveDestination("/more", "/clients/abc")).toBe(true);
+    expect(isActiveDestination("/", "/clients/abc")).toBe(false);
+    expect(showsAdd("/clients/abc")).toBe(true);
+  });
+
+  it("sends the back arrow to More from a More page and to the list from a client", () => {
+    expect(backTarget("/clients")).toEqual({
+      to: "/more",
+      label: "Back to More",
+    });
+    expect(backTarget("/accounts")).toEqual({
+      to: "/more",
+      label: "Back to More",
+    });
+    expect(backTarget("/clients/abc")).toEqual({
+      to: "/clients",
+      label: "Back to Clients",
+    });
+    expect(backTarget("/more")).toBeUndefined();
+    expect(backTarget("/transactions")).toBeUndefined();
+    expect(backsToMore("/clients/abc")).toBe(false);
   });
 });

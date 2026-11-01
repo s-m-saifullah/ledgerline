@@ -27,7 +27,8 @@ import { usePageAnnouncement } from "../../lib/use-page-announcement";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
 import {
-  backsToMore,
+  backTarget,
+  basePath,
   destinations,
   isActiveDestination,
   moreGroups,
@@ -35,6 +36,7 @@ import {
   pageTitle,
   showsAdd,
 } from "./nav";
+import { type PageAdd, PageAddProvider } from "./page-add";
 import { CommandPalette, type PaletteItem } from "./palette";
 import { SyncStatus } from "./sync-status";
 import "./shell.css";
@@ -58,6 +60,7 @@ export function Shell({
     select: (state) => state.location.pathname,
   });
   const currentPage = pageTitle(pathname);
+  const back = backTarget(pathname);
   const pageAnnouncement = usePageAnnouncement(currentPage);
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
@@ -65,6 +68,7 @@ export function Shell({
   const canAdd = !!ledger && ledger.role !== "viewer";
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [addTrigger, setAddTrigger] = useState("add-transaction");
+  const [pageAdd, setPageAdd] = useState<PageAdd | null>(null);
   const paletteToAdd = useRef(false);
   const openAdd = (trigger: string) => {
     setAddTrigger(trigger);
@@ -203,7 +207,7 @@ export function Shell({
                   <Link
                     key={to}
                     to={to}
-                    {...(pathname === to
+                    {...(basePath(pathname) === to
                       ? { "aria-current": "page" as const }
                       : {})}
                   >
@@ -245,11 +249,11 @@ export function Shell({
             decorative
             title={currentPage}
             back={
-              backsToMore(pathname) ? (
+              back ? (
                 <Link
-                  to="/more"
+                  to={back.to}
                   className="ui-icon-btn"
-                  aria-label="Back to More"
+                  aria-label={back.label}
                 >
                   <ArrowLeft size={20} aria-hidden="true" />
                 </Link>
@@ -306,7 +310,9 @@ export function Shell({
         </p>
         <main id="main-content" className="main-content" tabIndex={-1}>
           <SignOutContext value={() => void signOut()}>
-            <Outlet />
+            <PageAddProvider value={setPageAdd}>
+              <Outlet />
+            </PageAddProvider>
           </SignOutContext>
         </main>
       </div>
@@ -328,10 +334,12 @@ export function Shell({
         <button
           type="button"
           className="ui-fab"
-          id="mobile-add-transaction"
-          aria-label="Add transaction"
-          disabled={!canAdd}
-          onClick={() => openAdd("mobile-add-transaction")}
+          id={pageAdd ? "mobile-add-page" : "mobile-add-transaction"}
+          aria-label={pageAdd?.label ?? "Add transaction"}
+          disabled={pageAdd ? pageAdd.disabled : !canAdd}
+          onClick={() =>
+            pageAdd ? pageAdd.onClick() : openAdd("mobile-add-transaction")
+          }
         >
           <Plus size={24} aria-hidden="true" />
         </button>

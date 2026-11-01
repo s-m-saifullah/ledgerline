@@ -90,26 +90,41 @@ export const morePages = moreGroups.flatMap((group) => group.pages);
 const isMorePage = (pathname: string) =>
   morePages.some((page) => page.to === pathname);
 
+/** Pages that have an address of their own for one thing in them: `/clients/{id}` belongs to `/clients`. */
+const withAddresses = ["/clients"];
+export const basePath = (pathname: string) =>
+  withAddresses.find((page) => pathname.startsWith(`${page}/`)) ?? pathname;
+
 /** The More tab stays highlighted on More and on every page reached from it. */
-export const isActiveDestination = (to: string, pathname: string) =>
-  to === "/more"
-    ? pathname === "/more" || isMorePage(pathname)
-    : pathname === to;
+export const isActiveDestination = (to: string, pathname: string) => {
+  const page = basePath(pathname);
+  return to === "/more" ? page === "/more" || isMorePage(page) : page === to;
+};
 
 /** The page's name, for the document title, the top bar and the screen-reader announcement. */
 export function pageTitle(pathname: string) {
+  const page = basePath(pathname);
   return (
-    [...destinations, ...morePages].find((page) => page.to === pathname)
-      ?.label ?? "Home"
+    [...destinations, ...morePages].find((row) => row.to === page)?.label ??
+    "Home"
   );
 }
 
 /** A page opened from More has a back arrow in a phone's top bar. */
 export const backsToMore = isMorePage;
 
+/** Where a phone's back arrow goes: from a page of More to More, from one client back to the list. */
+export function backTarget(pathname: string) {
+  if (basePath(pathname) !== pathname)
+    return { to: basePath(pathname), label: "Back to Clients" };
+  return isMorePage(pathname)
+    ? { to: "/more", label: "Back to More" }
+    : undefined;
+}
+
 /**
  * Whether a phone shows its Add button here: on every page but More, Settings and Import, where there is
- * nothing to add. It adds a transaction everywhere until a page registers its own add (Clients is the first).
+ * nothing to add. It adds a transaction everywhere until a page registers its own add (see `page-add.tsx`; Clients is the first).
  */
 export const showsAdd = (pathname: string) =>
   !["/more", "/settings", "/import"].includes(pathname);
