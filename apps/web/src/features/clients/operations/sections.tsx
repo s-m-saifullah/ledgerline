@@ -1,10 +1,13 @@
 import { currencyDigits } from "@ledgerline/shared";
-import { NativeSelect } from "../../../components/native-select";
+import { Avatar, ListCard, ListRow } from "@ledgerline/ui";
+import { EntryAmount } from "../../../components/entry-amount";
+import { PickRow } from "../../../components/pick-row";
 import { decimalFromCents, formatMoney } from "../../../lib/money";
 import { HourlyHelper } from "../hourly-helper";
 import { inputFor } from "./fields";
 import type { OperationForm } from "./form-context";
-import { renderPaymentFields } from "./payment-fields";
+import { askText } from "./labels";
+import { renderPaymentFields, renderTipNote } from "./payment-fields";
 import { ReceiptPreview } from "./receipt-preview";
 import { type ClientOperation, owedInCurrency } from "./types";
 
@@ -13,19 +16,38 @@ type Kind<K extends ClientOperation["kind"]> = Extract<
   { kind: K }
 >;
 
-/** Add or edit a client. */
+/** The big amount of a payment: the entry sheet's field, with the code beside it (`OV["pay-service"]`). */
+function bigAmount(form: OperationForm, label: string, currency: string) {
+  const { values, setValues } = form;
+  return (
+    <EntryAmount
+      id="client-amount"
+      label={label}
+      currency={currency}
+      invalid={false}
+      describedBy={undefined}
+      inputProps={{
+        value: values.amount,
+        maxLength: 30,
+        onChange: (e) => setValues((v) => ({ ...v, amount: e.target.value })),
+      }}
+    />
+  );
+}
+
+/** Add or edit a client (`OV["client-form"]`). */
 export function renderContactFields(form: OperationForm) {
   const input = inputFor(form);
   return (
     <>
       {input("name", "Name", "text", true)}
-      {input("phone", "Phone")}
       {input("email", "Email", "email")}
-      {input("note", "Note")}
+      {input("phone", "Phone")}
+      {input("note", "Note", "text", false, undefined, true)}
     </>
   );
 }
-/** Log or edit a service. */
+/** Log or edit a service (`OV.service`). */
 export function renderServiceFields(form: OperationForm, op: Kind<"service">) {
   const {
     values,
@@ -37,67 +59,34 @@ export function renderServiceFields(form: OperationForm, op: Kind<"service">) {
     currencies,
   } = form;
   const input = inputFor(form);
+  const paid = !!op.service && op.service.received.amount > 0;
   return (
     <>
-      <p>
+      <p className="ed-note">
         Client: {op.client.name}
         {op.client.archivedAt ? " (archived)" : ""}
       </p>
-      {op.service && (
-        <label className="form-field" htmlFor="client-picker">
-          Client
-          <NativeSelect
-            id="client-picker"
-            value={values.contactId}
-            onChange={(e) =>
-              setValues((v) => ({
-                ...v,
-                contactId: e.target.value,
-              }))
-            }
-          >
-            {(clients.data ?? [op.client])
-              .filter((p) => !p.archivedAt || p.id === op.client.id)
-              .map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.archivedAt ? " (archived)" : ""}
-                </option>
-              ))}
-          </NativeSelect>
-        </label>
-      )}
       {input("description", "Description", "text", true)}
-      {input("serviceDate", "Service date", "date", true)}
-      {input("serviceTime", "Service time (optional)", "time")}
-      {input("dueDate", "Due date", "date")}
-      {currencies.length > 1 && (
-        <label className="form-field" htmlFor="client-currency">
-          Currency
-          <NativeSelect
+      <div className="ed-card">
+        {input("serviceDate", "Service date", "date", true)}
+        {input("serviceTime", "Time (Optional)", "time")}
+        {input("dueDate", "Due date (Optional)", "date")}
+        {currencies.length > 1 && (
+          <PickRow
             id="client-currency"
+            label="Currency"
             value={values.currency}
-            disabled={!!op.service && op.service.received.amount > 0}
-            onChange={(e) =>
-              setValues((v) => ({
-                ...v,
-                currency: e.target.value,
-              }))
-            }
-          >
-            {currencies.map((code) => (
-              <option key={code} value={code}>
-                {code}
-              </option>
-            ))}
-          </NativeSelect>
-          {!!op.service && op.service.received.amount > 0 && (
-            <span className="form-help">
-              It stays {op.service.amount.currency}, the currency payments were
-              recorded in.
-            </span>
-          )}
-        </label>
+            disabled={paid}
+            options={currencies.map((code) => ({ value: code, label: code }))}
+            onChange={(currency) => setValues((v) => ({ ...v, currency }))}
+          />
+        )}
+      </div>
+      {currencies.length > 1 && op.service && paid && (
+        <p className="ed-note">
+          It stays {op.service.amount.currency}, the currency payments were
+          recorded in.
+        </p>
       )}
       {input(
         "amount",
@@ -119,129 +108,137 @@ export function renderServiceFields(form: OperationForm, op: Kind<"service">) {
           }))
         }
       />
+      {op.service && (
+        <div className="ed-card">
+          <PickRow
+            id="client-picker"
+            label="Move to another client"
+            value={values.contactId}
+            options={(clients.data ?? [op.client])
+              .filter((p) => !p.archivedAt || p.id === op.client.id)
+              .map((p) => ({
+                value: p.id,
+                label: `${p.name}${p.archivedAt ? " (archived)" : ""}`,
+              }))}
+            onChange={(contactId) => setValues((v) => ({ ...v, contactId }))}
+          />
+        </div>
+      )}
     </>
   );
 }
-/** Record or edit one payment. */
+/** Record or edit one payment (`OV["pay-service"]`, `OV["payment-edit"]`). */
 export function renderPaymentOperation(
   form: OperationForm,
   op: Kind<"payment">,
 ) {
-  const { privateMode } = form;
   const { itemCurrency } = form.derived;
-  const input = inputFor(form);
+  const mask = (cents: number, currency: string) =>
+    form.privateMode ? "••••" : formatMoney(cents, currency);
   return (
     <>
-      {op.client && <p>Client: {op.client.name}</p>}
-      <p>{op.service.description}</p>
+      <ListCard>
+        <ListRow
+          title={op.service.description}
+          {...(op.client ? { hint: `Client: ${op.client.name}` } : {})}
+          {...(op.payment
+            ? {}
+            : {
+                value: <span className="ed-quiet">Outstanding</span>,
+                valueHint: mask(
+                  op.service.outstanding.amount,
+                  op.service.outstanding.currency,
+                ),
+              })}
+        />
+      </ListCard>
       {op.service.status === "writtenOff" && (
-        <p className="muted">
+        <p className="ed-note">
           Reopen this service in Clients before correcting its payments.
         </p>
       )}
-      <p>
-        Outstanding:{" "}
-        {privateMode
-          ? "••••"
-          : formatMoney(
-              op.service.outstanding.amount,
-              op.service.outstanding.currency,
-            )}
-      </p>
-      {input(
-        "amount",
-        `Payment amount (${itemCurrency})`,
-        privateMode ? "password" : "text",
-        true,
-        itemCurrency,
-      )}
+      {bigAmount(form, `Payment amount (${itemCurrency})`, itemCurrency)}
       {op.payment?.tip && !op.payment.tip.deletedAt && (
-        <p className="muted">
+        <p className="ed-note">
           This payment came with a tip. Change the tip from Transactions.
         </p>
       )}
+      {renderTipNote(form)}
       {renderPaymentFields(
         form,
-
         op.payment?.transaction.accountId,
         !op.payment,
       )}
     </>
   );
 }
-/** Record or edit a receipt that pays a client's oldest services first. */
+/** Record or edit a receipt that pays a client's oldest services first (`OV.receive`, `OV["receipt-edit"]`). */
 export function renderReceiptOperation(
   form: OperationForm,
   op: Kind<"receipt">,
 ) {
   const { values, setValues, frozen, privateMode, preview, previewCents } =
     form;
-  const input = inputFor(form);
+  const mask = (cents: number, currency: string) =>
+    privateMode ? "••••" : formatMoney(cents, currency);
   return (
     <>
-      <p>Client: {op.client.name}</p>
       {op.receipt ? (
         <>
-          <p>
-            Receipt total:{" "}
-            {privateMode
-              ? "••••"
-              : formatMoney(
-                  op.receipt.amount.amount,
-                  op.receipt.amount.currency,
-                )}
-            , split across {op.receipt.payments.length} services.
+          <p className="ed-note">
+            Receipt total{" "}
+            {mask(op.receipt.amount.amount, op.receipt.amount.currency)}, split
+            across {op.receipt.payments.length} services. Changes apply to every
+            payment in it.
           </p>
-          <p className="muted">
-            Changes to the account, category, date, time or note apply to every
-            payment in this receipt.
-          </p>
+          {op.receipt.payments.some((p) => p.tip && !p.tip.deletedAt) && (
+            <p className="ed-note">
+              This receipt came with a tip. Change the tip from Transactions.
+            </p>
+          )}
         </>
       ) : (
         <>
+          <ListCard>
+            <ListRow
+              lead={<Avatar name={op.client.name} />}
+              title={op.client.name}
+              hint={`Open balance ${mask(
+                owedInCurrency(op.client, values.receiptCurrency),
+                values.receiptCurrency,
+              )}`}
+            />
+          </ListCard>
           {op.client.openBalances.length > 1 && (
-            <label className="form-field" htmlFor="client-receipt-currency">
-              Currency being paid
-              <NativeSelect
+            <div className="ed-card">
+              <PickRow
                 id="client-receipt-currency"
+                label="Currency being paid"
                 value={values.receiptCurrency}
-                onChange={(e) =>
+                options={op.client.openBalances.map((b) => ({
+                  value: b.currency,
+                  label: b.currency,
+                }))}
+                onChange={(receiptCurrency) =>
                   setValues((v) => ({
                     ...v,
-                    receiptCurrency: e.target.value,
+                    receiptCurrency,
                     amount: "",
                     receivedAmount: "",
                     fxRate: "",
                   }))
                 }
-              >
-                {op.client.openBalances.map((b) => (
-                  <option key={b.currency} value={b.currency}>
-                    {b.currency}
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
+              />
+            </div>
           )}
-          <p>
-            Open balance:{" "}
-            {privateMode
-              ? "••••"
-              : formatMoney(
-                  owedInCurrency(op.client, values.receiptCurrency),
-                  values.receiptCurrency,
-                )}
-          </p>
-          {input(
-            "amount",
+          {bigAmount(
+            form,
             `Payment amount (${values.receiptCurrency})`,
-            privateMode ? "password" : "text",
-            true,
             values.receiptCurrency,
           )}
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-text ed-full-balance"
             disabled={frozen}
             onClick={() =>
               setValues((v) => ({
@@ -255,6 +252,7 @@ export function renderReceiptOperation(
           >
             Pay full balance
           </button>
+          {renderTipNote(form)}
           <ReceiptPreview
             currency={values.receiptCurrency}
             query={preview}
@@ -263,42 +261,25 @@ export function renderReceiptOperation(
           />
         </>
       )}
-      {op.receipt?.payments.some((p) => p.tip && !p.tip.deletedAt) && (
-        <p className="muted">
-          This receipt came with a tip. Change the tip from Transactions.
-        </p>
-      )}
       {renderPaymentFields(
         form,
-
         op.receipt?.payments[0]?.transaction.accountId,
         !op.receipt,
+      )}
+      {op.receipt && (
+        <p className="ed-note">
+          To change the amount, delete the receipt and enter it again.
+        </p>
       )}
     </>
   );
 }
-/** The confirmation text (and write-off reason) of a delete, restore, archive or write-off. */
+/** The sentence of a question, and the write-off reason (`OV.confirm`). */
 export function renderActionOperation(form: OperationForm, op: Kind<"action">) {
   const input = inputFor(form);
   return (
     <>
-      <p>
-        {op.action === "deleteReceipt"
-          ? "Delete this receipt: every payment it created, its linked income entries and any tip that came with it are removed together."
-          : op.action === "restoreReceipt"
-            ? "Restore the whole receipt with the same payments, income entries and tip."
-            : op.action === "deletePayment"
-              ? "Delete the payment, its linked income and any tip that came with it together."
-              : op.action === "writeOff"
-                ? "Waive only the unpaid remainder. Received income stays in place."
-                : op.action === "reopen"
-                  ? "Return the waived remainder to money owed."
-                  : op.action === "deleteContact"
-                    ? "Delete this client only after all their services are deleted. Archive to retain accessible history."
-                    : op.action === "deleteService"
-                      ? "Delete this service only after its payments are deleted."
-                      : "Confirm this action using the loaded version."}
-      </p>
+      <p>{askText[op.action]}</p>
       {op.action === "writeOff" && input("reason", "Write-off reason")}
     </>
   );

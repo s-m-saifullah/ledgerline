@@ -455,6 +455,60 @@ test("a row in euros shows the euros and its dollar worth, and the card says at 
   expect(await noSideways(page)).toBe(true);
 });
 
+test("the menu sits in the card's corner, so a client with no button has no row and no line under it", async ({
+  page,
+}) => {
+  for (const width of [320, 390, 1280]) {
+    await open(page, width, `/clients/${uuid(13)}`);
+    const card = page.getByRole("region", { name: "Lumen Labs" });
+    await expect(card).toBeVisible();
+    const menu = card.locator("#client-menu");
+    const frame = await box(card);
+    const corner = await box(menu);
+    // Top right of the card, level with the name, and a real target.
+    expect(frame.x + frame.width - (corner.x + corner.width)).toBeLessThan(24);
+    expect(corner.y - frame.y).toBeLessThan(24);
+    expect(await is44(page, menu)).toBe(true);
+    const name = await box(card.getByRole("heading", { name: "Lumen Labs" }));
+    expect(Math.abs(name.y - corner.y)).toBeLessThan(24);
+    const actions = card.locator(".cl-card-actions");
+    if (width < 700) await expect(actions).toBeHidden();
+    else {
+      // A wider page keeps Log service, with nothing drawn above it.
+      await expect(
+        actions.getByRole("button", { name: "Log service" }),
+      ).toBeVisible();
+      expect(
+        await actions.evaluate((node) => getComputedStyle(node).borderTopWidth),
+      ).toBe("0px");
+    }
+    // Paid in {Month} sits on the balance's line, not beside the name.
+    const paid = await box(card.locator(".cl-paid"));
+    const balance = await box(card.locator(".cl-figure"));
+    expect(paid.y).toBeGreaterThan(name.y + name.height - 1);
+    expect(
+      Math.abs(paid.y + paid.height / 2 - (balance.y + balance.height / 2)),
+    ).toBeLessThan(60);
+    expect(await noSideways(page)).toBe(true);
+  }
+});
+test("a client who owes keeps Record payment as the one button, with no line above it", async ({
+  page,
+}) => {
+  await open(page, 390, `/clients/${ACME}`);
+  const card = page.getByRole("region", { name: "Acme Studio" });
+  const actions = card.locator(".cl-card-actions");
+  await expect(
+    actions.getByRole("button", { name: "Record payment" }),
+  ).toBeVisible();
+  expect(
+    await actions.evaluate((node) => getComputedStyle(node).borderTopWidth),
+  ).toBe("0px");
+  await expect(
+    actions.getByRole("button", { name: /^More actions for/ }),
+  ).toHaveCount(0);
+});
+
 test("the card names what was paid this month and what is overdue, and keeps its place without one", async ({
   page,
 }) => {

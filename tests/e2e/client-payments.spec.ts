@@ -126,9 +126,9 @@ async function createClient(page: Page) {
     page.getByRole("heading", { name: "Sam", exact: true }),
   ).toBeVisible();
 }
-const confirm = async (page: Page, title: string) => {
+const confirm = async (page: Page, title: string, word: string) => {
   await expect(page.getByRole("dialog", { name: title })).toBeVisible();
-  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  await page.getByRole("button", { name: word, exact: true }).click();
 };
 
 test("one payment from a client pays older services first and can be undone as a whole", async ({
@@ -152,7 +152,7 @@ test("one payment from a client pays older services first and can be undone as a
   await expect(
     page.getByText("Pays 2 services in full and part of one more."),
   ).toBeVisible();
-  const preview = page.locator(".receipt-preview .service-row");
+  const preview = page.locator(".receipt-preview .ui-row");
   await expect(preview).toHaveCount(3);
   await expect(preview.nth(0)).toContainText("Logo");
   await expect(preview.nth(1)).toContainText("Site");
@@ -163,7 +163,10 @@ test("one payment from a client pays older services first and can be undone as a
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  await page.locator("summary").filter({ hasText: "More details" }).click();
+  await page
+    .locator("summary")
+    .filter({ hasText: "Date, time and note" })
+    .click();
   await page.getByLabel("Payment note", { exact: true }).fill("Bank transfer");
   await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await expect(
@@ -188,12 +191,12 @@ test("one payment from a client pays older services first and can be undone as a
 
   // Undo the whole receipt, then undo the deletion.
   await page.getByRole("button", { name: "Undo Client action" }).click();
-  await confirm(page, "Delete receipt");
+  await confirm(page, "Delete receipt", "Delete");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start);
   await expect(page.locator(".cl-card")).toContainText("$700.00");
   await page.getByRole("button", { name: "Undo Client action" }).click();
-  await confirm(page, "Undo receipt deletion");
+  await confirm(page, "Undo receipt deletion", "Restore");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);
   await expect(page.locator(".cl-card")).toContainText("$200.00");

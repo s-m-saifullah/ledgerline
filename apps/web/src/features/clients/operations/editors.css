@@ -1,0 +1,173 @@
+/*
+ * The Clients editors (ADR 0047): what goes inside the shared sheet (a phone's bottom sheet, a drawer from
+ * 700 px) or question. Cards are bordered, fields have their label above, the date and time sit side by side
+ * when there is room, and a fold holds the fields a payment rarely needs. Widths are the layout system's two.
+ */
+.ed-form,
+.ed-fields {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.ed-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.ed-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ed-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.ed-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ed-field .category-picker {
+  margin: 0;
+}
+.ed-field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+.ed-card {
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.ed-card > * + * {
+  border-top: 1px solid var(--border);
+}
+.ed-card > .ed-field,
+.ed-fold-body > .ed-field {
+  padding: 16px;
+}
+/* A row: the label on the left, the value on the right (the prototype's input row). */
+.ed-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 4px 16px;
+  min-width: 0;
+}
+.ed-row > label {
+  flex: 1 1 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ed-row > .date-time-field,
+.ed-row > input {
+  flex: 0 1 160px;
+  width: auto;
+  min-width: 0;
+}
+.ed-row input {
+  min-height: 44px;
+  padding-inline-start: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  text-align: end;
+}
+.ed-row .date-time-field > input {
+  padding-inline-end: 48px;
+}
+.ed-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+.ed-quiet {
+  font-weight: 400;
+  color: var(--muted);
+}
+.ed-card > .ui-row:first-child {
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.ed-card > .ui-row:last-child {
+  border-radius: 0 0 var(--shape-card) var(--shape-card);
+}
+.ed-card > .ui-row:only-child {
+  border-radius: var(--shape-card);
+}
+
+/* A fold: the global disclosure style (a bordered button with its own arrow) gives way to a plain first row. */
+.ed-fold {
+  display: block;
+}
+.ed-fold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--shape-card);
+  background: transparent;
+  cursor: pointer;
+  list-style: none;
+}
+.ed-fold > summary:hover {
+  background: var(--tint);
+}
+.ed-fold > summary::-webkit-details-marker,
+.ed-fold > summary::before {
+  display: none;
+}
+.ed-fold > summary > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.ed-fold[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.ed-fold[open] > summary {
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.ed-fold-body {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+.ed-fold-body > * + * {
+  border-top: 1px solid var(--border);
+}
+/* The hours result and its button: one padded block, so the button keeps its own border. */
+.ed-fold-result {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 16px;
+}
+.ed-full-balance {
+  justify-self: start;
+  margin-left: -8px;
+}
+.ed-preview {
+  display: grid;
+  gap: 8px;
+}
+
+/* Titles and hints wrap instead of being cut, so a long service or client name stays readable at 320 px. */
+.ed-form .ui-row-title,
+.ed-form .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}

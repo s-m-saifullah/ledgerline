@@ -8,8 +8,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { DeleteTrigger } from "../../components/delete-trigger";
 import { LoadError } from "../../components/load-error";
+import { Overlay } from "../../components/overlay";
 import { Toast } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
@@ -29,9 +30,11 @@ import { paymentDefault, tipDefault } from "./form";
 import { derivePayment } from "./operations/derive";
 import type { OperationForm } from "./operations/form-context";
 import {
+  askText,
   dialogDescription,
   dialogInitialFocus,
   dialogTitle,
+  isDelete,
   submitLabel,
 } from "./operations/labels";
 import { prepareOperation } from "./operations/prepare";
@@ -48,6 +51,7 @@ import {
   type Fields,
   fieldsFor,
   isPaymentOperation,
+  names,
 } from "./operations/types";
 
 type Workspace = {
@@ -87,6 +91,10 @@ export function ClientsWorkspace({
     [uncertain, setUncertain] = useState(false),
     [error, setError] = useState(""),
     [conflict, setConflict] = useState(false),
+    // The sheet shows once what it needs has loaded, or after a moment when that takes long (ADR 0047).
+    [visible, setVisible] = useState(false),
+    // The trash beside Save on a payment or a receipt asks first.
+    [confirmDelete, setConfirmDelete] = useState(false),
     [trigger, setTrigger] = useState("main-content"),
     [notice, setNotice] = useState(""),
     [deletedClientId, setDeletedClientId] = useState<string | null>(null),
@@ -151,6 +159,18 @@ export function ClientsWorkspace({
     ])
       void queryClient.invalidateQueries({ queryKey: [key, ledgerId] });
   };
+  useEffect(() => {
+    if (!open) {
+      setVisible(false);
+      return;
+    }
+    if (!loading) {
+      setVisible(true);
+      return;
+    }
+    const timer = setTimeout(() => setVisible(true), 250);
+    return () => clearTimeout(timer);
+  }, [open, loading]);
   const frozen = busy || uncertain || loading;
   const dismiss = () => {
     if (busy) return;
@@ -412,6 +432,75 @@ export function ClientsWorkspace({
     previewCents,
     derived,
   };
+  // A payment or a receipt being corrected has its own delete, behind the trash beside Save.
+  const deleteOp: Extract<ClientOperation, { kind: "action" }> | null =
+    op?.kind === "payment" && op.payment
+      ? {
+          kind: "action",
+          action: "deletePayment",
+          service: op.service,
+          payment: op.payment,
+        }
+      : op?.kind === "receipt" && op.receipt
+        ? {
+            kind: "action",
+            action: "deleteReceipt",
+            receipt: op.receipt,
+            receiptId: op.receipt.id,
+          }
+        : null;
+  const footer =
+    loading || !op ? undefined : uncertain ? (
+      <button
+        id="client-retry"
+        type="button"
+        className="ui-btn ui-btn-primary"
+        disabled={busy || blocked || !writable}
+        onClick={() => void perform()}
+      >
+        Retry same action
+      </button>
+    ) : conflict ? (
+      <button
+        type="button"
+        className="ui-btn ui-btn-primary"
+        onClick={() => void begin(op, trigger)}
+      >
+        Reload latest details
+      </button>
+    ) : allowWrite ? (
+      <>
+        {deleteOp && (
+          <DeleteTrigger
+            id="delete-client-item"
+            label={names[deleteOp.action]}
+            disabled={busy}
+            onClick={() => setConfirmDelete(true)}
+          />
+        )}
+        <button
+          className={
+            op.kind === "action" && isDelete(op.action)
+              ? "ui-btn ui-btn-danger-filled"
+              : "ui-btn ui-btn-primary"
+          }
+          type="submit"
+          form="client-form"
+          disabled={
+            busy ||
+            blocked ||
+            (paymentMode && (!accounts.data || !categories.data)) ||
+            (!!receiptCreate &&
+              (!preview.data ||
+                preview.data.amount.amount !== previewCents ||
+                preview.data.exceedsBalance ||
+                preview.data.tooManyServices))
+          }
+        >
+          {submitLabel(op)}
+        </button>
+      </>
+    ) : undefined;
   return (
     <Context
       value={{
@@ -427,7 +516,7 @@ export function ClientsWorkspace({
         <div className="transaction-toast client-toast">
           <p role="status">A Client action needs confirmation.</p>
           <button
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             type="button"
             onClick={() => setOpen(true)}
           >
@@ -435,32 +524,32 @@ export function ClientsWorkspace({
           </button>
         </div>
       )}
-      {(op || loading || error) && open && (
-        <EditorDialog
-          open={open}
+      {(op || loading || error) && (
+        <Overlay
+          open={open && visible}
+          kind={op?.kind === "action" ? "question" : "sheet"}
           title={dialogTitle(op)}
           description={dialogDescription(op)}
           busy={busy}
           onDismiss={dismiss}
           returnFocusId={trigger}
           fallbackFocusId="main-content"
-          closeLabel="Close Client editor"
           initialFocusId={dialogInitialFocus(op, uncertain)}
+          footer={footer}
         >
           {loading ? (
             <p role="status">Loading latest details…</p>
           ) : (
             <form
-              className="account-form"
+              id="client-form"
+              className="ed-form"
+              noValidate={false}
               onSubmit={(e) => {
                 e.preventDefault();
                 void perform();
               }}
             >
-              <fieldset
-                disabled={frozen || !allowWrite}
-                className="client-fields"
-              >
+              <fieldset disabled={frozen || !allowWrite} className="ed-fields">
                 {op?.kind === "contact" && renderContactFields(form)}
                 {op?.kind === "service" && renderServiceFields(form, op)}
                 {op?.kind === "payment" && renderPaymentOperation(form, op)}
@@ -482,64 +571,35 @@ export function ClientsWorkspace({
                   retryLabel="Reload choices"
                 />
               )}
-              <div className="form-actions">
-                <button
-                  className="secondary-button"
-                  type="button"
-                  disabled={busy}
-                  onClick={dismiss}
-                >
-                  Close
-                </button>
-                {uncertain ? (
-                  <button
-                    id="client-retry"
-                    type="button"
-                    className="button"
-                    disabled={busy || blocked || !writable}
-                    onClick={() => void perform()}
-                  >
-                    Retry same action
-                  </button>
-                ) : conflict ? (
-                  <button
-                    type="button"
-                    className="button"
-                    onClick={() => {
-                      if (op) void begin(op, trigger);
-                    }}
-                  >
-                    Reload latest details
-                  </button>
-                ) : (
-                  allowWrite &&
-                  op && (
-                    <button
-                      className={
-                        op.kind === "action" && op.action.startsWith("delete")
-                          ? "button danger-action"
-                          : "button"
-                      }
-                      type="submit"
-                      disabled={
-                        busy ||
-                        blocked ||
-                        (paymentMode && (!accounts.data || !categories.data)) ||
-                        (!!receiptCreate &&
-                          (!preview.data ||
-                            preview.data.amount.amount !== previewCents ||
-                            preview.data.exceedsBalance ||
-                            preview.data.tooManyServices))
-                      }
-                    >
-                      {submitLabel(op)}
-                    </button>
-                  )
-                )}
-              </div>
             </form>
           )}
-        </EditorDialog>
+        </Overlay>
+      )}
+      {deleteOp && (
+        <Overlay
+          kind="question"
+          open={confirmDelete}
+          title={names[deleteOp.action]}
+          busy={busy}
+          onDismiss={() => setConfirmDelete(false)}
+          returnFocusId="delete-client-item"
+          fallbackFocusId="main-content"
+          footer={
+            <button
+              type="button"
+              className="ui-btn ui-btn-danger-filled"
+              disabled={busy || blocked}
+              onClick={() => {
+                setConfirmDelete(false);
+                void perform(preparing(deleteOp));
+              }}
+            >
+              Delete
+            </button>
+          }
+        >
+          <p>{askText[deleteOp.action]}</p>
+        </Overlay>
       )}
       {notice && !open && toastDone && undo && writable && (
         <UndoPill
@@ -570,7 +630,7 @@ export function ClientsWorkspace({
           <p role="status">{notice}</p>
           {undo && writable && (
             <button
-              className="secondary-button"
+              className="ui-btn ui-btn-secondary"
               type="button"
               disabled={blocked || frozen}
               onClick={() => {
@@ -583,7 +643,7 @@ export function ClientsWorkspace({
             </button>
           )}
           <button
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             type="button"
             onClick={() => {
               setNotice("");
