@@ -10,12 +10,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { prepareTransactionUndo } from "./api";
-import { DeleteTrigger } from "./entry-sheet";
 import { defaultFeeText, feeMinor, parseFee } from "./fee";
 import { amountMinor, rememberAccount } from "./form";
 import { buildTransferBody } from "./transfer/build-body";

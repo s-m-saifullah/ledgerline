@@ -3,6 +3,7 @@ import type { Account, Category, Transaction } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
+import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { useCategoryCreate } from "../categories/use-category-create";
@@ -12,7 +13,7 @@ import {
   prepareTransactionUndo,
 } from "./api";
 import { changeKind, EntryFields } from "./entry-fields";
-import { DeleteTrigger, TypePill } from "./entry-sheet";
+import { TypePill } from "./entry-sheet";
 import {
   type TransactionFormValues,
   transactionBody,

@@ -266,11 +266,24 @@ export function ClientDetail({
     <>
       <section className="ui-card cl-card" aria-label={c.name}>
         <div className="cl-card-top">
+          <h2 className="cl-name">
+            {c.name}
+            {c.archivedAt ? " (archived)" : ""}
+          </h2>
+          {writable && (
+            <button
+              type="button"
+              id="client-menu"
+              className="ui-icon-btn cl-menu"
+              aria-label={`More actions for ${c.name}`}
+              onClick={() => setMenu(true)}
+            >
+              <EllipsisVertical size={20} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        <div className="cl-card-body">
           <div className="cl-card-main">
-            <h2 className="cl-name">
-              {c.name}
-              {c.archivedAt ? " (archived)" : ""}
-            </h2>
             <p className="cl-label">{owes ? "Owes you" : "Settled"}</p>
             <p className="cl-figure">
               <Balances client={c} />
@@ -278,7 +291,7 @@ export function ClientDetail({
             <p className="cl-overdue">
               {overdue > 0
                 ? `${overdue} ${overdue === 1 ? "service" : "services"} overdue`
-                : " "}
+                : "\u00a0"}
             </p>
           </div>
           <div className="cl-paid">
@@ -318,15 +331,6 @@ export function ClientDetail({
             >
               <Plus size={18} aria-hidden="true" />
               Log service
-            </button>
-            <button
-              type="button"
-              id="client-menu"
-              className="ui-icon-btn"
-              aria-label={`More actions for ${c.name}`}
-              onClick={() => setMenu(true)}
-            >
-              <EllipsisVertical size={20} aria-hidden="true" />
             </button>
           </div>
         )}

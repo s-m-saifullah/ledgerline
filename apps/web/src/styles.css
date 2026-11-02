@@ -1387,39 +1387,15 @@ select {
   border-top: 1px solid var(--border);
   overflow-wrap: anywhere;
 }
-.service-row {
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border);
-}
 .row-main {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
 }
-.row-text {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.row-text h3 {
-  font-size: 15px;
-}
-.row-text p {
-  font-size: 13px;
-}
-.row-figure {
-  flex-shrink: 0;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
 .client-rows .amount {
   font-size: inherit;
   margin: 0;
-}
-.row-figure > .amount {
-  font-size: 20px;
-  font-weight: 600;
 }
 .client-section {
   margin-top: 28px;
@@ -1483,13 +1459,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     .main-content {
     padding-bottom: calc(540px + env(safe-area-inset-bottom));
   }
-}
-
-.receipt-preview {
-  margin: 4px 0 8px;
-}
-.receipt-preview .client-rows {
-  margin-top: 8px;
 }
 
 .action-button {
@@ -1671,13 +1640,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     right: 16px;
     bottom: calc(128px + env(safe-area-inset-bottom));
   }
-}
-
-.more-details {
-  margin: 4px 0;
-}
-.more-details > .form-field {
-  margin-bottom: 12px;
 }
 
 /* Personal starter categories: grouped preview, first-run button and hover hint. */
@@ -1954,11 +1916,6 @@ button.budget-line:hover {
 .client-section .loan-row > strong .amount {
   font-size: 18px;
 }
-/* The hours-at-a-rate result: close under the rate box, with room before its button. */
-.hourly-helper > p {
-  margin: 0 0 12px;
-  line-height: 1.5;
-}
 
 /* Exports */
 .export-inline {
@@ -2133,25 +2090,21 @@ details[open] > summary {
     transition: none;
   }
 }
-details.transaction-details > summary,
-details.more-details > summary {
+details.transaction-details > summary {
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--accent);
   font-size: 13px;
 }
-details.transaction-details > summary:hover,
-details.more-details > summary:hover {
+details.transaction-details > summary:hover {
   background: transparent;
   text-decoration: underline;
 }
-details.transaction-details[open] > summary,
-details.more-details[open] > summary {
+details.transaction-details[open] > summary {
   margin-bottom: 8px;
 }
-details.transaction-details > summary .muted,
-details.more-details > summary .muted {
+details.transaction-details > summary .muted {
   color: var(--muted);
   font-size: inherit;
   line-height: inherit;

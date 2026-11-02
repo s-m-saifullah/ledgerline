@@ -1,0 +1,24 @@
+/* The delete trigger shows only its trash on a phone; the words come back from 700 px. */
+.entry-delete {
+  padding: 0 14px;
+}
+.entry-delete-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+@container app (min-width: 700px) {
+  .entry-delete {
+    padding: 0 18px;
+  }
+  .entry-delete-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+}
