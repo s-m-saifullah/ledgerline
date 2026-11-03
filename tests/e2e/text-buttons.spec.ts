@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   ledgerId = newId();
   await createOwnerLedger(pool, env, ledgerId, "E2E text button ledger");
   await pool.query(
-    "INSERT INTO accounts (id,ledger_id,name,type,opening_balance) VALUES ($1,$2,'E2E Checking','bank',10000)",
+    "INSERT INTO tags (id,ledger_id,name) VALUES ($1,$2,'E2E trip')",
     [newId(), ledgerId],
   );
   await prepareBrowser(page, testInfo, {
@@ -27,7 +27,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   await signIn(page);
 });
 test.afterEach(async () => {
-  await pool.query("DELETE FROM accounts WHERE ledger_id=$1", [ledgerId]);
+  await pool.query("DELETE FROM tags WHERE ledger_id=$1", [ledgerId]);
   await pool.query("DELETE FROM ledger_members WHERE ledger_id=$1", [ledgerId]);
   await pool.query("DELETE FROM ledgers WHERE id=$1", [ledgerId]);
 });
@@ -35,9 +35,10 @@ test.afterEach(async () => {
 test("row actions are accent text with an icon, underlined on hover, and Delete is red", async ({
   page,
 }) => {
-  await page.goto("/accounts");
-  const archive = page.getByRole("button", { name: "Archive E2E Checking" });
-  const remove = page.getByRole("button", { name: "Delete E2E Checking" });
+  // The Tags page still has them; each screen that moves to the redesign leaves this spec with one page fewer.
+  await page.goto("/tags");
+  const archive = page.getByRole("button", { name: "Archive", exact: true });
+  const remove = page.getByRole("button", { name: "Delete", exact: true });
   await expect(archive).toBeVisible();
   const accent = await page
     .locator(".button")

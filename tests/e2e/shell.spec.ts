@@ -76,13 +76,7 @@ test.describe("a phone, under 700 px", () => {
       await expect(page.locator("#mobile-add-transaction")).toBeHidden();
     });
 
-  for (const path of [
-    "/",
-    "/transactions",
-    "/budgets",
-    "/insights",
-    "/accounts",
-  ])
+  for (const path of ["/", "/transactions", "/budgets", "/insights"])
     test(`adds a transaction from ${path}`, async ({ page }) => {
       await at(page, 390, path);
       await addButton(page).click();
@@ -90,6 +84,22 @@ test.describe("a phone, under 700 px", () => {
         page.getByRole("dialog", { name: "Add transaction" }),
       ).toBeVisible();
     });
+
+  // A page that lists something adds that thing (ADR 0047, PR 13a); a page with no accounts yet leaves it to the card.
+  test("adds an account from /accounts, not a transaction", async ({
+    page,
+  }) => {
+    await at(page, 390, "/accounts");
+    const add = page.locator("#mobile-add-page");
+    await expect(add).toHaveAccessibleName("Add account");
+    await add.click();
+    await expect(
+      page.getByRole("dialog", { name: "Add account" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "Add transaction" }),
+    ).toHaveCount(0);
+  });
 
   test("puts a back arrow before the title on pages opened from More, and only there", async ({
     page,

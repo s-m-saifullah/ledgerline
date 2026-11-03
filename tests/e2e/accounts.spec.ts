@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, type Page, test } from "@playwright/test";
 import { type Account, accountSchema } from "../../packages/shared/src/index";
+import { accountRow, clickAccountAction, openAccount } from "./account-actions";
 import { connectLocalDatabase } from "./ledger-setup";
 import { expectMorePageCurrent, openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
@@ -51,9 +52,7 @@ async function add(page: Page, name: string, type: string, amount: string) {
       response.request().method() === "POST" &&
       /\/accounts$/.test(response.url()),
   );
-  await dialog
-    .getByRole("button", { name: "Add account", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   const saved = await response;
   expect(saved.status()).toBe(201);
   return track(await saved.json());
@@ -97,9 +96,7 @@ test("creates, retries, edits and archives real accounts with privacy and confli
   const createDialog = page.getByRole("dialog", { name: "Add account" });
   await createDialog.getByLabel("Account name").fill(name);
   await createDialog.getByLabel("Opening balance (USD)").fill("1234.56");
-  await createDialog
-    .getByRole("button", { name: "Add account", exact: true })
-    .click();
+  await createDialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(createDialog.getByRole("alert")).toContainText(
     "couldn't confirm the save",
   );
@@ -128,11 +125,11 @@ test("creates, retries, edits and archives real accounts with privacy and confli
       )
     ).rows[0]?.count,
   ).toBe(1);
-  const card = page.getByRole("article", { name, exact: true });
+  const card = accountRow(page, name);
   await expect(card.getByText("$1,234.56", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("article", { name, exact: true })).toBeVisible();
-  await page.getByRole("button", { name: `Edit ${name}`, exact: true }).click();
+  await expect(accountRow(page, name)).toBeVisible();
+  await openAccount(page, name);
   const editDialog = page.getByRole("dialog", { name: "Edit account" });
   const externalName = `${name} latest`;
   const external = await page.request.patch(
@@ -147,7 +144,7 @@ test("creates, retries, edits and archives real accounts with privacy and confli
   );
   expect(external.status()).toBe(200);
   await editDialog.getByLabel("Account name").fill(`${name} draft`);
-  await editDialog.getByRole("button", { name: "Save changes" }).click();
+  await editDialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(editDialog.getByRole("alert")).toContainText(
     "This account changed",
   );
@@ -157,17 +154,17 @@ test("creates, retries, edits and archives real accounts with privacy and confli
   await expect(editDialog.getByLabel("Account name")).toHaveValue(externalName);
   await editDialog.getByLabel("Account name").fill(name);
   await editDialog.getByLabel("Opening balance (USD)").fill("1200.29");
-  await editDialog.getByRole("button", { name: "Save changes" }).click();
+  await editDialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(card.getByText("$1,200.29", { exact: true })).toBeVisible();
   const debtName = `E2E ${testInfo.project.name} card ${randomUUID().slice(0, 8)}`;
   const debt = await add(page, debtName, "card", "987.65");
   expect(debt.openingBalance.amount).toBe(-98765);
-  const debtCard = page.getByRole("article", { name: debtName, exact: true });
+  const debtCard = accountRow(page, debtName);
   await expect(
-    debtCard.getByText("Amount owed", { exact: true }),
+    debtCard.getByText("Credit card · USD · Owed", { exact: true }),
   ).toBeVisible();
-  await expect(debtCard.getByText("$987.65", { exact: true })).toBeVisible();
+  await expect(debtCard.getByText("-$987.65", { exact: true })).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("accounts-light.png"),
     fullPage: true,
@@ -179,51 +176,41 @@ test("creates, retries, edits and archives real accounts with privacy and confli
   });
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
   await expect(debtCard.getByText("Amount hidden")).toBeAttached();
-  await expect(debtCard.getByText("$987.65", { exact: true })).toHaveCount(0);
-  await page
-    .getByRole("button", { name: `Edit ${debtName}`, exact: true })
-    .click();
+  await expect(debtCard.getByText("-$987.65", { exact: true })).toHaveCount(0);
+  await openAccount(page, debtName);
   await expect(page.getByLabel("Opening balance (USD)")).toHaveAttribute(
     "type",
     "password",
   );
   await page.keyboard.press("Escape");
-  await expect(
-    page.getByRole("button", { name: `Edit ${debtName}`, exact: true }),
-  ).toBeFocused();
+  await expect(debtCard).toBeFocused();
   await page.getByRole("button", { name: "Show amounts", exact: true }).click();
-  await page
-    .getByRole("button", { name: `Archive ${debtName}`, exact: true })
-    .click();
+  await clickAccountAction(page, "archive", debtName);
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Archive account", exact: true })
+    .getByRole("button", { name: "Archive", exact: true })
     .click();
-  await expect(debtCard.getByText("Archived", { exact: true })).toBeVisible();
-  await expect(debtCard.getByText("$987.65", { exact: true })).toBeVisible();
-  await page.getByLabel("View accounts").selectOption("active");
-  await expect(debtCard).toHaveCount(0);
-  await page.getByLabel("View accounts").selectOption("archived");
+  // An archived account leaves the groups for the fold under them.
+  const fold = page.locator(".ac-fold");
+  await expect(fold).toBeVisible();
+  await expect(debtCard).toBeHidden();
+  await fold.locator("summary").click();
   await expect(debtCard).toBeVisible();
-  // A mis-tapped archive can be undone from the archived list.
-  await page
-    .getByRole("button", { name: `Unarchive ${debtName}`, exact: true })
-    .click();
+  await expect(debtCard.getByText("-$987.65", { exact: true })).toBeVisible();
+  // A mis-tapped archive can be undone from the fold.
+  await clickAccountAction(page, "unarchive", debtName);
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Unarchive account", exact: true })
+    .getByRole("button", { name: "Unarchive", exact: true })
     .click();
   await expect(
     page.getByText(
       "Account unarchived. It is available for new entries again.",
     ),
   ).toBeVisible();
-  await expect(debtCard.getByText("Archived", { exact: true })).toHaveCount(0);
-  await expect(debtCard.getByText("$987.65", { exact: true })).toBeVisible();
-  await page.getByLabel("View accounts").selectOption("active");
+  await expect(fold.getByText(debtName)).toHaveCount(0);
   await expect(debtCard).toBeVisible();
-  await page.getByLabel("View accounts").selectOption("archived");
-  await expect(debtCard).toHaveCount(0);
+  await expect(debtCard.getByText("-$987.65", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,

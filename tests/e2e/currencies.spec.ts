@@ -102,12 +102,10 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
   await dialog.getByLabel("Account name").fill("Euro bank");
   await dialog.getByLabel("Currency").selectOption("EUR");
   await dialog.getByLabel("Opening balance (EUR)").fill("1000");
-  await dialog.getByRole("button", { name: "Add account" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("€1,000.00")).toBeVisible();
   await expect(page.getByText(/· EUR$/)).toBeVisible();
-  await expect(
-    page.getByText("About $800.00 in USD at today's rate"),
-  ).toBeVisible();
+  await expect(page.getByText("About $800.00")).toBeVisible();
 
   // 3. Record a 100.00 EUR expense: the form is in euros and previews its dollar value.
   await page.goto("/");

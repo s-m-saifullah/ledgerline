@@ -1,6 +1,6 @@
 import type { Account } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import {
   getAccount,
@@ -8,7 +8,6 @@ import {
   prepareAccountDelete,
   prepareAccountUnarchive,
 } from "./api";
-import { AccountDialog } from "./dialog";
 
 export function ArchiveAccountDialog({
   ledgerId,
@@ -104,71 +103,69 @@ export function ArchiveAccountDialog({
       setBusy(false);
     }
   };
+  const name = baseline.name;
   return (
-    <AccountDialog
+    <Overlay
       open={open}
+      kind="question"
       title={
         mode === "delete"
-          ? "Delete account?"
+          ? `Delete ${name}?`
           : mode === "unarchive"
-            ? "Unarchive account?"
-            : "Archive account?"
-      }
-      description={
-        mode === "delete"
-          ? `Delete ${baseline.name}? Delete its connected transactions first. This removes its opening balance from your ledger totals. Deleted transactions cannot be restored while this account is deleted. This account has no Undo; archive it to keep it instead.`
-          : mode === "unarchive"
-            ? `Unarchive ${baseline.name}. It returns to your active accounts and new-entry pickers; its balance and history are unchanged.`
-            : `Archive ${baseline.name}. Its balance and history stay in your ledger, and it moves out of your active accounts.`
+            ? `Unarchive ${name}?`
+            : `Archive ${name}?`
       }
       busy={busy}
       onDismiss={onDismiss}
+      cancelLabel={uncertain ? "Close for now" : "Cancel"}
       returnFocusId={`edit-account-${baseline.id}`}
-    >
-      {error && (
-        <p className="field-error account-error" role="alert">
-          {error}
-        </p>
-      )}
-      <div className="account-dialog-actions">
-        <button
-          type="button"
-          className="secondary-button"
-          disabled={busy}
-          onClick={onDismiss}
-        >
-          {uncertain ? "Close for now" : "Keep account"}
-        </button>
-        {conflict ? (
-          <Button disabled={busy} onClick={() => void reload()}>
+      fallbackFocusId="accounts-title"
+      footer={
+        conflict ? (
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            disabled={busy}
+            onClick={() => void reload()}
+          >
             Reload latest details
-          </Button>
+          </button>
         ) : (
-          <Button
-            className={mode === "delete" ? "danger-action" : undefined}
+          <button
+            type="button"
+            className={
+              mode === "delete"
+                ? "ui-btn ui-btn-danger-filled"
+                : "ui-btn ui-btn-primary"
+            }
             disabled={busy}
             onClick={() => void save()}
           >
             {busy
-              ? mode === "delete"
-                ? "Deleting…"
-                : mode === "unarchive"
-                  ? "Unarchiving…"
-                  : "Archiving…"
+              ? "Saving…"
               : uncertain
-                ? mode === "delete"
-                  ? "Retry delete"
-                  : mode === "unarchive"
-                    ? "Retry unarchive"
-                    : "Retry archive"
+                ? "Retry action"
                 : mode === "delete"
-                  ? "Delete account"
+                  ? "Delete"
                   : mode === "unarchive"
-                    ? "Unarchive account"
-                    : "Archive account"}
-          </Button>
-        )}
-      </div>
-    </AccountDialog>
+                    ? "Unarchive"
+                    : "Archive"}
+          </button>
+        )
+      }
+    >
+      <p>
+        {mode === "delete"
+          ? "Delete its connected transactions first. This removes its opening balance from your ledger totals. A deleted account has no Undo; archive it to keep it instead."
+          : mode === "unarchive"
+            ? "It returns to your active accounts and new-entry pickers; its balance and history are unchanged."
+            : "Its balance and history stay in your ledger, and it moves out of your active accounts."}
+      </p>
+      {error && (
+        <p className="field-error" role="alert">
+          {error}
+        </p>
+      )}
+    </Overlay>
   );
 }

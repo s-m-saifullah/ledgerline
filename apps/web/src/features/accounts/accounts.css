@@ -1,0 +1,289 @@
+/*
+ * Accounts (ADR 0047, the prototype's `R.accounts` and `OV["account-form"]`): two grouped cards, Cash and banking
+ * and Cards and loans, one under the other on a phone and side by side from 700 px; the archived accounts in a
+ * fold under them. Every class here starts with `ac-` so no other feature's rule reaches the page or its sheet.
+ * Widths are the layout system's two.
+ */
+.ac-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .ac-page {
+    gap: 16px;
+  }
+}
+.ac-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.ac-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* Under 700 px the top bar and the one Add button do this. */
+.ac-add {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .ac-add {
+    display: inline-flex;
+  }
+}
+.ac-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ac-alert,
+.ac-empty {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.ac-cols {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+@container app (min-width: 700px) {
+  .ac-cols {
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.ac-col {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+.ac-row {
+  width: 100%;
+  text-align: start;
+}
+/* Titles and hints wrap instead of being cut, so a long name stays readable at 320 px. */
+.ac-page .ui-row-title,
+.ac-page .ui-row-hint,
+.ac-form .ui-row-title,
+.ac-form .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.ac-neg {
+  color: var(--danger);
+}
+.ac-danger {
+  color: var(--danger);
+}
+
+/*
+ * Two folds, the archived accounts under the cards and "More" in the sheet: the global disclosure style (a bordered
+ * button with its own arrow) gives way to a plain first row, as in the Clients editors.
+ */
+.ac-fold,
+.ac-more-fold {
+  display: block;
+  /* The card class pads its content; here the summary row carries the padding, shut or open. */
+  padding: 0;
+  interpolate-size: allow-keywords;
+}
+/* The body opens and shuts over a fifth of a second where the browser can animate it; elsewhere it just snaps. */
+.ac-fold::details-content,
+.ac-more-fold::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 200ms ease-out,
+    content-visibility 200ms allow-discrete;
+}
+.ac-fold[open]::details-content,
+.ac-more-fold[open]::details-content {
+  block-size: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ac-fold::details-content,
+  .ac-more-fold::details-content {
+    transition: none;
+  }
+}
+.ac-fold > summary,
+.ac-more-fold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--shape-card);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+.ac-fold > summary {
+  color: var(--muted);
+}
+.ac-fold > summary:hover,
+.ac-more-fold > summary:hover {
+  background: var(--tint);
+}
+.ac-fold > summary::-webkit-details-marker,
+.ac-fold > summary::before,
+.ac-more-fold > summary::-webkit-details-marker,
+.ac-more-fold > summary::before {
+  display: none;
+}
+.ac-fold > summary > svg,
+.ac-more-fold > summary > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.ac-fold[open] > summary > svg,
+.ac-more-fold[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.ac-fold[open] > summary,
+.ac-more-fold[open] > summary {
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.ac-fold-body {
+  display: grid;
+  min-width: 0;
+}
+.ac-fold-body > * {
+  border-top: 1px solid var(--border);
+}
+.ac-fold-body > :last-child {
+  border-end-start-radius: calc(var(--shape-card) - 1px);
+  border-end-end-radius: calc(var(--shape-card) - 1px);
+}
+
+/* What goes inside the shared sheet: a field has its label above, cards are bordered. */
+.ac-form,
+.ac-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.ac-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.ac-form .ui-seg {
+  min-width: 0;
+}
+/* A row of the form: the label on the left, the value on the right (the prototype's input row). */
+.ac-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 4px 16px;
+  min-width: 0;
+}
+.ac-input-row > label {
+  flex: 1 1 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ac-input-row > input {
+  flex: 0 1 160px;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline-start: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  text-align: end;
+}
+.ac-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.ac-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ac-field .category-picker {
+  margin: 0;
+}
+.ac-field .category-picker > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ac-block {
+  min-width: 0;
+}
+.ac-card {
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.ac-card > * + * {
+  border-top: 1px solid var(--border);
+}
+/*
+ * The card does not clip (a clip would cut a row's focus ring at the corners): its first and last rows take the
+ * card's inner radius instead, so the ring and the hover fill follow the curve. A row may sit in a block that
+ * also holds its error, so the block is rounded too.
+ */
+.ac-card > :first-child,
+.ac-card > :first-child > .ui-row {
+  border-start-start-radius: calc(var(--shape-card) - 1px);
+  border-start-end-radius: calc(var(--shape-card) - 1px);
+}
+.ac-card > :last-child,
+.ac-card > :last-child > .ui-row {
+  border-end-start-radius: calc(var(--shape-card) - 1px);
+  border-end-end-radius: calc(var(--shape-card) - 1px);
+}
+.ac-card > .ac-field {
+  padding: 16px;
+}
+.ac-value {
+  flex: 0 1 160px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: end;
+}
+.ac-err {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+
+.ac-more-body {
+  display: grid;
+  min-width: 0;
+  border-top: 1px solid var(--border);
+}
+.ac-more-body > * + * {
+  border-top: 1px solid var(--border);
+}
+.ac-more-body > .ac-field {
+  padding: 16px;
+}
