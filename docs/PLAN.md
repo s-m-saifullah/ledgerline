@@ -20,7 +20,7 @@ Ledgerline is a self-hosted personal finance tracker: one place to record money 
 
 **v1 does not do** (kept out on purpose): automatic bank syncing, investment tracking, shared household budgets, receipt OCR and storing receipt images or other attached files (ADR 0031). The data model leaves room for the others.
 
-**Working assumptions:** one owner, with roles ready for an invited user later; data entered manually or by CSV.
+**Working assumptions:** one admin (the account the server is set up with) who can add other users, each with their own ledger ([ADR 0048](adr/0048-profile-and-managed-users.md)); roles ready for sharing a ledger later; data entered manually or by CSV.
 
 ## Technology stack (locked; changing it needs an ADR)
 
@@ -70,7 +70,7 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 
 | Entity | Key fields |
 | --- | --- |
-| users, ledgers, ledger_members | owner/editor/viewer roles; v1 creates one ledger per owner |
+| users, ledgers, ledger_members | owner/editor/viewer roles (sharing is not built); every user, including the first, has their own ledger; the admin adds users (ADR 0048) |
 | accounts | ledger_id, name, type, currency, opening_balance, archived_at |
 | categories | ledger_id, parent_id, name, kind (income/expense), icon, color; two levels deep |
 | transactions | account_id, date, optional local time, signed amount, currency, payee, category_id, note, transfer_id, status (cleared/pending), fx_rate, base_amount |
