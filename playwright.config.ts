@@ -24,6 +24,10 @@ export default defineConfig({
     {
       name: "mobile",
       dependencies: ["setup"],
+      // The layout specs set their own widths and run in the desktop project only. Left in, they were 271 skipped
+      // tests that still counted toward the shard split, which put the whole desktop project on one shard and
+      // the whole mobile project on the other (16 against 5 minutes).
+      testIgnore: /-layout\.spec\.ts/,
       use: {
         ...devices["iPhone 13"],
         defaultBrowserType: "chromium",
