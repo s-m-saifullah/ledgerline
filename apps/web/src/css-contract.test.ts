@@ -29,6 +29,7 @@ const files = [
   "features/loans/loans.css",
   "features/categories/categories.css",
   "features/accounts/accounts.css",
+  "features/recurring/recurring.css",
 ];
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(

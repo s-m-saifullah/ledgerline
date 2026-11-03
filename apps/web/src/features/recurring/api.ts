@@ -72,3 +72,24 @@ export function prepareRunSkip(ledgerId: string, run: RecurringRun) {
   );
   return async () => recurringRunSchema.parse(await write());
 }
+
+/**
+ * Saving an existing rule with its Active switch: the update (when fields changed), then the pause or resume
+ * the switch asks for, on the version the update returned. Each write keeps its own key for the life of the
+ * attempt, so a retry after a lost answer repeats the same requests and never changes the rule twice.
+ */
+export function prepareRuleSave(
+  ledgerId: string,
+  rule: RecurringRule,
+  body: CreateRecurringRule | null,
+  action: "pause" | "resume" | null,
+) {
+  const update = body ? prepareRuleUpdate(ledgerId, rule, body) : null;
+  let toggle: (() => Promise<RecurringRule>) | null = null;
+  return async () => {
+    const saved = update ? await update() : rule;
+    if (!action) return saved;
+    toggle ??= prepareRuleToggle(ledgerId, saved, action);
+    return toggle();
+  };
+}

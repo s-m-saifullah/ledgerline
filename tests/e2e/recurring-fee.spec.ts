@@ -100,7 +100,7 @@ test("a recurring transfer carries a fee that is worked out for each occurrence"
   const start = new Date(Date.now() - 45 * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  await page.getByRole("button", { name: "Add a recurring entry" }).click();
+  await page.getByRole("button", { name: /Add (your first )?rule/ }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Name").fill("Savings plan");
   await dialog.getByRole("radio", { name: "Transfer" }).check();
@@ -108,23 +108,23 @@ test("a recurring transfer carries a fee that is worked out for each occurrence"
     .getByLabel("To account")
     .selectOption({ label: "Savings (USD)" });
   await dialog.getByLabel("Amount (USD)").fill("100");
-  await dialog.getByLabel("Starts").fill(start);
-  // A plain hint, then a percentage with a preview, and its category under More.
+  await dialog.getByLabel("Starts", { exact: true }).fill(start);
+  // The hint is read aloud (a row has no paragraph), then a percentage with a preview, and its category under More.
   await expect(
     dialog.getByText(/Type 2 for a fixed fee, or 2% for a percentage/),
-  ).toBeVisible();
+  ).toBeAttached();
   await dialog.getByLabel("Fee (optional)").fill("1.5%");
   await expect(dialog.locator("#rule-fee-preview")).toContainText(
     "Fee $1.50 · $101.50 leaves Checking",
   );
   // No category yet: More opens by itself and saving asks for one.
   await expect(dialog.locator("summary", { hasText: /^More/ })).toBeVisible();
-  await dialog.getByRole("button", { name: "Save rule" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     dialog.getByText("Choose an expense category for the fee."),
   ).toBeVisible();
   await chooseCategory(page, "Fee category", "Transfer fees");
-  await dialog.getByRole("button", { name: "Save rule" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
 
   // Two occurrences were due: each made its transfer (two legs) and a 1.50 fee entry.
