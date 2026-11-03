@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { afterEach, expect, it, vi } from "vitest";
 import { DateTimeInput } from "./date-time-input";
-import { EditorDialog } from "./editor-dialog";
+import { Overlay } from "./overlay";
 
 afterEach(cleanup);
 
@@ -31,14 +31,13 @@ it("keeps historical calendar dates selectable even in zones with skipped civil 
 it("Escape closes only the nested picker and restores its trigger", async () => {
   const dismissed = vi.fn();
   render(
-    <EditorDialog
+    <Overlay
       open
       title="Edit entry"
       description="Example"
       busy={false}
       onDismiss={dismissed}
       returnFocusId="date"
-      closeLabel="Close editor"
       fallbackFocusId="date"
     >
       <label htmlFor="date">Date</label>
@@ -48,7 +47,7 @@ it("Escape closes only the nested picker and restores its trigger", async () => 
         type="date"
         defaultValue="2024-02-29"
       />
-    </EditorDialog>,
+    </Overlay>,
   );
   await userEvent.click(screen.getByRole("button", { name: "Choose date" }));
   await userEvent.keyboard("{Escape}");

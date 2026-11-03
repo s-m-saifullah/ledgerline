@@ -1,0 +1,118 @@
+/*
+ * Currencies (ADR 0047, the prototype's `R.currencies` and `OV["rate-form"]`): one card of rows, the base currency
+ * first, capped near 760 px like the other simple list pages. Every class here starts with `cu-` so no other
+ * feature's rule reaches the page or its sheets. Widths are the layout system's two.
+ */
+.cu-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+  max-width: 760px;
+}
+@container app (min-width: 700px) {
+  .cu-page {
+    gap: 16px;
+  }
+}
+.cu-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.cu-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.cu-buttons {
+  display: flex;
+  gap: 8px;
+}
+/* Under 700 px the top bar and the one Add button add a currency; Refresh rates stays. */
+.cu-add {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .cu-add {
+    display: inline-flex;
+  }
+}
+.cu-row {
+  width: 100%;
+  text-align: start;
+}
+/* Titles and hints wrap instead of being cut, so a long name stays readable at 320 px. */
+.cu-page .ui-row-title,
+.cu-page .ui-row-hint,
+.cu-form .ui-row-title,
+.cu-form .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+/* The code in its tile; 10 px is the floor of the type scale. */
+.cu-code {
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* What goes inside the shared sheet: a field has its label above, cards are bordered. */
+.cu-form,
+.cu-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.cu-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.cu-card {
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.cu-card > * + * {
+  border-top: 1px solid var(--border);
+}
+/*
+ * The card does not clip (a clip would cut a row's focus ring at the corners): its first and last rows take the
+ * card's inner radius instead, so the ring and the hover fill follow the curve.
+ */
+.cu-card > :first-child {
+  border-start-start-radius: calc(var(--shape-card) - 1px);
+  border-start-end-radius: calc(var(--shape-card) - 1px);
+}
+.cu-card > :last-child {
+  border-end-start-radius: calc(var(--shape-card) - 1px);
+  border-end-end-radius: calc(var(--shape-card) - 1px);
+}
+.cu-figure {
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.cu-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.cu-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cu-rate {
+  font-variant-numeric: tabular-nums;
+}

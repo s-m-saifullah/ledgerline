@@ -107,18 +107,44 @@ test("tags an entry in Add, finds it by tag, edits the tags and keeps the balanc
   expect(await balance(page)).toBe(10000 - 1250);
 });
 
-test("the Tags page renames, archives and deletes tags", async ({ page }) => {
+const addTag = (page: Page) =>
+  page.getByRole("button", { name: "Add tag", exact: true }).filter({
+    visible: true,
+  });
+const tagRow = (page: Page, name: string) =>
+  page.getByRole("button", { name: new RegExp(`^${name} \\d+ entr`) });
+
+test("the Tags page adds, renames, archives and deletes tags, each from the tag's sheet", async ({
+  page,
+}) => {
   await page.goto("/tags");
-  await page.getByLabel("New tag").fill("Trip");
-  await page.getByRole("button", { name: "Add tag" }).click();
+  await expect(page.getByText("No tags yet.")).toBeVisible();
+  await addTag(page).click();
+  await page
+    .getByRole("dialog", { name: "Add tag" })
+    .getByLabel("Name")
+    .fill("Trip");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Added the tag Trip.")).toBeVisible();
-  await page.getByRole("button", { name: "Rename" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await tagRow(page, "Trip").click();
+  await page.getByRole("button", { name: "Rename", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Holiday");
-  await page.getByRole("button", { name: "Save name" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Renamed to Holiday.")).toBeVisible();
-  await page.getByRole("button", { name: "Archive" }).click();
-  await expect(page.getByRole("heading", { name: "Archived" })).toBeVisible();
-  await page.getByRole("button", { name: "Unarchive" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await tagRow(page, "Holiday").click();
+  await page.getByRole("button", { name: "Archive", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.locator(".tg-fold > summary").click();
+  await expect(page.getByText("1 archived")).toBeVisible();
+  await tagRow(page, "Holiday").click();
+  await page.getByRole("button", { name: "Unarchive", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  await tagRow(page, "Holiday").click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete tag" }).click();
   await expect(page.getByText("Deleted the tag Holiday.")).toBeVisible();

@@ -378,11 +378,6 @@ select {
   background: #0008;
   z-index: 30;
 }
-.dialog-close {
-  position: absolute;
-  right: 12px;
-  top: 12px;
-}
 /* The heading or main region takes focus after a screen change (ADR 0040); it is not a control, so no ring. */
 #main-content:focus,
 #main-content h1:focus {
@@ -506,72 +501,8 @@ select {
   line-height: 1.7;
   color: var(--muted);
 }
-.account-dialog {
-  position: fixed;
-  z-index: 31;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: min(520px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  padding: 32px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
-  box-shadow: 0 16px 48px #0002;
-}
-.account-dialog > h2 {
-  padding-right: 28px;
-  margin-bottom: 8px;
-}
-.account-fields {
-  border: 0;
-  padding: 0;
-  margin: 24px 0 0;
-  display: grid;
-  gap: 10px;
-  min-width: 0;
-}
-.account-fields > label {
-  font-size: 12px;
-  font-weight: 500;
-  margin-top: 4px;
-}
 .account-error {
   margin-top: 20px;
-}
-.account-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 24px;
-}
-.account-dialog-actions button {
-  min-height: 48px;
-}
-@media (max-width: 700px) {
-  .account-dialog {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    transform: none;
-    width: 100%;
-    max-height: calc(100dvh - 16px);
-    border-radius: 20px 20px 0 0;
-    padding: 28px 20px calc(24px + env(safe-area-inset-bottom));
-  }
-  .account-dialog input {
-    font-size: 16px;
-  }
-  .account-dialog-actions {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-  .account-dialog-actions .button {
-    padding: 12px;
-  }
 }
 .category-picker select {
   width: 100%;
@@ -707,9 +638,6 @@ select {
     right: 16px;
     /* Above the bottom bar and the Add button, with a gap. */
     bottom: calc(144px + env(safe-area-inset-bottom));
-  }
-  .account-dialog .transaction-amount {
-    font-size: 28px;
   }
 }
 .combobox {
@@ -1243,49 +1171,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
 }
 
 /* Budgets */
-.budget-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-.budget-line {
-  display: grid;
-  gap: 8px;
-  width: 100%;
-  min-height: 44px;
-  padding: 16px;
-  text-align: left;
-  color: var(--text);
-  font: inherit;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-button.budget-line {
-  cursor: pointer;
-}
-button.budget-line:hover {
-  border-color: var(--accent);
-}
-.budget-line-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.budget-line-detail {
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-/* A 20px line is as tall as the 20px box, so the first line is level with it, wrapped or not. */
-.currency-actions {
-  justify-content: flex-start;
-  margin-top: 0;
-  margin-bottom: 16px;
-}
 .base-note {
   display: block;
   font-size: 12px;
@@ -1378,49 +1263,6 @@ button.budget-line:hover {
   color: inherit;
   cursor: pointer;
 }
-.tag-add {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 24px;
-}
-.tag-add-row {
-  display: flex;
-  gap: 12px;
-  align-items: stretch;
-}
-.tag-add-row input {
-  flex: 1;
-  min-width: 0;
-}
-.tag-list {
-  list-style: none;
-  margin: 0 0 24px;
-  padding: 0;
-  display: grid;
-  gap: 8px;
-}
-.tag-row {
-  display: grid;
-  gap: 4px;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-.tag-row-name {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  align-items: baseline;
-}
-.tag-row-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 8px;
-}
-.tag-row-actions .text-button {
-  padding-inline: 8px;
-}
 /* Two-factor sign-in (ADR 0038) */
 
 .two-factor-links {
@@ -1498,30 +1340,4 @@ details[open] > summary {
 /* Chart figures (ADR 0039): space between a chart or its legend and the "Show the figures" row. */
 .flow-details {
   margin-top: 16px;
-}
-
-/* Editor footers on a phone: Close, a trash icon for the first step of delete, and the primary button share
-   one row. The label stays for screen readers; the real delete is a second, confirming button. */
-.dialog-delete svg {
-  display: none;
-}
-@media (max-width: 700px) {
-  .dialog-delete svg {
-    display: block;
-  }
-  .dialog-delete {
-    width: 48px;
-    padding: 0;
-  }
-  .dialog-delete-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-  .account-dialog-actions:has(.dialog-delete):has(> :nth-child(3)) {
-    grid-template-columns: auto auto minmax(0, 1fr);
-  }
 }

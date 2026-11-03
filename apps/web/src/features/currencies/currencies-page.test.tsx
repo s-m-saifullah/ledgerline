@@ -5,11 +5,18 @@ import {
   type PinnedCurrency,
 } from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { addableCurrencies, rateSentence, today } from "../../lib/rate-format";
+import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { CurrenciesPage } from "./currencies-page";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -74,6 +81,7 @@ function mount(
   role = "owner",
   write: (url: string, init?: RequestInit) => Response = () =>
     new Response("{}", { status: 500 }),
+  adds: (PageAdd | null)[] = [],
 ) {
   const fetcher = vi.fn<typeof fetch>(async (url, init) => {
     const target = String(url);
@@ -99,7 +107,9 @@ function mount(
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <CurrenciesPage />
+      <PageAddProvider value={(add) => adds.push(add)}>
+        <CurrenciesPage />
+      </PageAddProvider>
     </QueryClientProvider>,
   );
   return fetcher;
@@ -108,7 +118,7 @@ const calls = (fetcher: ReturnType<typeof mount>, method: string) =>
   fetcher.mock.calls.filter(([, init]) => init?.method === method);
 
 describe("CurrenciesPage", () => {
-  it("shows each currency with its newest rate and where it came from", async () => {
+  it("shows the base currency first, then each currency with its newest rate as one hint", async () => {
     mount(
       list(
         pinned("EUR", rate("EUR", "1.1217")),
@@ -116,16 +126,27 @@ describe("CurrenciesPage", () => {
         pinned("JPY", null),
       ),
     );
-    expect(await screen.findByText(/Your base currency is/)).toBeTruthy();
+    const base = (await screen.findByText("US Dollar")).closest(".ui-row");
+    expect(base?.textContent).toContain("Base");
+    expect(base?.tagName).toBe("DIV");
     const euro = screen.getByRole("button", { name: /Euro/ });
-    expect(euro.textContent).toContain("1 USD = 0.891504 EUR");
-    expect(euro.textContent).toContain("fetched");
+    expect(euro.textContent).toContain("1 USD = 0.891504 EUR · fetched");
     expect(screen.getByRole("button", { name: /BDT/ }).textContent).toContain(
       "set by you",
     );
-    expect(screen.getByRole("button", { name: /JPY/ }).textContent).toContain(
-      "No rate yet",
-    );
+    expect(
+      screen.getByRole("button", { name: /Japanese Yen/ }).textContent,
+    ).toContain("No rate yet");
+    const rows = document.querySelectorAll(".ui-list > .ui-row");
+    expect(rows).toHaveLength(4);
+    expect(rows[0]?.textContent).toContain("US Dollar");
+  });
+
+  it("has no subtitle, eyebrow or base-currency paragraph", async () => {
+    mount(list(pinned("EUR", rate("EUR", "1.1"))));
+    await screen.findByText("Euro");
+    expect(screen.queryByText(/Your base currency is/)).toBeNull();
+    expect(screen.queryByText("MAKE IT YOURS")).toBeNull();
   });
 
   it("explains the empty state and disables refresh", async () => {
@@ -140,15 +161,47 @@ describe("CurrenciesPage", () => {
     ).toBe(true);
   });
 
-  it("is read-only for viewers", async () => {
-    mount(list(pinned("EUR", rate("EUR", "1.1"))), "viewer");
-    await screen.findByText(/Your base currency is/);
-    expect(screen.queryByRole("button", { name: "Add a currency" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Euro/ })).toBeNull();
-    expect(screen.getByText(/1 USD = 0.909091 EUR/)).toBeTruthy();
+  it("says it could not load the currencies", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn<typeof fetch>(async () => new Response("{}", { status: 500 })),
+    );
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={client}>
+        <CurrenciesPage />
+      </QueryClientProvider>,
+    );
+    expect(
+      await screen.findByText("Couldn't load your currencies."),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 
-  it("refreshes and reports updated, kept and failed currencies", async () => {
+  it("is read-only for viewers: no buttons, no Add, no rows to press", async () => {
+    const adds: (PageAdd | null)[] = [];
+    mount(list(pinned("EUR", rate("EUR", "1.1"))), "viewer", undefined, adds);
+    await screen.findByText("Euro");
+    expect(screen.queryByRole("button", { name: "Add currency" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Refresh rates" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Euro/ })).toBeNull();
+    expect(screen.getByText(/1 USD = 0.909091 EUR/)).toBeTruthy();
+    expect(adds.at(-1) ?? null).toBeNull();
+  });
+
+  it("gives a phone's one Add the label Add currency", async () => {
+    const adds: (PageAdd | null)[] = [];
+    mount(list(), "owner", undefined, adds);
+    await screen.findByText(/Only USD so far/);
+    const add = adds.at(-1);
+    expect(add).toMatchObject({ label: "Add currency", disabled: false });
+    add?.onClick();
+    expect(
+      await screen.findByRole("dialog", { name: "Add currency" }),
+    ).toBeTruthy();
+  });
+
+  it("refreshes and reports updated, kept and failed currencies in a notice", async () => {
     const user = userEvent.setup();
     const fetcher = mount(
       list(pinned("EUR", rate("EUR", "1.1")), pinned("JPY", null)),
@@ -171,7 +224,31 @@ describe("CurrenciesPage", () => {
     expect(new Headers(call?.[1]?.headers).get("Idempotency-Key")).toBeTruthy();
   });
 
-  it("adds a currency, then fetches its rate", async () => {
+  it("says when a refresh could not be done", async () => {
+    const user = userEvent.setup();
+    mount(
+      list(pinned("EUR", rate("EUR", "1.1"))),
+      "owner",
+      () =>
+        new Response(
+          JSON.stringify({
+            type: "about:blank",
+            title: "Bad",
+            status: 502,
+            detail: "Down",
+          }),
+          { status: 502 },
+        ),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Refresh rates" }),
+    );
+    expect(
+      await screen.findByText("Couldn't refresh the rates. Please try again."),
+    ).toBeTruthy();
+  });
+
+  it("adds a currency, fetches its rate and says so", async () => {
     const user = userEvent.setup();
     const fetcher = mount(list(), "owner", (url) =>
       url.endsWith("/currencies")
@@ -181,34 +258,24 @@ describe("CurrenciesPage", () => {
           ),
     );
     await user.click(
-      await screen.findByRole("button", { name: "Add a currency" }),
+      await screen.findByRole("button", { name: "Add currency" }),
     );
     await user.selectOptions(await screen.findByLabelText("Currency"), "EUR");
-    await user.click(screen.getByRole("button", { name: "Add currency" }));
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Add currency",
+      }),
+    );
     await waitFor(() => expect(calls(fetcher, "POST")).toHaveLength(2));
     const [pin, refresh] = calls(fetcher, "POST");
     expect(JSON.parse(String(pin?.[1]?.body))).toEqual({ code: "EUR" });
     expect(String(refresh?.[0])).toContain("/exchange-rates/refresh");
     expect(JSON.parse(String(refresh?.[1]?.body))).toEqual({ code: "EUR" });
+    expect(await screen.findByText("Added EUR.")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("does not offer the base currency or one already added", async () => {
-    const user = userEvent.setup();
-    mount(list(pinned("EUR", null)));
-    await user.click(
-      await screen.findByRole("button", { name: "Add a currency" }),
-    );
-    const choice = await screen.findByLabelText("Currency");
-    const values = Array.from(
-      choice.querySelectorAll("option"),
-      (option) => option.value,
-    );
-    expect(values).toContain("GBP");
-    expect(values).not.toContain("USD");
-    expect(values).not.toContain("EUR");
-  });
-
-  it("saves a manual rate for a date with an idempotency key", async () => {
+  it("reads the currencies again after a save, so the row shows the new rate", async () => {
     const user = userEvent.setup();
     const fetcher = mount(
       list(pinned("EUR", rate("EUR", "1.1217"))),
@@ -219,59 +286,39 @@ describe("CurrenciesPage", () => {
         }),
     );
     await user.click(await screen.findByRole("button", { name: /Euro/ }));
-    const value = await screen.findByLabelText(/1 USD is worth/);
-    await user.clear(value);
-    await user.type(value, "1.13");
-    await user.click(screen.getByRole("button", { name: "Save rate" }));
-    await waitFor(() => expect(calls(fetcher, "PUT")).toHaveLength(1));
-    const call = calls(fetcher, "PUT")[0];
-    expect(JSON.parse(String(call?.[1]?.body))).toEqual({
-      code: "EUR",
-      date: today(),
-      // Typed as 1 USD = 1.13 EUR; stored as the base-currency value of one EUR.
-      rate: "0.8849557522",
-    });
-    expect(new Headers(call?.[1]?.headers).get("Idempotency-Key")).toBeTruthy();
+    const reads = () =>
+      fetcher.mock.calls.filter(
+        ([url, init]) =>
+          String(url).endsWith("/currencies") &&
+          (init?.method ?? "GET") === "GET",
+      ).length;
+    const before = reads();
+    await user.click(await screen.findByRole("button", { name: "Save" }));
+    await screen.findByText("Rate saved.");
+    await waitFor(() => expect(reads()).toBeGreaterThan(before));
   });
 
-  it("shows the rate with the base currency first when editing", async () => {
-    const user = userEvent.setup();
-    mount(list(pinned("BDT", rate("BDT", "0.00812"))));
-    await user.click(await screen.findByRole("button", { name: /BDT/ }));
-    const value = (await screen.findByLabelText(
-      /1 USD is worth \(BDT\)/,
-    )) as HTMLInputElement;
-    expect(value.value).toBe("123.1527");
-    expect(screen.getByText(/Latest: 1 USD = 123.1527 BDT/)).toBeTruthy();
+  it("leaves the add-a-currency sentence to those who can add one", async () => {
+    mount(list(), "viewer");
+    expect(await screen.findByText("Only USD so far.")).toBeTruthy();
+    expect(screen.queryByText(/Add a currency/)).toBeNull();
   });
 
-  it("rejects a bad rate before sending anything", async () => {
+  it("opens a currency's sheet from its row and says what was saved", async () => {
     const user = userEvent.setup();
-    const fetcher = mount(list(pinned("EUR", rate("EUR", "1.1"))));
-    await user.click(await screen.findByRole("button", { name: /Euro/ }));
-    const value = await screen.findByLabelText(/1 USD is worth/);
-    await user.clear(value);
-    await user.type(value, "1e3");
-    await user.click(screen.getByRole("button", { name: "Save rate" }));
-    expect(await screen.findByRole("alert")).toBeTruthy();
-    expect(calls(fetcher, "PUT")).toHaveLength(0);
-  });
-
-  it("removes a currency only after confirming, sending its version", async () => {
-    const user = userEvent.setup();
-    const fetcher = mount(
-      list(pinned("EUR", rate("EUR", "1.1"))),
+    mount(
+      list(pinned("EUR", rate("EUR", "1.1217"))),
       "owner",
-      () => new Response(null, { status: 204 }),
+      () =>
+        new Response(JSON.stringify(rate("EUR", "1.13", "manual")), {
+          status: 201,
+        }),
     );
     await user.click(await screen.findByRole("button", { name: /Euro/ }));
-    await user.click(screen.getByRole("button", { name: "Remove currency" }));
-    expect(calls(fetcher, "DELETE")).toHaveLength(0);
-    await user.click(screen.getByRole("button", { name: "Yes, remove EUR" }));
-    await waitFor(() => expect(calls(fetcher, "DELETE")).toHaveLength(1));
-    expect(JSON.parse(String(calls(fetcher, "DELETE")[0]?.[1]?.body))).toEqual({
-      expectedVersion: 1,
-    });
+    expect(await screen.findByRole("dialog", { name: "Euro" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Rate saved.")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 
