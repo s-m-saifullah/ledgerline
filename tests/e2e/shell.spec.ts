@@ -89,6 +89,34 @@ test.describe("a phone, under 700 px", () => {
   test("adds an account from /accounts, not a transaction", async ({
     page,
   }) => {
+    // A fresh database has no accounts, and then the page leaves Add to its card: give it one.
+    await page.route(/\/accounts\?/, (route) =>
+      route.fulfill({
+        json: {
+          items: [
+            {
+              id: "01a1a000-0000-7000-8000-000000000010",
+              ledgerId: "01a1a000-0000-7000-8000-000000000001",
+              name: "Harbor Checking",
+              type: "bank",
+              currency: "USD",
+              openingBalance: { amount: 1000, currency: "USD" },
+              inboundBonusBps: null,
+              bonusCategoryId: null,
+              feeCategoryId: null,
+              defaultFee: null,
+              contactId: null,
+              balance: { amount: 1000, currency: "USD" },
+              archivedAt: null,
+              version: 1,
+              createdAt: "2026-10-01T00:00:00.000Z",
+              updatedAt: "2026-10-01T00:00:00.000Z",
+            },
+          ],
+          nextCursor: null,
+        },
+      }),
+    );
     await at(page, 390, "/accounts");
     const add = page.locator("#mobile-add-page");
     await expect(add).toHaveAccessibleName("Add account");

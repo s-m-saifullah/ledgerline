@@ -253,6 +253,13 @@ test("account setup works with the keyboard and fits a narrow phone", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+  // The sheet slides in over a fifth of a second: measure it once it has stopped (a slow runner is still moving).
+  await expect
+    .poll(async () => {
+      const moving = await dialog.boundingBox();
+      return (moving?.y ?? 0) + (moving?.height ?? 0);
+    })
+    .toBeLessThanOrEqual(page.viewportSize()?.height ?? 0);
   const bounds = await dialog.boundingBox();
   expect(bounds?.x).toBeGreaterThanOrEqual(0);
   expect(bounds?.y).toBeGreaterThanOrEqual(0);
