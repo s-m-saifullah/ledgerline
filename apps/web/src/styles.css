@@ -1341,82 +1341,6 @@ select {
   }
 }
 
-/* Clients use the existing ledger surfaces and mobile sheet. */
-.client-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-}
-.client-toolbar {
-  margin-bottom: 24px;
-}
-.client-toolbar .category-select select,
-.client-fields .category-select select {
-  min-height: 48px;
-  font: inherit;
-}
-.client-toolbar label {
-  display: grid;
-  gap: 8px;
-  flex: 1 1 180px;
-}
-.client-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-  gap: 16px;
-}
-.client-card {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  display: grid;
-  gap: 12px;
-  text-align: left;
-  width: 100%;
-  cursor: pointer;
-}
-.client-detail {
-  margin: 16px 0;
-  overflow-wrap: anywhere;
-}
-/* Services and history are dense rows inside one list, not a card each. */
-.client-rows {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  border-top: 1px solid var(--border);
-  overflow-wrap: anywhere;
-}
-.row-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-}
-.client-rows .amount {
-  font-size: inherit;
-  margin: 0;
-}
-.client-section {
-  margin-top: 28px;
-}
-.client-fields {
-  overflow-wrap: anywhere;
-  display: grid;
-  gap: 16px;
-  margin: 20px 0;
-  padding: 0;
-  border: 0;
-  min-width: 0;
-}
-.client-fields .form-field {
-  display: grid;
-  gap: 8px;
-}
-.client-fields input {
-  width: 100%;
-  min-width: 0;
-}
 .form-actions {
   position: sticky;
   bottom: -24px;
@@ -1820,18 +1744,6 @@ button.budget-line:hover {
   gap: 8px;
 }
 
-/* A client who owes in other currencies: each currency's balance, then its value in dollars. */
-.client-balances {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 1rem;
-}
-.client-balances .amount {
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
-}
-
 .recurring-dialog .recurring-kinds {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin: 8px 0 4px;
@@ -1887,36 +1799,6 @@ button.budget-line:hover {
     gap: 6px;
   }
 }
-.loan-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 16px;
-  padding: 10px 0;
-}
-.client-section .loan-row > .amount {
-  font-size: 15px;
-}
-.loan-row-end {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.client-section .loan-note {
-  margin: 8px 0 24px;
-}
-.client-section .loan-note .amount {
-  display: inline;
-  font-size: inherit;
-}
-.account-form .loan-replaces .amount {
-  display: inline;
-  font-size: inherit;
-}
-.client-section .loan-row > strong .amount {
-  font-size: 18px;
-}
-
 /* Exports */
 .export-inline {
   display: grid;

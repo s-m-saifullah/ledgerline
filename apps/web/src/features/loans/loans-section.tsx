@@ -1,9 +1,11 @@
 import type { LoanBalance } from "@ledgerline/shared";
+import { EmptyState, ListCard, ListRow, SectionLabel } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Amount } from "../../components/amount";
+import { Amount } from "../../components/amount-text";
 import { getTransactions } from "../transactions/api";
 import { getLoans } from "./loans-api";
+import { activityWord } from "./model";
 
 export function useLoans(
   ledgerId: string | undefined,
@@ -17,60 +19,33 @@ export function useLoans(
     refetchOnMount: "always",
   });
 }
-/** What one person owes you or you owe them, per currency (positive: they owe you). */
-function BalanceLines({
-  name,
-  loans,
-  onRemove,
+
+/** An amount with a small text button under it, for a row that has one thing to do with its figure. */
+function FigureWith({
+  figure,
+  button,
 }: {
-  name: string;
-  loans: LoanBalance[];
-  onRemove: (loan: LoanBalance) => void;
+  figure: React.ReactNode;
+  button: React.ReactNode;
 }) {
   return (
-    <ul className="client-rows" aria-label="Loan balances">
-      {loans.map((loan) => {
-        const amount = loan.balance.amount;
-        return (
-          <li key={loan.accountId} className="loan-row">
-            <span>
-              {amount > 0
-                ? `${name} owes you`
-                : amount < 0
-                  ? `You owe ${name}`
-                  : `Settled (${loan.currency})`}
-            </span>
-            <div className="loan-row-end">
-              {amount !== 0 && (
-                <strong>
-                  <Amount
-                    value={Math.abs(amount)}
-                    currency={loan.balance.currency}
-                  />
-                </strong>
-              )}
-              <button
-                type="button"
-                id={`loan-remove-${loan.currency}`}
-                className="secondary-button danger-action"
-                aria-label={`Remove the ${loan.currency} loan`}
-                onClick={() => onRemove(loan)}
-              >
-                Remove
-              </button>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <span className="ln-end">
+      {figure}
+      {button}
+    </span>
   );
 }
-/** One person's balances, the balance from before Ledgerline, and the latest moves. */
+
+/**
+ * One person's balances, the balance from before Ledgerline and the latest moves (the prototype's
+ * `personDetail`). A person can have a loan in several currencies, so each gets its own row.
+ */
 export function PersonLoans({
   ledgerId,
   personId,
   name,
   loans,
+  writable,
   onEdit,
   onRemove,
 }: {
@@ -78,6 +53,7 @@ export function PersonLoans({
   personId: string;
   name: string;
   loans: LoanBalance[];
+  writable: boolean;
   onEdit: (currency: string) => void;
   onRemove: (loan: LoanBalance) => void;
 }) {
@@ -100,76 +76,121 @@ export function PersonLoans({
     enabled: ids.length > 0,
   });
   const before = loans.filter((loan) => loan.openingBalance.amount !== 0);
+  const moves = activity.data ?? [];
   return (
-    <section aria-label="Balance and activity" className="client-section">
-      <h2>Balance</h2>
-      {loans.length === 0 ? (
-        <p className="muted">
-          Nothing lent or borrowed yet. Use the actions above to lend, borrow or
-          add a loan you already had.
-        </p>
-      ) : (
-        <BalanceLines name={name} loans={loans} onRemove={onRemove} />
-      )}
-      {before.length > 0 && (
-        <>
-          <h2>Before Ledgerline</h2>
-          <ul
-            className="client-rows"
-            aria-label="Balances from before Ledgerline"
-          >
-            {before.map((loan) => (
-              <li key={loan.accountId} className="loan-row">
-                <span>
-                  {loan.openingBalance.amount > 0
-                    ? "Owed to you "
-                    : "You owed "}
-                  <Amount
-                    value={Math.abs(loan.openingBalance.amount)}
-                    currency={loan.openingBalance.currency}
-                  />
-                </span>
-                <button
-                  type="button"
-                  id={`loan-edit-${loan.currency}`}
-                  className="secondary-button"
-                  aria-label={`Change the balance from before Ledgerline (${loan.currency})`}
-                  onClick={() => onEdit(loan.currency)}
-                >
-                  Change
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {(activity.data?.length ?? 0) > 0 && (
-        <>
-          <h2>Activity</h2>
-          <ul className="client-rows" aria-label="Loan activity">
-            {activity.data?.map((entry) => (
-              <li className="loan-row" key={entry.id}>
-                <span>
-                  {entry.date}{" "}
-                  {entry.kind === "transfer"
-                    ? entry.amount.amount > 0
-                      ? "You paid out"
-                      : "You received"
-                    : entry.kind === "expense"
-                      ? "You waived"
-                      : "They waived"}
-                </span>
-                <Amount
-                  value={Math.abs(entry.amount.amount)}
-                  currency={entry.amount.currency}
+    <section aria-label="Balance and activity" className="ln-sections">
+      <div>
+        <SectionLabel>Balance</SectionLabel>
+        {loans.length === 0 ? (
+          <div className="ui-card">
+            <EmptyState text="Nothing lent or borrowed yet." />
+          </div>
+        ) : (
+          <ListCard>
+            {loans.map((loan) => {
+              const amount = loan.balance.amount;
+              return (
+                <ListRow
+                  key={loan.accountId}
+                  title={
+                    amount > 0
+                      ? `${name} owes you`
+                      : amount < 0
+                        ? `You owe ${name}`
+                        : `Settled (${loan.currency})`
+                  }
+                  value={
+                    <FigureWith
+                      figure={
+                        amount !== 0 ? (
+                          <Amount
+                            cents={Math.abs(amount)}
+                            currency={loan.balance.currency}
+                          />
+                        ) : null
+                      }
+                      button={
+                        writable && (
+                          <button
+                            type="button"
+                            id={`loan-remove-${loan.currency}`}
+                            className="ui-btn ui-btn-text ln-small"
+                            aria-label={`Remove the ${loan.currency} loan`}
+                            onClick={() => onRemove(loan)}
+                          >
+                            Remove
+                          </button>
+                        )
+                      }
+                    />
+                  }
                 />
-              </li>
+              );
+            })}
+          </ListCard>
+        )}
+      </div>
+      {before.length > 0 && (
+        <div>
+          <SectionLabel>Before Ledgerline</SectionLabel>
+          <ListCard>
+            {before.map((loan) => (
+              <ListRow
+                key={loan.accountId}
+                title="Before Ledgerline"
+                hint={
+                  loan.openingBalance.amount > 0 ? "Owed to you" : "You owed"
+                }
+                value={
+                  <FigureWith
+                    figure={
+                      <Amount
+                        cents={Math.abs(loan.openingBalance.amount)}
+                        currency={loan.openingBalance.currency}
+                      />
+                    }
+                    button={
+                      writable && (
+                        <button
+                          type="button"
+                          id={`loan-edit-${loan.currency}`}
+                          className="ui-btn ui-btn-text ln-small"
+                          aria-label={`Change the balance from before Ledgerline (${loan.currency})`}
+                          onClick={() => onEdit(loan.currency)}
+                        >
+                          Change
+                        </button>
+                      )
+                    }
+                  />
+                }
+              />
             ))}
-          </ul>
-          <p className="muted">
-            <Link to="/transactions">See every entry in Transactions</Link>
-          </p>
-        </>
+          </ListCard>
+        </div>
+      )}
+      {moves.length > 0 && (
+        <div>
+          <SectionLabel>Activity</SectionLabel>
+          <ListCard>
+            {moves.map((entry) => (
+              <ListRow
+                key={entry.id}
+                title={activityWord(entry)}
+                hint={entry.date}
+                value={
+                  <Amount
+                    cents={Math.abs(entry.amount.amount)}
+                    currency={entry.amount.currency}
+                  />
+                }
+              />
+            ))}
+          </ListCard>
+          <Link to="/transactions" className="ui-btn ui-btn-text ln-all">
+            See every entry in Transactions
+          </Link>
+        </div>
       )}
     </section>
   );

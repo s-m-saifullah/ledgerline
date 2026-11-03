@@ -63,17 +63,23 @@ test.afterEach(async () => {
 });
 test.afterAll(async () => pool.end());
 
-/** A person's loan action: an inline button on wide screens, an item in the menu on phones. */
+/** A person's loan action: the card's one primary button, or an item in the card's menu sheet. */
 async function loanAction(page: Page, name: string) {
-  const inline = page
-    .getByRole("button", { name, exact: true })
-    .filter({ visible: true });
-  const trigger = page.getByRole("button", { name: /^More actions for/ });
-  await inline.or(trigger).first().waitFor();
-  if ((await inline.count()) > 0) return inline.first().click();
+  const primary = page
+    .locator("#loan-primary:visible")
+    .filter({ hasText: new RegExp(`^${name}$`) });
+  const trigger = page.locator("#loan-person-menu:visible");
+  await primary.or(trigger).first().waitFor();
+  if ((await primary.count()) > 0) return primary.click();
   await trigger.click();
-  await page.getByRole("menuitem", { name, exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name, exact: true })
+    .click();
 }
+/** The people in the list, one link each (ADR 0047); `name` picks one. */
+const personLink = (page: Page, name: string) =>
+  page.locator('a[id^="loan-person-"]').filter({ hasText: name });
 async function balance(page: Page) {
   const response = await page.request.get(`${root()}/accounts/${accountId}`);
   expect(response.status()).toBe(200);
@@ -90,12 +96,10 @@ async function addLoan(
 ) {
   await page.getByRole("button", { name: "Add loan", exact: true }).click();
   await dialog(page)
-    .getByLabel(/^Who(?! owes)/)
+    .getByLabel("Who", { exact: true })
     .selectOption({ label: "A new person…" });
   await dialog(page).getByLabel("Name", { exact: true }).fill("Sam");
-  await dialog(page)
-    .getByLabel(/^What happened/)
-    .selectOption({ label: what });
+  await dialog(page).getByRole("radio", { name: what }).click();
   await dialog(page)
     .getByLabel(/^Amount/)
     .fill(amount);
@@ -120,7 +124,7 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
   await expect(
     page.getByRole("heading", { name: "Loans", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Keep track of loans")).toBeVisible();
+  await expect(page.getByText("No loans yet.")).toBeVisible();
 
   // An existing loan for a new person: they already owe 50.00, and no account changes.
   await addLoan(page, "A loan I already had", "50.00");
@@ -138,7 +142,7 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
       name: "Change the balance from before Ledgerline (USD)",
     })
     .click();
-  await dialog(page).getByLabel("Who owes whom").selectOption("owedByMe");
+  await dialog(page).getByRole("radio", { name: "I owe Sam" }).click();
   await dialog(page)
     .getByLabel(/^Amount/)
     .fill("40.00");
@@ -152,7 +156,7 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
       name: "Change the balance from before Ledgerline (USD)",
     })
     .click();
-  await dialog(page).getByLabel("Who owes whom").selectOption("owedToMe");
+  await dialog(page).getByRole("radio", { name: "Sam owes me" }).click();
   await dialog(page)
     .getByLabel(/^Amount/)
     .fill("50.00");
@@ -193,10 +197,8 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
   expect(await balance(page)).toBe(101000);
 
   // The list shows the balance; Home links here; Accounts and Clients do not list Sam.
-  await page.getByRole("button", { name: "All people", exact: true }).click();
-  await expect(
-    page.locator(".client-card").filter({ hasText: "Sam" }),
-  ).toContainText("Owes you");
+  await page.goto("/loans");
+  await expect(personLink(page, "Sam")).toContainText("Owes you");
   await page.goto("/");
   await expect(page.getByRole("link", { name: /^People owe/ })).toContainText(
     "$40.00",
@@ -213,7 +215,7 @@ test("lend, repay and waive keep exact balances, and an existing loan moves no m
 
   // Waive the rest: it becomes an expense and the balance settles.
   await page.goto("/loans");
-  await page.locator(".client-card").filter({ hasText: "Sam" }).click();
+  await personLink(page, "Sam").click();
   await loanAction(page, "Waive what is left");
   await chooseCategory(dialog(page), "Expense category", "Bad debt");
   await dialog(page)
@@ -266,14 +268,11 @@ test("borrowing makes a negative balance that you repay, and a person can be ren
   ).toBeVisible();
   await page.getByRole("button", { name: /^More actions for/ }).click();
   await expect(
-    page.getByRole("menuitem", { name: "Unarchive", exact: true }),
-  ).toBeEnabled();
+    dialog(page).getByRole("button", { name: "Unarchive", exact: true }),
+  ).toBeVisible();
   await expect(
-    page.getByRole("menuitem", {
-      name: "Borrow money",
-      exact: true,
-    }),
-  ).toBeDisabled();
+    dialog(page).getByRole("button", { name: "Borrow money", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("a loan can be removed while only its starting balance is left, and not while entries use it", async ({

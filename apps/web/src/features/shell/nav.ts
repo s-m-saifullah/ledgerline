@@ -90,8 +90,8 @@ export const morePages = moreGroups.flatMap((group) => group.pages);
 const isMorePage = (pathname: string) =>
   morePages.some((page) => page.to === pathname);
 
-/** Pages that have an address of their own for one thing in them: `/clients/{id}` belongs to `/clients`. */
-const withAddresses = ["/clients"];
+/** Pages that have an address of their own for one thing in them: `/clients/{id}` belongs to `/clients`, `/loans/{id}` to `/loans`. */
+const withAddresses = ["/clients", "/loans"];
 export const basePath = (pathname: string) =>
   withAddresses.find((page) => pathname.startsWith(`${page}/`)) ?? pathname;
 
@@ -113,10 +113,14 @@ export function pageTitle(pathname: string) {
 /** A page opened from More has a back arrow in a phone's top bar. */
 export const backsToMore = isMorePage;
 
-/** Where a phone's back arrow goes: from a page of More to More, from one client back to the list. */
+/** Where a phone's back arrow goes: from a page of More to More, from one client or person back to the list. */
 export function backTarget(pathname: string) {
   if (basePath(pathname) !== pathname)
-    return { to: basePath(pathname), label: "Back to Clients" };
+    return {
+      to: basePath(pathname),
+      label:
+        basePath(pathname) === "/loans" ? "Back to Loans" : "Back to Clients",
+    };
   return isMorePage(pathname)
     ? { to: "/more", label: "Back to More" }
     : undefined;

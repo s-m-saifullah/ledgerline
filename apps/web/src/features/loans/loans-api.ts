@@ -3,6 +3,7 @@ import {
   type JsonValue,
   type LoanMove,
   type LoanOpening,
+  type LoanPerson,
   loanListSchema,
   loanPeopleSchema,
   loanResultSchema,
@@ -54,6 +55,27 @@ export async function getLoanPeople(
       ...(signal ? { signal } : {}),
     }),
   );
+}
+/** Every person, pages and all: the list filters and counts in the browser, and the people are few. */
+export async function getAllPeople(ledgerId: string, signal?: AbortSignal) {
+  const items: LoanPerson[] = [];
+  const seen = new Set<string>();
+  let cursor: string | null = null;
+  do {
+    const page: Awaited<ReturnType<typeof getLoanPeople>> = await getLoanPeople(
+      ledgerId,
+      "all",
+      "",
+      cursor,
+      signal,
+    );
+    items.push(...page.items);
+    cursor = page.nextCursor;
+    if (cursor && seen.has(cursor))
+      throw new Error("People pagination did not advance.");
+    if (cursor) seen.add(cursor);
+  } while (cursor);
+  return items;
 }
 export async function getPerson(ledgerId: string, id: string) {
   return contactSchema.parse(
