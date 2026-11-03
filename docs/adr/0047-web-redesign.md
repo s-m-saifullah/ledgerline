@@ -71,7 +71,7 @@ Each pull request lists the tests it changes and why; accessible names are kept 
 4. Home. 5. Transactions with Filters and the editor (Pending, swap). 6. More, Settings and Import and export. 7. Budgets. 8. Insights, with Net worth now.
 9. The `paidThisMonth` API change (server only). 10. Clients (list and panes, addresses, the service sheet, Paid in Oct). 11. Loans.
 12. Categories. 13. Accounts, Recurring, Tags (with search) and Currencies. 14. Sign-in and two-factor.
-15. A server release when the owner is happy (the web reaches production through it); the owner tags it.
+15. A server release when the owner is happy (the web reaches production through it); the owner tags it. Done: released as `v0.6.0` on 2026-11-03.
 
 The phone's order is followed where it fits; Clients and Loans come after the API field.
 
