@@ -1,22 +1,26 @@
-import { Button } from "@ledgerline/ui";
-import { useMemo, useRef, useState } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { type FormEvent, useMemo, useRef, useState } from "react";
+import { Overlay } from "../../components/overlay";
+import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
 import { addableCurrencies } from "../../lib/rate-format";
 import { prepareCurrencyPin, prepareRatesRefresh } from "./api";
 
-export function AddCurrencyDialog({
+/**
+ * Add currency (ADR 0047): one sheet with a pick row for the currency and Add currency pinned. Fetching its rate
+ * afterwards is best effort; the Currencies screen shows "No rate yet" when none came back.
+ */
+export function AddCurrencySheet({
   ledgerId,
   baseCurrency,
   taken,
   onDismiss,
-  onChanged,
+  onSaved,
 }: {
   ledgerId: string;
   baseCurrency: string;
   taken: string[];
   onDismiss: () => void;
-  onChanged: () => void;
+  onSaved: (notice: string) => void;
 }) {
   const options = useMemo(
     () => addableCurrencies([baseCurrency, ...taken]),
@@ -28,7 +32,8 @@ export function AddCurrencyDialog({
   const attempt = useRef<{ code: string; run: () => Promise<unknown> } | null>(
     null,
   );
-  const add = async () => {
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
     if (!code) {
       setError("Choose a currency.");
       return;
@@ -39,69 +44,73 @@ export function AddCurrencyDialog({
     setError("");
     try {
       await attempt.current.run();
-      // Fetching is best effort; the Currencies screen says when no rate came back.
       await prepareRatesRefresh(ledgerId, code)().catch(() => null);
-      onChanged();
-      onDismiss();
     } catch (failure) {
-      attempt.current = null;
+      const refused = failure instanceof ApiError && failure.status < 500;
+      if (refused) attempt.current = null;
       setError(
-        failure instanceof ApiError && failure.status < 500
+        refused
           ? failure.message
           : "We couldn't confirm that. Please try again.",
       );
+      return;
     } finally {
       setBusy(false);
     }
+    onSaved(`Added ${code}.`);
   };
   return (
-    <EditorDialog
+    <Overlay
       open
-      title="Add a currency"
+      title="Add currency"
       description="Rates for it are fetched for you, and you can set your own at any time."
       busy={busy}
       onDismiss={onDismiss}
       returnFocusId="add-currency"
-      closeLabel="Close add currency dialog"
       fallbackFocusId="currencies-title"
       initialFocusId="currency-choice"
+      footer={
+        <button
+          type="submit"
+          form="currency-form"
+          className="ui-btn ui-btn-primary"
+          disabled={busy}
+        >
+          {busy ? "Adding…" : "Add currency"}
+        </button>
+      }
     >
       <form
+        id="currency-form"
+        className="cu-form"
         noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          void add();
-        }}
+        onSubmit={(event) => void submit(event)}
       >
-        <fieldset disabled={busy} className="account-fields">
-          <label htmlFor="currency-choice">Currency</label>
-          <select
+        <div className="cu-card">
+          <PickRow
             id="currency-choice"
+            label="Currency"
             value={code}
-            onChange={(event) => {
-              setCode(event.target.value);
+            disabled={busy}
+            options={[
+              { value: "", label: "Choose…" },
+              ...options.map((option) => ({
+                value: option.code,
+                label: `${option.name} (${option.code})`,
+              })),
+            ]}
+            onChange={(value) => {
+              setCode(value);
               setError("");
             }}
-          >
-            <option value="">Choose…</option>
-            {options.map((option) => (
-              <option key={option.code} value={option.code}>
-                {option.name} ({option.code})
-              </option>
-            ))}
-          </select>
-        </fieldset>
+          />
+        </div>
         {error && (
           <p role="alert" className="field-error">
             {error}
           </p>
         )}
-        <div className="account-dialog-actions">
-          <Button type="submit" disabled={busy}>
-            {busy ? "Adding…" : "Add currency"}
-          </Button>
-        </div>
       </form>
-    </EditorDialog>
+    </Overlay>
   );
 }

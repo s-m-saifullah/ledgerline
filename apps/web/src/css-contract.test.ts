@@ -30,6 +30,8 @@ const files = [
   "features/categories/categories.css",
   "features/accounts/accounts.css",
   "features/recurring/recurring.css",
+  "features/tags/tags.css",
+  "features/currencies/currencies.css",
 ];
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(

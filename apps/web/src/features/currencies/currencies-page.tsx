@@ -1,13 +1,29 @@
 import type { PinnedCurrency } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import {
+  EmptyState,
+  IconTile,
+  ListCard,
+  RowBody,
+  StatusPill,
+} from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
+import { LoadError } from "../../components/load-error";
+import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
-import { currencyName, rateSentence } from "../../lib/rate-format";
-import { AddCurrencyDialog } from "./add-dialog";
+import { currencyName } from "../../lib/rate-format";
+import { usePageAdd } from "../shell/page-add";
+import { AddCurrencySheet } from "./add-sheet";
 import { getCurrencies, prepareRatesRefresh } from "./api";
-import { RateEditor } from "./rate-editor";
+import { rateHint, refreshFailed, refreshNotice } from "./model";
+import { RateSheet } from "./rate-sheet";
+import "./currencies.css";
 
+/**
+ * Currencies (ADR 0047, the prototype's `R.currencies`): one card with the base currency first and then each added
+ * currency with its newest rate, Refresh rates and Add currency in the head, and one sheet per currency.
+ */
 export function CurrenciesPage() {
   const client = useQueryClient();
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
@@ -24,63 +40,108 @@ export function CurrenciesPage() {
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const refresh = () =>
+  const reload = () =>
     void client.invalidateQueries({ queryKey: ["currencies", ledger?.id] });
   const editingCurrency: PinnedCurrency | undefined = data?.items.find(
     (item) => item.code === editing,
+  );
+  usePageAdd(
+    writable && data
+      ? {
+          label: "Add currency",
+          disabled: false,
+          onClick: () => {
+            setNotice("");
+            setAdding(true);
+          },
+        }
+      : null,
   );
   const refreshRates = async () => {
     if (!ledger) return;
     setRefreshing(true);
     setNotice("");
     try {
-      const result = await prepareRatesRefresh(ledger.id)();
-      const parts = [
-        result.updated
-          ? `Updated ${result.updated} ${result.updated === 1 ? "rate" : "rates"}.`
-          : "Rates are already up to date.",
-      ];
-      if (result.keptManual)
-        parts.push(`Kept ${result.keptManual} you set yourself.`);
-      if (result.failed.length)
-        parts.push(
-          `Couldn't fetch ${result.failed.join(", ")}. You can set those by hand.`,
-        );
-      setNotice(parts.join(" "));
-      refresh();
+      setNotice(refreshNotice(await prepareRatesRefresh(ledger.id)()));
+      reload();
     } catch {
-      setNotice("Couldn't refresh the rates. Please try again.");
+      setNotice(refreshFailed);
     } finally {
       setRefreshing(false);
     }
   };
+  const row = (item: PinnedCurrency, base: string) => {
+    const body = (
+      <RowBody
+        lead={
+          <IconTile>
+            <span className="cu-code">{item.code}</span>
+          </IconTile>
+        }
+        title={currencyName(item.code)}
+        hint={rateHint(item, base)}
+        chevron={writable}
+      />
+    );
+    return writable ? (
+      <button
+        key={item.id}
+        type="button"
+        id={`currency-${item.code}`}
+        className="ui-row ui-row-press cu-row"
+        onClick={() => {
+          setNotice("");
+          setEditing(item.code);
+        }}
+      >
+        {body}
+      </button>
+    ) : (
+      <div key={item.id} className="ui-row ui-row-static cu-row">
+        {body}
+      </div>
+    );
+  };
   return (
-    <>
-      <div className="page-heading">
-        <p className="eyebrow">MAKE IT YOURS</p>
+    <div className="cu-page">
+      <div className="page-heading cu-head">
         <h1 id="currencies-title" tabIndex={-1}>
           Currencies
         </h1>
-        <p className="muted">
-          {data
-            ? `Your base currency is ${currencyName(data.baseCurrency)} (${data.baseCurrency}). Totals are shown in it.`
-            : "Exchange rates for the currencies you use."}
-        </p>
+        {writable && data && (
+          <div className="cu-buttons">
+            <button
+              type="button"
+              className="ui-btn ui-btn-secondary"
+              disabled={refreshing || data.items.length === 0}
+              onClick={() => void refreshRates()}
+            >
+              <RefreshCw size={18} aria-hidden="true" />
+              {refreshing ? "Refreshing…" : "Refresh rates"}
+            </button>
+            <button
+              type="button"
+              id="add-currency"
+              className="ui-btn ui-btn-primary cu-add"
+              onClick={() => {
+                setNotice("");
+                setAdding(true);
+              }}
+            >
+              <Plus size={18} aria-hidden="true" />
+              Add currency
+            </button>
+          </div>
+        )}
       </div>
       {(ledgers.isError || list.isError) && (
-        <div className="account-error">
-          <p role="alert">Couldn't load your currencies.</p>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => {
-              void ledgers.refetch();
-              if (ledger) void list.refetch();
-            }}
-          >
-            Try again
-          </button>
-        </div>
+        <LoadError
+          message="Couldn't load your currencies."
+          onRetry={() => {
+            void ledgers.refetch();
+            if (ledger) void list.refetch();
+          }}
+        />
       )}
       {!data && !list.isError && !ledgers.isError && (
         <p className="muted" role="status">
@@ -89,96 +150,65 @@ export function CurrenciesPage() {
       )}
       {data && (
         <>
-          {writable && (
-            <div className="account-dialog-actions currency-actions">
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={refreshing || data.items.length === 0}
-                onClick={refreshRates}
-              >
-                {refreshing ? "Refreshing…" : "Refresh rates"}
-              </button>
-              <Button
-                type="button"
-                id="add-currency"
-                onClick={() => setAdding(true)}
-              >
-                Add a currency
-              </Button>
+          <ListCard>
+            <div className="ui-row ui-row-static cu-row">
+              <RowBody
+                lead={
+                  <IconTile>
+                    <span className="cu-code">{data.baseCurrency}</span>
+                  </IconTile>
+                }
+                title={currencyName(data.baseCurrency)}
+                value={<StatusPill>Base</StatusPill>}
+              />
             </div>
-          )}
-          {notice && (
-            <p role="status" className="muted">
-              {notice}
-            </p>
-          )}
-          {data.items.length === 0 ? (
-            <p className="muted">
-              Only {data.baseCurrency} so far.{" "}
-              {writable ? "Add a currency to keep money in more than one." : ""}
-            </p>
-          ) : (
-            <ul className="budget-list" aria-label="Currencies">
-              {data.items.map((item) => (
-                <li key={item.id}>
-                  {writable ? (
-                    <button
-                      type="button"
-                      id={`currency-${item.code}`}
-                      className="budget-line"
-                      onClick={() => setEditing(item.code)}
-                    >
-                      <CurrencyRow item={item} base={data.baseCurrency} />
-                    </button>
-                  ) : (
-                    <div className="budget-line">
-                      <CurrencyRow item={item} base={data.baseCurrency} />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+            {data.items.map((item) => row(item, data.baseCurrency))}
+          </ListCard>
+          {data.items.length === 0 && (
+            <div className="ui-card">
+              <EmptyState
+                text={`Only ${data.baseCurrency} so far.${writable ? " Add a currency to keep money in more than one." : ""}`}
+              />
+            </div>
           )}
         </>
       )}
+      {notice && (
+        <Toast
+          label="Currency notification"
+          durationMs={6000}
+          onExpire={() => setNotice("")}
+        >
+          <p role="status">{notice}</p>
+        </Toast>
+      )}
       {ledger && data && adding && (
-        <AddCurrencyDialog
+        <AddCurrencySheet
           ledgerId={ledger.id}
           baseCurrency={data.baseCurrency}
           taken={data.items.map((item) => item.code)}
           onDismiss={() => setAdding(false)}
-          onChanged={refresh}
+          onSaved={(done) => {
+            setAdding(false);
+            setNotice(done);
+            reload();
+          }}
         />
       )}
       {ledger && data && editingCurrency && (
-        <RateEditor
+        <RateSheet
           key={`${editingCurrency.code}-${editingCurrency.latestRate?.version ?? 0}`}
           ledgerId={ledger.id}
           baseCurrency={data.baseCurrency}
           currency={editingCurrency}
           onDismiss={() => setEditing(null)}
-          onChanged={refresh}
+          onSaved={(done) => {
+            setEditing(null);
+            setNotice(done);
+            reload();
+          }}
         />
       )}
-    </>
-  );
-}
-
-function CurrencyRow({ item, base }: { item: PinnedCurrency; base: string }) {
-  const latest = item.latestRate;
-  return (
-    <>
-      <span className="budget-line-top">
-        <strong>
-          {currencyName(item.code)} ({item.code})
-        </strong>
-      </span>
-      <span className="budget-line-detail muted">
-        {latest
-          ? `${rateSentence(item.code, latest.rate, base)} · ${latest.date} · ${latest.source === "manual" ? "set by you" : "fetched"}`
-          : "No rate yet. Refresh, or set one yourself."}
-      </span>
-    </>
+    </div>
   );
 }

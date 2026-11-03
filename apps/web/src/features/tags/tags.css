@@ -1,0 +1,161 @@
+/*
+ * Tags (ADR 0047, the prototype's `R.tags` and `OV["tag-form"]`): a search, one card of rows and the archived tags
+ * in a fold, capped near 760 px like the other simple list pages. Every class here starts with `tg-` so no other
+ * feature's rule reaches the page or its sheet. Widths are the layout system's two.
+ */
+.tg-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+  max-width: 760px;
+}
+@container app (min-width: 700px) {
+  .tg-page {
+    gap: 16px;
+  }
+}
+.tg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.tg-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* Under 700 px the top bar and the one Add button do this. */
+.tg-add {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .tg-add {
+    display: inline-flex;
+  }
+}
+.tg-search {
+  position: relative;
+  min-width: 0;
+}
+.tg-search svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.tg-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border-radius: var(--shape-field);
+  background: var(--tint);
+}
+.tg-row {
+  width: 100%;
+  text-align: start;
+}
+/* Titles and hints wrap instead of being cut, so a long name stays readable at 320 px. */
+.tg-page .ui-row-title,
+.tg-page .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.tg-danger {
+  color: var(--danger);
+}
+
+/* The archived tags: a plain first row that opens over a fifth of a second (the Accounts fold). */
+.tg-fold {
+  display: block;
+  /* The card class pads its content; here the summary row carries the padding, shut or open. */
+  padding: 0;
+  interpolate-size: allow-keywords;
+}
+.tg-fold::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 200ms ease-out,
+    content-visibility 200ms allow-discrete;
+}
+.tg-fold[open]::details-content {
+  block-size: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-fold::details-content {
+    transition: none;
+  }
+}
+.tg-fold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--shape-card);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+.tg-fold > summary:hover {
+  background: var(--tint);
+}
+.tg-fold > summary::-webkit-details-marker,
+.tg-fold > summary::before {
+  display: none;
+}
+.tg-fold > summary > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.tg-fold[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.tg-fold[open] > summary {
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.tg-fold-body {
+  display: grid;
+  min-width: 0;
+}
+.tg-fold-body > * {
+  border-top: 1px solid var(--border);
+}
+.tg-fold-body > :last-child {
+  border-end-start-radius: calc(var(--shape-card) - 1px);
+  border-end-end-radius: calc(var(--shape-card) - 1px);
+}
+
+/* What goes inside the shared sheet: the label above the field. */
+.tg-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.tg-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.tg-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}

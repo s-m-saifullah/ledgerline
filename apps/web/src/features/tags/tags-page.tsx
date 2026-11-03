@@ -1,25 +1,17 @@
-import { type Tag, tagNameSchema } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import type { Tag } from "@ledgerline/shared";
+import { EmptyState, IconTile, ListCard, RowBody } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Archive, ArchiveRestore, List, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Search, TagIcon } from "lucide-react";
 import { useState } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
-import { ApiError, getLedgers } from "../../lib/api";
-import {
-  prepareTagArchive,
-  prepareTagCreate,
-  prepareTagDelete,
-  prepareTagRename,
-} from "./api";
+import { LoadError } from "../../components/load-error";
+import { Toast } from "../../components/toast";
+import { getLedgers } from "../../lib/api";
+import { usePageAdd } from "../shell/page-add";
+import { splitTags, tagHint } from "./model";
+import { TagSheet } from "./tag-sheet";
 import { useTags } from "./use-tags";
-
-type Dialog =
-  | { kind: "rename"; tag: Tag }
-  | { kind: "delete"; tag: Tag }
-  | null;
-const message = (failure: unknown, fallback: string) =>
-  failure instanceof ApiError ? failure.message : fallback;
+import "./tags.css";
 
 export function TagsPage() {
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
@@ -27,17 +19,17 @@ export function TagsPage() {
   if (ledgers.isPending) return <p role="status">Opening your tags…</p>;
   if (ledgers.isError || !ledger)
     return (
-      <section className="settings-card">
-        <h1>Tags</h1>
-        <p role="alert">Couldn't load your ledger.</p>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => void ledgers.refetch()}
-        >
-          Try again
-        </button>
-      </section>
+      <div className="tg-page">
+        <div className="page-heading">
+          <h1 id="tags-title" tabIndex={-1}>
+            Tags
+          </h1>
+        </div>
+        <LoadError
+          message="Couldn't load your ledger."
+          onRetry={() => void ledgers.refetch()}
+        />
+      </div>
     );
   return (
     <LedgerTags
@@ -47,6 +39,14 @@ export function TagsPage() {
     />
   );
 }
+
+type Open = { id: number; tag?: Tag };
+
+/**
+ * Tags (ADR 0047, the prototype's `R.tags`): a search, one card of rows (the name and how many entries use it),
+ * the archived tags in a fold, and one sheet per tag for everything one can do with it. A viewer's row goes
+ * straight to the tag's entries.
+ */
 function LedgerTags({
   ledgerId,
   writable,
@@ -56,328 +56,140 @@ function LedgerTags({
 }) {
   const client = useQueryClient();
   const tags = useTags(ledgerId);
-  const [newName, setNewName] = useState("");
-  const [dialog, setDialog] = useState<Dialog>(null);
-  const [renameText, setRenameText] = useState("");
-  const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState<Open | null>(null);
   const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState(false);
-  const refresh = () =>
-    client.invalidateQueries({ queryKey: ["tags", ledgerId] });
-  const run = async (action: () => Promise<unknown>, fallback: string) => {
-    setBusy(true);
-    setError("");
+  const { active, archived } = splitTags(tags.data ?? [], query);
+  const start = (tag?: Tag) => {
     setNotice("");
-    try {
-      await action();
-      await refresh();
-      return true;
-    } catch (failure) {
-      setError(message(failure, fallback));
-      await refresh();
-      return false;
-    } finally {
-      setBusy(false);
-    }
+    setOpen({ id: Date.now(), ...(tag ? { tag } : {}) });
   };
-  const items = (tags.data ?? [])
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name));
-  const active = items.filter((tag) => !tag.archivedAt);
-  const archived = items.filter((tag) => tag.archivedAt);
-  const create = async () => {
-    const parsed = tagNameSchema.safeParse(newName);
-    if (!parsed.success) {
-      setError(
-        "Use 1 to 40 characters, without commas or semicolons, for a tag name.",
-      );
-      return;
-    }
-    if (
-      await run(
-        () => prepareTagCreate(ledgerId, parsed.data)(),
-        "Couldn't add the tag.",
-      )
-    ) {
-      setNewName("");
-      setNotice(`Added the tag ${parsed.data}.`);
-    }
-  };
-  const row = (tag: Tag) => (
-    <li key={tag.id} className="tag-row">
-      <div className="tag-row-name">
-        <strong>{tag.name}</strong>
-        <span className="muted">
-          {tag.usageCount === 1 ? "1 entry" : `${tag.usageCount} entries`}
-        </span>
-      </div>
-      <div className="tag-row-actions">
-        <Link
-          to="/transactions"
-          search={{ tagId: tag.id }}
-          className="text-button"
-        >
-          <List size={16} aria-hidden="true" />
-          View entries
-        </Link>
-        {writable && (
-          <>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() => {
-                setRenameText(tag.name);
-                setError("");
-                setDialog({ kind: "rename", tag });
-              }}
-            >
-              <Pencil size={16} aria-hidden="true" />
-              Rename
-            </button>
-            <button
-              type="button"
-              className="text-button"
-              disabled={busy}
-              onClick={() =>
-                void run(
-                  () => prepareTagArchive(ledgerId, tag, !tag.archivedAt)(),
-                  "Couldn't change the tag.",
-                ).then((done) =>
-                  done
-                    ? setNotice(
-                        tag.archivedAt
-                          ? `Unarchived ${tag.name}.`
-                          : `Archived ${tag.name}. It stays on its entries.`,
-                      )
-                    : undefined,
-                )
-              }
-            >
-              {tag.archivedAt ? (
-                <ArchiveRestore size={16} aria-hidden="true" />
-              ) : (
-                <Archive size={16} aria-hidden="true" />
-              )}
-              {tag.archivedAt ? "Unarchive" : "Archive"}
-            </button>
-            <button
-              type="button"
-              className="text-button danger-action"
-              disabled={busy}
-              onClick={() => {
-                setError("");
-                setDialog({ kind: "delete", tag });
-              }}
-            >
-              <Trash2 size={16} aria-hidden="true" />
-              Delete
-            </button>
-          </>
-        )}
-      </div>
-    </li>
+  usePageAdd(
+    writable
+      ? { label: "Add tag", disabled: false, onClick: () => start() }
+      : null,
   );
-  const close = () => {
-    if (!busy) {
-      setDialog(null);
-      setError("");
-    }
+  const row = (tag: Tag) => {
+    const body = (
+      <RowBody
+        lead={
+          <IconTile>
+            <TagIcon size={20} aria-hidden="true" />
+          </IconTile>
+        }
+        title={tag.name}
+        hint={tagHint(tag)}
+        chevron
+      />
+    );
+    return writable ? (
+      <button
+        key={tag.id}
+        type="button"
+        id={`tag-${tag.id}`}
+        className="ui-row ui-row-press tg-row"
+        onClick={() => start(tag)}
+      >
+        {body}
+      </button>
+    ) : (
+      <Link
+        key={tag.id}
+        id={`tag-${tag.id}`}
+        to="/transactions"
+        search={{ tagId: tag.id }}
+        className="ui-row ui-row-press tg-row"
+      >
+        {body}
+      </Link>
+    );
   };
+  const none = (tags.data?.length ?? 0) === 0;
   return (
-    <>
-      <div className="page-heading">
-        <p className="eyebrow">YOUR LEDGER</p>
+    <div className="tg-page">
+      <div className="page-heading tg-head">
         <h1 id="tags-title" tabIndex={-1}>
           Tags
         </h1>
-        <p className="muted">
-          Free-form labels for entries, like a trip or a reimbursable cost. Tags
-          never change a balance, a budget or a total.
-        </p>
-      </div>
-      {writable && (
-        <form
-          className="tag-add"
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            void create();
-          }}
-        >
-          <label htmlFor="new-tag-name">New tag</label>
-          <div className="tag-add-row">
-            <input
-              id="new-tag-name"
-              value={newName}
-              maxLength={40}
-              autoComplete="off"
-              onChange={(event) => setNewName(event.target.value)}
-            />
-            <Button type="submit" disabled={busy || !newName.trim()}>
-              Add tag
-            </Button>
-          </div>
-        </form>
-      )}
-      {notice && <p role="status">{notice}</p>}
-      {error && !dialog && (
-        <p role="alert" className="field-error account-error">
-          {error}
-        </p>
-      )}
-      {tags.isPending && <p role="status">Loading tags…</p>}
-      {tags.isError && (
-        <div className="account-error">
-          <p role="alert">Couldn't load your tags.</p>
+        {writable && (
           <button
             type="button"
-            className="secondary-button"
-            onClick={() => void tags.refetch()}
+            id="add-tag"
+            className="ui-btn ui-btn-primary tg-add"
+            onClick={() => start()}
           >
-            Try again
+            <Plus size={18} aria-hidden="true" />
+            Add tag
           </button>
-        </div>
-      )}
-      {tags.data && items.length === 0 && (
-        <p className="muted">
-          No tags yet. Add one here, or type a new name in the Tags box when you
-          add an entry.
+        )}
+      </div>
+      <search className="tg-search">
+        <label htmlFor="tag-search" className="sr-only">
+          Search tags
+        </label>
+        <Search size={18} aria-hidden="true" />
+        <input
+          id="tag-search"
+          type="search"
+          maxLength={40}
+          value={query}
+          placeholder="Search tags"
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </search>
+      {tags.isPending && (
+        <p className="muted" role="status">
+          Loading tags…
         </p>
       )}
-      {active.length > 0 && <ul className="tag-list">{active.map(row)}</ul>}
-      {archived.length > 0 && (
-        <>
-          <h2>Archived</h2>
-          <p className="muted">
-            Hidden from the tag lists when you add an entry, but still on the
-            entries that have them.
-          </p>
-          <ul className="tag-list">{archived.map(row)}</ul>
-        </>
+      {tags.isError && (
+        <LoadError
+          message="Couldn't load your tags."
+          onRetry={() => void tags.refetch()}
+        />
       )}
-      <EditorDialog
-        open={dialog?.kind === "rename"}
-        title="Rename tag"
-        description="Entries show the new name straight away."
-        busy={busy}
-        onDismiss={close}
-        returnFocusId="new-tag-name"
-        fallbackFocusId="main-content"
-        closeLabel="Close rename dialog"
-        initialFocusId="rename-tag-name"
-      >
-        <form
-          noValidate
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (dialog?.kind !== "rename") return;
-            const parsed = tagNameSchema.safeParse(renameText);
-            if (!parsed.success) {
-              setError(
-                "Use 1 to 40 characters, without commas or semicolons, for a tag name.",
-              );
-              return;
-            }
-            const { tag } = dialog;
-            void run(
-              () => prepareTagRename(ledgerId, tag, parsed.data)(),
-              "Couldn't rename the tag.",
-            ).then((done) => {
-              if (done) {
-                setDialog(null);
-                setNotice(`Renamed to ${parsed.data}.`);
-              }
-            });
-          }}
+      {tags.data && none && (
+        <div className="ui-card">
+          <EmptyState text="No tags yet." />
+        </div>
+      )}
+      {tags.data && !none && active.length + archived.length === 0 && (
+        <div className="ui-card">
+          <EmptyState text="No tag matches." />
+        </div>
+      )}
+      {active.length > 0 && <ListCard>{active.map(row)}</ListCard>}
+      {archived.length > 0 && (
+        <details className="ui-card tg-fold">
+          <summary>
+            <span>{archived.length} archived</span>
+            <ChevronDown size={18} aria-hidden="true" />
+          </summary>
+          <div className="tg-fold-body">{archived.map(row)}</div>
+        </details>
+      )}
+      {notice && (
+        <Toast
+          label="Tag notification"
+          durationMs={3000}
+          onExpire={() => setNotice("")}
         >
-          <div className="account-fields">
-            <label htmlFor="rename-tag-name">Name</label>
-            <input
-              id="rename-tag-name"
-              value={renameText}
-              maxLength={40}
-              autoComplete="off"
-              onChange={(event) => setRenameText(event.target.value)}
-            />
-          </div>
-          {error && (
-            <p role="alert" className="field-error account-error">
-              {error}
-            </p>
-          )}
-          <div className="account-dialog-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={busy}
-              onClick={close}
-            >
-              Cancel
-            </button>
-            <Button type="submit" disabled={busy}>
-              {busy ? "Saving…" : "Save name"}
-            </Button>
-          </div>
-        </form>
-      </EditorDialog>
-      <EditorDialog
-        open={dialog?.kind === "delete"}
-        title="Delete tag"
-        description="Only a tag no entry uses can be deleted."
-        busy={busy}
-        onDismiss={close}
-        returnFocusId="new-tag-name"
-        fallbackFocusId="main-content"
-        closeLabel="Close delete dialog"
-        initialFocusId="delete-tag-cancel"
-      >
-        {dialog?.kind === "delete" && (
-          <>
-            <p>
-              Delete <strong>{dialog.tag.name}</strong>?{" "}
-              {dialog.tag.usageCount > 0
-                ? `${dialog.tag.usageCount === 1 ? "1 entry has" : `${dialog.tag.usageCount} entries have`} this tag, so it can't be deleted. Archive it to hide it instead.`
-                : "No entry has it. This can't be undone, but you can add the tag again any time."}
-            </p>
-            {error && (
-              <p role="alert" className="field-error account-error">
-                {error}
-              </p>
-            )}
-            <div className="account-dialog-actions">
-              <button
-                type="button"
-                id="delete-tag-cancel"
-                className="secondary-button"
-                disabled={busy}
-                onClick={close}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="button danger-action"
-                disabled={busy || dialog.tag.usageCount > 0}
-                onClick={() => {
-                  const { tag } = dialog;
-                  void run(
-                    () => prepareTagDelete(ledgerId, tag)(),
-                    "Couldn't delete the tag.",
-                  ).then((done) => {
-                    if (done) {
-                      setDialog(null);
-                      setNotice(`Deleted the tag ${tag.name}.`);
-                    }
-                  });
-                }}
-              >
-                {busy ? "Deleting…" : "Delete tag"}
-              </button>
-            </div>
-          </>
-        )}
-      </EditorDialog>
-    </>
+          <p role="status">{notice}</p>
+        </Toast>
+      )}
+      {open && (
+        <TagSheet
+          key={open.id}
+          ledgerId={ledgerId}
+          tag={open.tag}
+          onDismiss={() => setOpen(null)}
+          onSaved={(done) => {
+            setOpen(null);
+            setNotice(done);
+            void client.invalidateQueries({ queryKey: ["tags", ledgerId] });
+          }}
+        />
+      )}
+    </div>
   );
 }

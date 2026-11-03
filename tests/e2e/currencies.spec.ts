@@ -88,8 +88,8 @@ test("currencies work end to end: a rate, an account, an entry, a transfer and H
     page.getByRole("heading", { name: "Currencies", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: /Euro/ }).click();
-  await page.getByLabel("1 USD is worth (EUR)").fill("1.25");
-  await page.getByRole("button", { name: "Save rate" }).click();
+  await page.getByLabel("Set the rate yourself").fill("1.25");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText(/1 USD = 1\.25 EUR/)).toBeVisible();
   await expect(page).toHaveTitle("Currencies · Ledgerline");
 
