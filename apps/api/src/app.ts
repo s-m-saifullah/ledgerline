@@ -52,6 +52,7 @@ import { syncRoutes } from "./modules/sync/routes";
 import { tagRoutes } from "./modules/tags/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
+import { userRoutes } from "./modules/users/routes";
 
 /** True when the email in a sign-in request belongs to a person whose sign-in was stopped. */
 async function isSignInStopped(db: Database, body: unknown) {
@@ -99,7 +100,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.52" },
+      info: { title: "Ledgerline API", version: "0.1.53" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -419,6 +420,7 @@ export async function buildApp(
   await app.register(changeRoutes, { db, auth });
   await app.register(sessionRoutes, { db, config, auth });
   await app.register(meRoutes, { db, config, auth, now });
+  await app.register(userRoutes, { db, config, auth });
   await app.register(exportRoutes, { db, config, auth });
   await app.register(importRoutes, { db, config, auth });
   await app.register(tagRoutes, { db, config, auth });

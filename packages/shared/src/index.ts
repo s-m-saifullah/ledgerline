@@ -14,6 +14,7 @@ export * from "./sessions";
 export * from "./sync";
 export * from "./tags";
 export * from "./transactions";
+export * from "./users";
 
 export const newId = v7;
 

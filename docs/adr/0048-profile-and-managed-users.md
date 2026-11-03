@@ -42,6 +42,8 @@ Reset password, Turn off two-factor and Delete do not ask for the admin's own pa
 
 - **2026-11-03, slice 2: no `Idempotency-Key` on the account routes** (`/me` now, `/users` in slice 3). The stored replies need a ledger and these routes are not about one. A rename is safe to repeat; a lost answer to a password change is retried with the new password as the current one; a retried "add user" says the email is taken and the admin resets that person's password. A person on a temporary password may use only `GET /me` and `POST /me/password` (not `PATCH /me`). The refusal's problem type is `urn:ledgerline:problem:password-change-required`. `reset-password` is copied to the server by the release like `reset-two-factor` (a test checks that every file `release.yml` copies exists).
 
+- **2026-11-03, slice 3: the admin's own account is refused for every action on a person.** Stop, delete, reset password, sign out and turn off two-factor all answer `409` for the admin's id: a reset would put the admin on a temporary password and lock them out. The admin's own password, devices and two-factor stay in Profile and Settings. An unknown or deleted id is `404`. A ledger is soft-deleted with its owner only when no other live person is a member of it (sharing is not built, so today it always is). The restore drill gets two invariants, "a person on a temporary password has a live sign-in" and "every live person owns a live ledger", both skipped for dumps that predate migration 0028.
+
 ## Not in this change
 
 Sharing a ledger between users, email change, photo, languages, deleting your own account, passkeys, invitation or reset emails (the server sends no mail), a second admin, an audit log, reusing a deleted person's email, Android screens.

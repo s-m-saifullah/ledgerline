@@ -91,3 +91,15 @@ INSERT INTO users (id,email,name,two_factor_enabled) VALUES ('00000000-0000-7000
 INSERT INTO two_factor (id,user_id,secret,backup_codes,verified,deleted_at) VALUES
  ('00000000-0000-7000-8000-000000000a01','00000000-0000-7000-8000-000000000002','synthetic-secret','synthetic-codes',true,NULL),
  ('00000000-0000-7000-8000-000000000a02','00000000-0000-7000-8000-000000000001','old-secret','old-codes',true,'2026-10-09 00:00:00+00');
+
+-- People the admin manages (ADR 0048): every live person owns a live ledger; one is on a temporary password with a live sign-in; one was deleted with everything that was theirs (synthetic placeholders, not real hashes)
+INSERT INTO ledgers (id,name) VALUES ('00000000-0000-7000-8000-0000000000a2','Enrolled ledger');
+INSERT INTO ledger_members (id,ledger_id,user_id,role) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a2','00000000-0000-7000-8000-000000000002','owner');
+INSERT INTO users (id,email,name,must_change_password) VALUES ('00000000-0000-7000-8000-000000000003','temporary@example.com','Temporary',true);
+INSERT INTO auth_accounts (id,user_id,account_id,provider_id,password) VALUES ('00000000-0000-7000-8000-000000000b03','00000000-0000-7000-8000-000000000003','00000000-0000-7000-8000-000000000003','credential','synthetic-hash');
+INSERT INTO ledgers (id,name) VALUES ('00000000-0000-7000-8000-0000000000a3','Temporary ledger');
+INSERT INTO ledger_members (id,ledger_id,user_id,role) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a3','00000000-0000-7000-8000-000000000003','owner');
+INSERT INTO users (id,email,name,disabled_at,deleted_at) VALUES ('00000000-0000-7000-8000-000000000004','deleted@example.com','Deleted','2026-10-09 00:00:00+00','2026-10-09 00:00:00+00');
+INSERT INTO auth_accounts (id,user_id,account_id,provider_id,password,deleted_at) VALUES ('00000000-0000-7000-8000-000000000b04','00000000-0000-7000-8000-000000000004','00000000-0000-7000-8000-000000000004','credential','synthetic-hash','2026-10-09 00:00:00+00');
+INSERT INTO ledgers (id,name,deleted_at) VALUES ('00000000-0000-7000-8000-0000000000a4','Deleted ledger','2026-10-09 00:00:00+00');
+INSERT INTO ledger_members (id,ledger_id,user_id,role,deleted_at) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a4','00000000-0000-7000-8000-000000000004','owner','2026-10-09 00:00:00+00');
