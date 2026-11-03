@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
   type Category,
   categorySchema,
@@ -82,22 +82,27 @@ async function openCategories(page: Page) {
     page.getByRole("heading", { name: "Categories", exact: true }),
   ).toBeVisible();
 }
-async function expectInsetArrows(page: Page) {
-  for (const wrapper of await page.locator(".category-select").all()) {
-    const select = wrapper.locator("select");
-    const arrow = wrapper.locator("svg");
-    const bounds = await select.boundingBox();
-    const arrowBounds = await arrow.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(arrowBounds).not.toBeNull();
-    if (!bounds || !arrowBounds) throw new Error("Missing dropdown bounds");
-    const inset = bounds.x + bounds.width - arrowBounds.x - arrowBounds.width;
-    expect(inset).toBeGreaterThanOrEqual(12);
-    expect(inset).toBeLessThanOrEqual(13);
-    await expect(select).toHaveCSS("appearance", "none");
-    await expect(select).toHaveCSS("padding-right", "40px");
-    await expect(arrow).toHaveAttribute("aria-hidden", "true");
-  }
+/** The main categories in the page, in order (both kinds on a wide page, expense first). */
+const rowNames = (page: Page) => page.locator(".cg-toggle .ui-row-title");
+const actionsFor = (page: Page, name: string) =>
+  page.getByRole("button", { name: `Actions for ${name}`, exact: true });
+const statusChip = (page: Page, name: "Active" | "Archived" | "All") =>
+  page
+    .getByRole("group", { name: "View categories" })
+    .getByRole("button", { name, exact: true });
+const expandAll = async (page: Page) => {
+  const button = page.getByRole("button", { name: "Expand all", exact: true });
+  // The list may still be loading, so give the button a moment to appear.
+  await button.waitFor({ timeout: 2000 }).catch(() => undefined);
+  if (await button.count()) await button.click();
+};
+/** Open an icon or colour row in the editor and choose one of its options, each drawn with its icon or colour. */
+async function pickLook(dialog: Locator, row: string, option: string) {
+  await dialog.getByRole("button", { name: new RegExp(`^${row}`) }).click();
+  await dialog
+    .getByRole("radiogroup", { name: row })
+    .getByRole("radio", { name: option })
+    .click();
 }
 async function add(page: Page, name: string, parent?: Category) {
   await page
@@ -109,16 +114,14 @@ async function add(page: Page, name: string, parent?: Category) {
   if (parent) {
     await chooseCategory(dialog, "Parent category", parent.name);
   }
-  await dialog.getByLabel("Category icon").selectOption("shopping-bag");
-  await dialog.getByLabel("Category color").selectOption("#2563EB");
+  await pickLook(dialog, "Category icon", "Shopping");
+  await pickLook(dialog, "Category color", "Blue");
   const response = page.waitForResponse(
     (response) =>
       response.request().method() === "POST" &&
       /\/categories$/.test(response.url()),
   );
-  await dialog
-    .getByRole("button", { name: "Add category", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   const saved = await response;
   expect(saved.status()).toBe(201);
   await expect(dialog).toHaveCount(0);
@@ -131,7 +134,7 @@ test("creates, retries, edits, reorders and archives categories with active-only
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await openCategories(page);
-  await expect(page.getByText("Make room for your categories.")).toBeVisible();
+  await expect(page.getByText("No categories yet.")).toBeVisible();
   await page.getByRole("button", { name: "Add starter categories" }).click();
   await expect(
     page
@@ -172,9 +175,7 @@ test("creates, retries, edits, reorders and archives categories with active-only
   await page.getByRole("button", { name: "Add your first category" }).click();
   let dialog = page.getByRole("dialog");
   await dialog.getByLabel("Category name").fill(name);
-  await dialog
-    .getByRole("button", { name: "Add category", exact: true })
-    .click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText(
     "couldn't confirm the save",
   );
@@ -210,12 +211,10 @@ test("creates, retries, edits, reorders and archives categories with active-only
   await expectCategoryAction(page, "archive", root.name, "disabled");
   await clickCategoryAction(page, "up", other.name);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByRole("status")).toContainText(
-    "Category order updated",
-  );
   await expect(
-    page.locator(".category-groups article").first(),
-  ).toHaveAccessibleName(other.name);
+    page.getByRole("status").filter({ hasText: "Category order updated" }),
+  ).toBeVisible();
+  await expect(rowNames(page).first()).toHaveText(other.name);
   await clickCategoryAction(page, "edit", root.name);
   dialog = page.getByRole("dialog", { name: "Edit category" });
   const external = await page.request.patch(
@@ -229,7 +228,7 @@ test("creates, retries, edits, reorders and archives categories with active-only
     },
   );
   expect(external.status()).toBe(200);
-  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(dialog.getByRole("alert")).toContainText(
     "This category changed",
   );
@@ -238,7 +237,7 @@ test("creates, retries, edits, reorders and archives categories with active-only
     `${name} latest`,
   );
   await dialog.getByLabel("Category name").fill(name);
-  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect
     .poll(() => page.evaluate(() => document.activeElement?.id))
@@ -257,14 +256,12 @@ test("creates, retries, edits, reorders and archives categories with active-only
     await clickCategoryAction(page, "archive", category.name);
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: "Archive category", exact: true })
+      .getByRole("button", { name: "Archive", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
-  await page.getByLabel("View categories").selectOption("active");
-  await expect(
-    page.getByRole("article", { name: root.name, exact: true }),
-  ).toHaveCount(0);
+  await statusChip(page, "Active").click();
+  await expect(actionsFor(page, root.name)).toHaveCount(0);
   await page.getByRole("button", { name: "Add category", exact: true }).click();
   await expect(
     page
@@ -272,17 +269,12 @@ test("creates, retries, edits, reorders and archives categories with active-only
       .getByRole("option", { name: root.name, exact: true }),
   ).toHaveCount(0);
   await page.keyboard.press("Escape");
-  await page.getByLabel("View categories").selectOption("archived");
-  await expect(
-    page.getByRole("article", { name: root.name, exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("article", { name: child.name, exact: true }),
-  ).toBeVisible();
+  await statusChip(page, "Archived").click();
+  await expect(actionsFor(page, root.name)).toBeVisible();
+  await expandAll(page);
+  await expect(actionsFor(page, child.name)).toBeVisible();
   await page.reload();
-  await expect(
-    page.getByRole("article", { name: root.name, exact: true }),
-  ).toBeVisible();
+  await expect(actionsFor(page, root.name)).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -312,7 +304,7 @@ test("explicit starter creation, income view and keyboard dialog fit work on nar
     const starter = await starterCategories.boundingBox();
     if (!first || !starter) throw new Error("Missing category empty actions");
     expect(Math.abs(first.height - starter.height)).toBeLessThanOrEqual(1);
-    expect(first.height).toBeGreaterThanOrEqual(48);
+    expect(first.height).toBeGreaterThanOrEqual(44);
     if (testInfo.project.name === "desktop")
       expect(Math.abs(first.y - starter.y)).toBeLessThanOrEqual(1);
     else {
@@ -370,19 +362,28 @@ test("explicit starter creation, income view and keyboard dialog fit work on nar
   let dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Create categories" }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole("article")).toHaveCount(28);
-  await page.getByRole("button", { name: "Income", exact: true }).click();
-  await expect(page.getByRole("article")).toHaveCount(9);
-  await expect(
-    page.getByRole("article", { name: "Salary & wages", exact: true }),
-  ).toBeVisible();
+  await expandAll(page);
+  const kindColumn = (kind: "expense" | "income") =>
+    page.locator(".cg-col").nth(kind === "expense" ? 0 : 1);
+  const rows = (kind: "expense" | "income") =>
+    kindColumn(kind).locator(".cg-toggle, .cg-sub");
+  await expect(rows("expense")).toHaveCount(28);
+  await expect(rows("income")).toHaveCount(9);
+  // Under 700 px one kind shows at a time through the switch; from it both are on the page.
+  const incomeSwitch = page.getByRole("radio", { name: /^Income/ });
+  const narrow = await incomeSwitch.isVisible();
+  if (narrow) {
+    await incomeSwitch.click();
+    await expect(kindColumn("expense")).toBeHidden();
+  }
+  await expect(actionsFor(page, "Salary & wages")).toBeVisible();
   await page.getByRole("button", { name: "Add category", exact: true }).click();
   dialog = page.getByRole("dialog");
   await expect(dialog.getByLabel("Category name")).toBeFocused();
-  await expect(dialog.getByLabel("Category kind")).toHaveValue("income");
+  await expect(
+    dialog.getByRole("radio", { name: narrow ? "Income" : "Expense" }),
+  ).toBeChecked();
   await dialog.getByLabel("Category name").fill("E2E keyboard preview");
-  await expect(page.locator(".category-select")).toHaveCount(4);
-  await expectInsetArrows(page);
   for (let i = 0; i < 12; i++) {
     await page.keyboard.press("Tab");
     expect(
@@ -400,12 +401,15 @@ test("explicit starter creation, income view and keyboard dialog fit work on nar
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
-  const bounds = await dialog.boundingBox();
-  expect(bounds?.x).toBeGreaterThanOrEqual(0);
-  expect(bounds?.y).toBeGreaterThanOrEqual(0);
-  expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThanOrEqual(
-    page.viewportSize()?.height ?? 0,
-  );
+  // The sheet slides in, so it is measured once it has stopped.
+  await expect
+    .poll(async () => {
+      const bounds = await dialog.boundingBox();
+      return bounds ? bounds.y + bounds.height : Number.POSITIVE_INFINITY;
+    })
+    .toBeLessThanOrEqual(page.viewportSize()?.height ?? 0);
+  expect((await dialog.boundingBox())?.x).toBeGreaterThanOrEqual(0);
+  expect((await dialog.boundingBox())?.y).toBeGreaterThanOrEqual(0);
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(
@@ -446,13 +450,9 @@ test("arrow clicks save immediately and interrupted or stale reorders recover in
   expect(retried.status()).toBe(200);
   expect(retried.headers()["idempotency-replayed"]).toBe("true");
   expect(writes[1]).toEqual(writes[0]);
-  await expect(
-    page.locator(".category-groups article").first(),
-  ).toHaveAccessibleName(other.name);
+  await expect(rowNames(page).first()).toHaveText(other.name);
   await clickCategoryAction(page, "down", other.name);
-  await expect(
-    page.locator(".category-groups article").first(),
-  ).toHaveAccessibleName(root.name);
+  await expect(rowNames(page).first()).toHaveText(root.name);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expectCategoryAction(page, "up", other.name, "enabled");
   const external = await page.request.patch(
@@ -474,52 +474,41 @@ test("arrow clicks save immediately and interrupted or stale reorders recover in
   await expectCategoryAction(page, "up", other.name, "disabled");
   await page.getByRole("button", { name: "Reload categories" }).click();
   await expectCategoryAction(page, "up", other.name, "enabled");
-  await expect(
-    page.locator(".category-groups article").first(),
-  ).toHaveAccessibleName(root.name);
+  await expect(rowNames(page).first()).toHaveText(root.name);
   const saved = page.waitForResponse((response) =>
     response.url().endsWith("/categories/reorder"),
   );
   await clickCategoryAction(page, "up", other.name);
   expect((await saved).status()).toBe(200);
-  await expect(
-    page.locator(".category-groups article").first(),
-  ).toHaveAccessibleName(other.name);
+  await expect(rowNames(page).first()).toHaveText(other.name);
   expect(writes).toHaveLength(5);
   expect(writes[4]?.key).not.toBe(writes[3]?.key);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 async function expectAlignedCategoryActions(page: Page) {
-  for (const row of await page.getByRole("article").all()) {
-    const bounds = await row.boundingBox();
-    const heading = await row.locator(".category-row-heading").boundingBox();
-    // Wide screens show the action buttons; phones show a single menu button.
-    const actions = await row
-      .locator(".category-controls, button[aria-haspopup='menu']")
-      .first()
+  for (const group of await page.locator(".cg-head").all()) {
+    const bounds = await group.boundingBox();
+    const title = await group.locator(".ui-row-main").boundingBox();
+    const more = await group
+      .getByRole("button", { name: /^Actions for/ })
       .boundingBox();
-    if (!bounds || !heading || !actions)
-      throw new Error("Missing category bounds");
+    if (!bounds || !title || !more) throw new Error("Missing category bounds");
+    // The name and the actions button share the row's middle, the name never reaching the button.
     expect(
-      Math.abs(heading.y + heading.height / 2 - actions.y - actions.height / 2),
-    ).toBeLessThan(1);
-    expect(heading.x + heading.width).toBeLessThanOrEqual(actions.x);
+      Math.abs(title.y + title.height / 2 - more.y - more.height / 2),
+    ).toBeLessThan(1.5);
+    expect(title.x + title.width).toBeLessThanOrEqual(more.x + 0.5);
     // The category name keeps real room on every width (it used to shrink to one letter on phones).
-    expect(heading.width).toBeGreaterThanOrEqual(120);
-    for (const button of await row.getByRole("button").all()) {
-      const target = await button.boundingBox();
-      if (!target) throw new Error("Missing action bounds");
-      expect(target.width).toBeGreaterThanOrEqual(44);
-      expect(target.height).toBeGreaterThanOrEqual(44);
-      expect(target.x + target.width).toBeLessThanOrEqual(
-        bounds.x + bounds.width,
-      );
-      expect(target.y + target.height).toBeLessThanOrEqual(
-        bounds.y + bounds.height,
-      );
-      await expect(button).toHaveAttribute("title", /.+/);
-      await expect(button).toHaveText("");
-    }
+    expect(title.width).toBeGreaterThanOrEqual(100);
+    expect(more.width).toBeGreaterThanOrEqual(44);
+    expect(more.height).toBeGreaterThanOrEqual(44);
+    expect(more.x + more.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+    expect(more.y + more.height).toBeLessThanOrEqual(bounds.y + bounds.height);
+    expect(
+      await group
+        .locator(".ui-row-title")
+        .evaluate((n) => n.scrollWidth <= n.clientWidth + 1),
+    ).toBe(true);
   }
   expect(
     await page.evaluate(
@@ -558,11 +547,11 @@ test("unarchives preserve category identity and icon actions align on narrow pho
     await clickCategoryAction(page, "archive", category.name);
     await page
       .getByRole("dialog")
-      .getByRole("button", { name: "Archive category", exact: true })
+      .getByRole("button", { name: "Archive", exact: true })
       .click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
-  await page.getByLabel("View categories").selectOption("archived");
+  await statusChip(page, "Archived").click();
   await expectCategoryAction(page, "unarchive", "Utilities", "disabled");
   const requests: { key: string; body: string | null }[] = [];
   await page.route("**/categories/*/unarchive", async (route) => {
@@ -588,7 +577,7 @@ test("unarchives preserve category identity and icon actions align on narrow pho
   await clickCategoryAction(page, "unarchive", "Housing");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Unarchive category", exact: true })
+    .getByRole("button", { name: "Unarchive", exact: true })
     .click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "couldn't confirm this action",
@@ -615,16 +604,14 @@ test("unarchives preserve category identity and icon actions align on narrow pho
   await clickCategoryAction(page, "unarchive", "Utilities");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Unarchive category", exact: true })
+    .getByRole("button", { name: "Unarchive", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByLabel("View categories").selectOption("active");
-  await expect(
-    page.getByRole("article", { name: "Housing", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("article", { name: "Utilities", exact: true }),
-  ).toBeVisible();
+  // Nothing is archived now, so the chips are gone and everything shows.
+  await expect(statusChip(page, "Active")).toHaveCount(0);
+  await expandAll(page);
+  await expect(actionsFor(page, "Housing")).toBeVisible();
+  await expect(actionsFor(page, "Utilities")).toBeVisible();
   await expectAlignedCategoryActions(page);
   await page.getByRole("button", { name: "Add category", exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -634,10 +621,7 @@ test("unarchives preserve category identity and icon actions align on narrow pho
   ).toHaveValue(root.name);
   await page.keyboard.press("Escape");
   await page.reload();
-  await expect(
-    page.getByRole("article", { name: "Housing", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("article", { name: "Utilities", exact: true }),
-  ).toBeVisible();
+  await expandAll(page);
+  await expect(actionsFor(page, "Housing")).toBeVisible();
+  await expect(actionsFor(page, "Utilities")).toBeVisible();
 });

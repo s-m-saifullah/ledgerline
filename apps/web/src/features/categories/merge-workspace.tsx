@@ -1,5 +1,4 @@
 import type { Category, CategoryMergePreview } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -9,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { Toast } from "../../components/toast";
 import { ApiError } from "../../lib/api";
 import {
@@ -18,6 +17,7 @@ import {
   prepareCategoryMerge,
 } from "./api";
 import { CategoryPicker } from "./picker";
+import "./categories.css";
 
 type Workspace = {
   blocked: boolean;
@@ -215,7 +215,7 @@ export function CategoryMergeWorkspace({
           <p role="status">A category merge needs confirmation.</p>
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             onClick={() => setOpen(true)}
           >
             Resume category merge
@@ -223,147 +223,43 @@ export function CategoryMergeWorkspace({
         </div>
       )}
       {source && (
-        <EditorDialog
+        <Overlay
           open={open}
           title="Merge categories"
           description={`Merge ${source.name} into another category. Review the affected records before confirming.`}
           busy={busy}
-          contentClassName="category-merge-dialog"
           onDismiss={dismiss}
+          cancelLabel={uncertain ? "Close for now" : "Cancel"}
           returnFocusId={triggerId}
           fallbackFocusId="main-content"
           initialFocusId={uncertain ? "retry-category-merge" : undefined}
-          closeLabel="Close category merge"
-        >
-          <fieldset disabled={frozen}>
-            {choices.isPending && (
-              <p role="status">Loading destination categories…</p>
-            )}
-            {choices.isError && (
-              <p role="alert">
-                Couldn't load destination categories. Reload the preview to try
-                again.
-              </p>
-            )}
-            {choices.data && (
-              <CategoryPicker
-                categories={choices.data}
-                kind={source.kind}
-                value={destinationId}
-                label="Destination category"
-                rootsOnly={!source.parentId}
-                childrenOnly={!!source.parentId}
-                excludeId={source.id}
-                disabled={frozen}
-                onChange={(id) => {
-                  setDestinationId(id);
-                  setPreview(null);
-                  setLoading(!!id);
-                  setError("");
-                  setReloadRequired(false);
-                }}
-              />
-            )}
-          </fieldset>
-          {loading && !uncertain && <p role="status">Loading merge preview…</p>}
-          {preview && (
-            <section aria-label="Merge preview">
-              <p>
-                <strong>{preview.source.name}</strong> →{" "}
-                <strong>{preview.destination.name}</strong>
-              </p>
-              {summary && (
-                <ul>
-                  <li>
-                    {summary.ordinaryCleared} cleared and{" "}
-                    {summary.ordinaryPending} pending ordinary transactions
-                  </li>
-                  <li>
-                    {summary.splitLines} split lines across{" "}
-                    {summary.splitParents} entries
-                  </li>
-                  <li>
-                    {summary.linkedPayments} linked payments across{" "}
-                    {summary.receivables} services
-                  </li>
-                  <li>{summary.children.length} child categories to move</li>
-                </ul>
-              )}
-              {!!summary?.children.length && (
-                <ul aria-label="Children to move">
-                  {summary.children.map((row) => (
-                    <li key={row.id}>
-                      {row.name}
-                      {row.archivedAt ? " (archived)" : ""}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {summary &&
-                summary.excludedTransactions +
-                  summary.excludedSplitLines +
-                  summary.excludedChildren >
-                  0 && (
-                  <p className="form-help">
-                    Deleted history stays unchanged:{" "}
-                    {summary.excludedTransactions} transactions (including{" "}
-                    {summary.excludedPayments} linked payments),{" "}
-                    {summary.excludedSplitLines} split lines and{" "}
-                    {summary.excludedChildren} child categories.
-                  </p>
-                )}
-              {preview.blockers.map((row) => (
-                <p
-                  role="alert"
-                  className="field-error"
-                  key={`${row.code}:${row.message}`}
-                >
-                  {row.message}
-                </p>
-              ))}
-            </section>
-          )}
-          <p className="form-help">
-            Amounts, dates and account balances stay the same. The source is
-            archived. This merge has no bulk Undo; unarchiving the source won't
-            move records or children back.
-          </p>
-          {error && (
-            <p role="alert" className="field-error">
-              {error}
-            </p>
-          )}
-          {!uncertain && (
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={busy || blocked || !writable}
-              onClick={reload}
-            >
-              Reload preview
-            </button>
-          )}
-          <div className="account-dialog-actions">
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={busy}
-              onClick={dismiss}
-            >
-              {uncertain ? "Close for now" : "Cancel"}
-            </button>
-            {uncertain ? (
-              <Button
+          action={
+            !uncertain && (
+              <button
+                type="button"
+                className="ui-btn ui-btn-text"
+                disabled={busy || blocked || !writable}
+                onClick={reload}
+              >
+                Reload preview
+              </button>
+            )
+          }
+          footer={
+            uncertain ? (
+              <button
                 id="retry-category-merge"
                 type="button"
+                className="ui-btn ui-btn-primary"
                 disabled={busy || blocked || !writable}
                 onClick={() => void save()}
               >
                 {busy ? "Confirming…" : "Retry same merge"}
-              </Button>
+              </button>
             ) : (
-              <Button
+              <button
                 type="button"
+                className="ui-btn ui-btn-primary"
                 disabled={
                   frozen ||
                   loading ||
@@ -374,10 +270,116 @@ export function CategoryMergeWorkspace({
                 onClick={() => void save()}
               >
                 Confirm merge
-              </Button>
+              </button>
+            )
+          }
+        >
+          <div className="cg-form">
+            <fieldset disabled={frozen} className="cg-fields">
+              {choices.isPending && (
+                <p role="status">Loading destination categories…</p>
+              )}
+              {choices.isError && (
+                <p role="alert">
+                  Couldn't load destination categories. Reload the preview to
+                  try again.
+                </p>
+              )}
+              {choices.data && (
+                <CategoryPicker
+                  categories={choices.data}
+                  kind={source.kind}
+                  value={destinationId}
+                  label="Destination category"
+                  rootsOnly={!source.parentId}
+                  childrenOnly={!!source.parentId}
+                  excludeId={source.id}
+                  disabled={frozen}
+                  onChange={(id) => {
+                    setDestinationId(id);
+                    setPreview(null);
+                    setLoading(!!id);
+                    setError("");
+                    setReloadRequired(false);
+                  }}
+                />
+              )}
+            </fieldset>
+            {loading && !uncertain && (
+              <p role="status">Loading merge preview…</p>
+            )}
+            {preview && (
+              <section
+                aria-label="Merge preview"
+                className="ui-card cg-preview"
+              >
+                <p>
+                  <strong>{preview.source.name}</strong> →{" "}
+                  <strong>{preview.destination.name}</strong>
+                </p>
+                {summary && (
+                  <ul>
+                    <li>
+                      {summary.ordinaryCleared} cleared and{" "}
+                      {summary.ordinaryPending} pending ordinary transactions
+                    </li>
+                    <li>
+                      {summary.splitLines} split lines across{" "}
+                      {summary.splitParents} entries
+                    </li>
+                    <li>
+                      {summary.linkedPayments} linked payments across{" "}
+                      {summary.receivables} services
+                    </li>
+                    <li>{summary.children.length} child categories to move</li>
+                  </ul>
+                )}
+                {!!summary?.children.length && (
+                  <ul aria-label="Children to move">
+                    {summary.children.map((row) => (
+                      <li key={row.id}>
+                        {row.name}
+                        {row.archivedAt ? " (archived)" : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {summary &&
+                  summary.excludedTransactions +
+                    summary.excludedSplitLines +
+                    summary.excludedChildren >
+                    0 && (
+                    <p className="cg-note">
+                      Deleted history stays unchanged:{" "}
+                      {summary.excludedTransactions} transactions (including{" "}
+                      {summary.excludedPayments} linked payments),{" "}
+                      {summary.excludedSplitLines} split lines and{" "}
+                      {summary.excludedChildren} child categories.
+                    </p>
+                  )}
+                {preview.blockers.map((row) => (
+                  <p
+                    role="alert"
+                    className="field-error"
+                    key={`${row.code}:${row.message}`}
+                  >
+                    {row.message}
+                  </p>
+                ))}
+              </section>
+            )}
+            <p className="cg-note">
+              Amounts, dates and account balances stay the same. The source is
+              archived. This merge has no bulk Undo; unarchiving the source
+              won't move records or children back.
+            </p>
+            {error && (
+              <p role="alert" className="field-error">
+                {error}
+              </p>
             )}
           </div>
-        </EditorDialog>
+        </Overlay>
       )}
       {notice && (
         <Toast
@@ -388,7 +390,7 @@ export function CategoryMergeWorkspace({
           <p role="status">{notice}</p>
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             onClick={() => setNotice("")}
           >
             Dismiss category notification

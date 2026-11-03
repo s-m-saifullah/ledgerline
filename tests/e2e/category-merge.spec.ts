@@ -178,16 +178,13 @@ test("merges ordinary and split references and children, refreshes choices, and 
   await expect(
     page.getByText("Categories merged. The source is archived."),
   ).toBeVisible();
-  // Focus returns to where the merge started: the page on wide screens, where the archived source's
-  // merge button is gone, or the source row's menu button on phones.
-  if ((page.viewportSize()?.width ?? 1280) <= 700)
-    await expect(
-      page.getByRole("button", {
-        name: `Actions for ${source.name}`,
-        exact: true,
-      }),
-    ).toBeFocused();
-  else await expect(page.getByRole("main")).toBeFocused();
+  // Focus returns to where the merge started: the source row's actions button.
+  await expect(
+    page.getByRole("button", {
+      name: `Actions for ${source.name}`,
+      exact: true,
+    }),
+  ).toBeFocused();
   const changed = await (
     await page.request.get(path(`/transactions/${ordinary.id}`))
   ).json();
@@ -341,9 +338,10 @@ test("corrects written-off linked income privately, fits 320px light/dark layout
     expectedVersion: payment.receivable.version,
   });
   await categories(page);
-  await page.getByRole("button", { name: "Income", exact: true }).click();
   await page.getByRole("button", { name: "Hide amounts", exact: true }).click();
   await page.setViewportSize({ width: 320, height: 740 });
+  // Under 700 px one kind shows at a time.
+  await page.getByRole("radio", { name: /^Income/ }).click();
   for (const theme of ["light", "dark"] as const) {
     await setTheme(page, theme);
     const dialog = await begin(page, source, destination);

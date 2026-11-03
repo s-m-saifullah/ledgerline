@@ -4,15 +4,17 @@ import {
   type CreateCategory,
   createCategorySchema,
 } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import { SegmentedControl } from "@ledgerline/ui";
+import { Circle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { EditorDialog } from "../../components/editor-dialog";
-import { NativeSelect } from "../../components/native-select";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { getCategories, getCategory, prepareCategorySave } from "./api";
-import { CategoryMark, categoryColors, categoryIcons } from "./appearance";
+import { categoryColors, categoryIcons } from "./appearance";
+import { AppearanceRow, NoneMark, Swatch } from "./appearance-row";
 import { CategoryPicker } from "./picker";
+import "./categories.css";
 
 const categoryFormSchema = createCategorySchema.extend({
   parentId: createCategorySchema.shape.parentId.removeDefault(),
@@ -22,11 +24,12 @@ const categoryFormSchema = createCategorySchema.extend({
 function defaults(
   category?: Category,
   kind: Category["kind"] = "expense",
+  parentId: string | null = null,
 ): CreateCategory {
   return {
     name: category?.name ?? "",
     kind: category?.kind ?? kind,
-    parentId: category?.parentId ?? null,
+    parentId: category ? category.parentId : parentId,
     icon: category?.icon ?? null,
     color: category?.color ?? null,
   };
@@ -34,6 +37,7 @@ function defaults(
 export function CategoryEditor({
   ledgerId,
   category,
+  parentId,
   categories,
   kind,
   open,
@@ -43,6 +47,8 @@ export function CategoryEditor({
 }: {
   ledgerId: string;
   category?: Category | undefined;
+  /** A new subcategory starts under this main category. */
+  parentId?: string | undefined;
   categories: Category[];
   kind: Category["kind"];
   open: boolean;
@@ -66,11 +72,16 @@ export function CategoryEditor({
     control,
     watch,
     reset,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CreateCategory>({
     resolver: zodResolver(categoryFormSchema),
-    defaultValues: defaults(category, kind),
+    defaultValues: defaults(
+      category,
+      categories.find((row) => row.id === parentId)?.kind ?? kind,
+      parentId ?? null,
+    ),
   });
   const values = watch();
   const hasChildren =
@@ -130,8 +141,9 @@ export function CategoryEditor({
       setReloading(false);
     }
   };
+  const frozen = busy || uncertain || conflict;
   return (
-    <EditorDialog
+    <Overlay
       open={open}
       title={baseline ? "Edit category" : "Add category"}
       description={
@@ -141,141 +153,153 @@ export function CategoryEditor({
       }
       busy={busy}
       onDismiss={onDismiss}
+      cancelLabel={uncertain ? "Close for now" : "Cancel"}
       returnFocusId={
         baseline ? `edit-category-${baseline.id}` : "categories-title"
       }
-      closeLabel="Close category dialog"
       fallbackFocusId="categories-title"
+      initialFocusId="category-name"
+      footer={
+        conflict ? (
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            disabled={busy}
+            onClick={() => void reload()}
+          >
+            {reloading ? "Reloading…" : "Reload latest details"}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            form="category-form"
+            className="ui-btn ui-btn-primary"
+            disabled={busy}
+          >
+            {isSubmitting ? "Saving…" : uncertain ? "Retry save" : "Save"}
+          </button>
+        )
+      }
     >
-      <form onSubmit={submit} noValidate>
-        <fieldset
-          disabled={busy || uncertain || conflict}
-          className="account-fields category-fields"
-        >
-          <label htmlFor="category-name">Category name</label>
-          <input
-            id="category-name"
-            autoComplete="off"
-            maxLength={100}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? "category-name-error" : undefined}
-            {...register("name")}
-          />
-          {errors.name && (
-            <p className="field-error" id="category-name-error">
-              Give this category a name (up to 100 characters).
-            </p>
-          )}
-          <label htmlFor="category-kind">Category kind</label>
-          <NativeSelect
-            id="category-kind"
+      <form id="category-form" className="cg-form" onSubmit={submit} noValidate>
+        <fieldset disabled={frozen} className="cg-fields">
+          <SegmentedControl
+            label="Category kind"
+            value={values.kind}
             disabled={!!baseline}
-            {...register("kind")}
-            onChange={(event) => {
-              register("kind").onChange(event);
-              reset({
-                ...values,
-                kind: event.target.value as Category["kind"],
-                parentId: null,
-              });
+            onChange={(value) => {
+              setValue("kind", value);
+              setValue("parentId", null);
             }}
-          >
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </NativeSelect>
-          <Controller
-            name="parentId"
-            control={control}
-            render={({ field }) => (
-              <CategoryPicker
-                categories={options}
-                kind={values.kind}
-                rootsOnly
-                allowNone
-                excludeId={baseline?.id}
-                label="Parent category"
-                value={field.value}
-                onChange={field.onChange}
-                disabled={busy || uncertain || conflict || hasChildren}
-              />
-            )}
+            options={[
+              { value: "expense", label: "Expense" },
+              { value: "income", label: "Income" },
+            ]}
           />
-          {hasChildren && (
-            <p className="form-help">
-              Move this category's children before choosing a parent.
-            </p>
-          )}
-          <label htmlFor="category-icon">Category icon</label>
-          <NativeSelect
-            id="category-icon"
-            {...register("icon", { setValueAs: (value) => value || null })}
-            value={values.icon ?? ""}
-          >
-            <option value="">No icon</option>
-            {values.icon && !Object.hasOwn(categoryIcons, values.icon) && (
-              <option value={values.icon}>Current icon ({values.icon})</option>
+          <div className="cg-field">
+            <label htmlFor="category-name">Category name</label>
+            <input
+              id="category-name"
+              autoComplete="off"
+              maxLength={100}
+              placeholder="Name"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "category-name-error" : undefined}
+              {...register("name")}
+            />
+            {errors.name && (
+              <p className="field-error" id="category-name-error">
+                Give this category a name (up to 100 characters).
+              </p>
             )}
-            {Object.entries(categoryIcons).map(([value, item]) => (
-              <option key={value} value={value}>
-                {item.label}
-              </option>
-            ))}
-          </NativeSelect>
-          <label htmlFor="category-color">Category color</label>
-          <NativeSelect
-            id="category-color"
-            {...register("color", { setValueAs: (value) => value || null })}
-            value={values.color ?? ""}
-          >
-            <option value="">No color</option>
-            {values.color &&
-              !categoryColors.some((color) => color.value === values.color) && (
-                <option value={values.color}>
-                  Current color ({values.color})
-                </option>
+          </div>
+          <div className="cg-field">
+            <Controller
+              name="parentId"
+              control={control}
+              render={({ field }) => (
+                <CategoryPicker
+                  categories={options}
+                  kind={values.kind}
+                  rootsOnly
+                  allowNone
+                  excludeId={baseline?.id}
+                  label="Parent category"
+                  value={field.value}
+                  onChange={field.onChange}
+                  disabled={frozen || hasChildren}
+                />
               )}
-            {categoryColors.map((color) => (
-              <option key={color.value} value={color.value}>
-                {color.label}
-              </option>
-            ))}
-          </NativeSelect>
-          <div className="category-preview">
-            <CategoryMark icon={values.icon} color={values.color} />
-            <span>{values.name.trim() || "Category preview"}</span>
+            />
+            {hasChildren && (
+              <p className="cg-note">
+                Move this category's children before choosing a parent.
+              </p>
+            )}
+          </div>
+          <div className="cg-group-card">
+            <AppearanceRow
+              id="category-icon"
+              label="Category icon"
+              value={values.icon ?? ""}
+              options={[
+                { value: "", label: "No icon", visual: <NoneMark /> },
+                ...(values.icon && !Object.hasOwn(categoryIcons, values.icon)
+                  ? [
+                      {
+                        value: values.icon,
+                        label: `Current icon (${values.icon})`,
+                        visual: <Circle size={20} aria-hidden="true" />,
+                      },
+                    ]
+                  : []),
+                ...Object.entries(categoryIcons).map(([value, item]) => {
+                  const Icon = item.icon;
+                  return {
+                    value,
+                    label: item.label,
+                    visual: <Icon size={20} aria-hidden="true" />,
+                  };
+                }),
+              ]}
+              onChange={(value) => setValue("icon", value || null)}
+            />
+            <AppearanceRow
+              id="category-color"
+              label="Category color"
+              value={values.color ?? ""}
+              options={[
+                {
+                  value: "",
+                  label: "No color",
+                  visual: <Swatch color={null} />,
+                },
+                ...(values.color &&
+                !categoryColors.some((color) => color.value === values.color)
+                  ? [
+                      {
+                        value: values.color,
+                        label: `Current color (${values.color})`,
+                        visual: <Swatch color={values.color} />,
+                      },
+                    ]
+                  : []),
+                ...categoryColors.map((color) => ({
+                  value: color.value,
+                  label: color.label,
+                  visual: <Swatch color={color.value} />,
+                })),
+              ]}
+              onChange={(value) => setValue("color", value || null)}
+            />
           </div>
         </fieldset>
         {error && (
-          <p className="field-error account-error" role="alert">
+          <p className="field-error" role="alert">
             {error}
           </p>
         )}
-        <div className="account-dialog-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onDismiss}
-          >
-            {uncertain ? "Close for now" : "Cancel"}
-          </button>
-          {conflict ? (
-            <Button type="button" disabled={busy} onClick={() => void reload()}>
-              {reloading ? "Reloading…" : "Reload latest details"}
-            </Button>
-          ) : (
-            <Button type="submit" disabled={busy}>
-              {isSubmitting
-                ? "Saving…"
-                : uncertain
-                  ? "Retry save"
-                  : baseline
-                    ? "Save changes"
-                    : "Add category"}
-            </Button>
-          )}
-        </div>
       </form>
-    </EditorDialog>
+    </Overlay>
   );
 }

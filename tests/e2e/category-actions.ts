@@ -9,59 +9,65 @@ type CategoryVerb =
   | "unarchive"
   | "delete";
 
-const menuLabel: Record<CategoryVerb, string> = {
+/** The words on the actions sheet's rows (ADR 0047); a row that is unavailable adds its reason after them. */
+const rowLabel: Record<CategoryVerb, string> = {
   up: "Move up",
   down: "Move down",
-  merge: "Merge into another category",
-  edit: "Edit category",
-  archive: "Archive category",
-  unarchive: "Unarchive category",
-  delete: "Delete category",
+  merge: "Merge into…",
+  edit: "Edit",
+  archive: "Archive",
+  unarchive: "Unarchive",
+  delete: "Delete",
 };
-const phone = (page: Page) => (page.viewportSize()?.width ?? 1280) <= 700;
-const buttonLabel = (verb: CategoryVerb, name: string) =>
-  verb === "up"
-    ? `Move ${name} up`
-    : verb === "down"
-      ? `Move ${name} down`
-      : `${verb[0]?.toUpperCase()}${verb.slice(1)} ${name}`;
-const control = (page: Page, verb: CategoryVerb, name: string) =>
-  phone(page)
-    ? page.getByRole("menuitem", { name: menuLabel[verb], exact: true })
-    : page.getByRole("button", { name: buttonLabel(verb, name), exact: true });
-const openMenu = async (page: Page, name: string) => {
-  if (!phone(page)) return;
+const sheet = (page: Page, name: string) =>
+  page.getByRole("dialog", { name, exact: true });
+const row = (page: Page, verb: CategoryVerb, name: string) =>
+  sheet(page, name).getByRole("button", {
+    name: new RegExp(`^${rowLabel[verb]}`),
+  });
+
+/** Open a category's actions sheet; a subcategory is shown once its group is open, so everything is expanded first. */
+export async function openCategoryActions(page: Page, name: string) {
   const button = page.getByRole("button", {
     name: `Actions for ${name}`,
     exact: true,
   });
+  if ((await button.count()) === 0) {
+    const expand = page.getByRole("button", {
+      name: "Expand all",
+      exact: true,
+    });
+    if (await expand.count()) await expand.click();
+  }
   // The phone's Add button and an Undo toast sit at the bottom right, over a row's right-hand button that
   // has scrolled to the screen's edge: bring it to the middle first, as a person would.
   await button.evaluate((node) => node.scrollIntoView({ block: "center" }));
   await button.click();
-};
+  await sheet(page, name).waitFor();
+}
 
-/** Click a category action: an inline button on wide screens, a row-menu item on phones. */
+/** Click a category action in its actions sheet. */
 export async function clickCategoryAction(
   page: Page,
   verb: CategoryVerb,
   name: string,
 ) {
-  await openMenu(page, name);
-  await control(page, verb, name).click();
+  await openCategoryActions(page, name);
+  await row(page, verb, name).click();
 }
 
-/** Check a category action's state; on phones this opens the row menu and closes it again. */
+/** Check a category action's state: its sheet opens and closes again. */
 export async function expectCategoryAction(
   page: Page,
   verb: CategoryVerb,
   name: string,
   state: "enabled" | "disabled" | "visible",
 ) {
-  await openMenu(page, name);
-  const target = control(page, verb, name);
+  await openCategoryActions(page, name);
+  const target = row(page, verb, name);
   if (state === "enabled") await expect(target).toBeEnabled();
   else if (state === "disabled") await expect(target).toBeDisabled();
   else await expect(target).toBeVisible();
-  if (phone(page)) await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect(sheet(page, name)).toHaveCount(0);
 }

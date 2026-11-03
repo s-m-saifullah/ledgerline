@@ -5,11 +5,13 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { category, json, ledgerId } from "../../test-support/category-fixtures";
+import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { CategoriesPage } from "./categories-page";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -33,15 +35,44 @@ afterEach(() => {
   client?.clear();
   vi.unstubAllGlobals();
 });
+/** What the page last told the shell its one Add button does. */
+let pageAdd: PageAdd | null = null;
 function mount(fetchMock: ReturnType<typeof vi.fn<typeof fetch>>) {
   vi.stubGlobal("fetch", fetchMock);
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  pageAdd = null;
   render(
     <QueryClientProvider client={client}>
-      <CategoriesPage />
+      <PageAddProvider
+        value={(add) => {
+          pageAdd = add;
+        }}
+      >
+        <CategoriesPage />
+      </PageAddProvider>
     </QueryClientProvider>,
   );
 }
+/** A category's actions button, whether it is a main category or a subcategory. */
+const actionsButton = (name: string) =>
+  screen.findByRole("button", { name: `Actions for ${name}` });
+/** Open a category's actions sheet and return it. */
+async function openActions(name: string) {
+  await userEvent.click(await actionsButton(name));
+  return screen.getByRole("dialog", { name });
+}
+/** Open a category's actions sheet and pick one of its rows. */
+async function act(name: string, item: string) {
+  const sheet = await openActions(name);
+  await userEvent.click(within(sheet).getByRole("button", { name: item }));
+}
+/** The main categories of the kind on show, in order. */
+const rowNames = () =>
+  Array.from(
+    document.querySelectorAll(
+      '.cg-col[data-active="true"] .cg-toggle .ui-row-title',
+    ),
+  ).map((node) => node.textContent);
 const ledger = (role = "owner") => ({
   items: [
     {
@@ -61,7 +92,7 @@ it("offers manual or optional starter creation without silently writing", async 
       : json(ledger()),
   );
   mount(fetchMock);
-  await screen.findByText("Make room for your categories.");
+  await screen.findByText("No categories yet.");
   const starter = screen.getByRole("button", {
     name: "Add starter categories",
   });
@@ -90,12 +121,13 @@ it("permits viewer reads and filters without exposing mutation controls", async 
         : json(ledger("viewer")),
     ),
   );
-  await screen.findByRole("article", { name: "Food" });
+  await screen.findByText("Food");
   expect(
     screen.queryByRole("button", {
-      name: /Add.*category|Edit.*|Archive.*|Move.*/,
+      name: /Add.*category|Actions for.*/,
     }),
   ).not.toBeInTheDocument();
+  expect(pageAdd).toBeNull();
 });
 it("loads every page before reordering and submits the complete unfiltered group", async () => {
   const rows = Array.from({ length: 101 }, (_, index) =>
@@ -112,13 +144,11 @@ it("loads every page before reordering and submits the complete unfiltered group
       : json({ items: rows.slice(0, 100), nextCursor: rows[99]?.id });
   });
   mount(fetchMock);
-  await screen.findByRole("article", { name: last.name });
+  await screen.findByText(last.name);
   fireEvent.change(screen.getByLabelText("Search categories"), {
     target: { value: second.name },
   });
-  await userEvent.click(
-    screen.getByRole("button", { name: `Move ${second.name} up` }),
-  );
+  await act(second.name, "Move up");
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await waitFor(() =>
     expect(
@@ -159,26 +189,19 @@ it("saves each arrow click without a dialog and uses the returned versions on th
       : json(ledger());
   });
   mount(fetchMock);
-  await screen.findByRole("article", { name: first.name });
-  await userEvent.click(
-    screen.getByRole("button", { name: "Move Transport up" }),
-  );
-  await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Move Transport down" }),
-    ).toBeEnabled(),
-  );
-  expect(screen.getAllByRole("article")[0]).toHaveAccessibleName("Transport");
+  await screen.findByText(first.name);
+  await act("Transport", "Move up");
+  await waitFor(() => expect(rowNames()).toEqual(["Transport", "Food"]));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  await userEvent.click(
-    screen.getByRole("button", { name: "Move Transport down" }),
-  );
-  await waitFor(() =>
+  await waitFor(async () => {
+    const sheet = await openActions("Transport");
     expect(
-      screen.getByRole("button", { name: "Move Transport up" }),
-    ).toBeEnabled(),
-  );
-  expect(screen.getAllByRole("article")[0]).toHaveAccessibleName("Food");
+      within(sheet).getByRole("button", { name: "Move down" }),
+    ).toBeEnabled();
+    await userEvent.keyboard("{Escape}");
+  });
+  await act("Transport", "Move down");
+  await waitFor(() => expect(rowNames()).toEqual(["Food", "Transport"]));
   expect(writes).toHaveLength(2);
   expect(new Headers(writes[0]?.headers).get("Idempotency-Key")).not.toBe(
     new Headers(writes[1]?.headers).get("Idempotency-Key"),
@@ -214,18 +237,19 @@ it.each(["network", "server"] as const)(
         : json(ledger());
     });
     mount(fetchMock);
-    await screen.findByRole("article", { name: "Transport" });
-    await userEvent.click(
-      screen.getByRole("button", { name: "Move Transport up" }),
-    );
+    await screen.findByText("Transport");
+    await act("Transport", "Move up");
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Couldn't confirm the order",
     );
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add category" })).toBeDisabled();
+    expect(pageAdd?.disabled).toBe(true);
+    const locked = await openActions("Transport");
     expect(
-      screen.getByRole("button", { name: "Move Transport up" }),
+      within(locked).getByRole("button", { name: "Move up" }),
     ).toBeDisabled();
+    await userEvent.keyboard("{Escape}");
     await userEvent.click(screen.getByRole("button", { name: "Retry order" }));
     await waitFor(() =>
       expect(
@@ -236,7 +260,7 @@ it.each(["network", "server"] as const)(
     expect(new Headers(writes[1]?.headers).get("Idempotency-Key")).toBe(
       new Headers(writes[0]?.headers).get("Idempotency-Key"),
     );
-    expect(screen.getAllByRole("article")[0]).toHaveAccessibleName("Transport");
+    await waitFor(() => expect(rowNames()).toEqual(["Transport", "Food"]));
   },
 );
 it("requires an inline reload after a retry returns a definitive stale-order conflict", async () => {
@@ -281,19 +305,19 @@ it("requires an inline reload after a retry returns a definitive stale-order con
     return json({ items: rows, nextCursor: null });
   });
   mount(fetchMock);
-  await screen.findByRole("article", { name: "Transport" });
-  await userEvent.click(
-    screen.getByRole("button", { name: "Move Transport up" }),
-  );
+  await screen.findByText("Transport");
+  await act("Transport", "Move up");
   await screen.findByRole("alert");
   await userEvent.click(screen.getByRole("button", { name: "Retry order" }));
   await screen.findByRole("button", { name: "Reload categories" });
   expect(
     screen.queryByRole("button", { name: "Retry order" }),
   ).not.toBeInTheDocument();
+  const frozen = await openActions("Transport");
   expect(
-    screen.getByRole("button", { name: "Move Transport up" }),
+    within(frozen).getByRole("button", { name: "Move up" }),
   ).toBeDisabled();
+  await userEvent.keyboard("{Escape}");
   await userEvent.click(
     screen.getByRole("button", { name: "Reload categories" }),
   );
@@ -302,22 +326,22 @@ it("requires an inline reload after a retry returns a definitive stale-order con
   await userEvent.click(
     screen.getByRole("button", { name: "Reload categories" }),
   );
-  await waitFor(() =>
+  await waitFor(async () => {
+    const sheet = await openActions("Transport");
     expect(
-      screen.getByRole("button", { name: "Move Transport up" }),
-    ).toBeEnabled(),
-  );
+      within(sheet).getByRole("button", { name: "Move up" }),
+    ).toBeEnabled();
+    await userEvent.keyboard("{Escape}");
+  });
   expect(writes).toHaveLength(2);
-  await userEvent.click(
-    screen.getByRole("button", { name: "Move Transport up" }),
-  );
+  await act("Transport", "Move up");
   await waitFor(() => expect(writes).toHaveLength(3));
   expect(new Headers(writes[2]?.headers).get("Idempotency-Key")).not.toBe(
     new Headers(writes[1]?.headers).get("Idempotency-Key"),
   );
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
-it("offers labeled icon actions and requires the parent to be unarchived first", async () => {
+it("keeps an archived subcategory under its parent until the parent is unarchived, and a parent until its children are", async () => {
   const root = category("Food", {
     archivedAt: "2026-10-07T01:00:00.000Z",
     version: 2,
@@ -344,52 +368,39 @@ it("offers labeled icon actions and requires the parent to be unarchived first",
         : json(ledger());
     }),
   );
-  await screen.findByRole("article", { name: "Food" });
-  const edit = screen.getByRole("button", { name: "Edit Food" });
-  expect(edit).toHaveAttribute("title", "Edit category");
-  expect(edit.textContent).toBe("");
-  const restore = screen.getByRole("button", { name: "Unarchive Food" });
-  expect(restore).toHaveAttribute("title", "Unarchive category");
-  expect(restore.textContent).toBe("");
-  expect(
-    screen.getByRole("button", { name: "Unarchive Groceries" }),
-  ).toBeDisabled();
-  expect(
-    screen.getByRole("button", { name: "Unarchive Groceries" }),
-  ).toHaveAttribute("title", "Unarchive the parent first");
-  await userEvent.click(restore);
-  await userEvent.click(
-    screen.getByRole("button", { name: "Unarchive category" }),
-  );
-  await waitFor(() =>
-    expect(
-      screen.getByRole("button", { name: "Unarchive Groceries" }),
-    ).toBeEnabled(),
-  );
-  expect(screen.getByRole("button", { name: "Archive Food" })).toHaveAttribute(
-    "title",
-    "Archive category",
-  );
+  await screen.findByText("Food");
+  // The subcategory shows once its parent is opened.
+  await userEvent.click(screen.getByRole("button", { name: /^Food/ }));
+  const blocked = await openActions("Groceries");
+  const unarchiveChild = within(blocked).getByRole("button", {
+    name: /^Unarchive/,
+  });
+  expect(unarchiveChild).toBeDisabled();
+  expect(unarchiveChild).toHaveTextContent("Unarchive the main category first");
+  await userEvent.keyboard("{Escape}");
+  await act("Food", "Unarchive");
+  const ask = await screen.findByRole("dialog", { name: "Unarchive Food?" });
+  await userEvent.click(within(ask).getByRole("button", { name: "Unarchive" }));
+  await waitFor(() => expect(writes).toHaveLength(1));
   expect(JSON.parse(String(writes[0]?.body))).toEqual({ expectedVersion: 2 });
-  await userEvent.click(
-    screen.getByRole("button", { name: "Unarchive Groceries" }),
-  );
-  await userEvent.click(
-    screen.getByRole("button", { name: "Unarchive category" }),
-  );
-  await waitFor(() =>
+  await waitFor(async () => {
+    const sheet = await openActions("Groceries");
     expect(
-      screen.getByRole("button", { name: "Archive Groceries" }),
-    ).toBeEnabled(),
+      within(sheet).getByRole("button", { name: /^Unarchive/ }),
+    ).toBeEnabled();
+    await userEvent.keyboard("{Escape}");
+  });
+  await act("Groceries", "Unarchive");
+  await userEvent.click(
+    within(
+      await screen.findByRole("dialog", { name: "Unarchive Groceries?" }),
+    ).getByRole("button", { name: "Unarchive" }),
   );
-  expect(screen.getByRole("button", { name: "Archive Food" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Archive Food" })).toHaveAttribute(
-    "title",
-    "Archive active children first",
-  );
-  expect(
-    screen.queryByRole("button", { name: /^Unarchive / }),
-  ).not.toBeInTheDocument();
+  await waitFor(() => expect(writes).toHaveLength(2));
+  const food = await openActions("Food");
+  const archiveFood = within(food).getByRole("button", { name: /^Archive/ });
+  await waitFor(() => expect(archiveFood).toBeDisabled());
+  expect(archiveFood).toHaveTextContent("Archive its subcategories first");
 });
 it("offers a just-created parent immediately while the list refresh is pending", async () => {
   const root = category("New parent");
@@ -413,13 +424,11 @@ it("offers a just-created parent immediately while the list refresh is pending",
     await screen.findByRole("button", { name: "Add your first category" }),
   );
   await userEvent.type(screen.getByLabelText("Category name"), "New parent");
-  await userEvent.click(screen.getByRole("button", { name: "Add category" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() =>
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
   );
-  expect(
-    screen.getByRole("article", { name: "New parent" }),
-  ).toBeInTheDocument();
+  expect(screen.getByText("New parent")).toBeInTheDocument();
   await waitFor(() => expect(finishRefresh).toBeDefined());
   finishRefresh?.(json({ items: [root], nextCursor: null }));
   await waitFor(() =>
@@ -436,4 +445,271 @@ it("offers a just-created parent immediately while the list refresh is pending",
   expect(screen.getByLabelText("Parent category", { exact: true })).toHaveValue(
     root.name,
   );
+});
+
+const listMock = (rows: ReturnType<typeof category>[], role = "owner") =>
+  vi.fn<typeof fetch>(async (url) =>
+    String(url).includes("/categories")
+      ? json({ items: rows, nextCursor: null })
+      : json(ledger(role)),
+  );
+const food = category("Food", { sortOrder: 0 });
+const groceries = category("Groceries", { parentId: food.id, sortOrder: 0 });
+const dining = category("Dining", { parentId: food.id, sortOrder: 1 });
+const rent = category("Rent", { sortOrder: 1 });
+const salary = category("Salary", { kind: "income", sortOrder: 0 });
+const retired = category("Retired", {
+  sortOrder: 2,
+  archivedAt: "2026-10-07T01:00:00.000Z",
+});
+
+it("lists a main category with its one hint, closed, and opens it to its subcategories", async () => {
+  mount(listMock([food, groceries, dining, rent, salary]));
+  const row = await screen.findByRole("button", { name: /^Food/ });
+  expect(row).toHaveAttribute("aria-expanded", "false");
+  expect(row).toHaveTextContent("2 subcategories");
+  // A main category with nothing under it is a plain row, not a button that opens nothing.
+  expect(screen.getByText("Rent")).toBeInTheDocument();
+  expect(screen.getByText("Rent").closest(".cg-toggle")?.textContent).toContain(
+    "No subcategories",
+  );
+  expect(screen.queryByRole("button", { name: /^Rent/ })).toBeNull();
+  expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+  await userEvent.click(row);
+  expect(row).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByText("Groceries")).toBeInTheDocument();
+  expect(screen.getByText("Dining")).toBeInTheDocument();
+  await userEvent.click(row);
+  expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+});
+it("counts the main categories beside Expense and Income and shows one kind at a time through the switch", async () => {
+  mount(listMock([food, rent, salary]));
+  await screen.findByText("Food");
+  const kind = screen.getByRole("radiogroup", { name: "Category kind" });
+  expect(within(kind).getByRole("radio", { name: "Expense 2" })).toBeChecked();
+  expect(within(kind).getByRole("radio", { name: "Income 1" })).toBeTruthy();
+  expect(
+    document
+      .querySelector('.cg-col[data-active="true"]')
+      ?.textContent?.includes("Food"),
+  ).toBe(true);
+  await userEvent.click(within(kind).getByRole("radio", { name: "Income 1" }));
+  expect(rowNames()).toEqual(["Salary"]);
+});
+it("opens every group while searching, and filters on the subcategory's name", async () => {
+  mount(listMock([food, groceries, dining, rent]));
+  await screen.findByText("Food");
+  fireEvent.change(
+    screen.getByRole("searchbox", { name: "Search categories" }),
+    {
+      target: { value: "groc" },
+    },
+  );
+  expect(screen.getByText("Groceries")).toBeInTheDocument();
+  expect(screen.queryByText("Dining")).not.toBeInTheDocument();
+  expect(screen.queryByText("Rent")).not.toBeInTheDocument();
+  fireEvent.change(
+    screen.getByRole("searchbox", { name: "Search categories" }),
+    {
+      target: { value: "zzz" },
+    },
+  );
+  // Both kinds are in the page (the switch only shows one under 700 px), and both are empty now.
+  expect(screen.getAllByText("Nothing here.")).toHaveLength(2);
+});
+it("expands and collapses every group at once", async () => {
+  mount(listMock([food, groceries, dining, rent]));
+  await screen.findByText("Food");
+  await userEvent.click(screen.getByRole("button", { name: "Expand all" }));
+  expect(screen.getByText("Groceries")).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+  expect(screen.queryByText("Groceries")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Expand all" })).toBeTruthy();
+});
+it("has the status chips only while something is archived, with All until one is chosen", async () => {
+  mount(listMock([food, rent]));
+  await screen.findByText("Food");
+  expect(screen.queryByRole("group", { name: "View categories" })).toBeNull();
+  cleanup();
+  mount(listMock([food, retired]));
+  await screen.findByText("Food");
+  const chips = screen.getByRole("group", { name: "View categories" });
+  expect(rowNames()).toEqual(["Food", "Retired"]);
+  await userEvent.click(within(chips).getByRole("button", { name: "Active" }));
+  expect(rowNames()).toEqual(["Food"]);
+  await userEvent.click(
+    within(chips).getByRole("button", { name: "Archived" }),
+  );
+  expect(rowNames()).toEqual(["Retired"]);
+  expect(
+    screen.getByText("Retired").closest(".cg-toggle")?.textContent,
+  ).toContain("Archived");
+  await userEvent.click(within(chips).getByRole("button", { name: "All" }));
+  expect(rowNames()).toEqual(["Food", "Retired"]);
+});
+it("opens one actions sheet per category with every action, Delete last and the unavailable ones disabled with a reason", async () => {
+  mount(listMock([food, groceries, rent]));
+  await screen.findByText("Food");
+  const sheet = await openActions("Food");
+  const names = within(sheet)
+    .getAllByRole("button")
+    .map((b) => b.querySelector(".ui-row-title")?.textContent ?? b.textContent)
+    .filter((t) => t !== "Cancel");
+  expect(names).toEqual([
+    "Edit",
+    "Add subcategory",
+    "Move up",
+    "Move down",
+    "Archive",
+    "Delete",
+  ]);
+  expect(
+    within(sheet).getByRole("button", { name: /^Move up/ }),
+  ).toBeDisabled();
+  expect(
+    within(sheet).getByRole("button", { name: /^Move down/ }),
+  ).toBeEnabled();
+  expect(
+    within(sheet).getByRole("button", { name: /^Archive/ }),
+  ).toBeDisabled();
+  expect(
+    within(sheet).getByRole("button", { name: /^Archive/ }),
+  ).toHaveTextContent("Archive its subcategories first");
+  await userEvent.keyboard("{Escape}");
+  const rentSheet = await openActions("Rent");
+  expect(
+    within(rentSheet).getByRole("button", { name: /^Archive/ }),
+  ).toBeEnabled();
+});
+it("has no Add subcategory for a subcategory, and no Move for an archived category", async () => {
+  mount(listMock([food, groceries, retired]));
+  await screen.findByText("Food");
+  await userEvent.click(screen.getByRole("button", { name: /^Food/ }));
+  const sub = await openActions("Groceries");
+  expect(
+    within(sub).queryByRole("button", { name: "Add subcategory" }),
+  ).toBeNull();
+  await userEvent.keyboard("{Escape}");
+  const old = await openActions("Retired");
+  expect(within(old).queryByRole("button", { name: /^Move/ })).toBeNull();
+  expect(
+    within(old).queryByRole("button", { name: "Add subcategory" }),
+  ).toBeNull();
+  expect(within(old).getByRole("button", { name: "Unarchive" })).toBeEnabled();
+});
+it("adds a subcategory under the chosen main category, and the editor starts on it", async () => {
+  mount(listMock([food, rent]));
+  await screen.findByText("Food");
+  await act("Food", "Add subcategory");
+  const dialog = await screen.findByRole("dialog", { name: "Add category" });
+  expect(
+    within(dialog).getByLabelText("Parent category", { exact: true }),
+  ).toHaveValue("Food");
+  expect(within(dialog).getByRole("radio", { name: "Expense" })).toBeChecked();
+});
+it("edits a category from its sheet", async () => {
+  mount(listMock([food]));
+  await screen.findByText("Food");
+  await act("Food", "Edit");
+  const dialog = await screen.findByRole("dialog", { name: "Edit category" });
+  expect(within(dialog).getByLabelText("Category name")).toHaveValue("Food");
+});
+it("asks before deleting, in a question with Delete in red", async () => {
+  mount(listMock([rent]));
+  await screen.findByText("Rent");
+  await act("Rent", "Delete");
+  const ask = await screen.findByRole("dialog", { name: "Delete Rent?" });
+  expect(ask.className).toContain("ui-question");
+  expect(ask).toHaveTextContent("A deleted category has no Undo");
+  expect(
+    within(ask).getByRole("button", { name: "Delete" }).className,
+  ).toContain("danger");
+});
+it("the phone's one Add button adds a category, and is for writers with something listed", async () => {
+  mount(listMock([food]));
+  await screen.findByText("Food");
+  await waitFor(() => expect(pageAdd?.label).toBe("Add category"));
+  pageAdd?.onClick();
+  expect(
+    await screen.findByRole("dialog", { name: "Add category" }),
+  ).toBeTruthy();
+  cleanup();
+  mount(listMock([]));
+  await screen.findByText("No categories yet.");
+  expect(pageAdd).toBeNull();
+});
+it("starts a new category on the kind on show", async () => {
+  mount(listMock([food, salary]));
+  await screen.findByText("Food");
+  await userEvent.click(screen.getByRole("radio", { name: "Income 1" }));
+  await userEvent.click(screen.getByRole("button", { name: "Add category" }));
+  const dialog = await screen.findByRole("dialog", { name: "Add category" });
+  expect(within(dialog).getByRole("radio", { name: "Income" })).toBeChecked();
+});
+it("shows a viewer the list and a note, and opens nothing", async () => {
+  mount(listMock([food, groceries], "viewer"));
+  await screen.findByText("Food");
+  expect(
+    screen.getByText(/You can view categories in this ledger/),
+  ).toBeTruthy();
+  await userEvent.click(screen.getByRole("button", { name: /^Food/ }));
+  expect(screen.getByText("Groceries")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /^Groceries/ })).toBeNull();
+});
+it("says it could not load categories, and tries again", async () => {
+  let fail = true;
+  mount(
+    vi.fn<typeof fetch>(async (url) =>
+      String(url).includes("/categories")
+        ? fail
+          ? new Response("{}", { status: 500 })
+          : json({ items: [food], nextCursor: null })
+        : json(ledger()),
+    ),
+  );
+  expect(
+    await screen.findByText("Couldn't load your categories."),
+  ).toBeTruthy();
+  fail = false;
+  await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(await screen.findByText("Food")).toBeTruthy();
+});
+
+it("shows Delete in red and keeps the other rows plain", async () => {
+  mount(listMock([rent]));
+  await screen.findByText("Rent");
+  const sheet = await openActions("Rent");
+  const title = (name: string) =>
+    within(sheet).getByText(name, { selector: ".ui-row-title" });
+  expect(title("Delete").className).toContain("cg-danger");
+  expect(title("Edit").className).not.toContain("cg-danger");
+  expect(title("Archive").className).not.toContain("cg-danger");
+});
+it("says Category updated after saving an edit", async () => {
+  const fetchMock = vi.fn<typeof fetch>(async (url, options) => {
+    if (options?.method === "PATCH")
+      return json({ ...food, name: "Dinner", version: 2 });
+    return String(url).includes("/categories")
+      ? json({ items: [food], nextCursor: null })
+      : json(ledger());
+  });
+  mount(fetchMock);
+  await screen.findByText("Food");
+  await act("Food", "Edit");
+  const dialog = await screen.findByRole("dialog", { name: "Edit category" });
+  await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+  expect(
+    await screen.findByText("Category updated.", { selector: "p" }),
+  ).toBeInTheDocument();
+});
+it("starts a subcategory on its parent's kind, whichever kind is on show", async () => {
+  mount(listMock([food, salary]));
+  await screen.findByText("Food");
+  // The switch is on Expense; Salary is an income main category.
+  await act("Salary", "Add subcategory");
+  const dialog = await screen.findByRole("dialog", { name: "Add category" });
+  expect(within(dialog).getByRole("radio", { name: "Income" })).toBeChecked();
+  expect(
+    within(dialog).getByLabelText("Parent category", { exact: true }),
+  ).toHaveValue("Salary");
 });

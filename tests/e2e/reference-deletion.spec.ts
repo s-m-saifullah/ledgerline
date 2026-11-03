@@ -215,9 +215,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
   const transaction = await response.json();
   await openPage(page, "Categories");
   await clickCategoryAction(page, "delete", "Food");
-  await page
-    .getByRole("button", { name: "Delete category", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "Delete the connected transactions first",
   );
@@ -255,9 +253,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
   ).toBeVisible();
   await openPage(page, "Categories");
   await clickCategoryAction(page, "delete", "Food");
-  await page
-    .getByRole("button", { name: "Delete category", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
     page.getByText("Category deleted.", { exact: true }),
   ).toBeVisible();
@@ -313,19 +309,18 @@ test("requires child deletion and stale reload, replays category deletion and hi
       ),
     });
   }
-  await page
-    .getByRole("button", { name: "Delete category", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "child categories first",
   );
   await page
     .getByRole("button", { name: "Reload categories", exact: true })
     .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await clickCategoryAction(page, "delete", "Old category");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Delete category", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(
@@ -345,15 +340,14 @@ test("requires child deletion and stale reload, replays category deletion and hi
       )
     ).status(),
   ).toBe(200);
-  await page
-    .getByRole("button", { name: "Delete category", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "changed",
   );
   await page
     .getByRole("button", { name: "Reload categories", exact: true })
     .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   const seen: { body: string | null; key: string | undefined }[] = [];
   await page.route(
     `**/api/v1/ledgers/${ledgerId}/categories/${expenseId}`,
@@ -372,7 +366,7 @@ test("requires child deletion and stale reload, replays category deletion and hi
   await clickCategoryAction(page, "delete", "Food latest");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Delete category", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Retry action" }),

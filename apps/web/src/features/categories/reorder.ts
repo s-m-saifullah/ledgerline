@@ -81,5 +81,13 @@ export function useCategoryReorder(ledgerId: string) {
       inFlight.current = false;
     }
   };
-  return { state, error, notice, locked: state !== "idle", save, reload };
+  return {
+    state,
+    error,
+    notice,
+    locked: state !== "idle",
+    save,
+    reload,
+    clearNotice: () => setNotice(""),
+  };
 }
