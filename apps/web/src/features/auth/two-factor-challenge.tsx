@@ -1,13 +1,17 @@
-import { Button } from "@ledgerline/ui";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AuthMark } from "./sign-in";
 import {
   twoFactorMessage,
   verifyBackupCode,
   verifyCode,
 } from "./two-factor-api";
 
-/** The sign-in step after the password for someone who turned two-factor on (ADR 0038). */
+/**
+ * The sign-in step after the password for someone who turned two-factor on (ADR 0038; the prototype's `R["2fa"]`):
+ * the same card with a shield, one code row and Continue, then two plain text buttons. The 6-digit code is large
+ * and centred; a backup code is a plain text field.
+ */
 export function TwoFactorChallenge({
   onSuccess,
   onBack,
@@ -37,51 +41,61 @@ export function TwoFactorChallenge({
   };
   return (
     <>
-      <div className="small-mark">
-        <ShieldCheck size={24} />
+      <div className="au-head">
+        <AuthMark>
+          <ShieldCheck size={24} />
+        </AuthMark>
+        <h1 id="sign-in-title">Two-factor code</h1>
       </div>
-      <h2 id="sign-in-title">Two-factor code</h2>
-      <p className="muted">
+      <p className="sr-only">
         {useBackup
           ? "Enter one of your backup codes."
           : "Enter the 6-digit code from your authenticator app."}
       </p>
       <form
+        className="au-form"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
         }}
       >
-        <label className="field-label" htmlFor="two-factor-code">
-          {useBackup ? "Backup code" : "6-digit code"}
-        </label>
-        <input
-          id="two-factor-code"
-          ref={field}
-          value={code}
-          onChange={(event) => setCode(event.target.value)}
-          autoComplete="one-time-code"
-          inputMode={useBackup ? "text" : "numeric"}
-          autoCapitalize="none"
-          spellCheck={false}
-          aria-invalid={!!error}
-          aria-describedby={error ? "two-factor-error" : undefined}
-        />
+        <div className="au-card">
+          <div className="au-block">
+            <div className="au-row">
+              <label htmlFor="two-factor-code">
+                {useBackup ? "Backup code" : "6-digit code"}
+              </label>
+              <input
+                id="two-factor-code"
+                ref={field}
+                className={useBackup ? undefined : "au-code"}
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                autoComplete="one-time-code"
+                inputMode={useBackup ? "text" : "numeric"}
+                autoCapitalize="none"
+                spellCheck={false}
+                {...(useBackup ? {} : { placeholder: "000000" })}
+                aria-invalid={!!error}
+                aria-describedby={error ? "two-factor-error" : undefined}
+              />
+            </div>
+          </div>
+        </div>
         {error && (
           <p role="alert" className="field-error" id="two-factor-error">
             {error}
           </p>
         )}
-        <Button type="submit" disabled={busy}>
+        <button type="submit" className="ui-btn ui-btn-primary" disabled={busy}>
           {busy ? "Checking…" : "Continue"}
-          <ArrowRight size={18} />
-        </Button>
+        </button>
       </form>
-      <p className="two-factor-links">
+      <div className="au-links">
         <button
           type="button"
-          className="text-button"
+          className="ui-btn ui-btn-text"
           onClick={() => {
             setUseBackup(!useBackup);
             setCode("");
@@ -90,10 +104,10 @@ export function TwoFactorChallenge({
         >
           {useBackup ? "Use my authenticator app" : "Use a backup code instead"}
         </button>
-        <button type="button" className="text-button" onClick={onBack}>
+        <button type="button" className="ui-btn ui-btn-text" onClick={onBack}>
           Back to sign in
         </button>
-      </p>
+      </div>
     </>
   );
 }

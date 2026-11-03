@@ -104,15 +104,6 @@ select {
   font-weight: 600;
   margin-bottom: 16px;
 }
-.brand {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  gap: 12px;
-  font-size: 20px;
-  letter-spacing: -0.04em;
-  font-weight: 600;
-}
 .brand-mark {
   width: 34px;
   height: 34px;
@@ -194,42 +185,6 @@ select {
   font-size: 14px;
   line-height: 1.5;
 }
-.sign-in-layout {
-  min-height: 100dvh;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.sign-in-intro {
-  background: var(--accent-soft);
-  padding: 48px 64px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.sign-in-intro h1 {
-  font-size: clamp(40px, 5vw, 64px);
-  line-height: 1.1;
-}
-.intro-copy {
-  max-width: 380px;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 1.8;
-  margin-top: 24px;
-}
-.private-note {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  color: var(--muted);
-  font-size: 12px;
-}
-.sign-in-card {
-  align-self: center;
-  justify-self: center;
-  width: min(100%, 400px);
-  padding: 32px;
-}
 .small-mark {
   display: inline-flex;
   align-items: center;
@@ -240,33 +195,6 @@ select {
   background: var(--accent-soft);
   border-radius: 14px;
   margin-bottom: 24px;
-}
-.sign-in-card h2 {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-.sign-in-card form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 32px;
-}
-.sign-in-card label {
-  font-size: 12px;
-  font-weight: 500;
-}
-.sign-in-card label:not(:first-child) {
-  margin-top: 8px;
-}
-.sign-in-card .button {
-  margin-top: 12px;
-  justify-content: space-between;
-}
-.sign-in-footnote {
-  color: var(--muted);
-  font-size: 11px;
-  text-align: center;
-  margin-top: 28px;
 }
 .app-version {
   margin: 12px 0 0;
@@ -412,35 +340,8 @@ select {
   .stat-card {
     padding: 20px;
   }
-  .sign-in-intro {
-    padding: 40px;
-  }
 }
 @media (max-width: 700px) {
-  .sign-in-layout {
-    display: flex;
-    flex-direction: column;
-  }
-  .sign-in-intro {
-    padding: 28px 24px 32px;
-    gap: 36px;
-  }
-  .sign-in-intro h1 {
-    font-size: 40px;
-  }
-  .sign-in-intro .private-note {
-    display: none;
-  }
-  .intro-copy {
-    font-size: 14px;
-    margin-top: 16px;
-  }
-  .sign-in-card {
-    padding: 32px 24px;
-  }
-  .sign-in-card .small-mark {
-    display: none;
-  }
   .main-content {
     padding: 28px 20px;
   }
@@ -1262,19 +1163,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   background: transparent;
   color: inherit;
   cursor: pointer;
-}
-/* Two-factor sign-in (ADR 0038) */
-
-.two-factor-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 16px;
-  font-size: 14px;
-}
-.two-factor-links .text-button {
-  text-decoration: underline;
 }
 
 /* Disclosures (ADR 0039): every details/summary shows it can be pressed. The section row is the default;

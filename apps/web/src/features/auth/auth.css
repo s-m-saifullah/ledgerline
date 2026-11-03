@@ -1,0 +1,108 @@
+/*
+ * Sign-in and the code step (ADR 0047, the prototype's `R.signin` and `R["2fa"]`): one centred card of at most
+ * 400 px, no marketing half and no shell. Every class here starts with `au-` so no other feature's rule reaches
+ * it. Only the layout system's two widths are used (none is needed: one column serves every width).
+ */
+.au-page {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+.au-box {
+  display: grid;
+  gap: 16px;
+  width: min(400px, 100%);
+  min-width: 0;
+}
+.au-head {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.au-head h1 {
+  margin: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  text-align: center;
+}
+/* The shared brand mark, larger: 48 px, with the card's corner (the shape contract has no 14). */
+.au-mark {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--shape-card);
+}
+.au-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.au-card {
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.au-card > * + * {
+  border-top: 1px solid var(--border);
+}
+/*
+ * The card does not clip (a clip would cut a field's focus ring at the corners): its first and last blocks take
+ * the card's inner radius instead.
+ */
+.au-card > :first-child {
+  border-start-start-radius: calc(var(--shape-card) - 1px);
+  border-start-end-radius: calc(var(--shape-card) - 1px);
+}
+.au-card > :last-child {
+  border-end-start-radius: calc(var(--shape-card) - 1px);
+  border-end-end-radius: calc(var(--shape-card) - 1px);
+}
+.au-block {
+  min-width: 0;
+}
+/* A row: the label on the left, the box taking the rest (the prototype's input row). */
+.au-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 16px;
+  min-width: 0;
+}
+.au-row > label {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.au-row > input {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline-start: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  text-align: end;
+}
+/* The six digits: large, centred, spaced (the prototype's code input). */
+.au-row > input.au-code {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.au-err {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+.au-links {
+  display: grid;
+  justify-items: center;
+  gap: 0;
+}

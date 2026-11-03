@@ -1,13 +1,26 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInSchema } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
-import { ArrowRight, LockKeyhole } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { api } from "../../lib/api";
 import { TwoFactorChallenge } from "./two-factor-challenge";
+import "./auth.css";
 
+/** The mark above each step's heading: the brand's L, or a shield on the code step. */
+export function AuthMark({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="brand-mark au-mark" aria-hidden="true">
+      {children}
+    </span>
+  );
+}
+
+/**
+ * Sign-in (ADR 0047, the prototype's `R.signin`): one centred card with no marketing half. The mark, the heading,
+ * a card with an Email address row and a Password row, and one full-width Sign in. What the subtitle used to say
+ * is read aloud only. A password that opens a two-factor account goes on to the code step in the same card.
+ */
 export function SignIn({ onSuccess }: { onSuccess: () => Promise<void> }) {
   const [error, setError] = useState("");
   const [needsCode, setNeedsCode] = useState(false);
@@ -38,31 +51,8 @@ export function SignIn({ onSuccess }: { onSuccess: () => Promise<void> }) {
     }
   });
   return (
-    <main className="sign-in-layout">
-      <div className="sign-in-intro">
-        <a className="brand" href="/">
-          <span className="brand-mark">
-            L<span>↗</span>
-          </span>
-          Ledgerline
-        </a>
-        <div>
-          <p className="eyebrow">A LITTLE CLARITY, EVERY DAY</p>
-          <h1>
-            Your money.
-            <br />
-            Your own space.
-          </h1>
-          <p className="intro-copy">
-            A quiet place to keep track of what comes in, what goes out, and
-            what comes next.
-          </p>
-        </div>
-        <p className="private-note">
-          <LockKeyhole size={16} /> Private by design. Yours to keep.
-        </p>
-      </div>
-      <section className="sign-in-card" aria-labelledby="sign-in-title">
+    <main className="au-page" aria-labelledby="sign-in-title">
+      <div className="au-box">
         {needsCode ? (
           <TwoFactorChallenge
             onSuccess={onSuccess}
@@ -70,56 +60,72 @@ export function SignIn({ onSuccess }: { onSuccess: () => Promise<void> }) {
           />
         ) : (
           <>
-            <div className="small-mark">
-              <LockKeyhole size={24} />
+            <div className="au-head">
+              <AuthMark>
+                L<span>↗</span>
+              </AuthMark>
+              <h1 id="sign-in-title">Welcome back</h1>
             </div>
-            <h2 id="sign-in-title">Welcome back</h2>
-            <p className="muted">Sign in to your personal ledger.</p>
-            <form onSubmit={submit} noValidate>
-              <label htmlFor="email">Email address</label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="username"
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
-                {...register("email")}
-              />
-              {errors.email && (
-                <p className="field-error" id="email-error">
-                  Enter a valid email address.
-                </p>
-              )}
-              <label htmlFor="password">Password</label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                aria-invalid={!!errors.password}
-                aria-describedby={
-                  errors.password ? "password-error" : undefined
-                }
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="field-error" id="password-error">
-                  Use at least 12 characters.
-                </p>
-              )}
+            <p className="sr-only">Sign in to your personal ledger.</p>
+            <form className="au-form" onSubmit={submit} noValidate>
+              <div className="au-card">
+                <div className="au-block">
+                  <div className="au-row">
+                    <label htmlFor="email">Email address</label>
+                    <input
+                      id="email"
+                      type="email"
+                      autoComplete="username"
+                      aria-invalid={!!errors.email}
+                      aria-describedby={
+                        errors.email ? "email-error" : undefined
+                      }
+                      {...register("email")}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="field-error au-err" id="email-error">
+                      Enter a valid email address.
+                    </p>
+                  )}
+                </div>
+                <div className="au-block">
+                  <div className="au-row">
+                    <label htmlFor="password">Password</label>
+                    <input
+                      id="password"
+                      type="password"
+                      autoComplete="current-password"
+                      aria-invalid={!!errors.password}
+                      aria-describedby={
+                        errors.password ? "password-error" : undefined
+                      }
+                      {...register("password")}
+                    />
+                  </div>
+                  {errors.password && (
+                    <p className="field-error au-err" id="password-error">
+                      Use at least 12 characters.
+                    </p>
+                  )}
+                </div>
+              </div>
               {error && (
                 <p role="alert" className="field-error">
                   {error}
                 </p>
               )}
-              <Button type="submit" disabled={isSubmitting}>
+              <button
+                type="submit"
+                className="ui-btn ui-btn-primary"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? "Signing in…" : "Sign in"}
-                <ArrowRight size={18} />
-              </Button>
+              </button>
             </form>
           </>
         )}
-        <p className="sign-in-footnote">Your ledger is only open to you.</p>
-      </section>
+      </div>
     </main>
   );
 }

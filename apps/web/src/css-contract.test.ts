@@ -31,6 +31,7 @@ const files = [
   "features/accounts/accounts.css",
   "features/recurring/recurring.css",
   "features/tags/tags.css",
+  "features/auth/auth.css",
   "features/currencies/currencies.css",
 ];
 const css = (file: string) =>
