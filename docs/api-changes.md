@@ -2,6 +2,20 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.53 — The admin's routes for the people on this server
+
+No migration (ADR 0048, slice 3). New routes only, in a `Users` group; no existing response changes. All of them are **admin only**: no session is `401`, a person who is not the admin is `403` (whether or not the id they name exists), and every write needs `Origin` like the other writes. They take no `Idempotency-Key`. No response carries a password, a hash, a token or anything from a ledger, and the admin is not a member of anyone else's ledger, so the admin never sees anyone's money.
+
+- `GET /api/v1/users`: `{ items }`, oldest first, each `{ id, name, email, isAdmin, mustChangePassword, disabled, twoFactorEnabled, createdAt }`. Deleted people are not listed.
+- `POST /api/v1/users`: `{ name, email, temporaryPassword }` (12 to 128 characters, sent once, stored hashed, never returned or logged) makes a person with their own account and their own "Personal ledger" in USD, flagged `mustChangePassword`. Answers `201` with the list item. An email that exists, in any letter case and including a deleted person's, is `409`; two requests for the same email at once make one person. Unknown fields are ignored, so no one is made an admin here.
+- `PATCH /api/v1/users/{userId}`: `{ disabled }` stops or allows a person's sign-in. Stopping ends their sessions and app tokens; their ledger is untouched. Safe to repeat.
+- `POST /api/v1/users/{userId}/password`: `{ temporaryPassword }` replaces the password, flags the person and ends their sessions. `204`.
+- `DELETE /api/v1/users/{userId}/sessions`: ends all their sessions and app tokens. `204`, safe to repeat.
+- `DELETE /api/v1/users/{userId}/two-factor`: removes their authenticator secret and backup codes and ends their sessions. `204`, safe to repeat. The server command `reset-two-factor` shares the code.
+- `DELETE /api/v1/users/{userId}`: soft-deletes the person, their sign-in, their ledger and memberships, and ends their sessions. `204`. Their email stays taken. A person already deleted is `404`.
+- **The admin's own account** is `409` for every action above (stop, delete, reset, sign out, two-factor): its own password, devices and two-factor stay in Profile and Settings. An unknown or deleted id is `404`, a bad id or body `400`.
+- Two tests prove the separation: every documented ledger route, read and write, is called by each person against each other person's ledger with that ledger's own ids and answers `404` while the ledger stays byte-for-byte the same, and no person's reads hold anything of anyone else's.
+
 ## 0.1.52 — My account, and a first-sign-in password change
 
 Migration 0028 (ADR 0048): three columns on `users`, `is_admin`, `must_change_password` and `disabled_at`, all safe defaults, so an account that exists today reads "not temporary, not stopped"; the migration marks the earliest live account (the one the server was set up with) as the admin, and starting the API does the same for the configured owner. Only new routes, no existing response changes.

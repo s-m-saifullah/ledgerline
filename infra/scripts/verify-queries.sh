@@ -7,7 +7,7 @@
 # Checks that become manifest lines (check|name|value).
 VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans imports tags two_factor)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links rule_tags two_factor_links)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links rule_tags two_factor_links account_flags user_ledgers)
 
 verify_requires() {
   case "$1" in
@@ -20,6 +20,7 @@ verify_requires() {
     tips|tip_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='tip_payment_id')" ;;
     imports|import_links) echo "SELECT to_regclass('public.import_batches') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='import_batch_id')" ;;
     two_factor|two_factor_links) echo "SELECT to_regclass('public.two_factor') IS NOT NULL" ;;
+    account_flags|user_ledgers) echo "SELECT to_regclass('public.auth_accounts') IS NOT NULL AND to_regclass('public.ledgers') IS NOT NULL AND to_regclass('public.ledger_members') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='must_change_password')" ;;
     tags|tag_links) echo "SELECT to_regclass('public.tags') IS NOT NULL AND to_regclass('public.transaction_tags') IS NOT NULL" ;;
     rule_tags) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='recurring_rules' AND column_name='tag_ids')" ;;
     loans|loan_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='accounts' AND column_name='contact_id')" ;;
@@ -82,6 +83,10 @@ verify_sql() {
     two_factor) echo "SELECT (SELECT count(*) FROM two_factor WHERE deleted_at IS NULL AND verified) || '|' || (SELECT count(*) FROM two_factor WHERE deleted_at IS NULL AND NOT verified) || '|' || (SELECT count(*) FROM two_factor WHERE deleted_at IS NOT NULL) || '|' || (SELECT count(*) FROM users WHERE two_factor_enabled)" ;;
     # A user flagged as enrolled has exactly one live verified secret, and a live verified secret belongs to a flagged user.
     two_factor_links) echo "SELECT (SELECT count(*) FROM users u WHERE u.two_factor_enabled AND (SELECT count(*) FROM two_factor f WHERE f.user_id=u.id AND f.deleted_at IS NULL AND f.verified) <> 1) + (SELECT count(*) FROM two_factor f WHERE f.deleted_at IS NULL AND f.verified AND NOT EXISTS (SELECT 1 FROM users u WHERE u.id=f.user_id AND u.two_factor_enabled))" ;;
+    # Accounts the admin manages (ADR 0048). A person on a temporary password has a live password sign-in to change.
+    account_flags) echo "SELECT count(*) FROM users u WHERE u.deleted_at IS NULL AND u.must_change_password AND NOT EXISTS (SELECT 1 FROM auth_accounts a WHERE a.user_id=u.id AND a.provider_id='credential' AND a.deleted_at IS NULL AND coalesce(a.password,'') <> '')" ;;
+    # Every live person owns a live ledger of their own.
+    user_ledgers) echo "SELECT count(*) FROM users u WHERE u.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM ledger_members m JOIN ledgers l ON l.id=m.ledger_id WHERE m.user_id=u.id AND m.role='owner' AND m.deleted_at IS NULL AND l.deleted_at IS NULL)" ;;
     *) return 1 ;;
   esac
 }
