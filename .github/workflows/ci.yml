@@ -18,7 +18,7 @@ concurrency:
 # The suites run side by side and one final job, `check`, is the single required result (docs/CI.md):
 #   scope    what changed, so which suites must run (and the quick documentation checks)
 #   unit     lint, typecheck, unit and integration tests, build, API contract
-#   e2e      the browser tests, in two shards on separate runners
+#   e2e      the browser tests, in three shards on separate runners
 #   android  the Android app
 #   check    passes only when every job that had to run passed
 jobs:
@@ -121,7 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ['1/2', '2/2']
+        shard: ['1/3', '2/3', '3/3']
     name: e2e (${{ matrix.shard }})
     steps:
       - uses: actions/checkout@v7
