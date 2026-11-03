@@ -10,7 +10,7 @@ import {
   usdMoneySchema,
 } from "@ledgerline/shared";
 import { fromNodeHeaders } from "better-auth/node";
-import { sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import Fastify, { type FastifyError, LogController } from "fastify";
 import {
   jsonSchemaTransform,
@@ -21,10 +21,12 @@ import {
 import { z } from "zod";
 import type { Config } from "./config";
 import type { Database } from "./db/client";
+import { user } from "./db/schema";
 import { safeErrorFields } from "./lib/error-log";
 import { ApiProblem, problem } from "./lib/problem";
 import { accountRoutes } from "./modules/accounts/routes";
 import { mayReceiveDeviceToken } from "./modules/auth/device-token";
+import { accountGuard } from "./modules/auth/guard";
 import { createAuth } from "./modules/auth/service";
 import { sessionRoutes } from "./modules/auth/sessions-routes";
 import { budgetRoutes } from "./modules/budgets/routes";
@@ -41,6 +43,7 @@ import { importRoutes } from "./modules/imports/routes";
 import { ledgerRoutes } from "./modules/ledgers/routes";
 import { ledgerService } from "./modules/ledgers/service";
 import { loanRoutes } from "./modules/loans/routes";
+import { meRoutes } from "./modules/me/routes";
 import { receiptRoutes } from "./modules/receivables/receipt-routes";
 import { clientRoutes } from "./modules/receivables/routes";
 import { recurringRoutes } from "./modules/recurring/routes";
@@ -49,6 +52,23 @@ import { syncRoutes } from "./modules/sync/routes";
 import { tagRoutes } from "./modules/tags/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
+
+/** True when the email in a sign-in request belongs to a person whose sign-in was stopped. */
+async function isSignInStopped(db: Database, body: unknown) {
+  const email = (body as { email?: unknown } | null)?.email;
+  if (typeof email !== "string") return false;
+  const [found] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(
+      and(
+        eq(user.email, email.toLowerCase()),
+        isNull(user.deletedAt),
+        isNotNull(user.disabledAt),
+      ),
+    );
+  return Boolean(found);
+}
 
 /** The two-factor routes the browser may call (ADR 0038); every other auth route stays disabled. */
 const twoFactorPaths = [
@@ -79,7 +99,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.51" },
+      info: { title: "Ledgerline API", version: "0.1.52" },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -129,13 +149,21 @@ export async function buildApp(
     },
   });
   const auth = createAuth(db, config);
+  // A person on a temporary password, or whose sign-in was stopped, is refused on every /api/v1 route (ADR 0048).
+  app.addHook("onRequest", accountGuard(auth));
   app.setErrorHandler<FastifyError>((error, request, reply) => {
     if (error instanceof ApiProblem)
       return reply
         .code(error.statusCode)
         .type("application/problem+json")
         .send(
-          problem(error.statusCode, error.title, error.detail, error.errors),
+          problem(
+            error.statusCode,
+            error.title,
+            error.detail,
+            error.errors,
+            error.type,
+          ),
         );
     const status = error.validation
       ? 400
@@ -256,6 +284,21 @@ export async function buildApp(
           .type("application/problem+json")
           .send(problem(403, "Forbidden", "Request origin is not allowed."));
       }
+      // A person whose sign-in was stopped gets the same answer as a wrong password (ADR 0048).
+      if (
+        path === "/api/v1/auth/sign-in/email" &&
+        (await isSignInStopped(db, request.body))
+      )
+        return reply
+          .code(401)
+          .type("application/problem+json")
+          .send(
+            problem(
+              401,
+              "Authentication failed",
+              "Check your credentials and try again.",
+            ),
+          );
       const response = await auth.handler(
         new Request(new URL(request.url, config.APP_URL), {
           method: request.method,
@@ -375,6 +418,7 @@ export async function buildApp(
   await app.register(syncRoutes, { db, config, auth });
   await app.register(changeRoutes, { db, auth });
   await app.register(sessionRoutes, { db, config, auth });
+  await app.register(meRoutes, { db, config, auth, now });
   await app.register(exportRoutes, { db, config, auth });
   await app.register(importRoutes, { db, config, auth });
   await app.register(tagRoutes, { db, config, auth });

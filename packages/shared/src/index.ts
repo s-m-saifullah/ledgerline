@@ -9,6 +9,7 @@ export * from "./csv-parse";
 export * from "./currency";
 export * from "./dates";
 export * from "./exports";
+export * from "./me";
 export * from "./sessions";
 export * from "./sync";
 export * from "./tags";
