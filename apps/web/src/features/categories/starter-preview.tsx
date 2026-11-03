@@ -97,7 +97,7 @@ export function StarterButton({
     >
       <button
         type="button"
-        className="button"
+        className="ui-btn ui-btn-primary"
         aria-describedby={hintId}
         disabled={disabled}
         onClick={() => {

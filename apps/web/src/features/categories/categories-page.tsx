@@ -1,29 +1,37 @@
 import type { Category, ledgerSchema } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import {
+  EmptyState,
+  FilterChip,
+  SectionLabel,
+  SegmentedControl,
+} from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
-import { useIsPhone } from "../../components/action-bar";
+import { LoadError } from "../../components/load-error";
+import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
+import { usePageAdd } from "../shell/page-add";
 import { CategoryActionDialog } from "./action-dialog";
 import { getCategories } from "./api";
+import { CategoryActions } from "./category-actions";
+import { CategoryCard } from "./category-list";
+import type { DialogIntent, DialogState } from "./dialog-state";
 import { CategoryEditor } from "./editor";
-import type {
-  CategoriesViewContext,
-  DialogIntent,
-  DialogState,
-} from "./list/context";
-import {
-  renderGroups,
-  renderNotices,
-  renderStates,
-  renderToolbar,
-} from "./list/sections";
 import { useCategoryMergeWorkspace } from "./merge-workspace";
+import {
+  activeRootCount,
+  allOpen,
+  anyArchived,
+  buildGroups,
+  resolveStatus,
+  type StatusFilter,
+} from "./model";
 import { useCategoryReorder } from "./reorder";
-import { byOrder } from "./tree";
+import { StarterButton } from "./starter-preview";
+import "./categories.css";
 
 export function CategoriesPage() {
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
@@ -31,35 +39,41 @@ export function CategoriesPage() {
   if (ledgers.isPending) return <p role="status">Opening your categories…</p>;
   if (ledgers.isError || !ledger)
     return (
-      <section className="settings-card">
-        <h1>Categories</h1>
-        <p role="alert">
-          {ledgers.isError
-            ? "Couldn't load your ledger."
-            : "No ledger is available for this session."}
-        </p>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => void ledgers.refetch()}
-        >
-          Try again
-        </button>
-      </section>
+      <div className="cg-page">
+        <div className="page-heading">
+          <h1 id="categories-title" tabIndex={-1}>
+            Categories
+          </h1>
+        </div>
+        {ledgers.isError ? (
+          <LoadError
+            message="Couldn't load your ledger."
+            onRetry={() => void ledgers.refetch()}
+          />
+        ) : (
+          <p role="alert">No ledger is available for this session.</p>
+        )}
+      </div>
     );
   return <LedgerCategories key={ledger.id} ledger={ledger} />;
 }
+
+/**
+ * Categories (ADR 0047, the prototype's `R.categories`): Expense and Income as one accordion card each, side by
+ * side from 700 px and one at a time under it by a switch; one actions sheet per category.
+ */
 function LedgerCategories({
   ledger,
 }: {
   ledger: z.infer<typeof ledgerSchema>;
 }) {
   const client = useQueryClient();
-  const phone = useIsPhone();
   const [kind, setKind] = useState<Category["kind"]>("expense");
-  const [status, setStatus] = useState<"all" | "active" | "archived">("all");
+  const [chosen, setChosen] = useState<StatusFilter | null>(null);
   const [search, setSearch] = useState("");
+  const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
   const [dialog, setDialog] = useState<DialogState | null>(null);
+  const [actions, setActions] = useState<Category | null>(null);
   const [notice, setNotice] = useState("");
   const writable = ledger.role !== "viewer";
   const query = useQuery({
@@ -71,6 +85,8 @@ function LedgerCategories({
   const reorder = useCategoryReorder(ledger.id);
   const merge = useCategoryMergeWorkspace();
   const locked = !!dialog?.unconfirmed || reorder.locked || !!merge?.blocked;
+  // The chips mean nothing until something is archived, so All stands until then.
+  const status = resolveStatus(chosen, items);
   const start = (intent: DialogIntent) => {
     if (reorder.locked || merge?.blocked) return;
     if (dialog?.unconfirmed) {
@@ -85,6 +101,15 @@ function LedgerCategories({
       unconfirmed: false,
     });
   };
+  usePageAdd(
+    writable && items.length > 0
+      ? {
+          label: "Add category",
+          disabled: locked || query.isFetching || query.isError,
+          onClick: () => start({ kind: "edit" }),
+        }
+      : null,
+  );
   const dismiss = () =>
     setDialog((current) =>
       current?.unconfirmed ? { ...current, open: false } : null,
@@ -108,7 +133,7 @@ function LedgerCategories({
             : dialog.action.kind === "delete"
               ? "Category deleted."
               : "Starter categories created."
-        : dialog?.category
+        : dialog?.kind === "edit" && dialog.category
           ? "Category updated."
           : "Category added.",
     );
@@ -116,78 +141,261 @@ function LedgerCategories({
     void client.invalidateQueries({ queryKey: ["categories", ledger.id] });
     void client.invalidateQueries({ queryKey: ["home", ledger.id] });
   };
-  const matches = (row: Category, root: Category) =>
-    (status === "all" ||
-      (status === "archived" ? !!row.archivedAt : !row.archivedAt)) &&
-    `${root.name} ${row.name}`
-      .toLocaleLowerCase()
-      .includes(search.trim().toLocaleLowerCase());
-  const groups = items
-    .filter((row) => row.kind === kind && !row.parentId)
-    .sort(byOrder)
-    .map((root) => ({
-      root,
-      children: items
-        .filter((row) => row.parentId === root.id)
-        .sort(byOrder)
-        .filter((row) => matches(row, root)),
-      showRoot: matches(root, root),
-    }))
-    .filter((group) => group.showRoot || group.children.length > 0);
-  const form: CategoriesViewContext = {
-    items,
-    groups,
-    writable,
-    phone,
-    locked,
-    query,
-    dialog,
-    setDialog,
-    notice,
-    setNotice,
-    reorder,
-    merge,
-    start,
-    kind,
-    setKind,
-    status,
-    setStatus,
-    search,
-    setSearch,
-  };
+  const kinds = ["expense", "income"] as const;
+  const groupsOf = (value: Category["kind"]) =>
+    buildGroups(items, value, status, search);
+  const toggle = (id: string) =>
+    setOpen((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  const visible = kinds.flatMap(groupsOf);
+  const everyOpen = allOpen(visible, open);
+  const shownNotice = notice || (reorder.notice ?? "");
   return (
-    <>
-      <div className="page-heading accounts-heading">
-        <div>
-          <p className="eyebrow">YOUR PERSONAL LEDGER</p>
-          <h1 id="categories-title" tabIndex={-1}>
-            Categories
-          </h1>
-          <p className="muted">
-            Organize money coming in and going out, your way.
-          </p>
-        </div>
+    <div className="cg-page">
+      <div className="page-heading cg-head-bar">
+        <h1 id="categories-title" tabIndex={-1}>
+          Categories
+        </h1>
         {writable && items.length > 0 && (
-          <Button
+          <button
+            type="button"
+            id="add-category"
+            className="ui-btn ui-btn-primary cg-add"
             disabled={locked || query.isFetching || query.isError}
             onClick={() => start({ kind: "edit" })}
           >
-            <Plus size={18} />
+            <Plus size={18} aria-hidden="true" />
             Add category
-          </Button>
+          </button>
         )}
       </div>
-      {renderNotices(form)}
-      {renderToolbar(form)}
-      {renderStates(form)}
-      {!query.isError && (
-        <div className="category-groups">{renderGroups(form)}</div>
+      {reorder.state === "saving" && (
+        <p className="cg-note" role="status">
+          Saving category order…
+        </p>
+      )}
+      {reorder.error && (
+        <section className="ui-card cg-alert">
+          <p className="field-error" role="alert">
+            {reorder.error}
+          </p>
+          {reorder.state === "uncertain" && (
+            <button
+              type="button"
+              className="ui-btn ui-btn-secondary"
+              onClick={() => void reorder.save()}
+            >
+              Retry order
+            </button>
+          )}
+          {reorder.state === "conflict" && (
+            <button
+              type="button"
+              className="ui-btn ui-btn-secondary"
+              onClick={() => void reorder.reload()}
+            >
+              Reload categories
+            </button>
+          )}
+        </section>
+      )}
+      {dialog?.unconfirmed && !dialog.open && (
+        <section className="ui-card cg-alert">
+          <p>An action needs confirmation.</p>
+          <button
+            type="button"
+            className="ui-btn ui-btn-secondary"
+            onClick={() =>
+              setDialog((current) =>
+                current ? { ...current, open: true } : null,
+              )
+            }
+          >
+            Resume action
+          </button>
+        </section>
+      )}
+      {!writable && (
+        <p className="cg-note">
+          You can view categories in this ledger. Editing is available to owners
+          and editors.
+        </p>
+      )}
+      {query.isPending && (
+        <p className="muted" role="status">
+          Loading categories…
+        </p>
+      )}
+      {query.isError && (
+        <LoadError
+          message="Couldn't load your categories."
+          onRetry={() => void query.refetch()}
+          retryLabel="Try again"
+        />
+      )}
+      {!query.isPending && !query.isError && items.length === 0 && (
+        <div className="ui-card cg-empty">
+          <EmptyState text="No categories yet." />
+          {writable && (
+            <div className="cg-empty-actions">
+              <StarterButton
+                disabled={locked}
+                onChoose={() =>
+                  start({ kind: "action", action: { kind: "starter" } })
+                }
+              />
+              <button
+                type="button"
+                className="ui-btn ui-btn-secondary"
+                disabled={locked}
+                onClick={() => start({ kind: "edit" })}
+              >
+                <Plus size={18} aria-hidden="true" />
+                Add your first category
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {!query.isError && items.length > 0 && (
+        <>
+          <div className="cg-kind">
+            <SegmentedControl
+              label="Category kind"
+              value={kind}
+              onChange={setKind}
+              options={[
+                {
+                  value: "expense",
+                  label: `Expense ${activeRootCount(items, "expense")}`,
+                },
+                {
+                  value: "income",
+                  label: `Income ${activeRootCount(items, "income")}`,
+                },
+              ]}
+            />
+          </div>
+          <search className="cg-search">
+            <label htmlFor="category-search" className="sr-only">
+              Search categories
+            </label>
+            <Search size={18} aria-hidden="true" />
+            <input
+              id="category-search"
+              type="search"
+              value={search}
+              autoComplete="off"
+              maxLength={200}
+              placeholder="Search categories"
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </search>
+          <div className="cg-bar">
+            {anyArchived(items) ? (
+              <fieldset className="cg-chips">
+                <legend className="sr-only">View categories</legend>
+                <FilterChip
+                  selected={status === "active"}
+                  onClick={() => setChosen("active")}
+                >
+                  Active
+                </FilterChip>
+                <FilterChip
+                  selected={status === "archived"}
+                  onClick={() => setChosen("archived")}
+                >
+                  Archived
+                </FilterChip>
+                <FilterChip
+                  selected={status === "all"}
+                  onClick={() => setChosen("all")}
+                >
+                  All
+                </FilterChip>
+              </fieldset>
+            ) : (
+              <span />
+            )}
+            <button
+              type="button"
+              className="ui-btn ui-btn-text"
+              onClick={() =>
+                setOpen(
+                  everyOpen
+                    ? new Set()
+                    : new Set(
+                        visible
+                          .filter((group) => group.children.length > 0)
+                          .map((group) => group.root.id),
+                      ),
+                )
+              }
+            >
+              {everyOpen ? "Collapse all" : "Expand all"}
+            </button>
+          </div>
+          <div className="cg-cols">
+            {kinds.map((value) => (
+              <div
+                key={value}
+                className="cg-col"
+                data-active={value === kind ? "true" : "false"}
+              >
+                <SectionLabel>
+                  {value === "expense" ? "Expense" : "Income"} ·{" "}
+                  {activeRootCount(items, value)}
+                </SectionLabel>
+                <CategoryCard
+                  groups={groupsOf(value)}
+                  open={open}
+                  searching={!!search.trim()}
+                  writable={writable}
+                  onToggle={toggle}
+                  onActions={setActions}
+                />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {shownNotice && (
+        <Toast
+          label="Category notification"
+          className="cg-toast"
+          durationMs={3000}
+          onExpire={() => {
+            setNotice("");
+            reorder.clearNotice();
+          }}
+        >
+          <p role="status">{shownNotice}</p>
+        </Toast>
+      )}
+      {actions && (
+        <CategoryActions
+          category={actions}
+          items={items}
+          disabled={locked || query.isFetching}
+          canMerge={!!merge}
+          onClose={() => setActions(null)}
+          onStart={start}
+          onMove={(body) => {
+            setNotice("");
+            void reorder.save(body);
+          }}
+          onMerge={() => merge?.begin(actions, `edit-category-${actions.id}`)}
+        />
       )}
       {dialog?.kind === "edit" && (
         <CategoryEditor
           key={dialog.intentId}
           ledgerId={ledger.id}
           category={dialog.category}
+          parentId={dialog.parentId}
           categories={items}
           kind={kind}
           open={dialog.open}
@@ -214,6 +422,6 @@ function LedgerCategories({
           }}
         />
       )}
-    </>
+    </div>
   );
 }

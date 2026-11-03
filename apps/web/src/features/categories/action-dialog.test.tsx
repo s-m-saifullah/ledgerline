@@ -60,11 +60,11 @@ it.each(actions)(
     render(<Host />);
     const label =
       action.kind === "delete"
-        ? "Delete category"
+        ? "Delete"
         : action.kind === "archive"
-          ? "Archive category"
+          ? "Archive"
           : action.kind === "unarchive"
-            ? "Unarchive category"
+            ? "Unarchive"
             : "Create categories";
     await userEvent.click(screen.getByRole("button", { name: label }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -162,14 +162,12 @@ it("reloads a stale unarchive before a fresh action", async () => {
       onReloaded={reloaded}
     />,
   );
-  await userEvent.click(
-    screen.getByRole("button", { name: "Unarchive category" }),
-  );
+  await userEvent.click(screen.getByRole("button", { name: "Unarchive" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "This category changed",
   );
   expect(
-    screen.queryByRole("button", { name: "Unarchive category" }),
+    screen.queryByRole("button", { name: "Unarchive" }),
   ).not.toBeInTheDocument();
   await userEvent.click(
     screen.getByRole("button", { name: "Reload categories" }),

@@ -1,0 +1,303 @@
+/*
+ * Categories (ADR 0047): Expense and Income as one accordion card each, side by side from 700 px and one at a time
+ * under it (the switch above chooses). A main category is a row that opens to its subcategories; the editors'
+ * classes are `cg-` too, so no other feature's rule reaches them. Widths are the layout system's two.
+ */
+.cg-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .cg-page {
+    gap: 16px;
+  }
+}
+.cg-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.cg-head-bar h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* Under 700 px the top bar and the one Add button do this. */
+.cg-add {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .cg-add {
+    display: inline-flex;
+  }
+}
+.cg-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.cg-alert,
+.cg-empty {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+/* Two buttons, one under the other on a phone and side by side from 700 px. */
+.cg-empty-actions {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+.cg-empty-actions > button,
+.cg-empty-actions .starter-button-wrap,
+.cg-empty-actions .starter-button-wrap > button {
+  width: 100%;
+}
+@container app (min-width: 700px) {
+  .cg-empty-actions {
+    display: flex;
+    flex-wrap: wrap;
+    width: auto;
+  }
+  .cg-empty-actions > button,
+  .cg-empty-actions .starter-button-wrap,
+  .cg-empty-actions .starter-button-wrap > button {
+    width: auto;
+  }
+}
+/* The starter hint hangs below the card's content, so this card must not clip it. */
+.cg-empty {
+  overflow: visible;
+}
+/* The switch is for a phone; from 700 px both kinds are on screen. */
+.cg-kind {
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .cg-kind {
+    display: none;
+  }
+}
+.cg-search {
+  position: relative;
+  min-width: 0;
+}
+.cg-search svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.cg-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border-radius: var(--shape-field);
+  background: var(--tint);
+}
+.cg-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.cg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.cg-cols {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+.cg-col {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+.cg-col > .ui-section-label {
+  display: none;
+}
+.cg-col[data-active="false"] {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .cg-cols {
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cg-col,
+  .cg-col[data-active="false"] {
+    display: grid;
+  }
+  .cg-col > .ui-section-label {
+    display: block;
+  }
+}
+/* A main category: its row opens the subcategories, its own button opens the actions. */
+.cg-group[data-open="true"] {
+  background: var(--tint);
+}
+.cg-head {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.cg-toggle {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cg-more {
+  flex: none;
+  margin-inline-end: 4px;
+}
+.cg-subs {
+  display: grid;
+}
+.cg-sub {
+  min-height: 48px;
+  padding-inline-start: 64px;
+  border-top: 1px solid var(--border);
+  text-align: start;
+}
+/* Titles and hints wrap instead of being cut, so a long name stays readable at 320 px. */
+.cg-page .ui-row-title,
+.cg-page .ui-row-hint,
+.cg-form .ui-row-title,
+.cg-form .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.cg-danger {
+  color: var(--danger);
+}
+.cg-danger-tile {
+  display: contents;
+  color: var(--danger);
+}
+.cg-danger-tile .ui-tile {
+  background: color-mix(in oklab, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+/* What goes inside the shared sheet: a field has its label above, cards are bordered. */
+.cg-form,
+.cg-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.cg-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.cg-form .ui-seg {
+  min-width: 0;
+}
+.cg-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.cg-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cg-field .category-picker {
+  margin: 0;
+}
+/* The parent picker's own label sits like the other fields' labels. */
+.cg-field .category-picker > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.cg-group-card {
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.cg-group-card > * + * {
+  border-top: 1px solid var(--border);
+}
+.cg-group-card > .ui-row:first-child {
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.cg-group-card > .ui-row:last-child {
+  border-radius: 0 0 var(--shape-card) var(--shape-card);
+}
+.cg-preview {
+  display: grid;
+  gap: 8px;
+}
+.cg-preview ul {
+  margin: 0;
+  padding-inline-start: 18px;
+}
+/* Icon and colour: the choice and every option are drawn with their icon or colour beside the name. */
+.cg-choice {
+  display: block;
+}
+.cg-choice + .cg-choice {
+  border-top: 1px solid var(--border);
+}
+.cg-choice-head {
+  width: 100%;
+}
+.cg-choice-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-size: 14px;
+  color: var(--muted);
+}
+.cg-choice-list {
+  display: grid;
+  border-top: 1px solid var(--border);
+  background: var(--tint);
+}
+.cg-choice-option {
+  min-height: 48px;
+  text-align: start;
+}
+.cg-choice-option + .cg-choice-option {
+  border-top: 1px solid var(--border);
+}
+.cg-check {
+  flex: none;
+  color: var(--accent);
+}
+.cg-swatch {
+  display: inline-block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+.cg-swatch[data-empty="true"] {
+  border-style: dashed;
+  border-color: var(--muted);
+}

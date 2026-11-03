@@ -699,18 +699,6 @@ select {
 .account-dialog-actions button {
   min-height: 48px;
 }
-.category-merge-dialog > fieldset {
-  min-width: 0;
-  border: 0;
-  margin: 24px 0;
-  padding: 0;
-}
-.category-merge-dialog .account-dialog-actions {
-  position: sticky;
-  bottom: -24px;
-  padding: 16px 0;
-  background: var(--surface);
-}
 @media (max-width: 1000px) {
   .accounts-grid {
     grid-template-columns: 1fr;
@@ -752,41 +740,6 @@ select {
     padding: 12px;
   }
 }
-
-.category-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: end;
-  margin: 28px 0;
-}
-.category-kind-buttons {
-  border: 0;
-  padding: 0;
-  margin: 0;
-  min-width: 0;
-  display: flex;
-  gap: 8px;
-}
-.category-kind-buttons button[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--text);
-}
-.category-status,
-.category-search {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.category-search {
-  flex: 1;
-  min-width: 160px;
-}
-.category-toolbar select,
-.category-fields select,
 .category-picker select {
   width: 100%;
   min-height: 48px;
@@ -805,58 +758,6 @@ select {
   width: 100%;
   min-width: 0;
   padding-inline-end: 40px;
-}
-.category-groups {
-  display: grid;
-  gap: 16px;
-}
-.category-group {
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-  overflow: hidden;
-}
-.category-row {
-  padding: 18px 20px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 12px;
-}
-.category-row + .category-row {
-  border-top: 1px solid var(--border);
-}
-.category-row h2,
-.category-row h3 {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.category-row-heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-.category-row-heading > div {
-  min-width: 0;
-}
-.category-child {
-  padding-left: 48px;
-}
-.category-controls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.category-archive-help {
-  grid-column: 1 / -1;
-  margin: 0;
 }
 .category-mark {
   display: inline-flex;
@@ -879,22 +780,6 @@ select {
   height: 8px;
   border-radius: 50%;
 }
-.category-parent-context {
-  font-size: 14px;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  color: var(--muted);
-}
-.category-empty-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 24px;
-}
-.category-empty-actions > button {
-  min-height: 48px;
-}
 .category-picker {
   display: grid;
   gap: 8px;
@@ -902,16 +787,6 @@ select {
 }
 .category-picker label {
   margin: 0;
-}
-.category-preview {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding-top: 8px;
-  overflow-wrap: anywhere;
-}
-.category-fields > .category-select {
-  margin-bottom: 16px;
 }
 .starter-preview {
   padding: 0;
@@ -932,41 +807,8 @@ select {
   margin-top: 4px;
 }
 @media (max-width: 700px) {
-  .category-status,
-  .category-search {
-    width: 100%;
-  }
-  .category-row {
-    padding: 12px;
-    column-gap: 8px;
-  }
-  .category-row-heading {
-    gap: 8px;
-  }
-  .category-row-heading .category-mark {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-  }
-  .category-child {
-    padding-left: 24px;
-  }
-  .category-controls {
-    gap: 0;
-  }
-  .category-empty-actions {
-    flex-direction: column;
-  }
-  .category-fields select,
   .category-picker select {
     font-size: 16px;
-  }
-}
-
-@media (max-width: 380px) {
-  .category-controls {
-    display: grid;
-    grid-template-columns: repeat(2, 44px);
   }
 }
 
@@ -1384,16 +1226,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     padding-bottom: calc(540px + env(safe-area-inset-bottom));
   }
 }
-
-.action-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.action-button svg {
-  flex-shrink: 0;
-}
 /* Phones: secondary actions become 44 px icon buttons; primary actions keep their text. */
 @media (max-width: 700px) {
   .action-icon {
@@ -1409,22 +1241,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-}
-
-.action-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-}
-.action-bar > button.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  padding-block: 10px;
 }
 .action-primary {
   flex: 1 1 auto;
@@ -1442,33 +1258,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     text-align: start;
   }
 }
-.action-menu {
-  z-index: 60;
-  min-width: 200px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
-}
-.action-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: var(--text);
-  cursor: pointer;
-  outline: none;
-}
-.action-menu-item[data-highlighted] {
-  background: var(--accent-soft);
-}
-.action-menu-item[data-disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 /* Delete is destructive: red everywhere (ADR 0014). */
 .danger-action {
@@ -1480,9 +1269,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
 .button.danger-action {
   background: var(--danger);
   color: var(--danger-foreground);
-}
-.action-menu-item.danger-action[data-highlighted] {
-  background: color-mix(in srgb, var(--danger) 14%, transparent);
 }
 
 .transaction-toast {
@@ -1607,16 +1393,11 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   border-radius: 12px;
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 12px 40px #0002;
-  font-size: 13px;
+  font-size: 12px;
   text-align: left;
 }
 .starter-hint p {
   margin: 0 0 8px;
-}
-.category-empty-actions .starter-button-wrap > button {
-  width: 100%;
-  min-height: 48px;
 }
 .starter-hint[hidden] {
   display: none;
@@ -1626,10 +1407,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   .starter-hint {
     display: none;
   }
-}
-/* The starter hint hangs below the card's content, so this card must not clip it. */
-.category-empty {
-  overflow: visible;
 }
 .time-period {
   display: flex;
@@ -1647,15 +1424,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   border-color: var(--accent);
   color: var(--accent);
   background: var(--accent-soft);
-}
-@media (max-width: 700px) {
-  /* Phones: the full name wraps instead of being cut off; actions live in the row menu. */
-  .category-row h2,
-  .category-row h3 {
-    white-space: normal;
-    overflow-wrap: anywhere;
-    text-overflow: clip;
-  }
 }
 
 /* Budgets */

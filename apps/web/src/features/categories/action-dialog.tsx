@@ -4,9 +4,8 @@ import {
   defaultCategoryStarterSet,
   type StarterGroupKey,
 } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { useRef, useState } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import {
   getCategories,
@@ -47,11 +46,11 @@ export function CategoryActionDialog({
   const inFlight = useRef(false);
   const label =
     action.kind === "delete"
-      ? "Delete category"
+      ? "Delete"
       : action.kind === "archive"
-        ? "Archive category"
+        ? "Archive"
         : action.kind === "unarchive"
-          ? "Unarchive category"
+          ? "Unarchive"
           : "Create categories";
   const save = async () => {
     if (inFlight.current || conflict) return;
@@ -104,38 +103,77 @@ export function CategoryActionDialog({
       setBusy(false);
     }
   };
+  const starter = action.kind === "starter";
+  const name = action.kind === "starter" ? "" : action.category.name;
   return (
-    <EditorDialog
+    <Overlay
       open={open}
+      kind={starter ? "sheet" : "question"}
       title={
         action.kind === "delete"
-          ? "Delete category?"
+          ? `Delete ${name}?`
           : action.kind === "archive"
-            ? "Archive category?"
+            ? `Archive ${name}?`
             : action.kind === "unarchive"
-              ? "Unarchive category?"
+              ? `Unarchive ${name}?`
               : "Starter categories"
       }
       description={
-        action.kind === "delete"
-          ? `Delete ${action.category.name}? Delete connected transactions and delete or move child categories first. Deleted transactions cannot be restored while this category is deleted. This category has no Undo; archive it to keep it instead.`
-          : action.kind === "archive"
-            ? `Archive ${action.category.name}. Its label stays available in your history and leaves new-entry pickers.`
-            : action.kind === "unarchive"
-              ? `Make ${action.category.name} available for new entries again. Its label and history stay the same. It moves to the end of its sibling group; children remain archived.`
-              : "Untick any group you don't want, or tick an add-on that fits you, then create them. Only categories are added, no accounts. You can rename and organize them later."
+        starter
+          ? "Untick any group you don't want, or tick an add-on that fits you, then create them. Only categories are added, no accounts. You can rename and organize them later."
+          : undefined
       }
       busy={busy}
       onDismiss={onDismiss}
+      cancelLabel={uncertain ? "Close for now" : "Cancel"}
       returnFocusId={
         action.kind === "starter"
           ? "categories-title"
           : `edit-category-${action.category.id}`
       }
-      closeLabel="Close category dialog"
       fallbackFocusId="categories-title"
+      footer={
+        conflict ? (
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            disabled={busy}
+            onClick={() => void reload()}
+          >
+            Reload categories
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={
+              action.kind === "delete"
+                ? "ui-btn ui-btn-danger-filled"
+                : "ui-btn ui-btn-primary"
+            }
+            disabled={busy || (starter && selected.size === 0)}
+            onClick={() => void save()}
+          >
+            {busy ? "Saving…" : uncertain ? "Retry action" : label}
+          </button>
+        )
+      }
     >
-      {action.kind === "starter" && (
+      {action.kind === "archive" && (
+        <p>Its label stays in your history and leaves new-entry pickers.</p>
+      )}
+      {action.kind === "unarchive" && (
+        <p>
+          It is available for new entries again. It moves to the end of its
+          group; subcategories stay archived.
+        </p>
+      )}
+      {action.kind === "delete" && (
+        <p>
+          Delete its transactions and move or delete its subcategories first. A
+          deleted category has no Undo; archive it to keep it instead.
+        </p>
+      )}
+      {starter && (
         <StarterGroups
           selected={selected}
           disabled={busy || uncertain}
@@ -149,35 +187,10 @@ export function CategoryActionDialog({
         />
       )}
       {error && (
-        <p className="field-error account-error" role="alert">
+        <p className="field-error" role="alert">
           {error}
         </p>
       )}
-      <div className="account-dialog-actions">
-        <button
-          type="button"
-          className="secondary-button"
-          disabled={busy}
-          onClick={onDismiss}
-        >
-          {uncertain ? "Close for now" : "Cancel"}
-        </button>
-        {conflict ? (
-          <Button disabled={busy} onClick={() => void reload()}>
-            Reload categories
-          </Button>
-        ) : (
-          <Button
-            className={action.kind === "delete" ? "danger-action" : undefined}
-            disabled={
-              busy || (action.kind === "starter" && selected.size === 0)
-            }
-            onClick={() => void save()}
-          >
-            {busy ? "Saving…" : uncertain ? "Retry action" : label}
-          </Button>
-        )}
-      </div>
-    </EditorDialog>
+    </Overlay>
   );
 }
