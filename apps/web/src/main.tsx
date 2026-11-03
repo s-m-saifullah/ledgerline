@@ -208,6 +208,11 @@ const loans = createRoute({
   path: "/loans",
   component: LoansPage,
 });
+// One person has its own address; the list page above stays mounted and reads it (ADR 0047).
+const loanPerson = createRoute({
+  getParentRoute: () => loans,
+  path: "$personId",
+});
 const router = createRouter({
   routeTree: rootRoute.addChildren([
     home,
@@ -221,7 +226,7 @@ const router = createRouter({
     currenciesRoute,
     recurring,
     clients.addChildren([clientDetail]),
-    loans,
+    loans.addChildren([loanPerson]),
     importRoute,
     settings,
   ]),

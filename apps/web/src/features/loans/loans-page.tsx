@@ -1,103 +1,79 @@
-import type { LoanBalance, LoanPerson } from "@ledgerline/shared";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  Archive,
-  ArchiveRestore,
-  ArrowDownLeft,
-  ArrowUpRight,
-  Banknote,
-  CircleSlash,
-  Pencil,
-  type Plus,
-} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 import { useState } from "react";
-import { ActionBar, useIsPhone } from "../../components/action-bar";
-import { Amount } from "../../components/amount";
-import { Amount as HomeAmount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
-import { NativeSelect } from "../../components/native-select";
 import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
+import { useAppWide } from "../../lib/use-app-width";
 import { getHome } from "../home/api";
+import { usePageAdd } from "../shell/page-add";
 import { LoanDialog } from "./loan-dialog";
-import { getLoanPeople, getPerson, type LoanAction } from "./loans-api";
-import { PersonLoans, useLoans } from "./loans-section";
+import { getAllPeople, getPerson } from "./loans-api";
+import { useLoans } from "./loans-section";
+import {
+  anyArchived,
+  type PeopleFilter,
+  resolveFilter,
+  showsSearch,
+  visiblePeople,
+} from "./model";
+import { PersonDetail, type PersonEditor } from "./person-detail";
 import { PersonDialog } from "./person-dialog";
+import { PersonList } from "./person-list";
 import { RemoveLoanDialog } from "./remove-loan-dialog";
+import "./loans.css";
 
-/** Each currency's balance for one person, in a short sentence. */
-function Summary({ person }: { person: LoanPerson }) {
-  if (person.balances.length === 0)
-    return <span className="muted">No loans yet</span>;
-  const open = person.balances.filter((loan) => loan.balance.amount !== 0);
-  if (open.length === 0) return <span className="muted">Settled</span>;
-  return (
-    <span className="client-balances">
-      {open.map((loan) => (
-        <span key={loan.accountId}>
-          {loan.balance.amount > 0 ? "Owes you " : "You owe "}
-          <Amount
-            value={Math.abs(loan.balance.amount)}
-            currency={loan.balance.currency}
-          />
-        </span>
-      ))}
-    </span>
-  );
-}
+type Open = { editor: PersonEditor | { kind: "add" }; trigger: string };
 
-/** Money you lend to or borrow from people (ADR 0030); it never counts as income or spending. */
+/**
+ * Loans (ADR 0030, ADR 0047, the prototype's `R.loans`): the list and one person beside it from 1100 px, one at
+ * a time below. The person is in the address (`/loans/{id}`); on a wide page with none chosen the first one is
+ * open. CSS decides which panes show, and the width is read here only to skip fetching a pane nobody sees.
+ */
 export function LoansPage() {
-  const phone = useIsPhone();
+  const { personId } = useParams({ strict: false }) as { personId?: string };
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const ledger = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers }).data
-    ?.items[0];
   const month = useCurrentMonth();
+  const wide = useAppWide(1100);
+  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
+  const ledger = ledgers.data?.items[0];
+  const writable = !!ledger && ledger.role !== "viewer";
   const home = useQuery({
     queryKey: ["home", ledger?.id, month],
     queryFn: ({ signal }) => getHome(ledger?.id as string, month, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
-  const [selected, setSelected] = useState<string | null>(null);
-  const [status, setStatus] = useState("active");
-  const [text, setText] = useState("");
-  const [dialog, setDialog] = useState<{
-    mode: LoanAction;
-    adding: boolean;
-    editCurrency?: string;
-  } | null>(null);
-  const [removing, setRemoving] = useState<LoanBalance | null>(null);
-  const [personAction, setPersonAction] = useState<
-    "rename" | "archive" | "unarchive" | null
-  >(null);
-  const people = useInfiniteQuery({
-    queryKey: ["loanPeople", ledger?.id, status, text],
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam, signal }) =>
-      getLoanPeople(ledger?.id as string, status, text, pageParam, signal),
-    getNextPageParam: (page, _pages, _param, params) =>
-      page.nextCursor && !params.includes(page.nextCursor)
-        ? page.nextCursor
-        : undefined,
+  const people = useQuery({
+    queryKey: ["loanPeople", ledger?.id, "book"],
+    queryFn: ({ signal }) => getAllPeople(ledger?.id as string, signal),
     enabled: !!ledger,
     refetchOnMount: "always",
   });
-  const rows = people.data?.pages.flatMap((page) => page.items) ?? [];
+  const [chosen, setChosen] = useState<PeopleFilter | null>(null);
+  const [text, setText] = useState("");
+  const [open, setOpen] = useState<Open | null>(null);
+  const all = people.data ?? [];
+  const filter = resolveFilter(chosen, all);
+  const search = showsSearch(all);
+  const shown = visiblePeople(all, filter, text);
+  const selectedId = personId ?? (wide ? shown[0]?.id : undefined);
+  const fallback = all.find((row) => row.id === selectedId);
   const person = useQuery({
-    queryKey: ["loanPerson", ledger?.id, selected],
-    queryFn: () => getPerson(ledger?.id as string, selected as string),
-    enabled: !!ledger && !!selected,
+    queryKey: ["loanPerson", ledger?.id, selectedId],
+    queryFn: () => getPerson(ledger?.id as string, selectedId as string),
+    enabled: !!ledger && !!selectedId,
     refetchOnMount: "always",
   });
-  const loans = useLoans(ledger?.id, selected);
+  const loans = useLoans(ledger?.id, selectedId ?? null);
   const loanList = loans.data?.items ?? [];
-  const hasOpen = loanList.some((loan) => loan.balance.amount !== 0);
-  const writable = !!ledger && ledger.role !== "viewer";
+  const contact = person.data;
+  // What the list knows stands in until the person's own answer comes.
+  const archivedAt = contact?.archivedAt ?? fallback?.archivedAt ?? null;
+  const archived = !!archivedAt;
+  const blocked = !!open;
   const refresh = () => {
     for (const key of [
       "loans",
@@ -110,322 +86,179 @@ export function LoansPage() {
     ])
       void queryClient.invalidateQueries({ queryKey: [key] });
   };
-  const lent = home.data?.loans.lent.amount ?? 0;
-  const borrowed = home.data?.loans.borrowed.amount ?? 0;
-  const detail = person.data;
-  const archived = !!detail?.archivedAt;
-  const action = (
-    key: string,
-    label: string,
-    shortLabel: string,
-    icon: typeof Plus,
-    run: () => void,
-    disabled = archived,
-  ) => ({ key, label, shortLabel, icon, disabled, onSelect: run });
+  const start = (editor: Open["editor"], trigger: string) =>
+    setOpen({ editor, trigger });
+  // A phone's one Add button adds what the screen lists: loans on the list, money lent on a person.
+  usePageAdd(
+    !writable
+      ? null
+      : personId
+        ? {
+            label: "Lend money",
+            disabled: blocked || !selectedId || archived,
+            onClick: () =>
+              start({ kind: "loan", mode: "lend" }, "mobile-add-page"),
+          }
+        : {
+            label: "Add loan",
+            disabled: blocked,
+            onClick: () => start({ kind: "add" }, "mobile-add-page"),
+          },
+  );
+  const editor = open?.editor;
+  const trigger = open?.trigger ?? "main-content";
+  const name = contact?.name ?? fallback?.name ?? "";
   return (
-    <>
-      <div className="page-heading">
-        <p className="eyebrow">MONEY YOU LEND AND BORROW</p>
+    <div className="ln-page">
+      <div className="page-heading ln-head" data-open={!!personId}>
         <h1 id="loans-title" tabIndex={-1}>
           Loans
         </h1>
-        <p className="muted">
-          Money lent to or borrowed from friends and family. It never counts as
-          income or spending.
-        </p>
-      </div>
-      {!ledger ? (
-        <p role="status">Loading your ledger…</p>
-      ) : selected ? (
-        <>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => setSelected(null)}
-          >
+        <div className="ln-head-actions">
+          <Link to="/loans" className="ui-btn ui-btn-text ln-back">
             All people
-          </button>
-          {person.isError ? (
-            <LoadError
-              message="Couldn't load this person."
-              onRetry={() => void person.refetch()}
-            />
-          ) : (
-            detail && (
-              <>
-                <section className="settings-card client-detail">
-                  <h2>
-                    {detail.name}
-                    {archived ? " (archived)" : ""}
-                  </h2>
-                  {writable && (
-                    <ActionBar
-                      menuLabel={`More actions for ${detail.name}`}
-                      menuId="loan-person-menu"
-                      primary={
-                        hasOpen
-                          ? {
-                              ...action(
-                                "repay",
-                                "Record repayment",
-                                "Repayment",
-                                Banknote,
-                                () =>
-                                  setDialog({ mode: "repay", adding: false }),
-                              ),
-                              id: "loan-primary",
-                            }
-                          : {
-                              ...action(
-                                "lend",
-                                "Lend money",
-                                "Lend",
-                                ArrowUpRight,
-                                () =>
-                                  setDialog({ mode: "lend", adding: false }),
-                              ),
-                              id: "loan-primary",
-                            }
-                      }
-                      actions={[
-                        ...(hasOpen
-                          ? [
-                              action(
-                                "lend",
-                                "Lend money",
-                                "Lend",
-                                ArrowUpRight,
-                                () =>
-                                  setDialog({ mode: "lend", adding: false }),
-                              ),
-                            ]
-                          : []),
-                        action(
-                          "borrow",
-                          "Borrow money",
-                          "Borrow",
-                          ArrowDownLeft,
-                          () => setDialog({ mode: "borrow", adding: false }),
-                        ),
-                        ...(hasOpen
-                          ? [
-                              action(
-                                "waive",
-                                "Waive what is left",
-                                "Waive",
-                                CircleSlash,
-                                () =>
-                                  setDialog({ mode: "waive", adding: false }),
-                              ),
-                            ]
-                          : []),
-                        action(
-                          "rename",
-                          "Rename",
-                          "Rename",
-                          Pencil,
-                          () => setPersonAction("rename"),
-                          false,
-                        ),
-                        action(
-                          "archive",
-                          archived ? "Unarchive" : "Archive",
-                          archived ? "Unarchive" : "Archive",
-                          archived ? ArchiveRestore : Archive,
-                          () =>
-                            setPersonAction(archived ? "unarchive" : "archive"),
-                          false,
-                        ),
-                      ]}
-                    />
-                  )}
-                </section>
-                {loans.isError ? (
-                  <LoadError
-                    message="Couldn't load the balance."
-                    onRetry={() => void loans.refetch()}
-                  />
-                ) : (
-                  <PersonLoans
-                    ledgerId={ledger.id}
-                    personId={detail.id}
-                    name={detail.name}
-                    loans={loanList}
-                    onRemove={setRemoving}
-                    onEdit={(editCurrency) =>
-                      setDialog({
-                        mode: "opening",
-                        adding: false,
-                        editCurrency,
-                      })
-                    }
-                  />
-                )}
-              </>
-            )
+          </Link>
+          {writable && (
+            <button
+              type="button"
+              id="add-loan"
+              className="ui-btn ui-btn-primary ln-add"
+              disabled={blocked}
+              onClick={() => start({ kind: "add" }, "add-loan")}
+            >
+              <Plus size={18} aria-hidden="true" />
+              Add loan
+            </button>
           )}
-        </>
+        </div>
+      </div>
+      {ledgers.isError ? (
+        <LoadError
+          message="Couldn't load your ledger."
+          onRetry={() => void ledgers.refetch()}
+        />
+      ) : !ledger ? (
+        <p className="muted" role="status">
+          Loading your ledger…
+        </p>
+      ) : people.isError ? (
+        <LoadError
+          message="Couldn't load people."
+          onRetry={() => void people.refetch()}
+        />
+      ) : !people.data ? (
+        <p className="muted" role="status">
+          Loading people…
+        </p>
       ) : (
-        <>
-          {(lent > 0 || borrowed > 0) && (
-            <section className="overview-grid" aria-label="Loan totals">
-              {lent > 0 && (
-                <article className="stat-card">
-                  <p>Lent out</p>
-                  <div className="amount">
-                    <HomeAmount cents={lent} />
-                  </div>
-                  <span className="muted">Owed back to you</span>
-                </article>
-              )}
-              {borrowed > 0 && (
-                <article className="stat-card">
-                  <p>You owe</p>
-                  <div className="amount">
-                    <HomeAmount cents={borrowed} />
-                  </div>
-                  <span className="muted">Money you borrowed</span>
-                </article>
-              )}
-            </section>
-          )}
-          <div className="client-toolbar">
-            <label>
-              Search people
-              <input
-                type="search"
-                value={text}
-                maxLength={200}
-                onChange={(event) => setText(event.target.value)}
-              />
-            </label>
-            <label htmlFor="loan-status">
-              Show
-              <NativeSelect
-                id="loan-status"
-                value={status}
-                onChange={(event) => setStatus(event.target.value)}
-              >
-                <option value="active">Active people</option>
-                <option value="archived">Archived people</option>
-                <option value="all">Everyone</option>
-              </NativeSelect>
-            </label>
-            {writable && (
-              <button
-                id="add-loan"
-                type="button"
-                className="button"
-                onClick={() => setDialog({ mode: "lend", adding: true })}
-              >
-                Add loan
-              </button>
-            )}
-          </div>
-          {people.isPending ? (
-            <p role="status">Loading people…</p>
-          ) : people.isError ? (
-            <LoadError
-              message="Couldn't load people."
-              onRetry={() => void people.refetch()}
+        <div className="ln-split" data-open={!!personId}>
+          <div className="ln-list">
+            <PersonList
+              people={all}
+              shown={shown}
+              filter={filter}
+              chips={anyArchived(all)}
+              search={search}
+              text={text}
+              onText={setText}
+              onFilter={setChosen}
+              selectedId={selectedId}
+              lent={home.data?.loans.lent.amount ?? 0}
+              borrowed={home.data?.loans.borrowed.amount ?? 0}
             />
-          ) : (
-            <>
-              {rows.length === 0 && (
-                <section className="settings-card">
-                  <h2>{text ? "No matching people" : "Keep track of loans"}</h2>
-                  <p>
-                    Add a loan to record money you lent, money you borrowed or a
-                    loan you already had.
-                  </p>
-                </section>
-              )}
-              <div className="client-grid">
-                {rows.map((row) => (
-                  <button
-                    id={`loan-person-${row.id}`}
-                    type="button"
-                    className="settings-card client-card"
-                    key={row.id}
-                    onClick={() => setSelected(row.id)}
-                  >
-                    <strong>
-                      {row.name}
-                      {row.archivedAt ? " (archived)" : ""}
-                    </strong>
-                    <Summary person={row} />
-                  </button>
-                ))}
-              </div>
-              {people.hasNextPage && (
-                <button
-                  className="secondary-button"
-                  type="button"
-                  disabled={people.isFetchingNextPage}
-                  onClick={() => void people.fetchNextPage()}
-                >
-                  Load more people
-                </button>
-              )}
-            </>
-          )}
-        </>
+          </div>
+          <div className="ln-detail">
+            {selectedId &&
+              (person.isError && !fallback ? (
+                <LoadError
+                  message="Couldn't load this person."
+                  onRetry={() => void person.refetch()}
+                />
+              ) : !fallback && !contact ? (
+                <p className="muted" role="status">
+                  Loading person…
+                </p>
+              ) : !loans.data && !loans.isError ? (
+                <p className="muted" role="status">
+                  Loading balance…
+                </p>
+              ) : (
+                <PersonDetail
+                  key={selectedId}
+                  ledgerId={ledger.id}
+                  person={{
+                    id: selectedId,
+                    name,
+                    archivedAt,
+                  }}
+                  loans={loanList}
+                  loansError={loans.isError}
+                  onRetryLoans={() => void loans.refetch()}
+                  writable={writable}
+                  busy={blocked}
+                  onOpen={start}
+                />
+              ))}
+          </div>
+        </div>
       )}
-      {dialog && ledger && (
+      {ledger && editor?.kind === "add" && (
         <LoanDialog
           ledgerId={ledger.id}
-          person={
-            dialog.adding || !detail
-              ? null
-              : { id: detail.id, name: detail.name }
-          }
-          people={rows}
-          loans={loanList}
-          mode={dialog.mode}
-          editCurrency={dialog.editCurrency}
-          returnFocusId={
-            dialog.adding
-              ? "add-loan"
-              : dialog.editCurrency
-                ? `loan-edit-${dialog.editCurrency}`
-                : phone
-                  ? "loan-person-menu"
-                  : "loan-primary"
-          }
-          onClose={() => setDialog(null)}
-          onSaved={(personId) => {
-            setDialog(null);
-            setSelected(personId);
+          person={null}
+          people={all}
+          mode="lend"
+          returnFocusId={trigger}
+          onClose={() => setOpen(null)}
+          onSaved={(id) => {
+            setOpen(null);
+            void navigate({ to: "/loans/$personId", params: { personId: id } });
             refresh();
           }}
         />
       )}
-      {removing && detail && ledger && (
-        <RemoveLoanDialog
+      {ledger && selectedId && editor?.kind === "loan" && (
+        <LoanDialog
           ledgerId={ledger.id}
-          person={{ id: detail.id, name: detail.name }}
-          loan={removing}
-          returnFocusId="main-content"
-          onClose={() => setRemoving(null)}
-          onRemoved={() => {
-            setRemoving(null);
+          person={{ id: selectedId, name }}
+          loans={loanList}
+          mode={editor.mode}
+          editCurrency={editor.editCurrency}
+          returnFocusId={trigger}
+          onClose={() => setOpen(null)}
+          onSaved={(id) => {
+            setOpen(null);
+            void navigate({ to: "/loans/$personId", params: { personId: id } });
             refresh();
           }}
         />
       )}
-      {personAction && detail && ledger && (
+      {ledger && contact && editor?.kind === "person" && (
         <PersonDialog
           ledgerId={ledger.id}
-          person={detail}
-          action={personAction}
-          returnFocusId={phone ? "loan-person-menu" : "loan-primary"}
-          onClose={() => setPersonAction(null)}
+          person={contact}
+          action={editor.action}
+          returnFocusId={trigger}
+          onClose={() => setOpen(null)}
           onSaved={() => {
-            setPersonAction(null);
+            setOpen(null);
             refresh();
           }}
         />
       )}
-    </>
+      {ledger && selectedId && editor?.kind === "remove" && (
+        <RemoveLoanDialog
+          ledgerId={ledger.id}
+          person={{ id: selectedId, name }}
+          loan={editor.loan}
+          returnFocusId="main-content"
+          onClose={() => setOpen(null)}
+          onRemoved={() => {
+            setOpen(null);
+            refresh();
+          }}
+        />
+      )}
+    </div>
   );
 }

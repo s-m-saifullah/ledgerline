@@ -140,9 +140,7 @@ describe("LoanDialog", () => {
   });
   it("adds an existing loan as a negative balance when you owe, with the loan's version", async () => {
     const { writes, saved } = mount("opening", [loan(5000)]);
-    await userEvent.selectOptions(screen.getByLabelText("Who owes whom"), [
-      "owedByMe",
-    ]);
+    await userEvent.click(screen.getByRole("radio", { name: "I owe Sam" }));
     await userEvent.type(screen.getByLabelText(/Amount/), "25");
     await userEvent.click(
       screen.getByRole("button", { name: "Save existing loan" }),
@@ -218,11 +216,9 @@ describe("LoanDialog", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Currency")).toBeNull();
-    expect(screen.getByLabelText("Who owes whom")).toHaveValue("owedByMe");
+    expect(screen.getByRole("radio", { name: "I owe Sam" })).toBeChecked();
     expect(screen.getByLabelText(/Amount/)).toHaveValue("125.50");
-    await userEvent.selectOptions(screen.getByLabelText("Who owes whom"), [
-      "owedToMe",
-    ]);
+    await userEvent.click(screen.getByRole("radio", { name: "Sam owes me" }));
     await userEvent.click(
       screen.getByRole("button", { name: "Save existing loan" }),
     );

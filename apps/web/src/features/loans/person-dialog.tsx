@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { preparePersonChange } from "./loans-api";
+import "./loans.css";
 
 type Person = {
   id: string;
@@ -71,76 +72,71 @@ export function PersonDialog({
       setBusy(false);
     }
   };
+  const rename = action === "rename";
+  const word = action === "archive" ? "Archive" : "Unarchive";
   return (
-    <EditorDialog
+    <Overlay
       open
-      title={
-        action === "rename"
-          ? "Rename"
-          : action === "archive"
-            ? `Archive ${person.name}`
-            : `Unarchive ${person.name}`
-      }
-      description={
-        action === "rename"
-          ? "The name also changes on their balance account."
-          : action === "archive"
-            ? "Their balances and history are kept. You cannot lend or borrow until you unarchive them."
-            : "You can lend and borrow again."
-      }
+      kind={rename ? "sheet" : "question"}
+      title={rename ? "Rename" : `${word} ${person.name}?`}
       busy={busy}
       onDismiss={onClose}
       returnFocusId={returnFocusId}
-      closeLabel="Close dialog"
       fallbackFocusId="main-content"
-      initialFocusId={action === "rename" ? "person-name" : undefined}
+      initialFocusId={rename ? "person-name" : undefined}
+      footer={
+        <button
+          type={rename ? "submit" : "button"}
+          {...(rename
+            ? { form: "person-form" }
+            : { onClick: () => void submit() })}
+          className="ui-btn ui-btn-primary"
+          disabled={busy}
+        >
+          {busy ? "Saving…" : rename ? "Save name" : word}
+        </button>
+      }
     >
       <form
-        className="account-form"
+        id="person-form"
+        className="ln-form"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
         }}
       >
-        {action === "rename" && (
-          <fieldset disabled={busy} className="client-fields">
-            <label className="form-field" htmlFor="person-name">
-              Name
-              <input
-                id="person-name"
-                value={name}
-                maxLength={100}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-          </fieldset>
+        {rename ? (
+          <>
+            <fieldset disabled={busy} className="ln-fields">
+              <div className="ln-field">
+                <label htmlFor="person-name">Name</label>
+                <input
+                  id="person-name"
+                  value={name}
+                  maxLength={100}
+                  placeholder="Name"
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+            </fieldset>
+            <p className="ln-note">
+              The name also changes on their balance account.
+            </p>
+          </>
+        ) : (
+          <p>
+            {action === "archive"
+              ? "Balances and history are kept. No new loans until you unarchive."
+              : "You can lend and borrow again."}
+          </p>
         )}
         {error && (
           <p role="alert" className="field-error">
             {error}
           </p>
         )}
-        <div className="form-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button type="submit" className="button" disabled={busy}>
-            {busy
-              ? "Saving…"
-              : action === "rename"
-                ? "Save name"
-                : action === "archive"
-                  ? "Archive"
-                  : "Unarchive"}
-          </button>
-        </div>
       </form>
-    </EditorDialog>
+    </Overlay>
   );
 }

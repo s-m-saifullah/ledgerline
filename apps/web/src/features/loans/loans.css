@@ -1,0 +1,349 @@
+/*
+ * Loans (ADR 0047): the list and one person side by side from 1100 px, one at a time below. A person in the
+ * address (`data-open`) shows its own pane on a phone and a tablet; the list shows otherwise. Widths are the
+ * layout system's two (700 and 1100 px). The editors' classes are `ln-` too, so no other feature's rule reaches them.
+ */
+.ln-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .ln-page {
+    gap: 16px;
+  }
+}
+.ln-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.ln-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.ln-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* Under 700 px the top bar and the one Add button do this; "All people" is for a tablet with one person open. */
+.ln-add,
+.ln-back {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .ln-add {
+    display: inline-flex;
+  }
+}
+@container app (min-width: 700px) and (max-width: 1099.98px) {
+  .ln-head[data-open="true"] .ln-back {
+    display: inline-flex;
+  }
+}
+.ln-split {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+}
+.ln-list,
+.ln-detail {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.ln-split[data-open="true"] .ln-list,
+.ln-split[data-open="false"] .ln-detail {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .ln-split,
+  .ln-list,
+  .ln-detail {
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .ln-split {
+    gap: 20px;
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  }
+  .ln-list,
+  .ln-detail,
+  .ln-split[data-open] .ln-list,
+  .ln-split[data-open] .ln-detail {
+    display: grid;
+    gap: 20px;
+  }
+}
+/* The list's totals, search and chips */
+.ln-total {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+}
+.ln-total > div + div {
+  padding-inline-start: 16px;
+  border-inline-start: 1px solid var(--border);
+}
+.ln-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ln-figure {
+  display: grid;
+  margin: 0;
+  font-size: 31px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ln-search {
+  position: relative;
+  min-width: 0;
+}
+.ln-search svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.ln-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border-radius: var(--shape-field);
+  background: var(--tint);
+}
+.ln-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.ln-row-link[data-selected="true"] {
+  background: var(--accent-soft);
+}
+/* The person's card: the name with its menu in the corner, what is owed, and the one primary button. */
+.ln-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.ln-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ln-menu {
+  flex: none;
+  margin: -8px -8px 0 0;
+}
+.ln-card-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.ln-name {
+  min-width: 0;
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ln-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ln-card-actions .ui-btn-primary {
+  flex: 1 1 auto;
+}
+@container app (min-width: 700px) {
+  .ln-card-actions .ui-btn-primary {
+    flex: 0 0 auto;
+  }
+}
+/* Balance, Before Ledgerline and Activity */
+.ln-sections {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.ln-end {
+  display: inline-grid;
+  justify-items: end;
+  gap: 0;
+}
+.ln-small {
+  min-height: 44px;
+  padding-inline: 0;
+}
+.ln-all {
+  justify-self: start;
+}
+.ln-sections .ui-section-label + .ui-card,
+.ln-sections .ui-card + .ui-btn {
+  margin-top: 0;
+}
+/* Titles and hints wrap instead of being cut, so a long name stays readable at 320 px. */
+.ln-page .ui-row-title,
+.ln-page .ui-row-hint,
+.ln-form .ui-row-title,
+.ln-form .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+/* What goes inside the shared sheet: cards are bordered, a row has its label on the left, a field its label above. */
+.ln-form,
+.ln-fields {
+  display: grid;
+  /* One column that may be narrower than its widest child, so nothing runs past the sheet's edge. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+/* Three long choices share a narrow sheet: each wraps inside its own part of the track. */
+.ln-form .ui-seg {
+  min-width: 0;
+}
+.ln-form .ui-seg > button {
+  min-width: 0;
+  padding: 4px 8px;
+  white-space: normal;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.ln-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.ln-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ln-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.ln-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ln-group {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--shape-card);
+  background: var(--surface);
+}
+.ln-group > * + * {
+  border-top: 1px solid var(--border);
+}
+.ln-group > .ln-field {
+  padding: 16px;
+}
+.ln-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 4px 16px;
+  min-width: 0;
+}
+.ln-row > label {
+  flex: 1 1 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.ln-row > .date-time-field,
+.ln-row > input {
+  flex: 0 1 160px;
+  width: auto;
+  min-width: 0;
+}
+.ln-row input {
+  min-height: 44px;
+  padding-inline-start: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  text-align: end;
+}
+.ln-row .date-time-field > input {
+  padding-inline-end: 48px;
+}
+.ln-group > .ui-row:first-child {
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.ln-group > .ui-row:last-child {
+  border-radius: 0 0 var(--shape-card) var(--shape-card);
+}
+.ln-group > .ui-row:only-child {
+  border-radius: var(--shape-card);
+}
+.ln-field .category-picker {
+  margin: 0;
+}
+.ln-dates {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+/* A part of the Add loan form that folds shut when the choice above it makes it unneeded (no sudden drop). */
+.ln-fold {
+  display: grid;
+  /* Not stretched, or a shut part would grow back by the gap it gives up. */
+  align-self: start;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 220ms ease,
+    margin-block-start 220ms ease,
+    opacity 180ms ease;
+}
+.ln-fold-in {
+  min-height: 0;
+  overflow: hidden;
+}
+/* A shut part also gives back the gap the form puts between its parts. */
+.ln-fold[data-shut="true"] {
+  grid-template-rows: 0fr;
+  margin-block-start: -16px;
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ln-fold {
+    transition: none;
+  }
+}

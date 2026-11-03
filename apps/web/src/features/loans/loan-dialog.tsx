@@ -6,25 +6,28 @@ import {
   type LoanPerson,
   parseMinorUnits,
 } from "@ledgerline/shared";
+import { SegmentedControl } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { Amount } from "../../components/amount";
-import { AmountInput } from "../../components/amount-input";
+import { Amount } from "../../components/amount-text";
 import { DateTimeInput } from "../../components/date-time-input";
-import { EditorDialog } from "../../components/editor-dialog";
-import { NativeSelect } from "../../components/native-select";
+import { EntryAmount } from "../../components/entry-amount";
+import { Overlay } from "../../components/overlay";
+import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
 import { localToday } from "../../lib/time";
 import { getCategories } from "../categories/api";
-import { CategoryPicker } from "../categories/picker";
 import { useBaseValues } from "../currencies/base-value";
 import { getActiveAccounts } from "../transactions/api";
+import { CategoryCombo } from "../transactions/category-combo";
 import {
   type LoanAction,
   prepareCreatePerson,
   prepareLoanWrite,
 } from "./loans-api";
+
+import "./loans.css";
 
 const NEW = "new";
 const hints = (
@@ -42,6 +45,12 @@ const hints = (
   opening:
     "Record money that was already lent or borrowed before you used Ledgerline. Nothing changes in any of your accounts.",
 });
+/** What the sheet draws; the full sentences above are read aloud under the title. */
+const shortHints: Partial<Record<LoanAction, string>> = {
+  lend: "A transfer, not spending.",
+  borrow: "A transfer, not income.",
+  opening: "Changes no account.",
+};
 const titles = (name: string): Record<LoanAction, string> => ({
   lend: name ? `Lend money to ${name}` : "Lend money",
   borrow: name ? `Borrow money from ${name}` : "Borrow money",
@@ -49,6 +58,32 @@ const titles = (name: string): Record<LoanAction, string> => ({
   waive: "Waive what is left",
   opening: "Add an existing loan",
 });
+
+/**
+ * A part of the form that comes and goes with the choice above it. In "Add loan" the choice changes while the
+ * sheet is open, so the part folds shut over a short moment instead of vanishing and dropping the sheet's height
+ * at once; in a sheet opened for one action it is simply left out. A shut part cannot be focused or read.
+ */
+function Fold({
+  shut,
+  animate,
+  children,
+}: {
+  shut: boolean;
+  animate: boolean;
+  children: React.ReactNode;
+}) {
+  if (!animate) return shut ? null : <>{children}</>;
+  return (
+    <div
+      className="ln-fold"
+      data-shut={shut ? "true" : "false"}
+      {...(shut ? { inert: true } : {})}
+    >
+      <div className="ln-fold-in">{children}</div>
+    </div>
+  );
+}
 
 /**
  * Lend, borrow, repay, waive or add an existing loan (ADR 0030): one form. Opened for one
@@ -232,254 +267,260 @@ export function LoanDialog({
   const title = editing
     ? "Change the balance from before Ledgerline"
     : adding
-      ? "Add a loan"
+      ? "Add loan"
       : titles(name)[kind];
+  // Read aloud under the title; what is drawn is the short line in the sheet.
   const description = editing
     ? `Fix the amount or who owes whom for ${name} (${editing.currency}). Nothing changes in any of your accounts.`
     : adding
       ? "Record money you lent, money you borrowed, or a loan you already had."
       : hints(name, owedToYou)[kind];
+  const submitLabel =
+    kind === "lend"
+      ? "Lend"
+      : kind === "borrow"
+        ? "Borrow"
+        : kind === "repay"
+          ? "Record repayment"
+          : kind === "waive"
+            ? "Waive"
+            : "Save existing loan";
+  const accountLabel =
+    kind === "lend"
+      ? "Paid from"
+      : kind === "borrow"
+        ? "Received into"
+        : owedToYou
+          ? "Received into"
+          : "Paid from";
   return (
-    <EditorDialog
+    <Overlay
       open
       title={title}
       description={description}
       busy={busy}
       onDismiss={onClose}
       returnFocusId={returnFocusId}
-      closeLabel="Close loan dialog"
       fallbackFocusId="main-content"
       initialFocusId={
-        adding
-          ? "loan-person"
-          : kind === "waive"
-            ? "loan-category"
-            : "loan-amount"
+        adding ? "loan-person" : kind === "waive" ? undefined : "loan-amount"
+      }
+      footer={
+        <button
+          type="submit"
+          form="loan-form"
+          className="ui-btn ui-btn-primary"
+          disabled={busy}
+        >
+          {busy ? "Saving…" : submitLabel}
+        </button>
       }
     >
       <form
-        className="account-form"
+        id="loan-form"
+        className="ln-form"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
         }}
       >
-        <fieldset disabled={busy} className="client-fields">
+        <fieldset disabled={busy} className="ln-fields">
           {adding && (
             <>
-              <label className="form-field" htmlFor="loan-person">
-                Who
-                <NativeSelect
+              <SegmentedControl
+                label="What happened"
+                value={kind}
+                onChange={setKind}
+                options={[
+                  { value: "lend", label: "I lent money" },
+                  { value: "borrow", label: "I borrowed money" },
+                  { value: "opening", label: "A loan I already had" },
+                ]}
+              />
+              <div className="ln-group">
+                <PickRow
                   id="loan-person"
+                  label="Who"
                   value={chosen}
-                  onChange={(event) => {
-                    setChosen(event.target.value);
+                  options={[
+                    ...(people.length > 0
+                      ? [
+                          {
+                            value: "",
+                            label: "Choose a person…",
+                            short: "Choose",
+                            disabled: true,
+                          },
+                        ]
+                      : []),
+                    ...people.map((row) => ({
+                      value: row.id,
+                      label: `${row.name}${row.archivedAt ? " (archived)" : ""}`,
+                    })),
+                    { value: NEW, label: "A new person…", short: "New person" },
+                  ]}
+                  onChange={(value) => {
+                    setChosen(value);
                     setCurrency(values.baseCurrency);
                   }}
-                >
-                  {people.length > 0 && (
-                    <option value="" disabled>
-                      Choose a person…
-                    </option>
-                  )}
-                  {people.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.name}
-                      {row.archivedAt ? " (archived)" : ""}
-                    </option>
-                  ))}
-                  <option value={NEW}>A new person…</option>
-                </NativeSelect>
-              </label>
-              {chosen === NEW && (
-                <label className="form-field" htmlFor="loan-name">
-                  Name
-                  <input
-                    id="loan-name"
-                    value={newName}
-                    maxLength={100}
-                    onChange={(event) => setNewName(event.target.value)}
-                  />
-                </label>
-              )}
-              <label className="form-field" htmlFor="loan-kind">
-                What happened
-                <NativeSelect
-                  id="loan-kind"
-                  value={kind}
-                  onChange={(event) =>
-                    setKind(event.target.value as LoanAction)
-                  }
-                >
-                  <option value="lend">I lent money</option>
-                  <option value="borrow">I borrowed money</option>
-                  <option value="opening">A loan I already had</option>
-                </NativeSelect>
-              </label>
-              <p className="muted">{hints(name || "them", owedToYou)[kind]}</p>
+                />
+                {chosen === NEW && (
+                  <div className="ln-row">
+                    <label htmlFor="loan-name">Name</label>
+                    <input
+                      id="loan-name"
+                      value={newName}
+                      maxLength={100}
+                      placeholder="Name"
+                      onChange={(event) => setNewName(event.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
             </>
           )}
-          {currencyChoices.length > 1 && (
-            <label className="form-field" htmlFor="loan-currency">
-              Currency
-              <NativeSelect
-                id="loan-currency"
-                value={currency}
-                onChange={(event) => {
-                  setCurrency(event.target.value);
-                  setAccountId("");
-                }}
-              >
-                {currencyChoices.map((code) => (
-                  <option key={code} value={code}>
-                    {code}
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
+          {kind === "waive" ? (
+            <p className="ln-note">
+              {owedToYou
+                ? "Recorded as an expense in the category you choose."
+                : "Recorded as income in the category you choose."}
+            </p>
+          ) : (
+            shortHints[kind] && <p className="ln-note">{shortHints[kind]}</p>
           )}
+          <Fold shut={kind !== "opening"} animate={adding}>
+            <SegmentedControl
+              label="Who owes whom"
+              value={direction}
+              onChange={setDirection}
+              options={[
+                {
+                  value: "owedToMe",
+                  label: name ? `${name} owes me` : "They owe me",
+                },
+                { value: "owedByMe", label: `I owe ${name || "them"}` },
+              ]}
+            />
+          </Fold>
           {(kind === "repay" || kind === "waive") && loan && (
-            <p>
+            <p className="ln-note" role="status">
               {owedToYou ? `${name} owes you ` : `You owe ${name} `}
               <Amount
-                value={Math.abs(balance)}
+                cents={Math.abs(balance)}
                 currency={loan.balance.currency}
               />
             </p>
           )}
-          {kind === "opening" && (
-            <label className="form-field" htmlFor="loan-direction">
-              Who owes whom
-              <NativeSelect
-                id="loan-direction"
-                value={direction}
-                onChange={(event) =>
-                  setDirection(event.target.value as "owedToMe" | "owedByMe")
-                }
-              >
-                <option value="owedToMe">{name || "They"} owes me</option>
-                <option value="owedByMe">I owe {name || "them"}</option>
-              </NativeSelect>
-            </label>
-          )}
           {kind === "opening" && loan && (
-            <p className="muted loan-replaces">
+            <p className="ln-note">
               This replaces the balance from before Ledgerline, currently{" "}
               {loan.openingBalance.amount < 0 ? "you owed " : "owed to you "}
               <Amount
-                value={Math.abs(loan.openingBalance.amount)}
+                cents={Math.abs(loan.openingBalance.amount)}
                 currency={loan.currency}
               />
               . Money you lend or repay later stays on top of it.
             </p>
           )}
-          {moves && (
-            <label className="form-field" htmlFor="loan-account">
-              {kind === "lend"
-                ? "Paid from"
-                : kind === "borrow"
-                  ? "Received into"
-                  : owedToYou
-                    ? "Received into"
-                    : "Paid from"}
-              <NativeSelect
-                id="loan-account"
-                value={account?.id ?? ""}
-                onChange={(event) => setAccountId(event.target.value)}
-              >
-                {usable.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.name} ({row.currency})
-                  </option>
-                ))}
-              </NativeSelect>
-            </label>
-          )}
           {kind !== "waive" && (
-            <label className="form-field" htmlFor="loan-amount">
-              Amount ({effectiveCurrency})
-              <AmountInput
-                id="loan-amount"
-                currency={effectiveCurrency}
-                inputMode="decimal"
-                value={amount}
-                maxLength={30}
-                onChange={(event) => setAmount(event.target.value)}
-              />
-            </label>
+            <EntryAmount
+              id="loan-amount"
+              label={`Amount (${effectiveCurrency})`}
+              currency={effectiveCurrency}
+              invalid={!!error}
+              describedBy={error ? "loan-error" : undefined}
+              inputProps={{
+                value: amount,
+                maxLength: 30,
+                onChange: (event) => setAmount(event.target.value),
+              }}
+            />
           )}
-          {kind === "waive" && (
-            <div className="form-field">
-              {categories.isError ? (
-                <p role="alert">Couldn't load categories.</p>
-              ) : (
-                <CategoryPicker
-                  categories={categories.data ?? []}
-                  kind={owedToYou ? "expense" : "income"}
-                  value={categoryId}
-                  onChange={setCategoryId}
-                  label={owedToYou ? "Expense category" : "Income category"}
+          <Fold shut={currencyChoices.length < 2} animate={adding}>
+            <div className="ln-group">
+              <PickRow
+                id="loan-currency"
+                label="Currency"
+                value={currency}
+                options={currencyChoices.map((code) => ({
+                  value: code,
+                  label: code,
+                }))}
+                onChange={(code) => {
+                  setCurrency(code);
+                  setAccountId("");
+                }}
+              />
+            </div>
+          </Fold>
+          <Fold shut={kind === "opening"} animate={adding}>
+            <div className="ln-group">
+              {/* While folding shut it keeps its row, so the part does not shrink before it starts to fade. */}
+              {(moves || adding) && (
+                <PickRow
+                  id="loan-account"
+                  label={accountLabel}
+                  value={account?.id ?? ""}
+                  options={
+                    usable.length > 0
+                      ? usable.map((row) => ({
+                          value: row.id,
+                          label: `${row.name} (${row.currency})`,
+                          short: row.name,
+                        }))
+                      : [{ value: "", label: "Choose", disabled: true }]
+                  }
+                  onChange={setAccountId}
                 />
               )}
+              {kind === "waive" && (
+                <div className="ln-field">
+                  {categories.isError ? (
+                    <p role="alert">Couldn't load categories.</p>
+                  ) : (
+                    <CategoryCombo
+                      categories={categories.data ?? []}
+                      kind={owedToYou ? "expense" : "income"}
+                      value={categoryId}
+                      onChange={setCategoryId}
+                      label={owedToYou ? "Expense category" : "Income category"}
+                    />
+                  )}
+                </div>
+              )}
+              <div className="ln-row">
+                <label htmlFor="loan-date">Date</label>
+                <DateTimeInput
+                  label="Date"
+                  id="loan-date"
+                  type="date"
+                  value={date}
+                  required
+                  min="0001-01-01"
+                  max="9999-12-31"
+                  onChange={(event) => setDate(event.target.value)}
+                />
+              </div>
+              <div className="ln-row">
+                <label htmlFor="loan-note">Note (Optional)</label>
+                <input
+                  id="loan-note"
+                  value={note}
+                  maxLength={2000}
+                  placeholder="Add"
+                  onChange={(event) => setNote(event.target.value)}
+                />
+              </div>
             </div>
-          )}
-          {kind !== "opening" && (
-            <label className="form-field" htmlFor="loan-date">
-              Date
-              <DateTimeInput
-                label="Date"
-                id="loan-date"
-                type="date"
-                value={date}
-                required
-                min="0001-01-01"
-                max="9999-12-31"
-                onChange={(event) => setDate(event.target.value)}
-              />
-            </label>
-          )}
-          {kind !== "opening" && (
-            <label className="form-field" htmlFor="loan-note">
-              Note (optional)
-              <input
-                id="loan-note"
-                value={note}
-                maxLength={2000}
-                onChange={(event) => setNote(event.target.value)}
-              />
-            </label>
-          )}
+          </Fold>
         </fieldset>
         {error && (
-          <p role="alert" className="field-error">
+          <p id="loan-error" role="alert" className="field-error">
             {error}
           </p>
         )}
-        <div className="form-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onClose}
-          >
-            Close
-          </button>
-          <button type="submit" className="button" disabled={busy}>
-            {busy
-              ? "Saving…"
-              : kind === "lend"
-                ? "Lend"
-                : kind === "borrow"
-                  ? "Borrow"
-                  : kind === "repay"
-                    ? "Record repayment"
-                    : kind === "waive"
-                      ? "Waive"
-                      : "Save existing loan"}
-          </button>
-        </div>
       </form>
-    </EditorDialog>
+    </Overlay>
   );
 }

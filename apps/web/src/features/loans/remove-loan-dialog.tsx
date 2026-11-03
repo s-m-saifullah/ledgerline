@@ -1,10 +1,11 @@
 import type { LoanBalance } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import { EditorDialog } from "../../components/editor-dialog";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { getTransactions } from "../transactions/api";
 import { prepareRemoveLoan } from "./loans-api";
+import "./loans.css";
 
 const shown = 50;
 
@@ -57,77 +58,65 @@ export function RemoveLoanDialog({
     }
   };
   return (
-    <EditorDialog
+    <Overlay
       open
-      title={`Remove the ${loan.currency} loan`}
-      description={
+      kind="question"
+      title={
         blocked
-          ? `This loan with ${person.name} cannot be removed yet.`
-          : `This removes the ${loan.currency} balance with ${person.name}, including the balance from before Ledgerline. Nothing changes in any of your accounts.`
+          ? `The ${loan.currency} loan cannot be removed yet`
+          : `Remove the ${loan.currency} loan?`
       }
       busy={busy}
       onDismiss={onClose}
+      cancelLabel={blocked ? "Close" : "Keep loan"}
       returnFocusId={returnFocusId}
-      closeLabel="Close dialog"
       fallbackFocusId="main-content"
-    >
-      <form
-        className="account-form"
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!blocked && entries.isSuccess) void submit();
-        }}
-      >
-        {entries.isPending && <p className="muted">Checking this loan…</p>}
-        {entries.isError && (
-          <p role="alert" className="field-error">
-            We couldn't check this loan. Close this and try again.
-          </p>
-        )}
-        {blocked && (
-          <>
-            <p>
-              Entries still use this loan. Delete them in Transactions first,
-              then remove the loan. They are dated:
-            </p>
-            <ul className="client-rows" aria-label="Entries using this loan">
-              {items.slice(0, shown).map((entry) => (
-                <li key={entry.id} className="loan-row">
-                  <span>{entry.date}</span>
-                </li>
-              ))}
-            </ul>
-            {(items.length > shown || entries.data?.nextCursor) && (
-              <p className="muted">and more.</p>
-            )}
-          </>
-        )}
-        {error && (
-          <p role="alert" className="field-error">
-            {error}
-          </p>
-        )}
-        <div className="form-actions">
+      footer={
+        blocked ? undefined : (
           <button
             type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onClose}
+            className="ui-btn ui-btn-danger-filled"
+            disabled={busy || !entries.isSuccess}
+            onClick={() => void submit()}
           >
-            {blocked ? "Close" : "Keep loan"}
+            {busy ? "Removing…" : "Remove loan"}
           </button>
-          {!blocked && (
-            <button
-              type="submit"
-              className="button danger-action"
-              disabled={busy || !entries.isSuccess}
-            >
-              {busy ? "Removing…" : "Remove loan"}
-            </button>
+        )
+      }
+    >
+      {entries.isPending && <p role="status">Checking this loan…</p>}
+      {entries.isError && (
+        <p role="alert" className="field-error">
+          We couldn't check this loan. Close this and try again.
+        </p>
+      )}
+      {!blocked && entries.isSuccess && (
+        <p>
+          Removes the balance with {person.name}, including the one from before
+          Ledgerline. No account changes.
+        </p>
+      )}
+      {blocked && (
+        <>
+          <p>
+            Entries still use it. Delete them in Transactions first. They are
+            dated:
+          </p>
+          <ul className="ln-dates" aria-label="Entries using this loan">
+            {items.slice(0, shown).map((entry) => (
+              <li key={entry.id}>{entry.date}</li>
+            ))}
+          </ul>
+          {(items.length > shown || entries.data?.nextCursor) && (
+            <p className="ln-note">and more.</p>
           )}
-        </div>
-      </form>
-    </EditorDialog>
+        </>
+      )}
+      {error && (
+        <p role="alert" className="field-error">
+          {error}
+        </p>
+      )}
+    </Overlay>
   );
 }
