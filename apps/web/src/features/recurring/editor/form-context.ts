@@ -1,5 +1,6 @@
 import type { Account, Category, RecurringRule } from "@ledgerline/shared";
 import type { ReactNode } from "react";
+import type { ComboCreate } from "../../../components/combo-field";
 import type { parseFee } from "../../transactions/fee";
 import type { RuleFormValues } from "../form";
 import type { upcomingDates } from "../schedule";
@@ -27,6 +28,11 @@ export type RuleFormContext = {
   feeInput: ReturnType<typeof parseFee>;
   sentMinor: number | null;
   currency: string;
+  /** An existing rule's Active switch (a new rule is always active). */
+  active: boolean;
+  setActive: (active: boolean) => void;
+  /** "Create … category “name”" for the kind a category field takes, as the Add transaction sheet offers. */
+  categoryCreate: (kind: "expense" | "income") => ComboCreate;
   moreOpen: boolean;
   setMoreOpen: (open: boolean) => void;
   usable: (account: Account) => boolean;

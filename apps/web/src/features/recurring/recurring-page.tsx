@@ -1,55 +1,24 @@
 import type { RecurringRule } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import { EmptyState, IconTile, ListCard, RowBody } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { Plus, Repeat } from "lucide-react";
 import { useState } from "react";
 import { Amount } from "../../components/amount-text";
+import { LoadError } from "../../components/load-error";
 import { getLedgers } from "../../lib/api";
 import { getCategories } from "../categories/api";
+import { usePageAdd } from "../shell/page-add";
 import { getAllAccounts } from "../transactions/api";
 import { getRules } from "./api";
-import { RuleEditor } from "./rule-editor";
-import { everySentence, formatDate } from "./schedule";
+import { ruleEndHint, ruleHint } from "./model";
+import { RuleSheet } from "./rule-sheet";
+import "./recurring.css";
 
-const kindLabel = {
-  expense: "Expense",
-  income: "Income",
-  transfer: "Transfer",
-};
-
-function RuleRow({ rule }: { rule: RecurringRule }) {
-  const status = rule.paused
-    ? rule.pausedReason === "access"
-      ? "Paused, the person it runs as can no longer write"
-      : "Paused"
-    : rule.nextDate
-      ? `Next ${formatDate(rule.nextDate)}`
-      : "Ended";
-  return (
-    <>
-      <span className="budget-line-top">
-        <strong>{rule.title}</strong>
-        <Amount
-          className="amount-figure"
-          cents={Math.abs(rule.amount.amount)}
-          currency={rule.amount.currency}
-        />
-      </span>
-      <span className="budget-line-detail muted">
-        {kindLabel[rule.kind]} · {everySentence(rule.frequency, rule.interval)}{" "}
-        · {status}
-      </span>
-      {rule.needsAttention > 0 && (
-        <span className="account-badge">
-          {rule.needsAttention === 1
-            ? "1 entry needs attention"
-            : `${rule.needsAttention} entries need attention`}
-        </span>
-      )}
-    </>
-  );
-}
-
+/**
+ * Recurring (ADR 0047, the prototype's `R.recurring`): one grouped card of rules, each a row with its name, one
+ * hint and its amount; a row opens the rule's sheet.
+ */
 export function RecurringPage() {
   const client = useQueryClient();
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
@@ -83,32 +52,80 @@ export function RecurringPage() {
   const timeZone = ledger?.timeZone ?? null;
   const editingRule = rules.data?.find((rule) => rule.id === editing);
   const ready = !!ledger && !!timeZone && !!accounts.data && !!categories.data;
+  const canAdd = writable && !!timeZone;
+  usePageAdd(
+    canAdd && (rules.data?.length ?? 0) > 0
+      ? {
+          label: "Add rule",
+          disabled: !ready,
+          onClick: () => setEditing("new"),
+        }
+      : null,
+  );
+  const row = (rule: RecurringRule) => {
+    const body = (
+      <RowBody
+        lead={
+          <IconTile>
+            <Repeat size={20} aria-hidden="true" />
+          </IconTile>
+        }
+        title={rule.title}
+        hint={ruleHint(rule)}
+        value={
+          <Amount
+            cents={Math.abs(rule.amount.amount)}
+            currency={rule.amount.currency}
+          />
+        }
+        valueHint={ruleEndHint(rule, accounts.data)}
+        chevron={writable}
+      />
+    );
+    return writable ? (
+      <button
+        key={rule.id}
+        type="button"
+        id={`rule-${rule.id}`}
+        className="ui-row ui-row-press rc-row"
+        disabled={!ready}
+        onClick={() => setEditing(rule.id)}
+      >
+        {body}
+      </button>
+    ) : (
+      <div key={rule.id} className="ui-row ui-row-static rc-row">
+        {body}
+      </div>
+    );
+  };
   return (
-    <>
-      <div className="page-heading">
-        <p className="eyebrow">MAKE IT YOURS</p>
+    <div className="rc-page">
+      <div className="page-heading rc-head">
         <h1 id="recurring-title" tabIndex={-1}>
           Recurring
         </h1>
-        <p className="muted">
-          Rent, salary, subscriptions and regular transfers, created for you on
-          their dates.
-        </p>
-      </div>
-      {failed && (
-        <div className="account-error">
-          <p role="alert">Couldn't load your recurring entries.</p>
+        {canAdd && (rules.data?.length ?? 0) > 0 && (
           <button
             type="button"
-            className="secondary-button"
-            onClick={() => {
-              void ledgers.refetch();
-              if (ledger) void rules.refetch();
-            }}
+            id="add-rule"
+            className="ui-btn ui-btn-primary rc-add"
+            disabled={!ready}
+            onClick={() => setEditing("new")}
           >
-            Try again
+            <Plus size={18} aria-hidden="true" />
+            Add rule
           </button>
-        </div>
+        )}
+      </div>
+      {failed && (
+        <LoadError
+          message="Couldn't load your recurring entries."
+          onRetry={() => {
+            void ledgers.refetch();
+            if (ledger) void rules.refetch();
+          }}
+        />
       )}
       {!rules.data && !failed && (
         <p className="muted" role="status">
@@ -116,62 +133,36 @@ export function RecurringPage() {
         </p>
       )}
       {ledger && !timeZone && (
-        <section className="settings-card">
-          <h2>Set your time zone first</h2>
-          <p>
+        <section className="ui-card rc-alert">
+          <p>Set your time zone first.</p>
+          <p className="rc-note">
             Recurring entries need to know what today is for you.{" "}
             <Link to="/more">Set the time zone in More</Link>.
           </p>
         </section>
       )}
-      {rules.data && (
-        <>
-          {writable && timeZone && (
-            <div className="account-dialog-actions currency-actions">
-              <Button
+      {rules.data &&
+        (rules.data.length === 0 ? (
+          <div className="ui-card rc-empty">
+            <EmptyState text="Nothing recurring yet." />
+            {canAdd && (
+              <button
                 type="button"
                 id="add-rule"
+                className="ui-btn ui-btn-secondary"
                 disabled={!ready}
                 onClick={() => setEditing("new")}
               >
-                Add a recurring entry
-              </Button>
-            </div>
-          )}
-          {rules.data.length === 0 ? (
-            <p className="muted">
-              Nothing recurring yet.{" "}
-              {writable && timeZone
-                ? "Add one and it will appear in your transactions on its dates."
-                : ""}
-            </p>
-          ) : (
-            <ul className="budget-list" aria-label="Recurring entries">
-              {rules.data.map((rule) => (
-                <li key={rule.id}>
-                  {writable ? (
-                    <button
-                      type="button"
-                      id={`rule-${rule.id}`}
-                      className="budget-line"
-                      disabled={!ready}
-                      onClick={() => setEditing(rule.id)}
-                    >
-                      <RuleRow rule={rule} />
-                    </button>
-                  ) : (
-                    <div className="budget-line">
-                      <RuleRow rule={rule} />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+                <Plus size={18} aria-hidden="true" />
+                Add your first rule
+              </button>
+            )}
+          </div>
+        ) : (
+          <ListCard>{rules.data.map(row)}</ListCard>
+        ))}
       {ready && editing === "new" && (
-        <RuleEditor
+        <RuleSheet
           ledgerId={ledger.id}
           timeZone={timeZone}
           accounts={accounts.data}
@@ -181,7 +172,7 @@ export function RecurringPage() {
         />
       )}
       {ready && editingRule && (
-        <RuleEditor
+        <RuleSheet
           key={`${editingRule.id}-${editingRule.version}`}
           ledgerId={ledger.id}
           timeZone={timeZone}
@@ -192,6 +183,6 @@ export function RecurringPage() {
           onChanged={refresh}
         />
       )}
-    </>
+    </div>
   );
 }

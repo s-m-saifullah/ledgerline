@@ -1,32 +1,29 @@
 import type { Account, Category, RecurringRule } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DialogDeleteButton } from "../../components/dialog-delete-button";
-import { EditorDialog } from "../../components/editor-dialog";
+import { DeleteTrigger } from "../../components/delete-trigger";
+import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { useCategoryCreate } from "../categories/use-category-create";
 import { defaultFeeText, parseFee } from "../transactions/fee";
 import { amountMinor } from "../transactions/form";
 import {
   getRuns,
   prepareRuleCreate,
   prepareRuleDelete,
-  prepareRuleToggle,
-  prepareRuleUpdate,
+  prepareRuleSave,
   prepareRunSkip,
 } from "./api";
-import {
-  renderAccounts,
-  renderBonus,
-  renderCategoryAndAmounts,
-  renderFee,
-  renderMoreCategories,
-  renderNameAndKind,
-  renderPayeeAndNote,
-  renderSchedule,
-} from "./editor/fields";
 import type { RuleFormContext } from "./editor/form-context";
 import { RunsSection } from "./editor/runs-section";
+import {
+  MainCard,
+  MoreFold,
+  ScheduleCard,
+  SchedulePreview,
+  TransferCard,
+  TypeAndAmount,
+} from "./editor/sections";
 import {
   type RuleFormErrors,
   type RuleFormValues,
@@ -35,8 +32,15 @@ import {
   valuesFromRule,
 } from "./form";
 import { dueNow, ledgerToday, upcomingDates } from "./schedule";
+import "./recurring.css";
 
-export function RuleEditor({
+/**
+ * The rule sheet (the prototype's `OV["rule-form"]`): the type and the big amount, one card for what the rule is,
+ * one for when it runs (with the Active switch for a rule that exists), the transfer's fee and bonus, a More fold
+ * and, for an existing rule, what it has done. Save is pinned, with the trash beside it, which asks first. The
+ * save, retry, conflict and skip rules are the dialog's, kept.
+ */
+export function RuleSheet({
   ledgerId,
   timeZone,
   accounts,
@@ -56,15 +60,23 @@ export function RuleEditor({
   onChanged: () => void;
 }) {
   const today = ledgerToday(timeZone);
-  const [values, setValues] = useState<RuleFormValues>(() =>
-    rule ? valuesFromRule(rule) : ruleDefaults(accounts, today),
+  const initial = useMemo(
+    () => (rule ? valuesFromRule(rule) : ruleDefaults(accounts, today)),
+    [rule, accounts, today],
   );
+  const [values, setValues] = useState<RuleFormValues>(initial);
+  const [active, setActive] = useState(rule ? !rule.paused : true);
   const [errors, setErrors] = useState<RuleFormErrors>({});
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [asking, setAsking] = useState(false);
   const [busy, setBusy] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  // A name nobody has yet can be made from a category field, as in the Add transaction sheet. A create whose answer
+  // never came is repeated with the same key when it is chosen again, and holds Save until then.
+  const expenseCreate = useCategoryCreate(ledgerId, "expense");
+  const incomeCreate = useCategoryCreate(ledgerId, "income");
+  const categoryUncertain = expenseCreate.uncertain || incomeCreate.uncertain;
   const attempt = useRef<{ sig: string; run: () => Promise<unknown> } | null>(
     null,
   );
@@ -97,18 +109,19 @@ export function RuleEditor({
   };
   const feeInput = parseFee(values.feeText, from?.currency ?? "USD");
   const sentMinor = amountMinor(values.amount, from?.currency ?? "USD");
-  // The categories live under More; open it when one is needed and missing, or has an error.
-  const needsCategory =
+  // The categories and the end date live under More; open it when one is needed and missing, or has an error.
+  const needsMore =
     (transfer &&
       feeInput.kind !== "none" &&
       feeInput.kind !== "invalid" &&
       !values.feeCategoryId) ||
     (transfer && values.bonusOn && !values.bonusCategoryId) ||
     !!errors.feeCategoryId ||
-    !!errors.bonusCategoryId;
+    !!errors.bonusCategoryId ||
+    !!errors.endDate;
   useEffect(() => {
-    if (needsCategory) setMoreOpen(true);
-  }, [needsCategory]);
+    if (needsMore) setMoreOpen(true);
+  }, [needsMore]);
   const preview = useMemo(() => {
     if (
       !values.startDate ||
@@ -160,25 +173,36 @@ export function RuleEditor({
     }
   };
   const save = () => {
-    const result = ruleBody(values, accounts);
-    if ("errors" in result) {
+    // Only the switch moved: pause or resume, with no update of fields that did not change.
+    const toggle = rule && active !== !rule.paused;
+    const changed = JSON.stringify(values) !== JSON.stringify(initial);
+    const result =
+      !rule || changed || !toggle ? ruleBody(values, accounts) : null;
+    if (result && "errors" in result) {
       setErrors(result.errors);
       setError("Check the highlighted fields.");
       return;
     }
-    const sig = JSON.stringify(result.body);
+    const body = result?.body ?? null;
+    const action = toggle ? (active ? "resume" : "pause") : null;
+    const sig = JSON.stringify([body, action]);
     if (attempt.current?.sig !== sig)
       attempt.current = {
         sig,
         run: rule
-          ? prepareRuleUpdate(ledgerId, rule, result.body)
-          : prepareRuleCreate(ledgerId, result.body),
+          ? prepareRuleSave(ledgerId, rule, body, action)
+          : prepareRuleCreate(ledgerId, body as NonNullable<typeof body>),
       };
     void run(attempt.current.run);
   };
-  const once = (sig: string, make: () => () => Promise<unknown>) => {
-    attempt.current ??= { sig, run: make() };
-    void run(attempt.current.run);
+  const remove = () => {
+    if (!rule) return;
+    attempt.current ??= {
+      sig: "delete",
+      run: prepareRuleDelete(ledgerId, rule),
+    };
+    // A failure is shown in the sheet, so the question steps aside.
+    void run(attempt.current.run).then(() => setAsking(false));
   };
   const skip = async (index: number) => {
     const target = runs.data?.[index];
@@ -199,7 +223,7 @@ export function RuleEditor({
     errors[key] ? { "aria-invalid": "true" as const } : {};
   const message = (key: keyof RuleFormValues) =>
     errors[key] && (
-      <p role="alert" className="field-error">
+      <p role="alert" className="field-error rc-err">
         {errors[key]}
       </p>
     );
@@ -221,6 +245,10 @@ export function RuleEditor({
     feeInput,
     sentMinor,
     currency,
+    active,
+    setActive,
+    categoryCreate: (kind) =>
+      kind === "expense" ? expenseCreate.create : incomeCreate.create,
     moreOpen,
     setMoreOpen,
     usable,
@@ -229,110 +257,108 @@ export function RuleEditor({
     interval,
   };
   return (
-    <EditorDialog
-      open
-      title={rule ? rule.title : "New recurring entry"}
-      description={
-        rule
-          ? "Changes apply to entries not created yet. Entries already made stay as they are."
-          : "Creates an entry or a transfer on a schedule, so you do not have to."
-      }
-      busy={busy}
-      onDismiss={onDismiss}
-      returnFocusId={rule ? `rule-${rule.id}` : "add-rule"}
-      closeLabel="Close recurring dialog"
-      fallbackFocusId="recurring-title"
-      initialFocusId="rule-title"
-      contentClassName="recurring-dialog"
-    >
-      <form
-        noValidate
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!conflict) save();
-        }}
-      >
-        <fieldset disabled={busy || conflict} className="account-fields">
-          {renderNameAndKind(form)}
-          {renderAccounts(form)}
-          {renderCategoryAndAmounts(form)}
-          {renderFee(form)}
-          {renderBonus(form)}
-          {renderMoreCategories(form)}
-          {renderPayeeAndNote(form)}
-          {renderSchedule(form)}
-        </fieldset>
-        {error && (
-          <p role="alert" className="field-error">
-            {error}
-          </p>
-        )}
-        {rule && (
-          <RunsSection
-            runs={runs}
-            busy={busy}
-            onSkip={(index) => void skip(index)}
-          />
-        )}
-        <div className="account-dialog-actions">
-          {conflict ? (
-            <Button
+    <>
+      <Overlay
+        open
+        title={rule ? rule.title : "New recurring entry"}
+        description={
+          rule
+            ? "Changes apply to entries not created yet. Entries already made stay as they are."
+            : "Creates an entry or a transfer on a schedule, so you do not have to."
+        }
+        busy={busy}
+        onDismiss={onDismiss}
+        returnFocusId={rule ? `rule-${rule.id}` : "add-rule"}
+        fallbackFocusId="recurring-title"
+        initialFocusId="rule-title"
+        footer={
+          conflict ? (
+            <button
               type="button"
+              className="ui-btn ui-btn-primary"
               onClick={() => {
                 onChanged();
                 onDismiss();
               }}
             >
               Reload recurring
-            </Button>
+            </button>
           ) : (
             <>
-              {rule &&
-                (confirmDelete ? (
-                  <button
-                    type="button"
-                    className="secondary-button danger-action"
-                    disabled={busy}
-                    onClick={() =>
-                      once("delete", () => prepareRuleDelete(ledgerId, rule))
-                    }
-                  >
-                    Yes, delete it
-                  </button>
-                ) : (
-                  <DialogDeleteButton
-                    label="Delete rule"
-                    disabled={busy}
-                    onClick={() => setConfirmDelete(true)}
-                  />
-                ))}
               {rule && (
-                <button
-                  type="button"
-                  className="secondary-button"
-                  disabled={busy}
-                  onClick={() => {
-                    const action = rule.paused ? "resume" : "pause";
-                    once(action, () =>
-                      prepareRuleToggle(ledgerId, rule, action),
-                    );
-                  }}
-                >
-                  {rule.paused ? "Resume" : "Pause"}
-                </button>
+                <DeleteTrigger
+                  id="rule-delete"
+                  label="Delete rule"
+                  disabled={busy || categoryUncertain}
+                  onClick={() => setAsking(true)}
+                />
               )}
-              <Button type="submit" disabled={busy}>
-                {busy ? "Saving…" : rule ? "Save changes" : "Save rule"}
-              </Button>
+              <button
+                type="submit"
+                form="rule-form"
+                className="ui-btn ui-btn-primary"
+                disabled={busy || categoryUncertain}
+              >
+                {busy ? "Saving…" : "Save"}
+              </button>
             </>
+          )
+        }
+      >
+        <form
+          id="rule-form"
+          className="rc-form"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!conflict) save();
+          }}
+        >
+          <fieldset disabled={busy || conflict} className="rc-fields">
+            <TypeAndAmount form={form} />
+            <MainCard form={form} />
+            <ScheduleCard form={form} />
+            <SchedulePreview form={form} />
+            <TransferCard form={form} />
+            <MoreFold form={form} />
+            {rule && (
+              <RunsSection
+                runs={runs}
+                busy={busy}
+                onSkip={(index) => void skip(index)}
+              />
+            )}
+          </fieldset>
+          {error && (
+            <p role="alert" className="field-error">
+              {error}
+            </p>
           )}
-        </div>
-        {rule && confirmDelete && (
-          <p className="form-help">
-            Deleting the rule keeps the entries it already made.
-          </p>
-        )}
-      </form>
-    </EditorDialog>
+        </form>
+      </Overlay>
+      {rule && asking && (
+        <Overlay
+          open
+          kind="question"
+          title={`Delete ${rule.title}?`}
+          busy={busy}
+          onDismiss={() => setAsking(false)}
+          returnFocusId="rule-delete"
+          fallbackFocusId="recurring-title"
+          footer={
+            <button
+              type="button"
+              className="ui-btn ui-btn-danger-filled"
+              disabled={busy}
+              onClick={remove}
+            >
+              {busy ? "Deleting…" : "Delete"}
+            </button>
+          }
+        >
+          <p>Deleting the rule keeps the entries it already made.</p>
+        </Overlay>
+      )}
+    </>
   );
 }

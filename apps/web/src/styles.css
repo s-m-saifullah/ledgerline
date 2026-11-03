@@ -506,16 +506,6 @@ select {
   line-height: 1.7;
   color: var(--muted);
 }
-.account-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--muted);
-  font-size: 11px;
-  border: 1px solid var(--border);
-  padding: 4px 8px;
-  border-radius: 20px;
-}
 .account-dialog {
   position: fixed;
   z-index: 31;
@@ -547,43 +537,6 @@ select {
   font-size: 12px;
   font-weight: 500;
   margin-top: 4px;
-}
-.balance-direction {
-  border: 0;
-  padding: 0;
-  margin: 8px 0 4px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  min-width: 0;
-}
-.balance-direction legend {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-.balance-direction label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.balance-direction label:has(input:checked) {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-.balance-direction input {
-  min-height: 0;
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  flex-shrink: 0;
-  accent-color: var(--accent);
 }
 .account-error {
   margin-top: 20px;
@@ -693,12 +646,6 @@ select {
 }
 
 /* Everyday transaction entry */
-.transaction-details {
-  margin-top: 8px;
-}
-.transaction-details .account-fields {
-  margin-top: 8px;
-}
 .transfer-fee {
   display: grid;
   gap: 4px;
@@ -715,17 +662,6 @@ select {
 }
 .transfer-fee #transfer-fee-preview:empty {
   display: none;
-}
-.transaction-details textarea {
-  width: 100%;
-  min-height: 64px;
-  resize: vertical;
-  border: 1px solid var(--field-border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  padding: 12px;
-  font: inherit;
 }
 .transaction-toast {
   min-width: 0;
@@ -1344,25 +1280,7 @@ button.budget-line:hover {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
-.account-fields > .budget-rollover {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  min-height: 44px;
-  font-weight: 400;
-}
-.budget-rollover input {
-  width: 20px;
-  height: 20px;
-  min-height: 0;
-  margin-top: 0;
-  accent-color: var(--accent);
-  flex-shrink: 0;
-}
 /* A 20px line is as tall as the 20px box, so the first line is level with it, wrapped or not. */
-.check-text {
-  line-height: 20px;
-}
 .currency-actions {
   justify-content: flex-start;
   margin-top: 0;
@@ -1389,60 +1307,8 @@ button.budget-line:hover {
   gap: 8px;
 }
 
-.recurring-dialog .recurring-kinds {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 8px 0 4px;
-}
-.recurring-dialog .recurring-repeat {
-  border: 0;
-  padding: 0;
-  margin: 8px 0 4px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  gap: 12px;
-  min-width: 0;
-}
-.recurring-dialog .recurring-repeat legend {
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 8px;
-}
-.recurring-dialog .recurring-repeat label {
-  display: block;
-  font-size: 12px;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-.recurring-dialog .recurring-runs {
-  margin-top: 24px;
-}
-.recurring-dialog .recurring-runs h3 {
-  font-size: 14px;
-}
-.recurring-dialog .recurring-runs ul {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 12px;
-}
-.recurring-dialog .recurring-runs li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 14px;
-  line-height: 1.5;
-}
 .amount-figure {
   font-variant-numeric: tabular-nums;
-}
-@media (max-width: 420px) {
-  .recurring-dialog .recurring-kinds label {
-    padding: 10px 8px;
-    gap: 6px;
-  }
 }
 /* Exports */
 .export-inline {
@@ -1616,25 +1482,6 @@ details[open] > summary {
   details > summary::before {
     transition: none;
   }
-}
-details.transaction-details > summary {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--accent);
-  font-size: 13px;
-}
-details.transaction-details > summary:hover {
-  background: transparent;
-  text-decoration: underline;
-}
-details.transaction-details[open] > summary {
-  margin-bottom: 8px;
-}
-details.transaction-details > summary .muted {
-  color: var(--muted);
-  font-size: inherit;
-  line-height: inherit;
 }
 
 /* A failed load with a way forward (ADR 0039): message and a bordered retry button, stacked on a phone. */

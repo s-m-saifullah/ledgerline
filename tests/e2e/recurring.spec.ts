@@ -104,14 +104,14 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   const start = new Date(Date.now() - 45 * 86_400_000)
     .toISOString()
     .slice(0, 10);
-  await page.getByRole("button", { name: "Add a recurring entry" }).click();
+  await page.getByRole("button", { name: /Add (your first )?rule/ }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Name").fill("Rent");
   await dialog.getByLabel("Amount (USD)").fill("100");
   await chooseCategory(page, "Category", "Housing");
-  await dialog.getByLabel("Starts").fill(start);
+  await dialog.getByLabel("Starts", { exact: true }).fill(start);
   await expect(dialog.getByText(/2 entries are already due/)).toBeVisible();
-  await dialog.getByRole("button", { name: "Save rule" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   const row = page.getByRole("button", { name: /Rent/ });
   await expect(row).toContainText("Expense · Every month · Next");
@@ -132,19 +132,25 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   // Its history lists both, then it can be paused and deleted; the entries stay.
   await page.goto("/recurring");
   await page.getByRole("button", { name: /Rent/ }).click();
-  await expect(page.getByText("What it has done")).toBeVisible();
-  const history = page.getByRole("dialog").locator(".recurring-runs li");
+  await page.getByText("What it has done").click();
+  const history = page.getByRole("dialog").locator(".rc-runs li");
   await expect(history).toHaveCount(2);
   await expect(history.filter({ hasText: "Created" })).toHaveCount(2);
-  await page.getByRole("button", { name: "Pause" }).click();
+  // Paused with the Active switch and Save; the rule's row says so.
+  await page.getByRole("switch", { name: "Active" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   await expect(page.getByRole("button", { name: /Rent/ })).toContainText(
     "Paused",
   );
   await page.getByRole("button", { name: /Rent/ }).click();
   await page.getByRole("button", { name: "Delete rule" }).click();
-  await page.getByRole("button", { name: "Yes, delete it" }).click();
-  await expect(page.getByRole("dialog")).toBeHidden();
+  await page
+    .getByRole("dialog", { name: "Delete Rent?" })
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
+  // The question and the sheet leave together.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByText(/Nothing recurring yet/)).toBeVisible();
   expect(await entries()).toHaveLength(2);
 });
