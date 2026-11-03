@@ -52,10 +52,11 @@ it("validates a name and saves debt in exact signed USD cents", async () => {
       open
       onDismiss={vi.fn()}
       onUnconfirmed={vi.fn()}
+      onAction={vi.fn()}
       onSaved={saved}
     />,
   );
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   expect(
     await screen.findByText("Give this account a name."),
   ).toBeInTheDocument();
@@ -65,7 +66,7 @@ it("validates a name and saves debt in exact signed USD cents", async () => {
   expect(screen.getByRole("radio", { name: "Money owed" })).toBeChecked();
   await userEvent.clear(screen.getByLabelText("Opening balance (USD)"));
   await userEvent.type(screen.getByLabelText("Opening balance (USD)"), "42.15");
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
     name: "My loan",
@@ -96,6 +97,7 @@ it("retains the same prepared save when an interrupted form is closed and resume
           open={open}
           onDismiss={() => setOpen(false)}
           onUnconfirmed={vi.fn()}
+          onAction={vi.fn()}
           onSaved={saved}
         />
       </>
@@ -103,7 +105,7 @@ it("retains the same prepared save when an interrupted form is closed and resume
   }
   render(<Host />);
   await userEvent.type(screen.getByLabelText("Account name"), "My bank");
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   expect(
     await screen.findByText(/couldn't confirm the save/),
   ).toBeInTheDocument();
@@ -148,10 +150,11 @@ it("requires a reload after a stale edit and then uses the new version", async (
       open
       onDismiss={vi.fn()}
       onUnconfirmed={vi.fn()}
+      onAction={vi.fn()}
       onSaved={saved}
     />,
   );
-  await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   expect(await screen.findByText(/This account changed/)).toBeInTheDocument();
   expect(screen.getByLabelText("Account name")).toBeDisabled();
   await userEvent.click(
@@ -162,7 +165,7 @@ it("requires a reload after a stale edit and then uses the new version", async (
   );
   await userEvent.clear(screen.getByLabelText("Account name"));
   await userEvent.type(screen.getByLabelText("Account name"), "Updated");
-  await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(
     JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body)).expectedVersion,
@@ -182,6 +185,7 @@ it("masks the opening balance in privacy mode", () => {
         open
         onDismiss={vi.fn()}
         onUnconfirmed={vi.fn()}
+        onAction={vi.fn()}
         onSaved={vi.fn()}
       />
     </PrivacyContext>,
@@ -213,6 +217,7 @@ it("offers added currencies for a new account and reads the balance in that curr
       open
       onDismiss={vi.fn()}
       onUnconfirmed={vi.fn()}
+      onAction={vi.fn()}
       onSaved={saved}
       currencies={["USD", "EUR", "JPY"]}
     />,
@@ -231,7 +236,7 @@ it("offers added currencies for a new account and reads the balance in that curr
   expect(screen.getByLabelText("Opening balance (JPY)")).toHaveValue("155");
   await userEvent.clear(screen.getByLabelText("Opening balance (JPY)"));
   await userEvent.type(screen.getByLabelText("Opening balance (JPY)"), "1500");
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
   expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
     name: "Yen wallet",
@@ -251,6 +256,7 @@ it("shows only the base currency to choose from when none are added, and fixes i
       open
       onDismiss={vi.fn()}
       onUnconfirmed={vi.fn()}
+      onAction={vi.fn()}
       onSaved={vi.fn()}
     />,
   );
@@ -269,12 +275,15 @@ it("shows only the base currency to choose from when none are added, and fixes i
       open
       onDismiss={vi.fn()}
       onUnconfirmed={vi.fn()}
+      onAction={vi.fn()}
       onSaved={vi.fn()}
       currencies={["USD", "EUR"]}
     />,
   );
+  // An account keeps its currency for life: a fixed row, not a choice.
   expect(screen.queryByLabelText("Currency")).toBeNull();
-  expect(screen.getByText(/Currency: EUR\./)).toBeInTheDocument();
+  expect(screen.getByText("Currency")).toBeInTheDocument();
+  expect(screen.getByText("EUR")).toBeInTheDocument();
   expect(screen.getByLabelText("Opening balance (EUR)")).toHaveValue("10.00");
 });
 it("explains and sends a usual fee, fixed or as a percentage, with its category under More", async () => {
@@ -301,6 +310,7 @@ it("explains and sends a usual fee, fixed or as a percentage, with its category 
       categories={[fees]}
       onDismiss={vi.fn()}
       onUnconfirmed={vi.fn()}
+      onAction={vi.fn()}
       onSaved={vi.fn()}
     />,
   );
@@ -312,15 +322,204 @@ it("explains and sends a usual fee, fixed or as a percentage, with its category 
   expect(more).toContainElement(screen.getByLabelText("Fee category"));
   await userEvent.type(screen.getByLabelText("Account name"), "Wallet");
   await userEvent.type(screen.getByLabelText("Usual fee"), "abc");
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   expect(await screen.findByText(/percentage like 2%/)).toBeInTheDocument();
   expect(fetchMock).not.toHaveBeenCalled();
   await userEvent.clear(screen.getByLabelText("Usual fee"));
   await userEvent.type(screen.getByLabelText("Usual fee"), "1.5%");
-  await userEvent.click(screen.getByRole("button", { name: "Add account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
   expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
     defaultFee: { basisPoints: 150 },
     feeCategoryId: null,
   });
+});
+
+it("offers Archive and Delete for an account that exists, and asks the page to open the question", async () => {
+  const onAction = vi.fn();
+  vi.stubGlobal("fetch", vi.fn());
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      account={fixture}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={onAction}
+    />,
+  );
+  expect(
+    screen.queryByRole("button", { name: "Unarchive" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Archive" }));
+  expect(onAction).toHaveBeenLastCalledWith("archive", fixture);
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  expect(onAction).toHaveBeenLastCalledWith("delete", fixture);
+  expect(onAction).toHaveBeenCalledTimes(2);
+});
+it("says Unarchive for an archived account", async () => {
+  const onAction = vi.fn();
+  const archived = { ...fixture, archivedAt: "2026-10-07T00:00:00.000Z" };
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      account={archived}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={onAction}
+    />,
+  );
+  expect(
+    screen.queryByRole("button", { name: "Archive" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Unarchive" }));
+  expect(onAction).toHaveBeenCalledWith("unarchive", archived);
+});
+it("has no Archive or Delete on a new account", () => {
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+});
+it("cannot archive or delete while the form is frozen by an unconfirmed save", async () => {
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockRejectedValue(new TypeError("Connection lost"));
+  vi.stubGlobal("fetch", fetchMock);
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      account={fixture}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await screen.findByText(/couldn't confirm the save/);
+  expect(screen.getByRole("button", { name: "Archive" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
+});
+it("opens More when a bonus or fee problem is inside it", async () => {
+  vi.stubGlobal("fetch", vi.fn());
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  const more = screen.getByText("More").closest("details");
+  expect(more).not.toHaveAttribute("open");
+  await userEvent.type(screen.getByLabelText("Account name"), "Wallet");
+  await userEvent.type(screen.getByLabelText("Bonus rate (%)"), "500");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(await screen.findByText(/between 0\.01 and 100/)).toBeInTheDocument();
+  expect(more).toHaveAttribute("open");
+});
+it("shows the bonus category only once a bonus rate is typed", async () => {
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  expect(screen.queryByLabelText("Bonus category")).toBeNull();
+  await userEvent.type(screen.getByLabelText("Bonus rate (%)"), "2.5");
+  expect(screen.getByLabelText("Bonus category")).toBeInTheDocument();
+});
+it("flips the balance direction with the type until it is chosen by hand", async () => {
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("radio", { name: "Money available" })).toBeChecked();
+  await userEvent.selectOptions(screen.getByLabelText("Account type"), "card");
+  expect(screen.getByRole("radio", { name: "Money owed" })).toBeChecked();
+  // Choosing by hand keeps the choice when the type changes again.
+  await userEvent.click(screen.getByRole("radio", { name: "Money owed" }));
+  await userEvent.selectOptions(screen.getByLabelText("Account type"), "cash");
+  expect(screen.getByRole("radio", { name: "Overdrawn" })).toBeChecked();
+});
+it("keeps the direction when the type of an existing account changes", async () => {
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      account={fixture}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("radio", { name: "Money available" })).toBeChecked();
+  await userEvent.selectOptions(screen.getByLabelText("Account type"), "card");
+  // Only a new account follows the type; an existing one keeps the sign it was saved with.
+  expect(screen.getByRole("radio", { name: "Credit" })).toBeChecked();
+});
+it("opens More when the usual fee has a problem", async () => {
+  vi.stubGlobal("fetch", vi.fn());
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  const more = screen.getByText("More").closest("details");
+  await userEvent.type(screen.getByLabelText("Account name"), "Wallet");
+  await userEvent.type(screen.getByLabelText("Usual fee"), "abc");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(await screen.findByText(/percentage like 2%/)).toBeInTheDocument();
+  expect(more).toHaveAttribute("open");
+});
+it("freezes Archive and Delete with the rest of the form while a save is unconfirmed", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>().mockRejectedValue(new TypeError("Connection lost")),
+  );
+  render(
+    <AccountEditor
+      ledgerId={ledgerId}
+      account={fixture}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+      onAction={vi.fn()}
+    />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  await screen.findByText(/couldn't confirm the save/);
+  expect(screen.getByRole("button", { name: "Archive" })).toBeDisabled();
 });

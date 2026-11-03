@@ -48,11 +48,9 @@ it("retries an unconfirmed archive with the original key and version", async () 
       onSaved={saved}
     />,
   );
+  await userEvent.click(screen.getByRole("button", { name: "Archive" }));
   await userEvent.click(
-    screen.getByRole("button", { name: "Archive account" }),
-  );
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Retry archive" }),
+    await screen.findByRole("button", { name: "Retry action" }),
   );
   await waitFor(() => expect(saved).toHaveBeenCalledWith(archived));
   const [first, retry] = fetchMock.mock.calls.map((call) => call[1]);
@@ -86,21 +84,17 @@ it("clears an unconfirmed archive on a definitive conflict and reloads before a 
       onSaved={saved}
     />,
   );
+  await userEvent.click(screen.getByRole("button", { name: "Archive" }));
   await userEvent.click(
-    screen.getByRole("button", { name: "Archive account" }),
-  );
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Retry archive" }),
+    await screen.findByRole("button", { name: "Retry action" }),
   );
   const reload = await screen.findByRole("button", {
     name: "Reload latest details",
   });
   expect(unconfirmed).toHaveBeenLastCalledWith(false);
-  expect(screen.getByRole("button", { name: "Keep account" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
   await userEvent.click(reload);
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Archive account" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Archive" }));
   await waitFor(() => expect(saved).toHaveBeenCalledWith(archived));
   expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toEqual({
     expectedVersion: 2,
@@ -139,11 +133,11 @@ it("retains deletion intent across interrupted response and close/resume", async
     );
   }
   render(<Host />);
-  await userEvent.click(screen.getByRole("button", { name: "Delete account" }));
-  await screen.findByRole("button", { name: "Retry delete" });
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+  await screen.findByRole("button", { name: "Retry action" });
   await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
   await userEvent.click(screen.getByRole("button", { name: "Resume" }));
-  await userEvent.click(screen.getByRole("button", { name: "Retry delete" }));
+  await userEvent.click(screen.getByRole("button", { name: "Retry action" }));
   await waitFor(() => expect(saved).toHaveBeenCalledWith(account));
   const [first, retry] = fetchMock.mock.calls.map((call) => call[1]);
   expect(retry?.method).toBe("DELETE");
@@ -174,14 +168,12 @@ it("reloads a stale archived account before a fresh deletion", async () => {
       onSaved={saved}
     />,
   );
-  await userEvent.click(screen.getByRole("button", { name: "Delete account" }));
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
   await userEvent.click(
     await screen.findByRole("button", { name: "Reload latest details" }),
   );
   expect(saved).not.toHaveBeenCalled();
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Delete account" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   await waitFor(() => expect(saved).toHaveBeenCalledWith(latest));
   expect(JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))).toEqual({
     expectedVersion: 3,
@@ -214,13 +206,11 @@ it("retries an unconfirmed unarchive with the original key and version", async (
     />,
   );
   expect(
-    screen.getByRole("heading", { name: "Unarchive account?" }),
+    screen.getByRole("heading", { name: "Unarchive My card?" }),
   ).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Unarchive" }));
   await userEvent.click(
-    screen.getByRole("button", { name: "Unarchive account" }),
-  );
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Retry unarchive" }),
+    await screen.findByRole("button", { name: "Retry action" }),
   );
   await waitFor(() => expect(saved).toHaveBeenCalledWith(restored));
   const [first, retry] = fetchMock.mock.calls;
@@ -230,4 +220,92 @@ it("retries an unconfirmed unarchive with the original key and version", async (
   expect(new Headers(retry?.[1]?.headers).get("Idempotency-Key")).toBe(
     new Headers(first?.[1]?.headers).get("Idempotency-Key"),
   );
+});
+it("makes Delete the red button and puts the question in the centred dialog", () => {
+  const { unmount } = render(
+    <ArchiveAccountDialog
+      mode="delete"
+      ledgerId={account.ledgerId}
+      account={account}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("button", { name: "Delete" })).toHaveClass(
+    "ui-btn-danger-filled",
+  );
+  expect(document.querySelector(".ui-question")).not.toBeNull();
+  expect(document.querySelector(".ui-sheet")).toBeNull();
+  unmount();
+  render(
+    <ArchiveAccountDialog
+      ledgerId={account.ledgerId}
+      account={account}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={vi.fn()}
+    />,
+  );
+  expect(screen.getByRole("button", { name: "Archive" })).not.toHaveClass(
+    "ui-btn-danger-filled",
+  );
+});
+it("closes as done when a stale archive finds the account already archived", async () => {
+  const already = { ...account, archivedAt: account.updatedAt, version: 2 };
+  const fetchMock = vi
+    .fn<typeof fetch>()
+    .mockResolvedValueOnce(
+      json({ status: 409, detail: "This account changed." }, 409),
+    )
+    .mockResolvedValueOnce(json(already));
+  vi.stubGlobal("fetch", fetchMock);
+  const saved = vi.fn();
+  render(
+    <ArchiveAccountDialog
+      ledgerId={account.ledgerId}
+      account={account}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={saved}
+    />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Archive" }));
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Reload latest details" }),
+  );
+  await waitFor(() => expect(saved).toHaveBeenCalledWith(already));
+});
+it("closes as done when a stale unarchive finds the account already active", async () => {
+  const archived = { ...account, archivedAt: account.updatedAt, version: 2 };
+  const already = { ...account, archivedAt: null, version: 3 };
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        json({ status: 409, detail: "This account changed." }, 409),
+      )
+      .mockResolvedValueOnce(json(already)),
+  );
+  const saved = vi.fn();
+  render(
+    <ArchiveAccountDialog
+      mode="unarchive"
+      ledgerId={account.ledgerId}
+      account={archived}
+      open
+      onDismiss={vi.fn()}
+      onUnconfirmed={vi.fn()}
+      onSaved={saved}
+    />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Unarchive" }));
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Reload latest details" }),
+  );
+  await waitFor(() => expect(saved).toHaveBeenCalledWith(already));
 });

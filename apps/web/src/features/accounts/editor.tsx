@@ -4,18 +4,19 @@ import {
   type Category,
   currencyDigits,
 } from "@ledgerline/shared";
-import { Button } from "@ledgerline/ui";
+import { SegmentedControl } from "@ledgerline/ui";
 import { ChevronDown } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
+import { Overlay } from "../../components/overlay";
+import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { CategoryPicker } from "../categories/picker";
 import { feeHint } from "../transactions/fee";
 import { getAccount, prepareAccountSave } from "./api";
-import { AccountDialog } from "./dialog";
 import {
   type AccountFormValues,
   accountBody,
@@ -24,7 +25,13 @@ import {
   formDefaults,
   isLiability,
 } from "./form";
+import "./accounts.css";
 
+/**
+ * The account sheet (the prototype's `OV["account-form"]`): Name, then one card with Type, Currency (only when the
+ * ledger has a second one) and the opening balance, a "More" fold for the transfer bonus and fee, and, for an
+ * account that exists, Archive and Delete as rows. The save, retry, reload and conflict rules are the dialog's, kept.
+ */
 export function AccountEditor({
   ledgerId,
   account,
@@ -32,6 +39,7 @@ export function AccountEditor({
   onDismiss,
   onUnconfirmed,
   onSaved,
+  onAction,
   currencies = ["USD"],
   categories = [],
 }: {
@@ -45,6 +53,11 @@ export function AccountEditor({
   onDismiss: () => void;
   onUnconfirmed: (value: boolean) => void;
   onSaved: (account: Account) => void;
+  /** Archive, Unarchive and Delete are questions of their own; the page opens them. */
+  onAction: (
+    kind: "archive" | "unarchive" | "delete",
+    account: Account,
+  ) => void;
 }) {
   const privateMode = useContext(PrivacyContext);
   const [baseline, setBaseline] = useState(account);
@@ -67,16 +80,23 @@ export function AccountEditor({
     resolver: zodResolver(accountFormSchema),
     defaultValues: formDefaults(account),
   });
-  const liability = isLiability(watch("type"));
+  const type = watch("type");
+  const liability = isLiability(type);
   const currency = watch("currency");
+  const direction = watch("direction");
   const bonusRate = watch("bonusRate");
   const [moreOpen, setMoreOpen] = useState(false);
-  // The default categories live under More; open it when one of them has a problem to show.
-  const categoryProblem = !!errors.bonusCategoryId || !!errors.feeCategoryId;
+  // The transfer bonus and fee live under More; open it when one of them has a problem to show.
+  const moreProblem =
+    !!errors.bonusCategoryId ||
+    !!errors.feeCategoryId ||
+    !!errors.bonusRate ||
+    !!errors.defaultFee;
   useEffect(() => {
-    if (categoryProblem) setMoreOpen(true);
-  }, [categoryProblem]);
+    if (moreProblem) setMoreOpen(true);
+  }, [moreProblem]);
   const busy = isSubmitting || reloading;
+  const frozen = busy || uncertain || conflict;
   const submit = handleSubmit(async (values) => {
     if (inFlight.current || conflict) return;
     inFlight.current = true;
@@ -147,8 +167,31 @@ export function AccountEditor({
       setReloading(false);
     }
   };
+  // These sit inside the form's fieldset, which is disabled while a save is in flight or unconfirmed.
+  const action = (kind: "archive" | "unarchive" | "delete") =>
+    baseline && (
+      <button
+        type="button"
+        className="ui-row ui-row-press ac-row"
+        onClick={() => onAction(kind, baseline)}
+      >
+        <span className="ui-row-main">
+          <span
+            className={
+              kind === "delete" ? "ui-row-title ac-danger" : "ui-row-title"
+            }
+          >
+            {kind === "delete"
+              ? "Delete"
+              : kind === "archive"
+                ? "Archive"
+                : "Unarchive"}
+          </span>
+        </span>
+      </button>
+    );
   return (
-    <AccountDialog
+    <Overlay
       open={open}
       title={baseline ? "Edit account" : "Add account"}
       description={
@@ -158,250 +201,269 @@ export function AccountEditor({
       }
       busy={busy}
       onDismiss={onDismiss}
+      cancelLabel={uncertain ? "Close for now" : "Cancel"}
       returnFocusId={
         baseline ? `edit-account-${baseline.id}` : "accounts-title"
       }
+      fallbackFocusId="accounts-title"
+      initialFocusId="account-name"
+      footer={
+        conflict ? (
+          <button
+            type="button"
+            className="ui-btn ui-btn-primary"
+            disabled={busy}
+            onClick={() => void reload()}
+          >
+            {reloading ? "Reloading…" : "Reload latest details"}
+          </button>
+        ) : (
+          <button
+            type="submit"
+            form="account-form"
+            className="ui-btn ui-btn-primary"
+            disabled={busy}
+          >
+            {isSubmitting ? "Saving…" : uncertain ? "Retry save" : "Save"}
+          </button>
+        )
+      }
     >
-      <form onSubmit={submit} noValidate>
-        <fieldset
-          disabled={busy || uncertain || conflict}
-          className="account-fields"
-        >
-          <label htmlFor="account-name">Account name</label>
-          <input
-            id="account-name"
-            autoComplete="off"
-            maxLength={100}
-            aria-invalid={!!errors.name}
-            aria-describedby={errors.name ? "account-name-error" : undefined}
-            {...register("name")}
-          />
-          {errors.name && (
-            <p id="account-name-error" className="field-error">
-              {errors.name.message}
-            </p>
-          )}
-          <label htmlFor="account-type">Account type</label>
-          <div className="theme-picker account-select">
-            <select
-              id="account-type"
-              {...register("type", {
-                onChange: (event) => {
+      <form id="account-form" className="ac-form" onSubmit={submit} noValidate>
+        <fieldset disabled={frozen} className="ac-fields">
+          <div className="ac-field">
+            <label htmlFor="account-name">Account name</label>
+            <input
+              id="account-name"
+              autoComplete="off"
+              maxLength={100}
+              placeholder="Name"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "account-name-error" : undefined}
+              {...register("name")}
+            />
+            {errors.name && (
+              <p id="account-name-error" className="field-error">
+                {errors.name.message}
+              </p>
+            )}
+          </div>
+          <div className="ac-card">
+            <div className="ac-block">
+              <PickRow
+                id="account-type"
+                label="Account type"
+                value={type}
+                options={Object.entries(accountTypes).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
+                onChange={(value) => {
+                  setValue("type", value as Account["type"], {
+                    shouldDirty: true,
+                  });
                   if (!baseline && !getFieldState("direction").isDirty)
                     setValue(
                       "direction",
-                      isLiability(event.target.value) ? "negative" : "positive",
+                      isLiability(value as Account["type"])
+                        ? "negative"
+                        : "positive",
                     );
-                },
-              })}
-            >
-              {Object.entries(accountTypes).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={16} aria-hidden="true" />
-          </div>
-          {errors.type && <p className="field-error">{errors.type.message}</p>}
-          <fieldset className="balance-direction">
-            <legend>Balance direction</legend>
-            <label>
-              <input type="radio" value="positive" {...register("direction")} />
-              <span>{liability ? "Credit" : "Money available"}</span>
-            </label>
-            <label>
-              <input type="radio" value="negative" {...register("direction")} />
-              <span>{liability ? "Money owed" : "Overdrawn"}</span>
-            </label>
-          </fieldset>
-          {baseline ? (
-            <p className="form-help">
-              Currency: {baseline.currency}. It stays the same for the life of
-              the account.
-            </p>
-          ) : (
-            currencies.length > 1 && (
-              <>
-                <label htmlFor="account-currency">Currency</label>
-                <div className="theme-picker account-select">
-                  <select
-                    id="account-currency"
-                    {...register("currency", {
-                      onChange: (event) => {
-                        if (!getFieldState("amount").isDirty)
-                          setValue(
-                            "amount",
-                            decimalFromCents(
-                              0,
-                              currencyDigits(event.target.value),
-                            ),
-                          );
-                      },
-                    })}
-                  >
-                    {currencies.map((code) => (
-                      <option key={code} value={code}>
-                        {code}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} aria-hidden="true" />
+                }}
+              />
+              {errors.type && (
+                <p className="field-error ac-err">{errors.type.message}</p>
+              )}
+            </div>
+            {currencies.length > 1 &&
+              (baseline ? (
+                <div className="ui-row ui-row-static">
+                  <span className="ui-row-main">
+                    <span className="ui-row-title">Currency</span>
+                  </span>
+                  <span className="ui-row-end">{baseline.currency}</span>
                 </div>
-              </>
-            )
-          )}
-          <label htmlFor="account-amount">Opening balance ({currency})</label>
-          <AmountInput
-            currency={currency}
-            id="account-amount"
-            type={privateMode ? "password" : "text"}
-            inputMode="decimal"
-            autoComplete="off"
-            aria-invalid={!!errors.amount}
-            aria-describedby={`opening-balance-help${errors.amount ? " account-amount-error" : ""}`}
-            {...register("amount")}
-          />
-          {errors.amount && (
-            <p id="account-amount-error" className="field-error">
-              {errors.amount.message}
-            </p>
-          )}
-          <p id="opening-balance-help" className="form-help">
+              ) : (
+                <PickRow
+                  id="account-currency"
+                  label="Currency"
+                  value={currency}
+                  options={currencies.map((code) => ({
+                    value: code,
+                    label: code,
+                  }))}
+                  onChange={(code) => {
+                    setValue("currency", code);
+                    if (!getFieldState("amount").isDirty)
+                      setValue(
+                        "amount",
+                        decimalFromCents(0, currencyDigits(code)),
+                      );
+                  }}
+                />
+              ))}
+            <div className="ac-block">
+              <div className="ac-input-row">
+                <label htmlFor="account-amount">
+                  Opening balance ({currency})
+                </label>
+                <AmountInput
+                  currency={currency}
+                  id="account-amount"
+                  type={privateMode ? "password" : "text"}
+                  inputMode="decimal"
+                  autoComplete="off"
+                  aria-invalid={!!errors.amount}
+                  aria-describedby={`opening-balance-help${errors.amount ? " account-amount-error" : ""}`}
+                  {...register("amount")}
+                />
+              </div>
+              {errors.amount && (
+                <p id="account-amount-error" className="field-error ac-err">
+                  {errors.amount.message}
+                </p>
+              )}
+            </div>
+          </div>
+          <span id="opening-balance-help" className="sr-only">
             Use the balance before the entries you will record here. If you add
             older history later, start with the balance from before that
             history.
-          </p>
-          {liability && (
-            <p className="form-help">
-              Money owed records debt as a negative balance. Credit records a
-              positive balance.
-            </p>
-          )}
-          <h3 className="account-section-title">Bonus on incoming transfers</h3>
-          <p className="form-help">
-            Some transfers arrive with a bonus added on top. If this account
-            gets one, enter its percentage. Transfers into this account will
-            then suggest the bonus for you to confirm each time. Leave it empty
-            for none.
-          </p>
-          <label htmlFor="account-bonus-rate">Bonus rate (%)</label>
-          <input
-            id="account-bonus-rate"
-            inputMode="decimal"
-            autoComplete="off"
-            aria-invalid={!!errors.bonusRate}
-            aria-describedby={errors.bonusRate ? "bonus-rate-error" : undefined}
-            {...register("bonusRate")}
-          />
-          {errors.bonusRate && (
-            <p id="bonus-rate-error" className="field-error">
-              {errors.bonusRate.message}
-            </p>
-          )}
-          <h3 className="account-section-title">Fee on outgoing transfers</h3>
-          <p className="form-help">
-            If sending money from this account usually costs a fee, enter it
-            here and new transfers will start with it filled in. {feeHint} Leave
-            it empty for none.
-          </p>
-          <label htmlFor="account-default-fee">Usual fee</label>
-          <input
-            id="account-default-fee"
-            type={privateMode ? "password" : "text"}
-            inputMode="text"
-            autoComplete="off"
-            placeholder="2 or 2%"
-            aria-invalid={!!errors.defaultFee}
-            aria-describedby={
-              errors.defaultFee ? "default-fee-error" : undefined
+            {liability
+              ? " Money owed records debt as a negative balance. Credit records a positive balance."
+              : ""}
+            {baseline && currencies.length <= 1
+              ? ` The currency is ${baseline.currency}. It stays the same for the life of the account.`
+              : ""}
+          </span>
+          <SegmentedControl
+            label="Balance direction"
+            value={direction}
+            onChange={(value) =>
+              setValue("direction", value, { shouldDirty: true })
             }
-            {...register("defaultFee")}
+            options={[
+              {
+                value: "positive",
+                label: liability ? "Credit" : "Money available",
+              },
+              {
+                value: "negative",
+                label: liability ? "Money owed" : "Overdrawn",
+              },
+            ]}
           />
-          {errors.defaultFee && (
-            <p id="default-fee-error" className="field-error">
-              {errors.defaultFee.message}
-            </p>
-          )}
           <details
-            className="transaction-details"
+            className="ui-card ac-more-fold"
             open={moreOpen}
             onToggle={(event) => setMoreOpen(event.currentTarget.open)}
           >
             <summary>
-              <span>
-                More <span className="muted">default categories</span>
-              </span>
+              <span>More</span>
+              <ChevronDown size={18} aria-hidden="true" />
             </summary>
-            <div className="account-fields">
-              <CategoryPicker
-                categories={categories}
-                kind="expense"
-                label="Fee category"
-                allowNone
-                noneLabel="No default category"
-                value={watch("feeCategoryId") || null}
-                onChange={(id) => setValue("feeCategoryId", id ?? "")}
-              />
-              {errors.feeCategoryId && (
-                <p className="field-error">{errors.feeCategoryId.message}</p>
-              )}
-              {bonusRate.trim() !== "" && (
+            <div className="ac-more-body">
+              <div className="ac-block">
+                <div className="ac-input-row">
+                  <label htmlFor="account-bonus-rate">Bonus rate (%)</label>
+                  <input
+                    id="account-bonus-rate"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="None"
+                    aria-invalid={!!errors.bonusRate}
+                    aria-describedby={`bonus-rate-help${errors.bonusRate ? " bonus-rate-error" : ""}`}
+                    {...register("bonusRate")}
+                  />
+                </div>
+                {errors.bonusRate && (
+                  <p id="bonus-rate-error" className="field-error ac-err">
+                    {errors.bonusRate.message}
+                  </p>
+                )}
+                <span id="bonus-rate-help" className="sr-only">
+                  Some transfers arrive with a bonus added on top. If this
+                  account gets one, enter its percentage. Transfers into this
+                  account will then suggest the bonus for you to confirm each
+                  time. Leave it empty for none.
+                </span>
+              </div>
+              <div className="ac-block">
+                <div className="ac-input-row">
+                  <label htmlFor="account-default-fee">Usual fee</label>
+                  <input
+                    id="account-default-fee"
+                    type={privateMode ? "password" : "text"}
+                    inputMode="text"
+                    autoComplete="off"
+                    placeholder="2 or 2%"
+                    aria-invalid={!!errors.defaultFee}
+                    aria-describedby={`default-fee-help${errors.defaultFee ? " default-fee-error" : ""}`}
+                    {...register("defaultFee")}
+                  />
+                </div>
+                {errors.defaultFee && (
+                  <p id="default-fee-error" className="field-error ac-err">
+                    {errors.defaultFee.message}
+                  </p>
+                )}
+                <span id="default-fee-help" className="sr-only">
+                  If sending money from this account usually costs a fee, enter
+                  it here and new transfers will start with it filled in.{" "}
+                  {feeHint} Leave it empty for none.
+                </span>
+              </div>
+              <div className="ac-field">
                 <CategoryPicker
                   categories={categories}
-                  kind="income"
-                  label="Bonus category"
-                  value={watch("bonusCategoryId") || null}
-                  onChange={(id) => setValue("bonusCategoryId", id ?? "")}
+                  kind="expense"
+                  label="Fee category"
+                  allowNone
+                  noneLabel="No default category"
+                  value={watch("feeCategoryId") || null}
+                  onChange={(id) => setValue("feeCategoryId", id ?? "")}
                 />
+                {errors.feeCategoryId && (
+                  <p className="field-error">{errors.feeCategoryId.message}</p>
+                )}
+              </div>
+              {bonusRate.trim() !== "" && (
+                <div className="ac-field">
+                  <CategoryPicker
+                    categories={categories}
+                    kind="income"
+                    label="Bonus category"
+                    value={watch("bonusCategoryId") || null}
+                    onChange={(id) => setValue("bonusCategoryId", id ?? "")}
+                  />
+                  {errors.bonusCategoryId && (
+                    <p className="field-error">
+                      {errors.bonusCategoryId.message}
+                    </p>
+                  )}
+                </div>
               )}
-              {errors.bonusCategoryId && (
-                <p className="field-error">{errors.bonusCategoryId.message}</p>
-              )}
-              <p className="form-help">
-                Transfers use these when they have a fee or a bonus, so you do
-                not have to choose each time.
-              </p>
             </div>
           </details>
           {privateMode && (
-            <p className="form-help">
+            <p className="ac-note">
               Privacy mode hides this amount. Use the eye control in the header
               to show amounts.
             </p>
           )}
+          {baseline && (
+            <div className="ac-card">
+              {action(baseline.archivedAt ? "unarchive" : "archive")}
+              {action("delete")}
+            </div>
+          )}
         </fieldset>
         {error && (
-          <p role="alert" className="field-error account-error">
+          <p role="alert" className="field-error">
             {error}
           </p>
         )}
-        <div className="account-dialog-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={busy}
-            onClick={onDismiss}
-          >
-            {uncertain ? "Close for now" : "Cancel"}
-          </button>
-          {conflict ? (
-            <Button type="button" disabled={busy} onClick={() => void reload()}>
-              {reloading ? "Reloading…" : "Reload latest details"}
-            </Button>
-          ) : (
-            <Button type="submit" disabled={busy}>
-              {isSubmitting
-                ? "Saving…"
-                : uncertain
-                  ? "Retry save"
-                  : baseline
-                    ? "Save changes"
-                    : "Add account"}
-            </Button>
-          )}
-        </div>
       </form>
-    </AccountDialog>
+    </Overlay>
   );
 }

@@ -76,13 +76,7 @@ test.describe("a phone, under 700 px", () => {
       await expect(page.locator("#mobile-add-transaction")).toBeHidden();
     });
 
-  for (const path of [
-    "/",
-    "/transactions",
-    "/budgets",
-    "/insights",
-    "/accounts",
-  ])
+  for (const path of ["/", "/transactions", "/budgets", "/insights"])
     test(`adds a transaction from ${path}`, async ({ page }) => {
       await at(page, 390, path);
       await addButton(page).click();
@@ -90,6 +84,50 @@ test.describe("a phone, under 700 px", () => {
         page.getByRole("dialog", { name: "Add transaction" }),
       ).toBeVisible();
     });
+
+  // A page that lists something adds that thing (ADR 0047, PR 13a); a page with no accounts yet leaves it to the card.
+  test("adds an account from /accounts, not a transaction", async ({
+    page,
+  }) => {
+    // A fresh database has no accounts, and then the page leaves Add to its card: give it one.
+    await page.route(/\/accounts\?/, (route) =>
+      route.fulfill({
+        json: {
+          items: [
+            {
+              id: "01a1a000-0000-7000-8000-000000000010",
+              ledgerId: "01a1a000-0000-7000-8000-000000000001",
+              name: "Harbor Checking",
+              type: "bank",
+              currency: "USD",
+              openingBalance: { amount: 1000, currency: "USD" },
+              inboundBonusBps: null,
+              bonusCategoryId: null,
+              feeCategoryId: null,
+              defaultFee: null,
+              contactId: null,
+              balance: { amount: 1000, currency: "USD" },
+              archivedAt: null,
+              version: 1,
+              createdAt: "2026-10-01T00:00:00.000Z",
+              updatedAt: "2026-10-01T00:00:00.000Z",
+            },
+          ],
+          nextCursor: null,
+        },
+      }),
+    );
+    await at(page, 390, "/accounts");
+    const add = page.locator("#mobile-add-page");
+    await expect(add).toHaveAccessibleName("Add account");
+    await add.click();
+    await expect(
+      page.getByRole("dialog", { name: "Add account" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "Add transaction" }),
+    ).toHaveCount(0);
+  });
 
   test("puts a back arrow before the title on pages opened from More, and only there", async ({
     page,

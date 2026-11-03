@@ -2,6 +2,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { accountRow, clickAccountAction, openAccount } from "./account-actions";
 import { clickCategoryAction } from "./category-actions";
 import {
   connectLocalDatabase,
@@ -115,10 +116,10 @@ test("replays account deletion after interruption and close/resume, removes open
       else await route.fulfill({ response });
     },
   );
-  const button = page.getByRole("button", {
-    name: "Delete Checking",
-    exact: true,
-  });
+  await openAccount(page, "Checking");
+  const button = page
+    .getByRole("dialog", { name: "Edit account" })
+    .getByRole("button", { name: "Delete", exact: true });
   const bounds = await button.boundingBox();
   expect(bounds?.height).toBeGreaterThanOrEqual(44);
   await button.click();
@@ -139,20 +140,18 @@ test("replays account deletion after interruption and close/resume, removes open
   await expect(page.getByRole("dialog")).not.toContainText("100.00");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Delete account", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Retry delete" }),
+    page.getByRole("button", { name: "Retry action" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Close for now" }).click();
   await page.getByRole("button", { name: "Resume action" }).click();
-  await page.getByRole("button", { name: "Retry delete" }).click();
+  await page.getByRole("button", { name: "Retry action" }).click();
   await expect(
     page.getByText("Account deleted.", { exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("article", { name: "Checking", exact: true }),
-  ).toHaveCount(0);
+  await expect(accountRow(page, "Checking")).toHaveCount(0);
   expect(seen[1]).toEqual(seen[0]);
   expect(
     (
@@ -167,9 +166,7 @@ test("replays account deletion after interruption and close/resume, removes open
       ),
     ).toBe(true);
   }
-  await page
-    .getByRole("button", { name: "Delete Old account", exact: true })
-    .click();
+  await clickAccountAction(page, "delete", "Old account");
   const deleted = page.waitForResponse(
     (response) =>
       response.request().method() === "DELETE" &&
@@ -177,13 +174,11 @@ test("replays account deletion after interruption and close/resume, removes open
   );
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Delete account", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   expect((await deleted).status()).toBe(204);
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(
-    page.getByRole("article", { name: "Old account", exact: true }),
-  ).toHaveCount(0);
+  await expect(accountRow(page, "Old account")).toHaveCount(0);
   const rows = (
     await pool.query(
       "SELECT opening_balance FROM accounts WHERE ledger_id=$1 AND deleted_at IS NULL",
@@ -221,17 +216,15 @@ test("blocks connected categories/accounts until transaction deletion, then reje
   );
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await openPage(page, "Accounts");
-  await page
-    .getByRole("button", { name: "Delete Checking", exact: true })
-    .click();
+  await clickAccountAction(page, "delete", "Checking");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Delete account", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
     "Delete the connected transactions first",
   );
-  await page.getByRole("button", { name: "Keep account", exact: true }).click();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page
     .getByRole("link", { name: "Transactions", exact: true })
     .filter({ visible: true })
@@ -262,12 +255,10 @@ test("blocks connected categories/accounts until transaction deletion, then reje
     .click();
   await expect(page.getByRole("alert")).toContainText("Category not found");
   await openPage(page, "Accounts");
-  await page
-    .getByRole("button", { name: "Delete Checking", exact: true })
-    .click();
+  await clickAccountAction(page, "delete", "Checking");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Delete account", exact: true })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(
     page.getByText("Account deleted.", { exact: true }),

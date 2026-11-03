@@ -201,7 +201,7 @@ test("fields keep 8 px between their label and the focus ring on every main form
       "edit account",
       async (p) => {
         await p.goto("/accounts");
-        await p.getByRole("button", { name: "Edit Checking" }).click();
+        await p.getByRole("button", { name: /^Checking / }).click();
       },
     ],
     ["tags", async (p) => void (await p.goto("/tags"))],
