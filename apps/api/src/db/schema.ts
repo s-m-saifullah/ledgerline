@@ -39,6 +39,10 @@ export const user = pgTable("users", {
   locale: text("locale").notNull().default("en-US"),
   baseCurrency: text("base_currency").notNull().default("USD"),
   twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+  // ADR 0048: the account the server was set up with, a person still on a temporary password, and a stopped sign-in.
+  isAdmin: boolean("is_admin").notNull().default(false),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
   ...audit(),
 });
 /** Better Auth's two-factor plugin (ADR 0038): the secret and backup codes are stored encrypted. */

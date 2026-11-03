@@ -63,6 +63,18 @@ afterAll(async () => {
 });
 
 describe("foundation API", () => {
+  it("makes the first account the admin, with a password that needs no change", async () => {
+    const [owner] = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, config.OWNER_EMAIL));
+    expect(owner).toMatchObject({
+      isAdmin: true,
+      mustChangePassword: false,
+      disabledAt: null,
+    });
+  });
+
   it("creates exactly one owner ledger under concurrent startup", async () => {
     expect(
       (await db.select().from(user).where(eq(user.email, config.OWNER_EMAIL)))

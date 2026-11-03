@@ -2,6 +2,17 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.52 — My account, and a first-sign-in password change
+
+Migration 0028 (ADR 0048): three columns on `users`, `is_admin`, `must_change_password` and `disabled_at`, all safe defaults, so an account that exists today reads "not temporary, not stopped"; the migration marks the earliest live account (the one the server was set up with) as the admin, and starting the API does the same for the configured owner. Only new routes, no existing response changes.
+
+- `GET /api/v1/me`: my `id`, `name`, `email`, `isAdmin`, `mustChangePassword` and `twoFactorEnabled`. Never a password, a hash or a token.
+- `PATCH /api/v1/me`: changes only `name` (1 to 100 characters, trimmed). The email and the admin flag cannot be changed; other fields are ignored.
+- `POST /api/v1/me/password`: `{ currentPassword, newPassword, signOutOtherDevices }`, answers `204`. The new password has 12 to 128 characters and must differ from the current one. A wrong current password is `400` with a `currentPassword` field error; five wrong ones in fifteen minutes are `429` until the window passes. It clears a temporary password's flag and, unless `signOutOtherDevices` is false (default true), ends my other sessions, so an Android token ends with its session.
+- **A person flagged `mustChangePassword`** (a temporary password, set by the admin or by the server's `reset-password` command) is refused on every `/api/v1` route except `GET /me` and `POST /me/password`, with `403` and a problem whose `type` is `urn:ledgerline:problem:password-change-required`. The sign-in routes under `/api/v1/auth` still work for them (sign-in, session, sign-out, two-factor steps). Nobody has this flag until the admin routes of the next version exist, so nothing changes for an account that exists today.
+- **A person whose sign-in was stopped** (`disabled_at` set) gets `401` on every `/api/v1` route and cannot sign in: the sign-in answer is the same as for a wrong password.
+- The account routes take no `Idempotency-Key` (they are not about a ledger, and the stored replies need one): a rename is safe to repeat, and a lost answer to a password change is retried with the new password as the current one.
+
 ## 0.1.51 — Paid this month on a client
 
 Released in `v0.6.0` (2026-11-03). No migration. Every client in `GET /api/v1/ledgers/{ledgerId}/contacts` and `GET .../contacts/{contactId}` (and in the responses that return a client) has a new `paidThisMonth`: `{ base, amounts }`. `amounts` is what its payments settled in the month, one `{ amount, currency }` per service currency (sorted by currency code); `base` is the same money in the base currency (USD), the sum of the base values saved on the payment entries when they were made, so a later rate change never moves an old month and no currency is left out. A payment counts in the month of its entry's date; deleted payments and tips (separate income entries) do not count. A client with no payments in the month has `base` of zero and no `amounts`.

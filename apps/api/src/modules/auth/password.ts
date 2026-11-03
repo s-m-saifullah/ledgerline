@@ -15,3 +15,9 @@ export const verifyPassword = ({
   hash: string;
   password: string;
 }) => verify(encoded, password);
+
+/** The sign-in rule (12 to 128 characters), for passwords the server sets itself. */
+export function assertPasswordAllowed(password: string) {
+  if (password.length < 12 || password.length > 128)
+    throw new Error("A password needs 12 to 128 characters.");
+}

@@ -19,6 +19,14 @@ export function createAuth(db: Database, config: Config) {
         deletedAt: { type: "date", required: false, input: false },
         locale: { type: "string", defaultValue: "en-US", input: false },
         baseCurrency: { type: "string", defaultValue: "USD", input: false },
+        // ADR 0048: the admin, a temporary password, a stopped sign-in. Never set from a request.
+        isAdmin: { type: "boolean", defaultValue: false, input: false },
+        mustChangePassword: {
+          type: "boolean",
+          defaultValue: false,
+          input: false,
+        },
+        disabledAt: { type: "date", required: false, input: false },
       },
     },
     session: {

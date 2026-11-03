@@ -1,9 +1,8 @@
-import { newId } from "@ledgerline/shared";
 import { eq, sql } from "drizzle-orm";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { account, ledgerMembers, ledgers, user } from "../../db/schema";
-import { hashPassword } from "./password";
+import { user } from "../../db/schema";
+import { createAccount } from "./accounts";
 
 /** Credentials are provisioned from private environment values, never a public setup route. */
 export async function provisionOwner(db: Database, config: Config) {
@@ -19,25 +18,19 @@ export async function provisionOwner(db: Database, config: Config) {
         throw new Error(
           "Configured owner does not match existing installation",
         );
+      // The account the server was set up with is the admin (ADR 0048), also when it was made before the flag existed.
+      if (!owner.isAdmin)
+        await tx
+          .update(user)
+          .set({ isAdmin: true })
+          .where(eq(user.id, owner.id));
       return;
     }
-    const userId = newId();
-    const ledgerId = newId();
-    await tx.insert(user).values({
-      id: userId,
-      email: config.OWNER_EMAIL.toLowerCase(),
+    await createAccount(tx, {
+      email: config.OWNER_EMAIL,
       name: config.OWNER_NAME,
-      emailVerified: true,
+      password: config.OWNER_PASSWORD,
+      isAdmin: true,
     });
-    await tx.insert(account).values({
-      userId,
-      accountId: userId,
-      providerId: "credential",
-      password: await hashPassword(config.OWNER_PASSWORD),
-    });
-    await tx
-      .insert(ledgers)
-      .values({ id: ledgerId, name: "Personal ledger", baseCurrency: "USD" });
-    await tx.insert(ledgerMembers).values({ ledgerId, userId, role: "owner" });
   });
 }

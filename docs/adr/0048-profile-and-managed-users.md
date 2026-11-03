@@ -38,6 +38,10 @@ Today there is one account, created from `.env` on first run, with one ledger. T
 
 Reset password, Turn off two-factor and Delete do not ask for the admin's own password for now; Delete asks the admin to type the person's email. Revisit if the admin ever shares the browser.
 
+## Amendments
+
+- **2026-11-03, slice 2: no `Idempotency-Key` on the account routes** (`/me` now, `/users` in slice 3). The stored replies need a ledger and these routes are not about one. A rename is safe to repeat; a lost answer to a password change is retried with the new password as the current one; a retried "add user" says the email is taken and the admin resets that person's password. A person on a temporary password may use only `GET /me` and `POST /me/password` (not `PATCH /me`). The refusal's problem type is `urn:ledgerline:problem:password-change-required`. `reset-password` is copied to the server by the release like `reset-two-factor` (a test checks that every file `release.yml` copies exists).
+
 ## Not in this change
 
 Sharing a ledger between users, email change, photo, languages, deleting your own account, passkeys, invitation or reset emails (the server sends no mail), a second admin, an audit log, reusing a deleted person's email, Android screens.
