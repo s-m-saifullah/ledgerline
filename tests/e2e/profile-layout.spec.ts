@@ -168,6 +168,8 @@ async function open(
   );
   if (theme) await setTheme(page, theme);
   await expect(page.locator("#profile-account")).toBeVisible();
+  // The page is built again once the ledger has loaded (the Add button turns on): measure after that.
+  await expect(page.locator("#add-transaction")).toBeEnabled();
   return calls;
 }
 const section = (page: Page, name: string) =>
@@ -332,41 +334,84 @@ test("on a desktop the sidebar's name leads to Profile, says Admin, and the pale
   await expect(page).toHaveURL(/\/profile$/);
 });
 
-test("the sidebar block does not change height when the answer about the admin arrives", async ({
+test("a person who is not the admin has the name level with the avatar, with no blank line under it", async ({
   page,
 }) => {
-  // The answer is held until the test lets it go, so the block is measured before and after it, not by luck.
-  let release: () => void = () => {};
-  const held = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  await page.route(/\/api\/v1\/me$/, async (route) => {
-    await held;
-    await route.fulfill({
-      json: {
-        id: newId(),
-        name: NAME,
-        email: EMAIL,
-        isAdmin: true,
-        mustChangePassword: false,
-        twoFactorEnabled: false,
-      },
-    });
-  });
+  await mockAccount(page, { isAdmin: false });
   await page.setViewportSize({ width: 1280, height: 900 });
   await signIn(page);
   await page.goto("/transactions");
   const who = page.locator(".ui-side-who");
   await expect(who).toBeVisible();
-  await expect(who).not.toContainText("Admin");
-  const before = await box(who);
-  release();
+  // The sidebar is built again once the ledger has loaded: measure after that.
+  await expect(page.locator("#add-transaction")).toBeEnabled();
+  await page.evaluate(() => document.fonts.ready);
+  const middle = async (locator: Locator) => {
+    const found = await box(locator);
+    return found.y + found.height / 2;
+  };
+  // The name's middle is the avatar's middle, not a line above it.
+  expect(
+    Math.abs(
+      (await middle(who.locator("strong"))) -
+        (await middle(who.locator(".ui-avatar"))),
+    ),
+  ).toBeLessThan(1.5);
+  // The same block is as tall as the admin's (which has a second line).
+  const person = await box(who);
+  expect(person.height).toBeGreaterThanOrEqual(43.9);
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await mockAccount(page, { isAdmin: true });
+  await page.reload();
   await expect(who).toContainText("Admin");
-  await expect(async () => {
-    const after = await box(who);
-    expect(Math.abs(after.height - before.height)).toBeLessThan(0.5);
-    expect(Math.abs(after.y - before.y)).toBeLessThan(0.5);
-  }).toPass();
+  await expect(page.locator("#add-transaction")).toBeEnabled();
+  await page.evaluate(() => document.fonts.ready);
+  expect(Math.abs((await box(who)).height - person.height)).toBeLessThan(0.5);
+  // For the admin the name is the first of two lines, above the avatar's middle.
+  expect(await middle(who.locator("strong"))).toBeLessThan(
+    (await middle(who.locator(".ui-avatar"))) - 3,
+  );
+});
+
+test("the sidebar block keeps its height whether or not the app could read who I am", async ({
+  page,
+}) => {
+  // The app waits for /me before it opens (a person on a temporary password must never see the shell), so the block can
+  // no longer be measured before the answer. When /me cannot be read the app still opens, with the caption line blank;
+  // the block must be the same height as with the answer, so nothing jumps.
+  const heights: number[] = [];
+  for (const readable of [false, true]) {
+    await page.unrouteAll({ behavior: "ignoreErrors" });
+    await page.route(/\/api\/v1\/me$/, (route) =>
+      readable
+        ? route.fulfill({
+            json: {
+              id: newId(),
+              name: NAME,
+              email: EMAIL,
+              isAdmin: true,
+              mustChangePassword: false,
+              twoFactorEnabled: false,
+            },
+          })
+        : route.fulfill({ status: 500, json: {} }),
+    );
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await signIn(page);
+    await page.goto("/transactions");
+    const who = page.locator(".ui-side-who");
+    await expect(who).toBeVisible();
+    await expect(page.locator("#add-transaction")).toBeEnabled();
+    if (readable) await expect(who).toContainText("Admin");
+    else await expect(who).not.toContainText("Admin");
+    // A height is only the same once the fonts and the stylesheets are in.
+    await page.evaluate(() => document.fonts.ready);
+    await page.waitForFunction(
+      () => getComputedStyle(document.body).containerType === "inline-size",
+    );
+    heights.push((await box(who)).height);
+  }
+  expect(Math.abs((heights[0] ?? 0) - (heights[1] ?? 0))).toBeLessThan(0.5);
 });
 
 test("a phone's sheet is a bottom sheet and from 700 px a right-hand drawer, for both sheets", async ({
