@@ -27,6 +27,7 @@ import { HomePage } from "./features/home/home-page";
 import { ImportPage } from "./features/imports/import-page";
 import { InsightsPage } from "./features/insights/insights-page";
 import { LoansPage } from "./features/loans/loans-page";
+import { ProfilePage } from "./features/profile/profile-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import { SettingsPage } from "./features/settings/settings-page";
 import { MorePage } from "./features/shell/more-page";
@@ -193,6 +194,11 @@ const settings = createRoute({
   path: "/settings",
   component: SettingsPage,
 });
+const profile = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/profile",
+  component: ProfilePage,
+});
 const importRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/import",
@@ -229,6 +235,7 @@ const router = createRouter({
     loans.addChildren([loanPerson]),
     importRoute,
     settings,
+    profile,
   ]),
 });
 declare module "@tanstack/react-router" {

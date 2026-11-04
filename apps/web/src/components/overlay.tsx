@@ -1,6 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { type ReactNode, useRef } from "react";
 import "./overlay.css";
+import { useSheetDrag } from "./sheet-drag";
 
 /** What a sheet may start on when no field is named: the first field, else the pinned button. Never Cancel. */
 const focusable =
@@ -55,6 +56,13 @@ export function Overlay({
   const opener = useRef<HTMLElement | null>(null);
   const content = useRef<HTMLDivElement | null>(null);
   const question = kind === "question";
+  // A sheet follows a finger dragged down from its handle or title bar, and closes when the handle is tapped (a drawer
+  // has no handle, so nothing happens there). Not for a question, a step nobody may dismiss or a save in flight.
+  const { gesture, tap } = useSheetDrag({
+    sheet: content,
+    enabled: !question && dismissible && !busy,
+    onClose: onDismiss,
+  });
   const cancel = (
     <button
       type="button"
@@ -149,8 +157,15 @@ export function Overlay({
             </>
           ) : (
             <>
-              <div className="ui-grab" aria-hidden="true" />
-              <div className="ui-sheet-head">
+              {/* biome-ignore lint/a11y/noStaticElementInteractions: a pointer affordance; the keyboard's ways out are Cancel and Escape */}
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: the same: a tap on the handle repeats what Cancel does */}
+              <div
+                className="ui-grab"
+                aria-hidden="true"
+                onClick={tap}
+                {...gesture}
+              />
+              <div className="ui-sheet-head" {...gesture}>
                 {dismissible ? cancel : <span aria-hidden="true" />}
                 <Dialog.Title className="ui-sheet-title">{title}</Dialog.Title>
                 <div className="ui-sheet-action">{action}</div>

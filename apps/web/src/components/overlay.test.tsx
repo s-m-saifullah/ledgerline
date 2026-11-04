@@ -306,4 +306,52 @@ describe("Overlay as a question", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
+
+  it("closes when the handle is tapped, and only then", async () => {
+    const onDismiss = vi.fn();
+    render(
+      <Overlay {...base} onDismiss={onDismiss}>
+        <p>Name field</p>
+      </Overlay>,
+    );
+    const dialog = screen.getByRole("dialog", { name: "Add account" });
+    await userEvent.click(screen.getByText("Name field"));
+    await userEvent.click(dialog.querySelector(".ui-sheet-head") as Element);
+    expect(onDismiss).not.toHaveBeenCalled();
+    await userEvent.click(dialog.querySelector(".ui-grab") as Element);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores the handle while a save is in flight, and where nobody may dismiss", async () => {
+    const onDismiss = vi.fn();
+    const { rerender } = render(
+      <Overlay {...base} busy onDismiss={onDismiss}>
+        <p>Name field</p>
+      </Overlay>,
+    );
+    const handle = () =>
+      screen.getByRole("dialog").querySelector(".ui-grab") as Element;
+    await userEvent.click(handle());
+    rerender(
+      <Overlay {...base} dismissible={false} onDismiss={onDismiss}>
+        <p>Name field</p>
+      </Overlay>,
+    );
+    await userEvent.click(handle());
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
+
+  it("keeps the handle out of the accessibility tree: Cancel and Escape are the way out", () => {
+    render(
+      <Overlay {...base}>
+        <p>Name field</p>
+      </Overlay>,
+    );
+    const handle = screen
+      .getByRole("dialog")
+      .querySelector(".ui-grab") as HTMLElement;
+    expect(handle).toHaveAttribute("aria-hidden", "true");
+    expect(handle).not.toHaveAttribute("tabindex");
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
 });

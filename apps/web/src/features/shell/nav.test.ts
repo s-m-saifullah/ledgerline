@@ -8,6 +8,7 @@ import {
   moreGroups,
   morePages,
   pageTitle,
+  profilePage,
   showsAdd,
 } from "./nav";
 
@@ -118,5 +119,28 @@ describe("the navigation model", () => {
     expect(backTarget("/more")).toBeUndefined();
     expect(backTarget("/transactions")).toBeUndefined();
     expect(backsToMore("/clients/abc")).toBe(false);
+  });
+});
+
+describe("Profile (ADR 0048)", () => {
+  it("is a page of More's area but not one of its listed pages", () => {
+    expect(profilePage.to).toBe("/profile");
+    expect(morePages.map((page) => page.to)).not.toContain("/profile");
+    expect(backsToMore("/profile")).toBe(true);
+    expect(isActiveDestination("/more", "/profile")).toBe(true);
+    expect(isActiveDestination("/", "/profile")).toBe(false);
+  });
+
+  it("has its own title and a back arrow to More", () => {
+    expect(pageTitle("/profile")).toBe("Profile");
+    expect(backTarget("/profile")).toEqual({
+      to: "/more",
+      label: "Back to More",
+    });
+  });
+
+  it("has no phone Add button: there is nothing to add", () => {
+    expect(showsAdd("/profile")).toBe(false);
+    expect(showsAdd("/transactions")).toBe(true);
   });
 });

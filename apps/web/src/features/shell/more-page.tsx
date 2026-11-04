@@ -1,11 +1,19 @@
-import { IconTile, ListCard, ListRow, SectionLabel } from "@ledgerline/ui";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Avatar,
+  IconTile,
+  ListCard,
+  ListRow,
+  SectionLabel,
+  StatusPill,
+} from "@ledgerline/ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement, ReactNode } from "react";
 import { Amount } from "../../components/amount-text";
-import { getLedgers } from "../../lib/api";
+import { getLedgers, type Session } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
 import { getHome } from "../home/api";
+import { getMe, meKey } from "../profile/api";
 import "./more.css";
 import { moreGroups } from "./nav";
 
@@ -33,6 +41,10 @@ export function MorePage() {
     queryFn: ({ signal }) => getHome(ledger?.id as string, month, signal),
     enabled: !!ledger,
   });
+  // Profile comes first (ADR 0048). The name is known at once from the session; the Admin pill follows `/me`.
+  const me = useQuery({ queryKey: meKey, queryFn: getMe });
+  const session = useQueryClient().getQueryData<Session | null>(["session"]);
+  const name = me.data?.name ?? session?.user.name;
   const owed = summary.data?.owed;
   const lent = summary.data?.loans.lent;
   const figure = (to: string) => {
@@ -50,6 +62,22 @@ export function MorePage() {
       <div className="page-heading">
         <h1>More</h1>
       </div>
+      {name && (
+        <section className="more-sect" aria-label="Profile">
+          <ListCard>
+            <ListRow
+              lead={<Avatar name={name} />}
+              title={name}
+              hint="Profile and password"
+              {...(me.data?.isAdmin
+                ? { value: <StatusPill>Admin</StatusPill> }
+                : {})}
+              chevron
+              render={linkTo("/profile")}
+            />
+          </ListCard>
+        </section>
+      )}
       <div className="more-grid">
         {moreGroups.map((group, index) => (
           <section
