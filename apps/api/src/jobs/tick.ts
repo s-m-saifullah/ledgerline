@@ -1,5 +1,6 @@
 import type { Database } from "../db/client";
 import type { RateFetcher } from "../modules/currencies/provider";
+import { purgeDeletedPeople } from "../modules/users/lifecycle";
 import { refreshLedgerRates } from "./rates";
 import { runRecurringRules } from "./recurring";
 import type { JobLog } from "./runner";
@@ -13,5 +14,7 @@ export async function runTick(
   // Rates first, so entries created in this tick can use today's rates.
   const rates = await refreshLedgerRates(db, now, deps.fetchRate, deps.log);
   const recurring = await runRecurringRules(db, now, deps.log);
-  return { rates, recurring };
+  // People deleted more than 30 days ago go for good, with everything of theirs (ADR 0049).
+  const purged = await purgeDeletedPeople(db, now, deps.log);
+  return { rates, recurring, purged };
 }

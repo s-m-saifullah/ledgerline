@@ -19,6 +19,18 @@ export const managedUserSchema = z.object({
 export const managedUserListSchema = z.object({
   items: z.array(managedUserSchema),
 });
+// A person in "Recently deleted" (ADR 0049): account facts and when they are removed for good (30 days after the
+// delete). Never anything from their ledger.
+export const deletedUserSchema = z.object({
+  id: idSchema,
+  name: z.string(),
+  email: z.email(),
+  deletedAt: z.iso.datetime(),
+  purgeAt: z.iso.datetime(),
+});
+export const deletedUserListSchema = z.object({
+  items: z.array(deletedUserSchema),
+});
 // The sign-in rule: 12 to 128 characters. Sent once, never returned and never logged.
 const temporaryPasswordSchema = z.string().min(12).max(128);
 export const createUserSchema = z.object({
@@ -32,6 +44,8 @@ export const resetUserPasswordSchema = z.object({
 });
 export type ManagedUser = z.infer<typeof managedUserSchema>;
 export type ManagedUserList = z.infer<typeof managedUserListSchema>;
+export type DeletedUser = z.infer<typeof deletedUserSchema>;
+export type DeletedUserList = z.infer<typeof deletedUserListSchema>;
 export type CreateUser = z.infer<typeof createUserSchema>;
 export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type ResetUserPassword = z.infer<typeof resetUserPasswordSchema>;

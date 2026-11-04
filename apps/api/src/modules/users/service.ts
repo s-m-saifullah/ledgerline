@@ -12,6 +12,7 @@ import { ApiProblem } from "../../lib/problem";
 import { createAccount } from "../auth/accounts";
 import { hashPassword } from "../auth/password";
 import { removeTwoFactor } from "../auth/reset-two-factor";
+import { deletedEmailMessage } from "./lifecycle";
 
 // The admin's routes for the people on this server (ADR 0048). They read and change account facts only: nothing
 // here reads, joins or returns a ledger's data, and a password is hashed on arrival and never returned or logged.
@@ -80,7 +81,7 @@ const emailTaken = () =>
 const isUniqueViolation = (error: unknown) =>
   (error as { cause?: { code?: unknown } } | null)?.cause?.code === "23505";
 
-/** Makes a person with their own ledger on a temporary password. A deleted person's email is never reused. */
+/** Makes a person with their own ledger on a temporary password. A deleted person's email is taken until they are removed for good (ADR 0049). */
 export async function createUser(
   db: Database,
   input: { name: string; email: string; temporaryPassword: string },
@@ -88,9 +89,15 @@ export async function createUser(
   try {
     return await db.transaction(async (tx) => {
       const [taken] = await tx
-        .select({ id: user.id })
+        .select({ id: user.id, deletedAt: user.deletedAt })
         .from(user)
         .where(sql`lower(${user.email}) = lower(${input.email})`);
+      if (taken?.deletedAt)
+        throw new ApiProblem(
+          409,
+          "Conflict",
+          deletedEmailMessage(taken.deletedAt),
+        );
       if (taken) throw emailTaken();
       const { userId } = await createAccount(tx, {
         email: input.email,

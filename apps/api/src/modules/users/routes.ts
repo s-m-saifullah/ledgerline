@@ -1,5 +1,6 @@
 import {
   createUserSchema,
+  deletedUserListSchema,
   managedUserListSchema,
   managedUserSchema,
   resetUserPasswordSchema,
@@ -15,6 +16,7 @@ import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { errors, requireAppOrigin } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
+import { listDeletedUsers, purgeNow, restoreUser } from "./lifecycle";
 import {
   createUser,
   deleteUser,
@@ -64,6 +66,23 @@ export async function userRoutes(
     async (request) => {
       await admin(request);
       return { items: await listUsers(db) };
+    },
+  );
+  app.get(
+    "/api/v1/users/deleted",
+    {
+      schema: {
+        summary: "List the people in Recently deleted",
+        description:
+          "Admin only (`403` for anyone else). People deleted in the last 30 days, newest first, with when they were deleted and when they are removed for good (30 days later); each can be restored until then (ADR 0049). Account facts only: never a password, a hash, a token or anything from a ledger.",
+        tags: ["Users"],
+        security,
+        response: { 200: deletedUserListSchema, ...errors },
+      },
+    },
+    async (request) => {
+      await admin(request);
+      return { items: await listDeletedUsers(db) };
     },
   );
   app.post(
@@ -181,6 +200,41 @@ export async function userRoutes(
     async (request, reply) => {
       const adminId = await admin(request, true);
       await deleteUser(db, adminId, request.params.userId);
+      return reply.code(204).send(null);
+    },
+  );
+  app.post(
+    "/api/v1/users/:userId/restore",
+    {
+      schema: {
+        summary: "Restore a deleted person",
+        description: `Brings back a person deleted less than 30 days ago exactly as they were: their account, ledger and everything in it, with the same password, two-factor and stopped or allowed sign-in. Their sessions stay ended, so they sign in again. A person who is not in Recently deleted, or whose 30 days are over, is \`404\`.${adminOnly}`,
+        tags: ["Users"],
+        security,
+        params: userParamsSchema,
+        response: { 200: managedUserSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const adminId = await admin(request, true);
+      return restoreUser(db, adminId, request.params.userId);
+    },
+  );
+  app.delete(
+    "/api/v1/users/:userId/purge",
+    {
+      schema: {
+        summary: "Delete a deleted person for good, now",
+        description: `Removes a person who is in Recently deleted, their ledger and everything in it, for good and at once; their email can be used again. Cannot be undone, but older backups still hold the data until they age out (seven days on the server, 90 days off-site). A person who is not in Recently deleted is \`404\`.${adminOnly}`,
+        tags: ["Users"],
+        security,
+        params: userParamsSchema,
+        response: { 204: z.null(), ...errors },
+      },
+    },
+    async (request, reply) => {
+      const adminId = await admin(request, true);
+      await purgeNow(db, adminId, request.params.userId);
       return reply.code(204).send(null);
     },
   );
