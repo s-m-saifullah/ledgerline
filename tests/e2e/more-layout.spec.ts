@@ -81,6 +81,8 @@ async function open(page: Page, width: number, theme?: "light" | "dark") {
   ).toBeVisible();
 }
 const box = async (locator: Locator) => {
+  // Wait until it is laid out: a null box is only a page that has not drawn it yet.
+  await expect(locator).toBeVisible();
   const found = await locator.boundingBox();
   if (!found) throw new Error("not on screen");
   return found;
