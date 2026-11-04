@@ -90,6 +90,10 @@ bash infra/scripts/offsite-restore.sh --config restore.env --identity ledgerline
 
 It downloads the newest archive, decrypts it, checks the checksum and runs the restore drill in a throwaway container, then deletes the decrypted files (they hold real data). It never touches a running database. Restoring into the running database still means a manual `pg_restore` that only you should authorise.
 
+## Adding people
+
+The admin can add people in the app (More, then Users, [ADR 0048](adr/0048-profile-and-managed-users.md)). Each person has their own account and their own empty ledger, and the admin never sees anyone's money. The browser makes a temporary password (three words and a number) for the admin to read out or copy; it is shown once and never stored. The person chooses their own at first sign-in. From a person's row the admin can reset their password, turn off their two-factor, sign out their devices, stop their sign-in or delete them. Whoever runs the server can still read the database and its backups, so tell the people you add who that is.
+
 ## If the admin forgets their password
 
 The account the server was set up with is the admin ([ADR 0048](adr/0048-profile-and-managed-users.md)). Once the password has been changed in the app, the `OWNER_PASSWORD` in `.env` no longer works (it is read only on the first start), so a forgotten password needs the server's administrator:
