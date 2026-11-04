@@ -147,14 +147,3 @@
   font-weight: 500;
   user-select: all;
 }
-.us-field {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  min-width: 0;
-}
-.us-field > label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-}

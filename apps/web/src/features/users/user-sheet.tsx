@@ -1,27 +1,43 @@
 import type { ManagedUser } from "@ledgerline/shared";
 import { ListCard, ListRow } from "@ledgerline/ui";
-import { useQueryClient } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { Overlay } from "../../components/overlay";
-import { ApiError } from "../../lib/api";
+import { Question, TypedConfirm } from "../../components/question";
 import {
+  daysLeft,
+  daysLeftText,
+  undoDays,
+  undoEndsAt,
+} from "../../lib/days-left";
+import {
+  clearUserLedger,
   deleteUser,
   resetUserPassword,
+  restoreUserLedger,
   setUserDisabled,
   signOutUser,
   turnOffUserTwoFactor,
-  usersKey,
 } from "./api";
 import { deleteConfirmed, firstName, makeTemporaryPassword } from "./model";
 import { PasswordBox } from "./password-box";
+import { usePersonAction } from "./use-person-action";
 
-type Asking = "twoFactor" | "signOut" | "disable" | "delete";
+type Asking =
+  | "twoFactor"
+  | "signOut"
+  | "disable"
+  | "delete"
+  | "clear"
+  | "unclear";
 
 /**
  * One sheet per person (the prototype's `OV["user-actions"]` and the dialogs that follow it): Reset password
  * (which swaps the content of the same sheet to a new temporary password), Turn off two-factor when it is on, Sign out
- * their devices, Stop sign-in or Allow it again, and Delete user in red. Each of those but Allow asks first in a
- * centred question; Delete asks the admin to type the person's email. Nothing here is about money.
+ * their devices, Stop sign-in or Allow it again, then the ledger group (Clear their ledger in red and, while an undo
+ * waits, Restore cleared ledger with its days left; ADR 0049), and Delete user in red. Each of those but Allow asks
+ * first in a centred question; Clear and Delete ask the admin to type the person's email. The admin only ever sees
+ * a date here, never anything from the ledger.
  */
 export function UserSheet({
   person,
@@ -32,34 +48,14 @@ export function UserSheet({
   onDismiss: () => void;
   onSaved: (notice: string) => void;
 }) {
-  const client = useQueryClient();
   const first = firstName(person.name);
   const [password, setPassword] = useState<string | null>(null);
   const [asking, setAsking] = useState<Asking | null>(null);
   const [typed, setTyped] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const run = async (action: () => Promise<unknown>, done: string) => {
-    setBusy(true);
-    setError("");
-    try {
-      await action();
-    } catch (problem) {
-      if (problem instanceof ApiError && problem.status === 404) {
-        setError("They are no longer on this server.");
-        void client.invalidateQueries({ queryKey: usersKey });
-      } else if (problem instanceof ApiError && problem.status < 500) {
-        setError(problem.message);
-      } else {
-        // The change may have gone through: say so, never "it failed".
-        setError("We couldn't confirm that. Please try again.");
-      }
-      setBusy(false);
-      return;
-    }
-    setBusy(false);
-    onSaved(done);
-  };
+  const { busy, error, setError, run } = usePersonAction(
+    "They are no longer on this server.",
+    onSaved,
+  );
   const close = () => {
     setAsking(null);
     setTyped("");
@@ -149,6 +145,36 @@ export function UserSheet({
               )}
             </ListCard>
             <ListCard>
+              {person.ledgerClearedAt && (
+                <ListRow
+                  title="Restore cleared ledger"
+                  hint={daysLeftText(
+                    daysLeft(undoEndsAt(person.ledgerClearedAt)),
+                  )}
+                  chevron
+                  disabled={busy}
+                  onClick={() => setAsking("unclear")}
+                />
+              )}
+              <button
+                type="button"
+                id={`user-clear-${person.id}`}
+                className="ui-row ui-row-press"
+                disabled={busy}
+                onClick={() => setAsking("clear")}
+              >
+                <span className="ui-row-main">
+                  <span className="ui-row-title us-danger">
+                    Clear their ledger
+                  </span>
+                  <span className="ui-row-hint">Undo for {undoDays} days</span>
+                </span>
+                <span className="ui-row-chevron" aria-hidden="true">
+                  <ChevronRight size={18} />
+                </span>
+              </button>
+            </ListCard>
+            <ListCard>
               <button
                 type="button"
                 id={`user-delete-${person.id}`}
@@ -193,6 +219,8 @@ export function UserSheet({
         confirm="Turn off"
         busy={busy}
         error={error}
+        returnFocusId="users-title"
+        fallbackFocusId="users-title"
         onDismiss={close}
         onConfirm={() =>
           void run(
@@ -208,6 +236,8 @@ export function UserSheet({
         confirm="Sign out"
         busy={busy}
         error={error}
+        returnFocusId="users-title"
+        fallbackFocusId="users-title"
         onDismiss={close}
         onConfirm={() =>
           void run(() => signOutUser(person.id), "Signed them out.")
@@ -220,6 +250,8 @@ export function UserSheet({
         confirm="Stop sign-in"
         busy={busy}
         error={error}
+        returnFocusId="users-title"
+        fallbackFocusId="users-title"
         onDismiss={close}
         onConfirm={() =>
           void run(
@@ -229,86 +261,67 @@ export function UserSheet({
         }
       />
       <Question
+        open={asking === "clear"}
+        title={`Clear ${first}'s ledger?`}
+        text={`Their accounts, entries and budgets leave the app so they can start fresh. You can undo this for ${undoDays} days.`}
+        confirm="Clear"
+        danger
+        busy={busy}
+        error={error}
+        returnFocusId="users-title"
+        fallbackFocusId="users-title"
+        disabled={!deleteConfirmed(person.email, typed)}
+        onDismiss={close}
+        onConfirm={() =>
+          void run(() => clearUserLedger(person.id), "Ledger cleared.")
+        }
+      >
+        <TypedConfirm
+          id="user-clear-email"
+          label="Type their email to confirm"
+          placeholder={person.email}
+          value={typed}
+          busy={busy}
+          onChange={setTyped}
+        />
+      </Question>
+      <Question
+        open={asking === "unclear"}
+        title={`Restore ${first}'s ledger?`}
+        text="Everything comes back as it was. This works only while their ledger is empty."
+        confirm="Restore"
+        busy={busy}
+        error={error}
+        returnFocusId="users-title"
+        fallbackFocusId="users-title"
+        onDismiss={close}
+        onConfirm={() =>
+          void run(() => restoreUserLedger(person.id), "Ledger restored.")
+        }
+      />
+      <Question
         open={asking === "delete"}
         title={`Delete ${first} and their ledger?`}
-        text="Their accounts, entries and settings leave the app. Old backups still hold them."
+        text={`They cannot sign in. You can restore them for ${undoDays} days, then everything is removed for good.`}
         confirm="Delete"
         danger
         busy={busy}
         error={error}
+        returnFocusId="users-title"
+        fallbackFocusId="users-title"
         disabled={!deleteConfirmed(person.email, typed)}
         onDismiss={close}
         onConfirm={() => void run(() => deleteUser(person.id), "User deleted.")}
       >
-        <div className="us-field">
-          <label htmlFor="user-delete-email">Type their email to confirm</label>
-          <input
-            id="user-delete-email"
-            value={typed}
-            placeholder={person.email}
-            autoComplete="off"
-            disabled={busy}
-            onChange={(event) => setTyped(event.target.value)}
-          />
-        </div>
+        <TypedConfirm
+          id="user-delete-email"
+          label="Type their email to confirm"
+          placeholder={person.email}
+          value={typed}
+          busy={busy}
+          onChange={setTyped}
+        />
       </Question>
     </>
-  );
-}
-
-/** A centred question over the sheet: Cancel beside one confirming button; the server's refusal shows inside it. */
-function Question({
-  open,
-  title,
-  text,
-  confirm,
-  danger,
-  disabled,
-  busy,
-  error,
-  onDismiss,
-  onConfirm,
-  children,
-}: {
-  open: boolean;
-  title: string;
-  text: string;
-  confirm: string;
-  danger?: boolean;
-  disabled?: boolean;
-  busy: boolean;
-  error: string;
-  onDismiss: () => void;
-  onConfirm: () => void;
-  children?: React.ReactNode;
-}) {
-  return (
-    <Overlay
-      kind="question"
-      open={open}
-      title={title}
-      busy={busy}
-      onDismiss={onDismiss}
-      returnFocusId="users-title"
-      fallbackFocusId="users-title"
-      footer={
-        <button
-          type="button"
-          className={`ui-btn ${danger ? "ui-btn-danger-filled" : "ui-btn-primary"}`}
-          disabled={busy || disabled}
-          onClick={onConfirm}
-        >
-          {busy ? "Working…" : confirm}
-        </button>
-      }
-    >
-      <p>{text}</p>
-      {children}
-      {error && (
-        <p role="alert" className="field-error">
-          {error}
-        </p>
-      )}
-    </Overlay>
   );
 }

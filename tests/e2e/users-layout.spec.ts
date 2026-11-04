@@ -127,6 +127,17 @@ const casey = person({
   email: "casey@example.com",
   disabled: true,
 });
+const DAY = 24 * 60 * 60 * 1000;
+/** A person in Recently deleted whose 30 days end `days` days from now. */
+const gone = (name: string, email: string, days: number) => ({
+  id: newId(),
+  name,
+  email,
+  deletedAt: new Date(Date.now() + days * DAY - 30 * DAY).toISOString(),
+  purgeAt: new Date(Date.now() + days * DAY).toISOString(),
+});
+const taylor = gone("Taylor Brooks", "taylor@example.com", 22.5);
+const morgan = gone("Morgan Diaz", "morgan@example.com", 2.5);
 const LONG_NAME = "Alexandria Montgomery-Featherstonehaugh";
 const LONG_EMAIL = "alexandria.montgomery-featherstonehaugh@example.com";
 
@@ -140,7 +151,12 @@ async function mockPeople(
   {
     isAdmin = true,
     people = [sam, jordan, riley, casey],
-  }: { isAdmin?: boolean; people?: Record<string, unknown>[] } = {},
+    deleted = [],
+  }: {
+    isAdmin?: boolean;
+    people?: Record<string, unknown>[];
+    deleted?: Record<string, unknown>[];
+  } = {},
 ) {
   const calls: Calls = { post: [], others: [] };
   const list = [...people];
@@ -182,6 +198,10 @@ async function mockPeople(
       ? route.fulfill({ json: jordan })
       : route.fulfill({ status: 204, body: "" });
   });
+  // Registered after the line above, so it answers first for this one path.
+  await page.route(/\/api\/v1\/users\/deleted$/, (route) =>
+    route.fulfill({ json: { items: deleted } }),
+  );
   return calls;
 }
 async function open(
@@ -206,6 +226,8 @@ async function open(
   await expect(page.locator("#add-transaction")).toBeEnabled();
   return calls;
 }
+const cleared = (daysAgo: number) =>
+  new Date(Date.now() - daysAgo * DAY).toISOString();
 const rowFor = (page: Page, name: RegExp) =>
   page.locator(".us-page .ui-row", { hasText: name });
 /** Opens the Add sheet from whichever Add the width shows. */
@@ -502,15 +524,17 @@ test("a person's sheet lists what fits them, with Delete user the only red", asy
     "Turn off two-factor",
     "Sign out their devices",
     "Stop sign-in",
+    "Clear their ledger",
     "Delete user",
   ]);
   const danger = sheet(page).locator(".us-danger");
-  await expect(danger).toHaveText("Delete user");
+  await expect(danger).toHaveText(["Clear their ledger", "Delete user"]);
   const colors = await sheet(page)
     .locator(".ui-row-title")
     .evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).color));
   expect(new Set(colors.slice(0, 4)).size).toBe(1);
   expect(colors[4]).not.toBe(colors[0]);
+  expect(colors[5]).toBe(colors[4]);
   for (const row of await sheet(page).locator(".ui-row").all()) {
     expect((await box(row)).height).toBeGreaterThanOrEqual(56);
     expect(await is44(page, row)).toBe(true);
@@ -522,6 +546,7 @@ test("a person's sheet lists what fits them, with Delete user the only red", asy
     "Reset password",
     "Sign out their devices",
     "Stop sign-in",
+    "Clear their ledger",
     "Delete user",
   ]);
   await expect(sheet(page)).toContainText("Still on a temporary password");
@@ -532,6 +557,7 @@ test("a person's sheet lists what fits them, with Delete user the only red", asy
     "Reset password",
     "Sign out their devices",
     "Allow sign-in again",
+    "Clear their ledger",
     "Delete user",
   ]);
 });
@@ -585,6 +611,7 @@ test("a question is a centred dialog over the sheet; Delete needs the email and 
   await expect(ask.getByRole("heading")).toHaveText(
     "Delete Jordan and their ledger?",
   );
+  await expect(ask).toContainText("You can restore them for 30 days");
   const confirm = ask.getByRole("button", { name: "Delete", exact: true });
   await expect(confirm).toBeDisabled();
   const typed = ask.getByLabel("Type their email to confirm");
@@ -654,6 +681,49 @@ for (const theme of ["light", "dark"] as const)
       expect(await violations()).toEqual([]);
       await sheet(page)
         .getByRole("button", { name: /Delete user/ })
+        .click();
+      await settled(question(page));
+      expect(await violations()).toEqual([]);
+    });
+
+for (const theme of ["light", "dark"] as const)
+  for (const width of [320, 390, 1280])
+    test(`has no accessibility violations at ${width} px in ${theme}: the open fold, a waiting person, and the clear and delete-now questions`, async ({
+      page,
+    }) => {
+      await open(page, width, theme, {
+        people: [sam, { ...jordan, ledgerClearedAt: cleared(5) }],
+        deleted: [taylor, morgan],
+      });
+      const violations = async () =>
+        (await new AxeBuilder({ page }).analyze()).violations.map(
+          (item) => item.id,
+        );
+      await page.locator(".ui-fold > summary").click();
+      await settled(page.locator(".ui-fold"));
+      expect(await violations()).toEqual([]);
+      await rowFor(page, /Jordan Lee/).click();
+      await settled(sheet(page));
+      expect(await violations()).toEqual([]);
+      await sheet(page)
+        .getByRole("button", { name: /Clear their ledger/ })
+        .click();
+      await settled(question(page));
+      expect(await violations()).toEqual([]);
+      await question(page).getByRole("button", { name: "Cancel" }).click();
+      await sheet(page)
+        .getByRole("button", { name: /Restore cleared ledger/ })
+        .click();
+      await settled(question(page));
+      expect(await violations()).toEqual([]);
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await expect(sheet(page)).toBeHidden();
+      await rowFor(page, /Taylor Brooks/).click();
+      await settled(sheet(page));
+      expect(await violations()).toEqual([]);
+      await sheet(page)
+        .getByRole("button", { name: /Delete now/ })
         .click();
       await settled(question(page));
       expect(await violations()).toEqual([]);
@@ -840,4 +910,278 @@ test("any page's refusal for a required password change shows the card in the mi
   ).toBeVisible();
   await expect(page.getByRole("navigation")).toHaveCount(0);
   expect(calls.password).toEqual([]);
+});
+
+/* ---------- Recently deleted, and clearing a ledger (ADR 0049) ---------- */
+
+for (const theme of ["light", "dark"] as const)
+  for (const width of [320, 390, 1280])
+    test(`Recently deleted at ${width} px in ${theme}: a shut fold, then rows that are real targets with the days left`, async ({
+      page,
+    }) => {
+      await open(page, width, theme, { deleted: [taylor, morgan] });
+      expect(await noSideways(page)).toBe(true);
+      const fold = page.locator(".ui-fold");
+      await expect(fold.locator("summary")).toHaveText("2 recently deleted");
+      // Shut: its rows are not on screen, and the people above are untouched.
+      await expect(fold.locator(".ui-row").first()).toBeHidden();
+      await expect(page.locator(".us-page .ui-list .ui-row")).toHaveCount(4);
+      const summary = fold.locator("summary");
+      expect((await box(summary)).height).toBeGreaterThanOrEqual(56);
+      expect(await is44(page, summary)).toBe(true);
+      // The fold sits below the card of people, not inside it.
+      const people = await box(page.locator(".us-page .ui-list"));
+      const shut = await box(fold);
+      expect(shut.y).toBeGreaterThanOrEqual(people.y + people.height);
+      await summary.click();
+      await expect(fold.locator(".ui-row").first()).toBeVisible();
+      await settled(fold);
+      expect(await noSideways(page)).toBe(true);
+      // The rows start right under the summary: no strip between them (a global rule for open details adds one).
+      const head = await box(summary);
+      const body = await box(fold.locator(".ui-fold-body"));
+      expect(body.y - (head.y + head.height)).toBeLessThanOrEqual(1);
+      const rows = fold.locator(".ui-row");
+      await expect(rows).toHaveCount(2);
+      for (const row of await rows.all()) {
+        expect((await box(row)).height).toBeGreaterThanOrEqual(56);
+        expect(await is44(page, row)).toBe(true);
+        // One hint (the email), one pill, nothing cut.
+        await expect(row.locator(".ui-row-hint")).toHaveCount(1);
+        expect(await cut(row.locator(".ui-pill"))).toBe(true);
+        expect((await box(row.locator(".ui-row-hint"))).height).toBeLessThan(
+          20,
+        );
+      }
+      await expect(rows.nth(0).locator(".ui-pill")).toHaveText("23 days left");
+      await expect(rows.nth(1).locator(".ui-pill")).toHaveText("3 days left");
+      // Amber at three or fewer, calm above.
+      const tone = (n: number) =>
+        rows
+          .nth(n)
+          .locator(".ui-pill")
+          .evaluate((node) => getComputedStyle(node).backgroundColor);
+      expect(await tone(0)).not.toBe(await tone(1));
+      // Rows are divided by a border, and the last one follows the card's corners.
+      for (const row of await rows.all())
+        expect(
+          await row.evaluate((node) => getComputedStyle(node).borderTopWidth),
+        ).toBe("1px");
+      const radius = await fold.evaluate(
+        (node) => getComputedStyle(node).borderRadius,
+      );
+      expect(radius).toBe("16px");
+    });
+
+test("a long name and email in Recently deleted wrap in their row, never cut or pushed past the edge", async ({
+  page,
+}) => {
+  await open(page, 320, "light", {
+    deleted: [gone(LONG_NAME, LONG_EMAIL, 10)],
+  });
+  await page.locator(".ui-fold > summary").click();
+  const row = page.locator(".ui-fold .ui-row");
+  await settled(row);
+  expect(await noSideways(page)).toBe(true);
+  const card = await box(page.locator(".ui-fold"));
+  const at = await box(row);
+  expect(at.x + at.width).toBeLessThanOrEqual(card.x + card.width + 1);
+  expect(await cut(row.locator(".ui-row-title"))).toBe(true);
+  expect(await cut(row.locator(".ui-row-hint"))).toBe(true);
+});
+
+test("no fold when nobody is waiting", async ({ page }) => {
+  await open(page, 390);
+  await expect(page.locator(".ui-fold")).toHaveCount(0);
+  await expect(page.getByText(/recently deleted/)).toHaveCount(0);
+});
+
+test("a waiting person's sheet is a bottom sheet on a phone and a drawer from 700 px, with Delete now the only red", async ({
+  page,
+}) => {
+  await open(page, 390, "light", { deleted: [taylor] });
+  await page.locator(".ui-fold > summary").click();
+  await page.locator(".ui-fold .ui-row").click();
+  let at = await settled(sheet(page));
+  expect(at.width).toBeCloseTo(390, 0);
+  expect(at.y + at.height).toBeCloseTo(900, 0);
+  await expect(sheet(page).locator(".ui-row-title")).toHaveText([
+    "Restore",
+    "Delete now",
+  ]);
+  await expect(sheet(page)).toContainText("23 days left to restore");
+  await expect(sheet(page).locator(".us-danger")).toHaveText("Delete now");
+  for (const row of await sheet(page).locator(".ui-row").all()) {
+    expect((await box(row)).height).toBeGreaterThanOrEqual(56);
+    expect(await is44(page, row)).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await expect(sheet(page)).toBeHidden();
+  // Focus goes back to the row that opened it.
+  await expect(page.locator(".ui-fold .ui-row")).toBeFocused();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.locator(".ui-fold .ui-row").click();
+  at = await settled(sheet(page));
+  expect(at.width).toBeCloseTo(440, 0);
+  expect(at.x + at.width).toBeCloseTo(1280, 0);
+});
+
+test("Restore brings a waiting person back at once, with no question", async ({
+  page,
+}) => {
+  const calls = await open(page, 390, "light", { deleted: [taylor] });
+  await page.locator(".ui-fold > summary").click();
+  await page.locator(".ui-fold .ui-row").click();
+  await settled(sheet(page));
+  await sheet(page)
+    .getByRole("button", { name: /Restore/ })
+    .click();
+  await expect(sheet(page)).toBeHidden();
+  await expect(question(page)).toHaveCount(0);
+  expect(calls.others).toEqual([
+    {
+      method: "POST",
+      url: `/api/v1/users/${taylor.id}/restore`,
+      body: expect.anything(),
+    },
+  ]);
+  await expect(page.getByRole("status")).toContainText(
+    "Taylor is back, as they were.",
+  );
+});
+
+test("Delete now is a centred question that names the backups and needs the email, and then removes the person for good", async ({
+  page,
+}) => {
+  const calls = await open(page, 390, "light", { deleted: [taylor] });
+  await page.locator(".ui-fold > summary").click();
+  await page.locator(".ui-fold .ui-row").click();
+  await settled(sheet(page));
+  await sheet(page)
+    .getByRole("button", { name: /Delete now/ })
+    .click();
+  const ask = question(page);
+  await expect(ask).toBeVisible();
+  const at = await settled(ask);
+  expect(at.x + at.width / 2).toBeCloseTo(195, -1);
+  expect(at.y + at.height / 2).toBeCloseTo(450, -2);
+  expect(at.width).toBeLessThan(390);
+  await expect(ask.getByRole("heading")).toHaveText("Delete Taylor now?");
+  await expect(ask).toContainText("7 days on the server and 90 days off-site");
+  const confirm = ask.getByRole("button", { name: "Delete now", exact: true });
+  await expect(confirm).toBeDisabled();
+  const typed = ask.getByLabel("Type their email to confirm");
+  await expect(typed).toHaveAttribute("placeholder", "taylor@example.com");
+  expect(await is44(page, typed)).toBe(true);
+  await typed.fill("taylor@example.com");
+  await expect(confirm).toBeEnabled();
+  const bg = await confirm.evaluate((n) => getComputedStyle(n).backgroundColor);
+  const cancel = await ask
+    .getByRole("button", { name: "Cancel" })
+    .evaluate((n) => getComputedStyle(n).backgroundColor);
+  expect(bg).not.toBe(cancel);
+  await confirm.click();
+  await expect(question(page)).toBeHidden();
+  await expect(sheet(page)).toBeHidden();
+  expect(calls.others).toEqual([
+    {
+      method: "DELETE",
+      url: `/api/v1/users/${taylor.id}/purge`,
+      body: expect.anything(),
+    },
+  ]);
+  await expect(page.getByRole("status")).toContainText("Deleted for good.");
+});
+
+test("a person's sheet has the ledger group between the actions and Delete user, and Restore cleared ledger only while an undo waits", async ({
+  page,
+}) => {
+  await open(page, 390, "light", {
+    people: [sam, { ...jordan, ledgerClearedAt: cleared(12.5) }, riley],
+  });
+  await rowFor(page, /Jordan Lee/).click();
+  await settled(sheet(page));
+  await expect(sheet(page).locator(".ui-row-title")).toHaveText([
+    "Reset password",
+    "Turn off two-factor",
+    "Sign out their devices",
+    "Stop sign-in",
+    "Restore cleared ledger",
+    "Clear their ledger",
+    "Delete user",
+  ]);
+  await expect(sheet(page)).toContainText("18 days left");
+  await expect(sheet(page)).toContainText("Undo for 30 days");
+  await expect(sheet(page).locator(".us-danger")).toHaveText([
+    "Clear their ledger",
+    "Delete user",
+  ]);
+  // One card for the ledger, between the actions and Delete user.
+  await expect(sheet(page).locator(".ui-card")).toHaveCount(3);
+  for (const row of await sheet(page).locator(".ui-row").all()) {
+    expect((await box(row)).height).toBeGreaterThanOrEqual(56);
+    expect(await is44(page, row)).toBe(true);
+  }
+  await page.keyboard.press("Escape");
+  await rowFor(page, /Riley Park/).click();
+  await settled(sheet(page));
+  await expect(sheet(page)).not.toContainText("Restore cleared ledger");
+});
+
+test("Clear their ledger asks for the email in a centred question, then writes; Restore cleared ledger asks and writes", async ({
+  page,
+}) => {
+  const calls = await open(page, 390, "light", {
+    people: [sam, { ...jordan, ledgerClearedAt: cleared(5) }],
+  });
+  await rowFor(page, /Jordan Lee/).click();
+  await settled(sheet(page));
+  await sheet(page)
+    .getByRole("button", { name: /Clear their ledger/ })
+    .click();
+  let ask = question(page);
+  await expect(ask).toBeVisible();
+  const at = await settled(ask);
+  expect(at.x + at.width / 2).toBeCloseTo(195, -1);
+  expect(at.width).toBeLessThan(390);
+  await expect(ask.getByRole("heading")).toHaveText("Clear Jordan's ledger?");
+  const confirm = ask.getByRole("button", { name: "Clear", exact: true });
+  await expect(confirm).toBeDisabled();
+  const typed = ask.getByLabel("Type their email to confirm");
+  expect(await is44(page, typed)).toBe(true);
+  await typed.fill("jordan@example.com");
+  await expect(confirm).toBeEnabled();
+  const bgClear = await confirm.evaluate(
+    (n) => getComputedStyle(n).backgroundColor,
+  );
+  await confirm.click();
+  await expect(question(page)).toBeHidden();
+  await expect(page.getByRole("status")).toContainText("Ledger cleared.");
+  await rowFor(page, /Jordan Lee/).click();
+  await settled(sheet(page));
+  await sheet(page)
+    .getByRole("button", { name: /Restore cleared ledger/ })
+    .click();
+  ask = question(page);
+  await expect(ask.getByRole("heading")).toHaveText("Restore Jordan's ledger?");
+  await expect(ask.getByLabel(/Type/)).toHaveCount(0);
+  const restore = ask.getByRole("button", { name: "Restore", exact: true });
+  const bgRestore = await restore.evaluate(
+    (n) => getComputedStyle(n).backgroundColor,
+  );
+  expect(bgRestore).not.toBe(bgClear);
+  await restore.click();
+  await expect(question(page)).toBeHidden();
+  expect(calls.others).toEqual([
+    {
+      method: "POST",
+      url: `/api/v1/users/${jordan.id}/ledger/clear`,
+      body: expect.anything(),
+    },
+    {
+      method: "POST",
+      url: `/api/v1/users/${jordan.id}/ledger/restore`,
+      body: expect.anything(),
+    },
+  ]);
 });

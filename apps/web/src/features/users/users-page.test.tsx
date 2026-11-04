@@ -33,6 +33,8 @@ vi.mock("@tanstack/react-router", () => ({
 
 const adminId = newId();
 const person = (over: Record<string, unknown> = {}) => ({
+  // Absent unless a test sets it, as an older server leaves it out.
+  ledgerClearedAt: undefined as string | null | undefined,
   id: newId(),
   name: "Jordan Lee",
   email: "jordan@example.com",
@@ -61,6 +63,17 @@ const casey = person({
   email: "casey@example.com",
   disabled: true,
 });
+const DAY = 24 * 60 * 60 * 1000;
+/** A person in Recently deleted whose 30 days end `days` days from now (a part of a day counts as a whole one). */
+const gone = (name: string, email: string, days: number) => ({
+  id: newId(),
+  name,
+  email,
+  deletedAt: new Date(Date.now() + days * DAY - 30 * DAY).toISOString(),
+  purgeAt: new Date(Date.now() + days * DAY).toISOString(),
+});
+const taylor = gone("Taylor Brooks", "taylor@example.com", 22.5);
+const morgan = gone("Morgan Diaz", "morgan@example.com", 2.5);
 const meOf = (over: Record<string, unknown> = {}) => ({
   id: adminId,
   name: "Sam Lee",
@@ -83,13 +96,15 @@ afterEach(() => {
 
 function mount({
   people = [sam, jordan, riley, casey],
+  deleted = [] as unknown[],
+  deletedFails = false,
   me = meOf(),
   write = (_write: Write): Response | undefined => undefined,
 } = {}) {
   const writes: Write[] = [];
   const reads: string[] = [];
   let pageAdd: PageAdd | null = null;
-  const state = { people };
+  const state = { people, deleted };
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof fetch>(async (url, init) => {
@@ -117,6 +132,8 @@ function mount({
       }
       reads.push(path);
       if (path.endsWith("/me")) return json(me);
+      if (path.endsWith("/users/deleted"))
+        return deletedFails ? json({}, 500) : json({ items: state.deleted });
       if (path.endsWith("/users")) return json({ items: state.people });
       return json({});
     }),
@@ -427,7 +444,7 @@ it("says what a taken email means, on the email row, and keeps the sheet open", 
     write: () =>
       problem(
         409,
-        "Someone already has that email. Reset that person's password instead.",
+        "That person was deleted. Restore them from Recently deleted (5 days left), or use another email.",
       ),
   });
   await openAdd(user);
@@ -438,7 +455,7 @@ it("says what a taken email means, on the email row, and keeps the sheet open", 
   );
   await user.click(within(sheet()).getByRole("button", { name: "Add user" }));
   expect(await within(sheet()).findByRole("alert")).toHaveTextContent(
-    "Someone already has that email. Reset that person's password instead.",
+    "That person was deleted. Restore them from Recently deleted (5 days left), or use another email.",
   );
   expect(within(sheet()).getByLabelText("Email")).toHaveAttribute(
     "aria-invalid",
@@ -489,6 +506,7 @@ it("opens a person's sheet with the actions that fit them, Delete last", async (
     "Turn off two-factor",
     "Sign out their devices",
     "Stop sign-in",
+    "Clear their ledger",
     "Delete user",
   ]);
   expect(
@@ -536,14 +554,14 @@ it("says 'Allow sign-in again' for a stopped person and allows it at once, with 
   );
 });
 
-it("shows Delete user in the danger colour class and nothing else red", async () => {
+it("shows Clear their ledger and Delete user in the danger colour class and nothing else red", async () => {
   const user = userEvent.setup();
   mount();
   await openPerson(user, /Jordan Lee/);
   const red = [...sheet().querySelectorAll(".us-danger")].map(
     (el) => el.textContent,
   );
-  expect(red).toEqual(["Delete user"]);
+  expect(red).toEqual(["Clear their ledger", "Delete user"]);
 });
 
 it("resets the password: a new one is shown, sent for that person, and the sheet says so", async () => {
@@ -674,7 +692,9 @@ it("deletes only after their email is typed, in any letter case", async () => {
   );
   const question = screen.getAllByRole("dialog").at(-1) as HTMLElement;
   expect(question).toHaveAccessibleName("Delete Jordan and their ledger?");
-  expect(question).toHaveTextContent("Old backups still hold them.");
+  expect(question).toHaveTextContent(
+    "They cannot sign in. You can restore them for 30 days, then everything is removed for good.",
+  );
   const confirm = within(question).getByRole("button", { name: "Delete" });
   expect(confirm).toBeDisabled();
   const typed = within(question).getByLabelText("Type their email to confirm");
@@ -800,4 +820,430 @@ it("makes only Delete's confirming button red", async () => {
   expect(await confirmOf(/Stop sign-in/, "Stop sign-in")).toBe(false);
   expect(await confirmOf(/Sign out their devices/, "Sign out")).toBe(false);
   expect(await confirmOf(/Turn off two-factor/, "Turn off")).toBe(false);
+});
+
+/* ---------- Clear and restore a person's ledger (ADR 0049) ---------- */
+
+const clearedAt = (daysAgo: number) =>
+  new Date(Date.now() - daysAgo * DAY).toISOString();
+const ledgerRows = () =>
+  [...sheet().querySelectorAll(".ui-card")].map((card) =>
+    [...card.querySelectorAll(".ui-row-title")].map((t) => t.textContent),
+  );
+const ask = async (
+  user: ReturnType<typeof userEvent.setup>,
+  name: RegExp,
+): Promise<HTMLElement> => {
+  await user.click(within(sheet()).getByRole("button", { name }));
+  return screen.getAllByRole("dialog").at(-1) as HTMLElement;
+};
+
+it("offers 'Clear their ledger' with its one short hint, and no restore while nothing waits", async () => {
+  const user = userEvent.setup();
+  mount();
+  await openPerson(user, /Jordan Lee/);
+  expect(ledgerRows()[1]).toEqual(["Clear their ledger"]);
+  expect(within(sheet()).getByText("Undo for 30 days")).toBeInTheDocument();
+  expect(within(sheet()).queryByText(/Restore cleared ledger/)).toBeNull();
+});
+
+it("reads an answer without ledgerClearedAt, or with null, as nothing to restore", async () => {
+  const user = userEvent.setup();
+  mount({ people: [sam, jordan] });
+  await openPerson(user, /Jordan Lee/);
+  expect(within(sheet()).queryByText(/Restore cleared ledger/)).toBeNull();
+  await user.keyboard("{Escape}");
+  cleanup();
+  client.clear();
+  mount({ people: [sam, { ...jordan, ledgerClearedAt: null }] });
+  await openPerson(user, /Jordan Lee/);
+  expect(within(sheet()).queryByText(/Restore cleared ledger/)).toBeNull();
+});
+
+it("puts 'Restore cleared ledger' with its days left above 'Clear their ledger' while an undo waits", async () => {
+  const user = userEvent.setup();
+  // Cleared 12.5 days ago: 17.5 days of the 30 are left, which reads as 18.
+  mount({ people: [sam, { ...jordan, ledgerClearedAt: clearedAt(12.5) }] });
+  await openPerson(user, /Jordan Lee/);
+  expect(ledgerRows()[1]).toEqual([
+    "Restore cleared ledger",
+    "Clear their ledger",
+  ]);
+  expect(within(sheet()).getByText("18 days left")).toBeInTheDocument();
+});
+
+it("says '1 day left' on the last day of an undo", async () => {
+  const user = userEvent.setup();
+  mount({ people: [sam, { ...jordan, ledgerClearedAt: clearedAt(29.9) }] });
+  await openPerson(user, /Jordan Lee/);
+  expect(within(sheet()).getByText("1 day left")).toBeInTheDocument();
+});
+
+it("clears a ledger only after the person's email is typed, then says so and reads the list again", async () => {
+  const user = userEvent.setup();
+  const { writes, reads } = mount();
+  await openPerson(user, /Jordan Lee/);
+  const question = await ask(user, /Clear their ledger/);
+  expect(question).toHaveAccessibleName("Clear Jordan's ledger?");
+  expect(question).toHaveTextContent(
+    "Their accounts, entries and budgets leave the app so they can start fresh. You can undo this for 30 days.",
+  );
+  const confirm = within(question).getByRole("button", { name: "Clear" });
+  expect(confirm).toHaveClass("ui-btn-danger-filled");
+  expect(confirm).toBeDisabled();
+  const typed = within(question).getByLabelText("Type their email to confirm");
+  expect(typed).toHaveAttribute("placeholder", "jordan@example.com");
+  await user.type(typed, "jordan");
+  expect(confirm).toBeDisabled();
+  await user.clear(typed);
+  await user.type(typed, " Jordan@Example.com ");
+  expect(confirm).toBeEnabled();
+  const before = reads.filter((read) => read.endsWith("/users")).length;
+  await user.click(confirm);
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(writes).toEqual([
+    {
+      url: `/api/v1/users/${jordan.id}/ledger/clear`,
+      method: "POST",
+      body: {},
+    },
+  ]);
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Ledger cleared.",
+  );
+  await waitFor(() =>
+    expect(
+      reads.filter((read) => read.endsWith("/users")).length,
+    ).toBeGreaterThan(before),
+  );
+});
+
+it("does not clear on Enter in the email box while the email is wrong", async () => {
+  const user = userEvent.setup();
+  const { writes } = mount();
+  await openPerson(user, /Jordan Lee/);
+  const question = await ask(user, /Clear their ledger/);
+  await user.type(
+    within(question).getByLabelText("Type their email to confirm"),
+    "jord{Enter}",
+  );
+  expect(writes).toEqual([]);
+});
+
+it("writes nothing and empties the email box when the Clear question is cancelled and opened again", async () => {
+  const user = userEvent.setup();
+  const { writes } = mount();
+  await openPerson(user, /Jordan Lee/);
+  let question = await ask(user, /Clear their ledger/);
+  await user.type(
+    within(question).getByLabelText("Type their email to confirm"),
+    "jordan@example.com",
+  );
+  await user.click(within(question).getByRole("button", { name: "Cancel" }));
+  question = await ask(user, /Clear their ledger/);
+  expect(
+    within(question).getByLabelText("Type their email to confirm"),
+  ).toHaveValue("");
+  expect(writes).toEqual([]);
+});
+
+it("restores a cleared ledger after a question, in the calm button colour, then says so", async () => {
+  const user = userEvent.setup();
+  const { writes } = mount({
+    people: [sam, { ...jordan, ledgerClearedAt: clearedAt(5) }],
+  });
+  await openPerson(user, /Jordan Lee/);
+  const question = await ask(user, /Restore cleared ledger/);
+  expect(question).toHaveAccessibleName("Restore Jordan's ledger?");
+  expect(question).toHaveTextContent(
+    "Everything comes back as it was. This works only while their ledger is empty.",
+  );
+  expect(within(question).queryByLabelText(/Type/)).toBeNull();
+  const confirm = within(question).getByRole("button", { name: "Restore" });
+  expect(confirm).not.toHaveClass("ui-btn-danger-filled");
+  await user.click(confirm);
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(writes).toEqual([
+    {
+      url: `/api/v1/users/${jordan.id}/ledger/restore`,
+      method: "POST",
+      body: {},
+    },
+  ]);
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Ledger restored.",
+  );
+});
+
+it("shows the server's refusal to restore inside the question and keeps it open", async () => {
+  const user = userEvent.setup();
+  mount({
+    people: [sam, { ...jordan, ledgerClearedAt: clearedAt(5) }],
+    write: () => problem(409, "Clear what is there now first."),
+  });
+  await openPerson(user, /Jordan Lee/);
+  const question = await ask(user, /Restore cleared ledger/);
+  await user.click(within(question).getByRole("button", { name: "Restore" }));
+  expect(await within(question).findByRole("alert")).toHaveTextContent(
+    "Clear what is there now first.",
+  );
+  expect(screen.getAllByRole("dialog", { hidden: true })).toHaveLength(2);
+});
+
+it("never says a clear failed when the answer was lost", async () => {
+  const user = userEvent.setup();
+  mount({ write: () => problem(500, "boom") });
+  await openPerson(user, /Jordan Lee/);
+  const question = await ask(user, /Clear their ledger/);
+  await user.type(
+    within(question).getByLabelText("Type their email to confirm"),
+    "jordan@example.com",
+  );
+  await user.click(within(question).getByRole("button", { name: "Clear" }));
+  expect(await within(question).findByRole("alert")).toHaveTextContent(
+    "We couldn't confirm that. Please try again.",
+  );
+});
+
+/* ---------- Recently deleted (ADR 0049) ---------- */
+
+const fold = () =>
+  document.querySelector("details.ui-fold") as HTMLDetailsElement | null;
+const foldRows = () =>
+  [...(fold()?.querySelectorAll(".ui-row") ?? [])] as HTMLElement[];
+
+it("shows no fold when nobody is waiting", async () => {
+  mount();
+  await row(/Jordan Lee/);
+  expect(fold()).toBeNull();
+  expect(screen.queryByText(/recently deleted/)).toBeNull();
+});
+
+it("shows 'N recently deleted' as a shut fold below the people", async () => {
+  mount({ deleted: [taylor, morgan] });
+  expect(await screen.findByText("2 recently deleted")).toBeInTheDocument();
+  expect(fold()?.open).toBe(false);
+  const user = userEvent.setup();
+  await user.click(screen.getByText("2 recently deleted"));
+  expect(fold()?.open).toBe(true);
+});
+
+it("lists each waiting person as a name, an email and one pill of days left, in the order sent", async () => {
+  const user = userEvent.setup();
+  mount({ deleted: [taylor, morgan, gone("Lee Fox", "lee@example.com", 1)] });
+  await user.click(await screen.findByText("3 recently deleted"));
+  expect(
+    foldRows().map((r) => r.querySelector(".ui-row-title")?.textContent),
+  ).toEqual(["Taylor Brooks", "Morgan Diaz", "Lee Fox"]);
+  const [first, second, third] = foldRows() as [
+    HTMLElement,
+    HTMLElement,
+    HTMLElement,
+  ];
+  expect(first).toHaveTextContent("taylor@example.com");
+  expect(first.querySelector(".ui-row-hint")?.textContent).toBe(
+    "taylor@example.com",
+  );
+  expect(first.querySelector(".ui-pill")).toHaveTextContent("23 days left");
+  expect(second.querySelector(".ui-pill")).toHaveTextContent("3 days left");
+  expect(third.querySelector(".ui-pill")).toHaveTextContent("1 day left");
+});
+
+it("turns the pill amber at 3 days or fewer and leaves it calm at 4", async () => {
+  const user = userEvent.setup();
+  mount({
+    deleted: [
+      gone("Four Days", "four@example.com", 3.5),
+      gone("Three Days", "three@example.com", 3),
+    ],
+  });
+  await user.click(await screen.findByText("2 recently deleted"));
+  const [four, three] = foldRows().map((r) => r.querySelector(".ui-pill"));
+  expect(four).toHaveTextContent("4 days left");
+  expect(four).toHaveClass("ui-pill-neutral");
+  expect(three).toHaveTextContent("3 days left");
+  expect(three).toHaveClass("ui-pill-warning");
+});
+
+it("never asks for the deleted list when the person is not the admin", async () => {
+  const { reads } = mount({ me: meOf({ isAdmin: false }) });
+  await screen.findByText("Only the admin can manage users.");
+  expect(reads.some((read) => read.endsWith("/users/deleted"))).toBe(false);
+});
+
+it("offers to try again when the deleted list cannot be read, and keeps the people shown", async () => {
+  mount({ deletedFails: true });
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "We couldn't load recently deleted people.",
+  );
+  expect(await row(/Jordan Lee/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+});
+
+const openDeleted = async (
+  user: ReturnType<typeof userEvent.setup>,
+  name: RegExp,
+) => {
+  await user.click(await screen.findByText(/recently deleted/));
+  await user.click(await screen.findByRole("button", { name }));
+  return sheet();
+};
+
+it("opens a deleted person's sheet with Restore and the days to restore, then Delete now in red", async () => {
+  const user = userEvent.setup();
+  mount({ deleted: [taylor, morgan] });
+  await openDeleted(user, /Taylor Brooks/);
+  expect(sheet()).toHaveAccessibleName("Taylor Brooks");
+  expect(rowNames()).toEqual(["Restore", "Delete now"]);
+  expect(
+    within(sheet()).getByText("23 days left to restore"),
+  ).toBeInTheDocument();
+  expect(
+    [...sheet().querySelectorAll(".us-danger")].map((el) => el.textContent),
+  ).toEqual(["Delete now"]);
+});
+
+it("restores a deleted person with no question, then says so and reads both lists again", async () => {
+  const user = userEvent.setup();
+  const { writes, reads } = mount({ deleted: [taylor, morgan] });
+  await openDeleted(user, /Taylor Brooks/);
+  const people = reads.filter((read) => read.endsWith("/users")).length;
+  const deleted = reads.filter((read) =>
+    read.endsWith("/users/deleted"),
+  ).length;
+  await user.click(within(sheet()).getByRole("button", { name: /Restore/ }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(writes).toEqual([
+    { url: `/api/v1/users/${taylor.id}/restore`, method: "POST", body: {} },
+  ]);
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Taylor is back, as they were.",
+  );
+  await waitFor(() => {
+    expect(
+      reads.filter((read) => read.endsWith("/users")).length,
+    ).toBeGreaterThan(people);
+    expect(
+      reads.filter((read) => read.endsWith("/users/deleted")).length,
+    ).toBeGreaterThan(deleted);
+  });
+});
+
+it("deletes a waiting person for good only after their email is typed, naming the backups", async () => {
+  const user = userEvent.setup();
+  const { writes } = mount({ deleted: [taylor] });
+  await openDeleted(user, /Taylor Brooks/);
+  const question = await ask(user, /Delete now/);
+  expect(question).toHaveAccessibleName("Delete Taylor now?");
+  expect(question).toHaveTextContent(
+    "They and everything of theirs are removed for good, and the email can be used again.",
+  );
+  expect(question).toHaveTextContent("7 days on the server");
+  expect(question).toHaveTextContent("90 days off-site");
+  const confirm = within(question).getByRole("button", { name: "Delete now" });
+  expect(confirm).toHaveClass("ui-btn-danger-filled");
+  expect(confirm).toBeDisabled();
+  const typed = within(question).getByLabelText("Type their email to confirm");
+  expect(typed).toHaveAttribute("placeholder", "taylor@example.com");
+  await user.type(typed, "taylor");
+  expect(confirm).toBeDisabled();
+  await user.clear(typed);
+  await user.type(typed, "TAYLOR@example.com");
+  expect(confirm).toBeEnabled();
+  await user.click(confirm);
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(writes).toEqual([
+    { url: `/api/v1/users/${taylor.id}/purge`, method: "DELETE", body: {} },
+  ]);
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "Deleted for good.",
+  );
+});
+
+it("does not delete now on Enter while the email is wrong, and writes nothing when cancelled", async () => {
+  const user = userEvent.setup();
+  const { writes } = mount({ deleted: [taylor] });
+  await openDeleted(user, /Taylor Brooks/);
+  const question = await ask(user, /Delete now/);
+  await user.type(
+    within(question).getByLabelText("Type their email to confirm"),
+    "tay{Enter}",
+  );
+  await user.click(within(question).getByRole("button", { name: "Cancel" }));
+  expect(writes).toEqual([]);
+});
+
+it("says a waiting person is gone, and reads the lists again, when the server cannot find them", async () => {
+  const user = userEvent.setup();
+  const { reads } = mount({
+    deleted: [taylor],
+    write: () => problem(404, "Not found."),
+  });
+  await openDeleted(user, /Taylor Brooks/);
+  const before = reads.filter((read) => read.endsWith("/users/deleted")).length;
+  await user.click(within(sheet()).getByRole("button", { name: /Restore/ }));
+  expect(await within(sheet()).findByRole("alert")).toHaveTextContent(
+    "They are no longer in Recently deleted.",
+  );
+  await waitFor(() =>
+    expect(
+      reads.filter((read) => read.endsWith("/users/deleted")).length,
+    ).toBeGreaterThan(before),
+  );
+});
+
+it("shows the server's refusal to restore on the sheet and never says a lost answer failed", async () => {
+  const user = userEvent.setup();
+  mount({
+    deleted: [taylor],
+    write: () => problem(409, "Someone else now has that email."),
+  });
+  await openDeleted(user, /Taylor Brooks/);
+  await user.click(within(sheet()).getByRole("button", { name: /Restore/ }));
+  expect(await within(sheet()).findByRole("alert")).toHaveTextContent(
+    "Someone else now has that email.",
+  );
+});
+
+it("says a restore that cannot be confirmed could not be confirmed", async () => {
+  const user = userEvent.setup();
+  mount({ deleted: [taylor], write: () => problem(500, "boom") });
+  await openDeleted(user, /Taylor Brooks/);
+  await user.click(within(sheet()).getByRole("button", { name: /Restore/ }));
+  expect(await within(sheet()).findByRole("alert")).toHaveTextContent(
+    "We couldn't confirm that. Please try again.",
+  );
+});
+
+it("shows a refusal of Delete now once, inside the question, and not also on the sheet behind it", async () => {
+  const user = userEvent.setup();
+  mount({
+    deleted: [taylor],
+    write: () => problem(409, "Something still points at them."),
+  });
+  await openDeleted(user, /Taylor Brooks/);
+  const ask_ = await ask(user, /Delete now/);
+  await user.type(
+    within(ask_).getByLabelText("Type their email to confirm"),
+    "taylor@example.com",
+  );
+  await user.click(within(ask_).getByRole("button", { name: "Delete now" }));
+  await within(ask_).findByRole("alert");
+  expect(screen.getAllByRole("alert", { hidden: true })).toHaveLength(1);
+});
+
+it("empties the email box when the Delete now question is cancelled and opened again", async () => {
+  const user = userEvent.setup();
+  mount({ deleted: [taylor] });
+  await openDeleted(user, /Taylor Brooks/);
+  let question_ = await ask(user, /Delete now/);
+  await user.type(
+    within(question_).getByLabelText("Type their email to confirm"),
+    "taylor@example.com",
+  );
+  await user.click(within(question_).getByRole("button", { name: "Cancel" }));
+  question_ = await ask(user, /Delete now/);
+  expect(
+    within(question_).getByLabelText("Type their email to confirm"),
+  ).toHaveValue("");
 });
