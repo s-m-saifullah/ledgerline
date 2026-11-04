@@ -58,14 +58,32 @@ function mount({
   home = summary(),
   homeFails = false,
   privacy = false,
+  person = null,
+  sessionName,
 }: {
   home?: HomeSummary;
   homeFails?: boolean;
   privacy?: boolean;
+  /** What `/me` answers; null means it fails. */
+  person?: { name: string; isAdmin: boolean } | null;
+  /** The name the session already holds when More opens. */
+  sessionName?: string;
 } = {}) {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (url: string) => {
+      if (String(url).endsWith("/me"))
+        return person
+          ? new Response(
+              JSON.stringify({
+                id: newId(),
+                email: "sam@example.com",
+                mustChangePassword: false,
+                twoFactorEnabled: false,
+                ...person,
+              }),
+            )
+          : new Response("{}", { status: 500 });
       if (String(url).includes("/home"))
         return homeFails
           ? new Response("{}", { status: 500 })
@@ -87,6 +105,10 @@ function mount({
     }),
   );
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  if (sessionName)
+    client.setQueryData(["session"], {
+      user: { id: newId(), name: sessionName, email: "sam@example.com" },
+    });
   return render(
     <QueryClientProvider client={client}>
       <PrivacyContext value={privacy}>
@@ -266,5 +288,57 @@ describe("MorePage", () => {
   it("puts the version in the Settings row's hint instead of a line at the foot", () => {
     mount();
     expect(link(/^Settings/).textContent).toContain("Version 0.0.0-test");
+  });
+});
+
+describe("the Profile card", () => {
+  it("comes first: the name, one short hint and a link to Profile", async () => {
+    mount({ person: { name: "Sam Lee", isAdmin: false } });
+    const card = await screen.findByRole("link", { name: /Sam Lee/ });
+    expect(card).toHaveAttribute("href", "/profile");
+    expect(card).toHaveTextContent("Profile and password");
+    expect(card).not.toHaveTextContent("Admin");
+    const firstGroup = screen.getByRole("region", {
+      name: "Receivables and lending",
+    });
+    expect(
+      card.compareDocumentPosition(firstGroup) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("shows an Admin pill for the admin", async () => {
+    mount({ person: { name: "Sam Lee", isAdmin: true } });
+    expect(
+      await screen.findByRole("link", { name: /Sam Lee/ }),
+    ).toHaveTextContent("Admin");
+  });
+
+  it("knows the name at once from the session, and adds the pill when /me answers", async () => {
+    mount({
+      sessionName: "Sam Lee",
+      person: { name: "Sam Lee", isAdmin: true },
+    });
+    expect(screen.getByRole("link", { name: /Sam Lee/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Sam Lee/ })).not.toHaveTextContent(
+      "Admin",
+    );
+    await vi.waitFor(() =>
+      expect(screen.getByRole("link", { name: /Sam Lee/ })).toHaveTextContent(
+        "Admin",
+      ),
+    );
+  });
+
+  it("is not shown while nothing is known about who is signed in", async () => {
+    mount({ person: null });
+    await vi.waitFor(() => expect(client.isFetching()).toBe(0));
+    expect(
+      screen.queryByRole("link", { name: /Profile and password/ }),
+    ).toBeNull();
+    // The rest of More does not wait for it.
+    expect(
+      screen.getByRole("region", { name: "Money setup" }),
+    ).toBeInTheDocument();
   });
 });

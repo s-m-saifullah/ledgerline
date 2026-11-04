@@ -1,0 +1,97 @@
+/*
+ * Profile (ADR 0048), as the approved prototype draws it: Account and Password on the left, Security on the right from
+ * 700 px. Both columns open with a label row, so the tops of the two cards line up. The sheets' rows are the
+ * prototype's input rows: the label on the left, the value on the right.
+ */
+.pf-page,
+.pf-stack,
+.pf-sect {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+}
+.pf-page > .page-heading {
+  margin-bottom: 0;
+}
+.pf-sect {
+  gap: 4px;
+}
+.pf-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+}
+@container app (min-width: 700px) {
+  .pf-cols {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+@container app (min-width: 1100px) {
+  .pf-cols {
+    gap: 20px;
+  }
+}
+/* A title and its hint may wrap here: an email is long. */
+.pf-sect .ui-row-title,
+.pf-sect .ui-row-hint {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.pf-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.pf-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.pf-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pf-group {
+  display: grid;
+  min-width: 0;
+}
+.pf-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 4px 16px;
+  min-width: 0;
+}
+.pf-input-row + .pf-input-row {
+  border-top: 1px solid var(--border);
+}
+.pf-input-row > label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pf-input-row > input {
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline-start: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  text-align: end;
+}

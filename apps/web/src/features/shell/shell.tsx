@@ -24,6 +24,7 @@ import { api, getLedgers, type Session } from "../../lib/api";
 import { type Preferences, SignOutContext } from "../../lib/preferences";
 import { useLiveChanges } from "../../lib/use-live-changes";
 import { usePageAnnouncement } from "../../lib/use-page-announcement";
+import { getMe, meKey } from "../profile/api";
 import { QuickAdd } from "../transactions/quick-add";
 import { TransactionWorkspace } from "../transactions/workspace";
 import {
@@ -34,6 +35,7 @@ import {
   moreGroups,
   morePages,
   pageTitle,
+  profilePage,
   showsAdd,
 } from "./nav";
 import { type PageAdd, PageAddProvider } from "./page-add";
@@ -64,6 +66,8 @@ export function Shell({
   const pageAnnouncement = usePageAnnouncement(currentPage);
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
+  // Whether I am the admin: the sidebar says so under my name (ADR 0048). A failed read just leaves the line blank.
+  const me = useQuery({ queryKey: meKey, queryFn: getMe });
   const sync = useLiveChanges(ledger?.id);
   const canAdd = !!ledger && ledger.role !== "viewer";
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -119,7 +123,7 @@ export function Shell({
         openAdd("open-navigation");
       },
     },
-    ...[...destinations, ...morePages].map((page) => ({
+    ...[...destinations, ...morePages, profilePage].map((page) => ({
       key: page.to,
       label: ("paletteLabel" in page && page.paletteLabel) || page.label,
       icon: page.icon,
@@ -231,13 +235,18 @@ export function Shell({
             <kbd className="ui-side-wide">⌘ K</kbd>
           </button>
           <div className="ui-side-owner">
-            <span className="ui-avatar" aria-hidden="true">
-              {session.user.name.slice(0, 1)}
-            </span>
-            <div>
-              <strong>{session.user.name}</strong>
-              <span>Owner</span>
-            </div>
+            <Link to="/profile" className="ui-side-who">
+              <span className="ui-avatar" aria-hidden="true">
+                {session.user.name.slice(0, 1)}
+              </span>
+              <div>
+                <strong>{session.user.name}</strong>
+                {/* The line is always there, so the block never changes height when the answer arrives. */}
+                <span>{me.data?.isAdmin ? "Admin" : "\u00a0"}</span>
+              </div>
+              {/* Read aloud after the name, so the link's name holds what is shown and says where it goes. */}
+              <span className="sr-only">, Profile</span>
+            </Link>
             {signOutButton("ui-icon-btn")}
           </div>
           <AppVersion />

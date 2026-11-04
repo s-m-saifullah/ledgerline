@@ -12,6 +12,7 @@ import {
   Settings,
   Shapes,
   Tags,
+  UserRound,
   Users,
   Wallet,
 } from "lucide-react";
@@ -87,8 +88,18 @@ export const moreGroups: readonly {
 
 export const morePages = moreGroups.flatMap((group) => group.pages);
 
+/**
+ * Profile (ADR 0048) is reached from the name in the sidebar and from the first card on More, not from a group, so
+ * More and the sidebar do not list it twice. It belongs to More's area: a back arrow to More, and More stays lit.
+ */
+export const profilePage: NavPage<"/profile"> = {
+  to: "/profile",
+  label: "Profile",
+  icon: UserRound,
+};
+
 const isMorePage = (pathname: string) =>
-  morePages.some((page) => page.to === pathname);
+  pathname === profilePage.to || morePages.some((page) => page.to === pathname);
 
 /** Pages that have an address of their own for one thing in them: `/clients/{id}` belongs to `/clients`, `/loans/{id}` to `/loans`. */
 const withAddresses = ["/clients", "/loans"];
@@ -105,8 +116,8 @@ export const isActiveDestination = (to: string, pathname: string) => {
 export function pageTitle(pathname: string) {
   const page = basePath(pathname);
   return (
-    [...destinations, ...morePages].find((row) => row.to === page)?.label ??
-    "Home"
+    [...destinations, ...morePages, profilePage].find((row) => row.to === page)
+      ?.label ?? "Home"
   );
 }
 
@@ -127,8 +138,8 @@ export function backTarget(pathname: string) {
 }
 
 /**
- * Whether a phone shows its Add button here: on every page but More, Settings and Import, where there is
+ * Whether a phone shows its Add button here: on every page but More, Profile, Settings and Import, where there is
  * nothing to add. It adds a transaction everywhere until a page registers its own add (see `page-add.tsx`; Clients is the first).
  */
 export const showsAdd = (pathname: string) =>
-  !["/more", "/settings", "/import"].includes(pathname);
+  !["/more", "/profile", "/settings", "/import"].includes(pathname);
