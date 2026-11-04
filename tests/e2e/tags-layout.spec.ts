@@ -216,7 +216,7 @@ test("the archived tags are one fold under the card, shut until opened", async (
   page,
 }) => {
   await open(page, 390);
-  const fold = page.locator(".tg-fold");
+  const fold = page.locator(".ui-fold");
   await expect(fold.locator("summary")).toHaveText("1 archived");
   await expect(row(page, "Old trip")).toBeHidden();
   await expectShutFoldIsItsRow(fold);
@@ -383,7 +383,7 @@ test("an archived tag's sheet says Unarchive, not Archive", async ({
   page,
 }) => {
   await open(page, 390);
-  await page.locator(".tg-fold summary").click();
+  await page.locator(".ui-fold summary").click();
   await row(page, "Old trip").click();
   const dialog = page.getByRole("dialog", { name: "Old trip" });
   await expect(

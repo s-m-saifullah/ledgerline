@@ -1,0 +1,12 @@
+/* The typed confirmation inside a question: the label above the box. */
+.ui-typed {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.ui-typed > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
