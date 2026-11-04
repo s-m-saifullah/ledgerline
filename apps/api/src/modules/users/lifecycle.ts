@@ -42,6 +42,7 @@ import {
 } from "../../db/schema";
 import type { JobLog } from "../../jobs/runner";
 import { ApiProblem } from "../../lib/problem";
+import { ledgerClearedAtFor } from "../ledgers/cleared-at";
 
 // ADR 0049: a deleted person waits 30 days in "Recently deleted", where the admin can restore them exactly as they
 // were or delete them at once; after that they and all their data are removed for good. Nothing here reads or
@@ -62,7 +63,7 @@ const cutoff = (now: Date) => new Date(now.getTime() - RETENTION_DAYS * DAY_MS);
  * ids removes everything (the deferred constraints settle the few circular links at commit). A test walks the
  * database's own table list and fails when a table that points at a ledger or a person is missing here.
  */
-const PURGE_ORDER = [
+export const PURGE_ORDER = [
   transactionTags,
   transactionSplits,
   receivableEvents,
@@ -93,7 +94,10 @@ const toDeleted = (row: typeof user.$inferSelect): DeletedUser => ({
   deletedAt: (row.deletedAt as Date).toISOString(),
   purgeAt: purgeAtOf(row.deletedAt as Date).toISOString(),
 });
-const toManaged = (row: typeof user.$inferSelect): ManagedUser => ({
+const toManaged = (
+  row: typeof user.$inferSelect,
+  ledgerClearedAt: string | null,
+): ManagedUser => ({
   id: row.id,
   name: row.name,
   email: row.email,
@@ -101,6 +105,7 @@ const toManaged = (row: typeof user.$inferSelect): ManagedUser => ({
   mustChangePassword: row.mustChangePassword,
   disabled: row.disabledAt !== null,
   twoFactorEnabled: row.twoFactorEnabled,
+  ledgerClearedAt,
   createdAt: row.createdAt.toISOString(),
 });
 
@@ -202,7 +207,8 @@ export async function restoreUser(
       .set(touched)
       .where(eq(user.id, id))
       .returning();
-    return toManaged(row as typeof user.$inferSelect);
+    const cleared = await ledgerClearedAtFor(tx, [id]);
+    return toManaged(row as typeof user.$inferSelect, cleared.get(id) ?? null);
   });
 }
 

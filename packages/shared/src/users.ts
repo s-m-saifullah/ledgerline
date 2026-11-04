@@ -14,6 +14,9 @@ export const managedUserSchema = z.object({
   // True while their sign-in is stopped (their ledger is untouched).
   disabled: z.boolean(),
   twoFactorEnabled: z.boolean(),
+  // When their ledger was cleared and can still be restored; null otherwise. A date only: never anything from the ledger.
+  // The server always sends it; optional so an older answer still parses.
+  ledgerClearedAt: z.iso.datetime().nullable().optional(),
   createdAt: z.iso.datetime(),
 });
 export const managedUserListSchema = z.object({

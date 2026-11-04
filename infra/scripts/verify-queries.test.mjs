@@ -66,3 +66,36 @@ test("the deleted-people invariant looks for a live sign-in, a live membership a
     /l\.deleted_at IS NULL AND NOT EXISTS .* o\.user_id<>u\.id AND o\.deleted_at IS NULL/,
   );
 });
+
+test("the cleared-ledger invariant is part of the drill and waits for the column of migration 0029", () => {
+  assert.ok(invariants().includes("cleared_ledgers"));
+  const requires = run("verify_requires cleared_ledgers");
+  assert.match(requires, /column_name='cleared_at'/);
+  assert.match(requires, /table_name='ledgers'/);
+});
+
+test("the cleared-ledger invariant looks for a live row older than the clear, in every kind of data", () => {
+  const query = run("verify_sql cleared_ledgers");
+  assert.match(query, /l\.cleared_at IS NOT NULL/);
+  for (const table of [
+    "transactions",
+    "accounts",
+    "categories",
+    "tags",
+    "contacts",
+    "receivables",
+    "receivable_payments",
+    "budgets",
+    "recurring_rules",
+    "currencies",
+    "exchange_rates",
+    "import_batches",
+  ])
+    assert.match(
+      query,
+      new RegExp(
+        `FROM ${table} x WHERE x\\.ledger_id=l\\.id AND x\\.deleted_at IS NULL AND x\\.created_at<l\\.cleared_at`,
+      ),
+      table,
+    );
+});

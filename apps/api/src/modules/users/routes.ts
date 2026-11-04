@@ -18,11 +18,13 @@ import { errors, requireAppOrigin } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { listDeletedUsers, purgeNow, restoreUser } from "./lifecycle";
 import {
+  clearPersonLedger,
   createUser,
   deleteUser,
   listUsers,
   requireAdmin,
   resetPassword,
+  restorePersonLedger,
   setDisabled,
   signOutEverywhere,
   turnOffTwoFactor,
@@ -218,6 +220,40 @@ export async function userRoutes(
     async (request) => {
       const adminId = await admin(request, true);
       return restoreUser(db, adminId, request.params.userId);
+    },
+  );
+  app.post(
+    "/api/v1/users/:userId/ledger/clear",
+    {
+      schema: {
+        summary: "Clear a person's ledger",
+        description: `Empties the person's ledger so they can start fresh: every entry, account, category and the rest is removed from sight, and can be restored for 30 days (one undo; clearing again removes the older one at once). The ledger, its name, its currency and the person's access stay. Does nothing, and keeps any undo, when the ledger is already empty. Answers with the person and the date of the clear, never anything from the ledger.${adminOnly}`,
+        tags: ["Users"],
+        security,
+        params: userParamsSchema,
+        response: { 200: managedUserSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const adminId = await admin(request, true);
+      return clearPersonLedger(db, adminId, request.params.userId);
+    },
+  );
+  app.post(
+    "/api/v1/users/:userId/ledger/restore",
+    {
+      schema: {
+        summary: "Restore a person's cleared ledger",
+        description: `Brings back what the last clear removed, for 30 days after it and only while the ledger has nothing live in it (\`409\`, "Clear what is there now first."). Nothing to restore, or the 30 days over, is \`409\`. Answers with the person, never anything from the ledger.${adminOnly}`,
+        tags: ["Users"],
+        security,
+        params: userParamsSchema,
+        response: { 200: managedUserSchema, ...errors },
+      },
+    },
+    async (request) => {
+      const adminId = await admin(request, true);
+      return restorePersonLedger(db, adminId, request.params.userId);
     },
   );
   app.delete(

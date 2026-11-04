@@ -94,6 +94,10 @@ psqlx "UPDATE auth_accounts SET deleted_at='2026-10-09 00:00:00+00' WHERE id='00
 psqlx "UPDATE ledgers SET deleted_at=NULL WHERE id='00000000-0000-7000-8000-0000000000a4'" >/dev/null
 bash backup.sh >/dev/null; expect_fail "deleted person whose ledger stayed live" "Restored deleted people failed validation" bash restore-drill.sh "$(latest)"
 psqlx "UPDATE ledgers SET deleted_at='2026-10-09 00:00:00+00' WHERE id='00000000-0000-7000-8000-0000000000a4'" >/dev/null
+# 9l. a ledger that records a clear but still holds a live row older than it (ADR 0049)
+psqlx "UPDATE ledgers SET cleared_at=now() WHERE id='00000000-0000-7000-8000-0000000000a1'" >/dev/null
+bash backup.sh >/dev/null; expect_fail "cleared ledger with live older rows" "Restored cleared ledgers failed validation" bash restore-drill.sh "$(latest)"
+psqlx "UPDATE ledgers SET cleared_at=NULL WHERE id='00000000-0000-7000-8000-0000000000a1'" >/dev/null
 # 10. clean again, then concurrent writes during the backup must not break the drill
 bash backup.sh >/dev/null; bash restore-drill.sh "$(latest)" >/dev/null 2>&1 && echo "PASS  clean data restores after repairs" || echo "FAIL  clean data did not restore"
 ( for i in $(seq 1 150); do psqlx "INSERT INTO transactions (id,ledger_id,account_id,category_id,kind,date,amount,base_amount) VALUES (gen_random_uuid(),'00000000-0000-7000-8000-0000000000a1','00000000-0000-7000-8000-0000000000b1','00000000-0000-7000-8000-0000000000c1','expense','2026-10-09',-$i,-$i)" >/dev/null; done ) &

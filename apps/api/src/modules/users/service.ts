@@ -12,12 +12,17 @@ import { ApiProblem } from "../../lib/problem";
 import { createAccount } from "../auth/accounts";
 import { hashPassword } from "../auth/password";
 import { removeTwoFactor } from "../auth/reset-two-factor";
+import { clearLedgerRows, restoreClearedRows } from "../ledgers/clear";
+import { ledgerClearedAtFor } from "../ledgers/cleared-at";
 import { deletedEmailMessage } from "./lifecycle";
 
 // The admin's routes for the people on this server (ADR 0048). They read and change account facts only: nothing
 // here reads, joins or returns a ledger's data, and a password is hashed on arrival and never returned or logged.
 
-const toItem = (row: typeof user.$inferSelect): ManagedUser => ({
+const toItem = (
+  row: typeof user.$inferSelect,
+  ledgerClearedAt: string | null,
+): ManagedUser => ({
   id: row.id,
   name: row.name,
   email: row.email,
@@ -25,8 +30,12 @@ const toItem = (row: typeof user.$inferSelect): ManagedUser => ({
   mustChangePassword: row.mustChangePassword,
   disabled: row.disabledAt !== null,
   twoFactorEnabled: row.twoFactorEnabled,
+  ledgerClearedAt,
   createdAt: row.createdAt.toISOString(),
 });
+/** A person as the admin sees them: account facts and, as a date only, when their ledger was cleared. */
+const managed = async (db: DatabaseConnection, row: typeof user.$inferSelect) =>
+  toItem(row, (await ledgerClearedAtFor(db, [row.id])).get(row.id) ?? null);
 
 /** Only the admin may use these routes. Anyone else is 403, whether or not the person they name exists. */
 export async function requireAdmin(db: Database, userId: string) {
@@ -67,7 +76,11 @@ export async function listUsers(db: Database) {
     .from(user)
     .where(isNull(user.deletedAt))
     .orderBy(asc(user.createdAt), asc(user.id));
-  return rows.map(toItem);
+  const cleared = await ledgerClearedAtFor(
+    db,
+    rows.map((row) => row.id),
+  );
+  return rows.map((row) => toItem(row, cleared.get(row.id) ?? null));
 }
 
 const emailTaken = () =>
@@ -106,7 +119,7 @@ export async function createUser(
         mustChangePassword: true,
       });
       const [row] = await tx.select().from(user).where(eq(user.id, userId));
-      return toItem(row as typeof user.$inferSelect);
+      return await managed(tx, row as typeof user.$inferSelect);
     });
   } catch (error) {
     // Two requests with the same email at once: the second one meets the unique index.
@@ -134,7 +147,7 @@ export async function setDisabled(
       .where(eq(user.id, id))
       .returning();
     if (disabled) await endSessions(tx, id, now);
-    return toItem(row as typeof user.$inferSelect);
+    return managed(tx, row as typeof user.$inferSelect);
   });
 }
 
@@ -246,5 +259,51 @@ export async function deleteUser(db: Database, adminId: string, id: string) {
       .update(user)
       .set({ deletedAt: now, updatedAt: now })
       .where(eq(user.id, id));
+  });
+}
+
+/** The live ledger a person owns, the earliest first: the one the admin may clear or restore and never read. */
+async function ownedLedgerId(tx: DatabaseConnection, id: string) {
+  const [row] = await tx
+    .select({ id: ledgers.id })
+    .from(ledgerMembers)
+    .innerJoin(ledgers, eq(ledgers.id, ledgerMembers.ledgerId))
+    .where(
+      and(
+        eq(ledgerMembers.userId, id),
+        eq(ledgerMembers.role, "owner"),
+        isNull(ledgerMembers.deletedAt),
+        isNull(ledgers.deletedAt),
+      ),
+    )
+    .orderBy(asc(ledgerMembers.createdAt), asc(ledgerMembers.id))
+    .limit(1);
+  if (!row) throw new ApiProblem(409, "Conflict", "This person has no ledger.");
+  return row.id;
+}
+
+/** Clears a person's ledger (ADR 0049). Answers with account facts and a date, never anything from the ledger. */
+export async function clearPersonLedger(
+  db: Database,
+  adminId: string,
+  id: string,
+) {
+  return db.transaction(async (tx) => {
+    const person = await target(tx, adminId, id);
+    await clearLedgerRows(tx, await ownedLedgerId(tx, id));
+    return managed(tx, person);
+  });
+}
+
+/** Brings a person's cleared ledger back, for 30 days after the clear and only while it is empty. */
+export async function restorePersonLedger(
+  db: Database,
+  adminId: string,
+  id: string,
+) {
+  return db.transaction(async (tx) => {
+    const person = await target(tx, adminId, id);
+    await restoreClearedRows(tx, await ownedLedgerId(tx, id));
+    return managed(tx, person);
   });
 }

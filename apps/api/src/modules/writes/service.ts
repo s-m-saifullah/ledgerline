@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { idempotencyKeySchema, type JsonValue } from "@ledgerline/shared";
+import { sql } from "drizzle-orm";
 import type { Database, DatabaseTransaction } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { requireLedgerWrite } from "../ledgers/service";
@@ -37,7 +38,16 @@ function canonicalJson(value: unknown): string {
 
 export async function runFinancialWrite(
   db: Database,
-  input: WriteIdentity & { operation: string; request: JsonValue },
+  input: WriteIdentity & {
+    operation: string;
+    request: JsonValue;
+    /**
+     * Takes the ledger row for the whole write, for the few actions that must not run beside another one (clearing
+     * and restoring a ledger). Without it two such writes would both hold the shared lock and then deadlock waiting
+     * to change the row.
+     */
+    exclusive?: boolean;
+  },
   mutate: (context: WriteContext) => Promise<WriteResponse>,
 ): Promise<WriteResult> {
   if (!idempotencyKeySchema.safeParse(input.key).success)
@@ -60,6 +70,10 @@ export async function runFinancialWrite(
   return db.transaction(async (tx) => {
     const repo = writeRepository(tx, input.actorId, input.ledgerId);
     await repo.lock(input.key);
+    if (input.exclusive)
+      await tx.execute(
+        sql`SELECT ledgers.id FROM ledgers INNER JOIN ledger_members ON ledger_members.ledger_id = ledgers.id WHERE ledgers.id = ${input.ledgerId} AND ledgers.deleted_at IS NULL AND ledger_members.user_id = ${input.actorId} AND ledger_members.role = 'owner' AND ledger_members.deleted_at IS NULL FOR UPDATE OF ledgers`,
+      );
     // Recheck access inside the transaction, including before cached-response replay.
     await requireLedgerWrite(tx, input.actorId, input.ledgerId);
     const previous = await repo.find(input.key);
