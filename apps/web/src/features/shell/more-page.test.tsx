@@ -342,3 +342,31 @@ describe("the Profile card", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("the Users row (ADR 0048)", () => {
+  it("is the last row of the last group for the admin, a link to Users", async () => {
+    mount({ person: { name: "Sam Lee", isAdmin: true } });
+    const users = await screen.findByRole("link", { name: /^Users/ });
+    expect(users).toHaveAttribute("href", "/users");
+    const last = within(
+      screen.getByRole("region", { name: "Data and preferences" }),
+    ).getAllByRole("link");
+    expect(last.map((link) => link.getAttribute("href"))).toEqual([
+      "/import",
+      "/settings",
+      "/users",
+    ]);
+  });
+
+  it("is not there for anyone else", async () => {
+    mount({ person: { name: "Sam Lee", isAdmin: false } });
+    await screen.findByRole("link", { name: /Sam Lee/ });
+    expect(screen.queryByRole("link", { name: /^Users/ })).toBeNull();
+  });
+
+  it("is not there while nothing is known about who is signed in", async () => {
+    mount({ person: null });
+    await vi.waitFor(() => expect(client.isFetching()).toBe(0));
+    expect(screen.queryByRole("link", { name: /^Users/ })).toBeNull();
+  });
+});

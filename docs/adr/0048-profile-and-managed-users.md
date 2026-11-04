@@ -44,6 +44,8 @@ Reset password, Turn off two-factor and Delete do not ask for the admin's own pa
 
 - **2026-11-03, slice 3: the admin's own account is refused for every action on a person.** Stop, delete, reset password, sign out and turn off two-factor all answer `409` for the admin's id: a reset would put the admin on a temporary password and lock them out. The admin's own password, devices and two-factor stay in Profile and Settings. An unknown or deleted id is `404`. A ledger is soft-deleted with its owner only when no other live person is a member of it (sharing is not built, so today it always is). The restore drill gets two invariants, "a person on a temporary password has a live sign-in" and "every live person owns a live ledger", both skipped for dumps that predate migration 0028.
 
+- **2026-11-03, slice 5: the first-sign-in card has a first row, "Temporary password".** The server needs the current password to change a password (`POST /me/password`), and the browser cannot keep what the sign-in form held: a reload or the two-factor step forgets it. So the card asks for it, as the owner chose. Its rows are Temporary password, New password and Confirm New (the prototype's two rows, and "Repeat it" renamed). The app waits for `GET /me` before it shows anything; if `/me` cannot be read it opens as it always did, and the server refuses what it must. The app also forgets who I am (`/me` and the people list) on sign-out and at sign-in, because more than one person can now use one browser.
+
 ## Not in this change
 
 Sharing a ledger between users, email change, photo, languages, deleting your own account, passkeys, invitation or reset emails (the server sends no mail), a second admin, an audit log, reusing a deleted person's email, Android screens.

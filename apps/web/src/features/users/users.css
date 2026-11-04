@@ -1,0 +1,160 @@
+/*
+ * Users (ADR 0048, the prototype's `R.users` and its sheets): one card of people, capped near 760 px like the other
+ * simple list pages. Every class here starts with `us-` so no other feature's rule reaches the page or its sheets.
+ * Widths are the layout system's two.
+ */
+.us-page {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  min-width: 0;
+  max-width: 760px;
+}
+@container app (min-width: 700px) {
+  .us-page {
+    gap: 16px;
+  }
+}
+.us-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.us-head h1 {
+  margin-bottom: 0;
+  font-size: 27px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+/* Under 700 px the top bar and the one Add button do this. */
+.us-add {
+  display: none;
+}
+@container app (min-width: 700px) {
+  .us-add {
+    display: inline-flex;
+  }
+}
+/* Names, emails and the pill's row wrap instead of being cut: an email is long and a name may be too. */
+.us-page .ui-row-title,
+.us-page .ui-row-hint,
+.us-form .ui-row-title,
+.us-form .ui-row-hint {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+/*
+ * On a phone a row is a small grid: the avatar, then the name and email, with the pill under them and the chevron on
+ * the right, so an email is never squeezed into pieces beside a long pill. From 700 px there is room for one line.
+ */
+.us-page .ui-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "lead main chev"
+    "lead end chev";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 0;
+}
+.us-page .ui-row > .ui-avatar {
+  grid-area: lead;
+}
+.us-page .ui-row-main {
+  grid-area: main;
+}
+.us-page .ui-row-end {
+  grid-area: end;
+  justify-items: start;
+  min-width: 0;
+  margin-top: 4px;
+}
+.us-page .ui-row-chevron {
+  grid-area: chev;
+}
+@container app (min-width: 700px) {
+  .us-page .ui-row {
+    display: flex;
+  }
+  .us-page .ui-row-end {
+    justify-items: end;
+    min-width: 72px;
+    margin-top: 0;
+  }
+}
+.us-danger {
+  color: var(--danger);
+}
+
+/* What goes inside the shared sheets. */
+.us-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+.us-sect {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.us-group {
+  display: grid;
+  min-width: 0;
+}
+.us-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 4px 16px;
+  min-width: 0;
+}
+.us-input-row + .us-input-row {
+  border-top: 1px solid var(--border);
+}
+.us-input-row > label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.us-input-row > input {
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline-start: 0;
+  border: 0;
+  background: transparent;
+  font-weight: 500;
+  text-align: end;
+}
+.us-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+/* The password: monospace, one piece, selectable in one click, wrapping only if it must. */
+.us-password {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-weight: 500;
+  user-select: all;
+}
+.us-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+.us-field > label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}

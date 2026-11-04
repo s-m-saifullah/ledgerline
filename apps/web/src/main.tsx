@@ -18,6 +18,8 @@ import { Layers } from "lucide-react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AccountsPage } from "./features/accounts/accounts-page";
+import { PasswordGate } from "./features/auth/password-gate";
+import { forgetPerson, forgetSession } from "./features/auth/session-cache";
 import { SignIn } from "./features/auth/sign-in";
 import { BudgetsPage } from "./features/budgets/budgets-page";
 import { CategoriesPage } from "./features/categories/categories-page";
@@ -35,6 +37,7 @@ import { EmptyPage, Shell } from "./features/shell/shell";
 import { TagsPage } from "./features/tags/tags-page";
 import { transactionSearchSchema } from "./features/transactions/filters";
 import { TransactionsPage } from "./features/transactions/transactions-page";
+import { UsersPage } from "./features/users/users-page";
 import { getSession } from "./lib/api";
 import {
   AmountEntryContext,
@@ -47,6 +50,11 @@ import {
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
 });
+/** Forgets the signed-in person, then goes to the sign-in page. */
+async function signedOut() {
+  await forgetSession(client);
+  await router.navigate({ to: "/" });
+}
 function Root() {
   const preferences = usePreferences();
   const session = useQuery({ queryKey: ["session"], queryFn: getSession });
@@ -74,53 +82,44 @@ function Root() {
     return (
       <SignIn
         onSuccess={async () => {
+          // Whoever signs in now is not necessarily who was here before.
+          forgetPerson(client);
           await client.invalidateQueries({ queryKey: ["session"] });
         }}
       />
     );
   return (
-    <PrivacyContext value={preferences.privateMode}>
-      <PrivacyControlContext
-        value={{
-          privateMode: preferences.privateMode,
-          setPrivateMode: preferences.setPrivateMode,
-        }}
-      >
-        <AmountEntryContext
+    <PasswordGate key={session.data.user.id} onSignOut={signedOut}>
+      <PrivacyContext value={preferences.privateMode}>
+        <PrivacyControlContext
           value={{
-            centsFirst: preferences.centsFirst,
-            setCentsFirst: preferences.setCentsFirst,
+            privateMode: preferences.privateMode,
+            setPrivateMode: preferences.setPrivateMode,
           }}
         >
-          <ThemeContext
-            value={{ theme: preferences.theme, setTheme: preferences.setTheme }}
+          <AmountEntryContext
+            value={{
+              centsFirst: preferences.centsFirst,
+              setCentsFirst: preferences.setCentsFirst,
+            }}
           >
-            <Shell
-              key={session.data.user.id}
-              preferences={preferences}
-              session={session.data}
-              onSignOut={async () => {
-                await client.cancelQueries();
-                client.setQueryData(["session"], null);
-                client.removeQueries({ queryKey: ["ledgers"] });
-                client.removeQueries({ queryKey: ["accounts"] });
-                client.removeQueries({ queryKey: ["categories"] });
-                client.removeQueries({ queryKey: ["transactions"] });
-                client.removeQueries({ queryKey: ["home"] });
-                for (const key of [
-                  "contacts",
-                  "receivables",
-                  "clientHistory",
-                  "tags",
-                ])
-                  client.removeQueries({ queryKey: [key] });
-                await router.navigate({ to: "/" });
+            <ThemeContext
+              value={{
+                theme: preferences.theme,
+                setTheme: preferences.setTheme,
               }}
-            />
-          </ThemeContext>
-        </AmountEntryContext>
-      </PrivacyControlContext>
-    </PrivacyContext>
+            >
+              <Shell
+                key={session.data.user.id}
+                preferences={preferences}
+                session={session.data}
+                onSignOut={signedOut}
+              />
+            </ThemeContext>
+          </AmountEntryContext>
+        </PrivacyControlContext>
+      </PrivacyContext>
+    </PasswordGate>
   );
 }
 const rootRoute = createRootRoute({
@@ -199,6 +198,11 @@ const profile = createRoute({
   path: "/profile",
   component: ProfilePage,
 });
+const usersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/users",
+  component: UsersPage,
+});
 const importRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/import",
@@ -236,6 +240,7 @@ const router = createRouter({
     importRoute,
     settings,
     profile,
+    usersRoute,
   ]),
 });
 declare module "@tanstack/react-router" {

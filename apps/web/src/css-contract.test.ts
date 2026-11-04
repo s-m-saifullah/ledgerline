@@ -34,6 +34,7 @@ const files = [
   "features/auth/auth.css",
   "features/currencies/currencies.css",
   "features/profile/profile.css",
+  "features/users/users.css",
 ];
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(

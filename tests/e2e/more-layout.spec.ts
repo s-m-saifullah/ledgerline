@@ -115,7 +115,7 @@ async function is44(page: Page, locator: Locator) {
 
 for (const theme of ["light", "dark"] as const)
   for (const width of [320, 390, 1280])
-    test(`fits ${width} px in ${theme}: nine rows, none wrapped, each a real target, with both figures`, async ({
+    test(`fits ${width} px in ${theme}: ten rows, none wrapped, each a real target, with both figures`, async ({
       page,
     }) => {
       await withFigures(page);
@@ -129,7 +129,9 @@ for (const theme of ["light", "dark"] as const)
       ).toContainText("1,234,567.89");
       expect(await noSideways(page)).toBe(true);
       const rows = page.locator(".more-grid a.ui-row");
-      await expect(rows).toHaveCount(9);
+      // The dev owner is the admin, so Users (ADR 0048) is the tenth row, last in the last group.
+      await expect(rows).toHaveCount(10);
+      await expect(rows.last()).toContainText("Users");
       for (const row of await rows.all()) {
         const found = await box(row);
         expect(found.height).toBeGreaterThanOrEqual(56);

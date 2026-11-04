@@ -6,10 +6,13 @@ import {
   destinations,
   isActiveDestination,
   moreGroups,
+  moreGroupsFor,
   morePages,
+  navPagesFor,
   pageTitle,
   profilePage,
   showsAdd,
+  usersPage,
 } from "./nav";
 
 describe("the navigation model", () => {
@@ -142,5 +145,48 @@ describe("Profile (ADR 0048)", () => {
   it("has no phone Add button: there is nothing to add", () => {
     expect(showsAdd("/profile")).toBe(false);
     expect(showsAdd("/transactions")).toBe(true);
+  });
+});
+
+describe("Users (ADR 0048)", () => {
+  it("is a page of More's area, listed only for the admin", () => {
+    expect(usersPage.to).toBe("/users");
+    expect(morePages.map((page) => page.to)).not.toContain("/users");
+    expect(backsToMore("/users")).toBe(true);
+    expect(isActiveDestination("/more", "/users")).toBe(true);
+    expect(isActiveDestination("/", "/users")).toBe(false);
+  });
+
+  it("is the last row of the last group for the admin, and nowhere for anyone else", () => {
+    expect(moreGroupsFor(false)).toBe(moreGroups);
+    const groups = moreGroupsFor(true);
+    expect(groups.map(({ pages }) => pages.map((page) => page.to))).toEqual([
+      ["/clients", "/loans"],
+      ["/accounts", "/categories", "/tags", "/currencies", "/recurring"],
+      ["/import", "/settings", "/users"],
+    ]);
+    expect(groups.map(({ label }) => label)).toEqual(
+      moreGroups.map(({ label }) => label),
+    );
+  });
+
+  it("is in the command palette's pages only for the admin", () => {
+    const base = [...destinations, ...morePages, profilePage].map(
+      (page) => page.to,
+    );
+    expect(navPagesFor(false).map((page) => page.to)).toEqual(base);
+    expect(navPagesFor(true).map((page) => page.to)).toEqual([
+      ...base,
+      "/users",
+    ]);
+  });
+
+  it("has its own title and a back arrow to More, and a phone Add for adding a user", () => {
+    expect(pageTitle("/users")).toBe("Users");
+    expect(backTarget("/users")).toEqual({
+      to: "/more",
+      label: "Back to More",
+    });
+    expect(showsAdd("/users")).toBe(true);
   });
 });

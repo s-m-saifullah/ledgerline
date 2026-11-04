@@ -1,5 +1,11 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { ApiError, api, prepareFinancialWrite } from "./api";
+import {
+  ApiError,
+  api,
+  isPasswordChangeRequired,
+  onPasswordChangeRequired,
+  prepareFinancialWrite,
+} from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -74,4 +80,85 @@ it("handles no-content responses and non-JSON server failures", async () => {
     api<void>("/test", { method: "DELETE" }),
   ).resolves.toBeUndefined();
   await expect(api("/test")).rejects.toBeInstanceOf(ApiError);
+});
+
+it("keeps the problem type on the error so a page can tell a required password change from any other 403", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({
+            type: "urn:ledgerline:problem:password-change-required",
+            title: "Forbidden",
+            status: 403,
+            detail: "Choose a new password first.",
+          }),
+          { status: 403 },
+        ),
+    ),
+  );
+  const error = (await api("/accounts").catch((caught) => caught)) as ApiError;
+  expect(error).toBeInstanceOf(ApiError);
+  expect(error.status).toBe(403);
+  expect(error.type).toBe("urn:ledgerline:problem:password-change-required");
+});
+
+it("has no problem type when the answer was not a problem", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(async () => new Response("nope", { status: 502 })),
+  );
+  const error = (await api("/accounts").catch((caught) => caught)) as ApiError;
+  expect(error.type).toBeUndefined();
+});
+
+const required = "urn:ledgerline:problem:password-change-required";
+it("isPasswordChangeRequired is true only for a 403 of the password-change-required type", () => {
+  expect(isPasswordChangeRequired(new ApiError(403, "x", [], required))).toBe(
+    true,
+  );
+  expect(
+    isPasswordChangeRequired(new ApiError(403, "x", [], "about:blank")),
+  ).toBe(false);
+  expect(isPasswordChangeRequired(new ApiError(403, "x"))).toBe(false);
+  expect(isPasswordChangeRequired(new ApiError(401, "x", [], required))).toBe(
+    false,
+  );
+  expect(isPasswordChangeRequired(new Error("x"))).toBe(false);
+  expect(isPasswordChangeRequired(null)).toBe(false);
+});
+
+const refuse = (type: string, status = 403) =>
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({ type, title: "Forbidden", status, detail: "No." }),
+          { status },
+        ),
+    ),
+  );
+
+it("tells the listener, once per refused request, when a request is refused for a required password change", async () => {
+  const heard = vi.fn();
+  const stop = onPasswordChangeRequired(heard);
+  refuse(required);
+  await api("/accounts").catch(() => undefined);
+  expect(heard).toHaveBeenCalledTimes(1);
+  stop();
+  await api("/accounts").catch(() => undefined);
+  expect(heard).toHaveBeenCalledTimes(1);
+});
+
+it("does not tell the listener about any other refusal", async () => {
+  const heard = vi.fn();
+  const stop = onPasswordChangeRequired(heard);
+  refuse("about:blank");
+  await api("/users").catch(() => undefined);
+  refuse(required, 401);
+  await api("/users").catch(() => undefined);
+  stop();
+  expect(heard).not.toHaveBeenCalled();
 });
