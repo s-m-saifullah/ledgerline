@@ -70,7 +70,7 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 
 | Entity | Key fields |
 | --- | --- |
-| users, ledgers, ledger_members | owner/editor/viewer roles (sharing is not built); every user, including the first, has their own ledger; the admin adds users (ADR 0048) |
+| users, ledgers, ledger_members | owner/editor/viewer roles (sharing is not built); every user, including the first, has their own ledger; the admin adds users (ADR 0048), deleted people and cleared ledgers can be restored for 30 days (ADR 0049) |
 | accounts | ledger_id, name, type, currency, opening_balance, archived_at |
 | categories | ledger_id, parent_id, name, kind (income/expense), icon, color; two levels deep |
 | transactions | account_id, date, optional local time, signed amount, currency, payee, category_id, note, transfer_id, status (cleared/pending), fx_rate, base_amount |
@@ -87,7 +87,7 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 
 - **Money** is an integer in minor units plus an ISO 4217 currency code. Never floating point. Format only in the UI.
 - **IDs** are UUIDv7.
-- **Every row** has `created_at`, `updated_at` and `deleted_at`. Deletes are soft.
+- **Every row** has `created_at`, `updated_at` and `deleted_at`. Deletes are soft; the one exception is the purge, which removes a deleted person or a cleared ledger for good after 30 days ([ADR 0049](adr/0049-deleted-people-and-cleared-ledgers.md)).
 - **A transfer is two transactions** sharing one `transfer_id`, so every balance is a sum. Both legs change together.
 - **Balances are computed**: opening balance plus the sum of cleared transactions.
 - **Ledger scoping:** every query goes through a ledger-scoped repository, and each endpoint has a test proving another ledger's rows cannot be read or written.

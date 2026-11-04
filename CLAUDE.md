@@ -53,12 +53,12 @@ Code is grouped by feature:
 
 - **Money** is an integer in minor units (`bigint` or `number` cents) plus an ISO 4217 currency code. Never floats. Format only in the UI.
 - **IDs** are UUIDv7.
-- **Every table** has `created_at`, `updated_at` and `deleted_at`. Deletes are soft.
+- **Every table** has `created_at`, `updated_at` and `deleted_at`. Deletes are soft; the one exception is the purge: a deleted person, or a cleared ledger, is removed for good after 30 days (ADR 0049).
 - **Ledger scoping:** every financial row has `ledger_id`; every query goes through a ledger-scoped repository. Add an integration test per endpoint proving another ledger's rows cannot be read or written.
 - **Transfers** are two transactions sharing `transfer_id`. **Balances** are computed (opening balance plus sum), not stored.
 - **Multi-currency:** base currency USD; each transaction stores `fx_rate` and `base_amount` at save time; manual rates (`source = manual`) are never overwritten.
 - **API:** REST under `/api/v1`, camelCase JSON, money as `{ amount, currency }`, ISO dates, UTC timestamps, cursor pagination, `Idempotency-Key` on writes, RFC 9457 problem+json errors. Web and Android use the same endpoints; no private shortcuts.
-- **Auth:** public sign-up is off; the first account (the admin) is created on first run and adds other users, each with their own ledger and a temporary password they must change at first sign-in (ADR 0048). The admin never sees another user's money. Roles (owner, editor, viewer) exist through `ledger_members`; sharing a ledger is not built.
+- **Auth:** public sign-up is off; the first account (the admin) is created on first run and adds other users, each with their own ledger and a temporary password they must change at first sign-in (ADR 0048). The admin never sees another user's money (the admin may clear or restore a ledger, never see it; a deleted person can be restored for 30 days, ADR 0049). Roles (owner, editor, viewer) exist through `ledger_members`; sharing a ledger is not built.
 - **Privacy:** no analytics or trackers; logs never contain amounts, payees or notes. The one outside call is the Android app's update check against the repository's public releases on GitHub, on its Settings button and when the app opens, sending nothing about the owner (ADR 0043). Secrets only in `.env` (never committed); keep `.env.example` current.
 
 ## Design rules (UI)
