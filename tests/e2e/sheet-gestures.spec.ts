@@ -99,6 +99,11 @@ const scrolled = (page: Page) => page.evaluate(() => scrollY);
 /** A finger, sent as real touch events so the browser decides what is a scroll and what is a drag. */
 async function finger(page: Page) {
   const cdp = await page.context().newCDPSession(page);
+  // Without this a headless browser on a CI runner may take a synthesized touch scroll for nothing at all.
+  await cdp.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
   const send = (
     type: "touchStart" | "touchMove" | "touchEnd" | "touchCancel",
     x?: number,
@@ -153,11 +158,14 @@ test("the page behind a sheet does not scroll, by wheel or by finger, over the d
   page,
 }) => {
   await open(page, 390);
+  const touch = await finger(page);
+  // Control: with no sheet open a finger does scroll this page, so "it did not move" below means something.
+  await touch.scroll(200, 400, 250);
+  await expect.poll(() => scrolled(page)).toBeGreaterThan(100);
   await page.evaluate(() => scrollTo(0, 300));
   const before = await scrolled(page);
   expect(before).toBeGreaterThan(100);
   const at = await openSheet(page);
-  const touch = await finger(page);
   const x = at.x + at.width / 2;
   const places: [string, number, number][] = [
     ["the dimmed page", 200, 40],
@@ -208,8 +216,9 @@ test("a sheet with more in it than fits scrolls inside itself, and the page behi
     grown.y + grown.height / 2,
     400,
   );
-  await page.waitForTimeout(250);
-  expect(await body.evaluate((node) => node.scrollTop)).toBeGreaterThan(50);
+  await expect
+    .poll(() => body.evaluate((node) => node.scrollTop))
+    .toBeGreaterThan(50);
   // Pushed past its end, it does not hand the rest of the movement to the page.
   await touch.scroll(
     grown.x + grown.width / 2,
