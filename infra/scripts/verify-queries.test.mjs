@@ -20,6 +20,7 @@ test("the account invariants are part of the drill", () => {
   const names = invariants();
   assert.ok(names.includes("account_flags"));
   assert.ok(names.includes("user_ledgers"));
+  assert.ok(names.includes("deleted_people"));
 });
 
 test("every invariant is one single-line statement that counts offenders", () => {
@@ -34,7 +35,7 @@ test("every invariant is one single-line statement that counts offenders", () =>
 });
 
 test("the account invariants wait for the columns of migration 0028, so an older dump skips them", () => {
-  for (const name of ["account_flags", "user_ledgers"]) {
+  for (const name of ["account_flags", "user_ledgers", "deleted_people"]) {
     const requires = run(`verify_requires ${name}`);
     assert.match(requires, /column_name='must_change_password'/, name);
     assert.match(requires, /to_regclass\('public\.auth_accounts'\)/, name);
@@ -52,5 +53,16 @@ test("the account invariants look at live people only and at live sign-ins and l
   assert.match(
     ledgers,
     /m\.role='owner' AND m\.deleted_at IS NULL AND l\.deleted_at IS NULL/,
+  );
+});
+
+test("the deleted-people invariant looks for a live sign-in, a live membership and a live ledger only they were in", () => {
+  const query = run("verify_sql deleted_people");
+  assert.match(query, /u\.deleted_at IS NOT NULL/);
+  assert.match(query, /a\.user_id=u\.id AND a\.deleted_at IS NULL/);
+  assert.match(query, /m\.user_id=u\.id AND m\.deleted_at IS NULL/);
+  assert.match(
+    query,
+    /l\.deleted_at IS NULL AND NOT EXISTS .* o\.user_id<>u\.id AND o\.deleted_at IS NULL/,
   );
 });

@@ -2,6 +2,17 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.54 — Deleted people: list, restore, delete now and the 30-day purge
+
+No migration (ADR 0049, slice B). New routes only, in the `Users` group; no existing response changes. All of them are **admin only** (no session `401`, anyone else `403`) and the writes need the app's `Origin` and take no `Idempotency-Key`, like the routes above.
+
+- `GET /api/v1/users/deleted`: `{ items }`, newest deleted first, each `{ id, name, email, deletedAt, purgeAt }` where `purgeAt` is 30 days after `deletedAt`. Only people deleted less than 30 days ago are listed. Account facts only.
+- `POST /api/v1/users/{userId}/restore`: brings back a person deleted less than 30 days ago exactly as they were (account, sign-in, ledger and memberships that the delete removed, never something deleted earlier or separately), with the same password, two-factor and stopped or allowed sign-in. Their sessions stay ended. Answers `200` with the person. A person who is not in Recently deleted, or whose 30 days are over, is `404`.
+- `DELETE /api/v1/users/{userId}/purge`: removes a person in the deleted stage, their ledger and everything in it, for good and at once. `204`. A person who is not deleted is `404`. Their email can be used again.
+- **The admin's own account** is `409` for both. Restore and delete now lock the person first, so one at the same moment as the other leaves one winner.
+- **The hourly job** removes everyone whose 30 days are over, one transaction each (a person it cannot remove is left whole and the others still go), and never the admin. It logs counts only.
+- **`POST /api/v1/users` and a deleted person's email:** the answer is still `409`; its `detail` now says the person was deleted and how many days are left to restore them (or that they are being removed). It was "Someone already has that email" for every taken email.
+
 ## 0.1.53 — The admin's routes for the people on this server
 
 No migration (ADR 0048, slice 3). New routes only, in a `Users` group; no existing response changes. All of them are **admin only**: no session is `401`, a person who is not the admin is `403` (whether or not the id they name exists), and every write needs `Origin` like the other writes. They take no `Idempotency-Key`. No response carries a password, a hash, a token or anything from a ledger, and the admin is not a member of anyone else's ledger, so the admin never sees anyone's money.

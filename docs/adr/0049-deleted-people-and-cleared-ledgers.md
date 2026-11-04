@@ -36,9 +36,13 @@ Users gets a shut fold, "N recently deleted" (like the Tags archived fold, shown
 - Nothing existing changes: no existing route or response, an additive column, and the existing API and browser suites pass unchanged.
 - **Isolation is re-proved.** A purge of one person leaves another's ledger byte for byte the same (a fingerprint of every table that holds a ledger id); the cross-user walk of ADR 0048 still passes and covers the new ledger routes; the admin routes return no ledger data.
 - **Boundary and race tests:** a person deleted 29 days ago is untouched and one deleted 30 days ago is purged (an injectable clock), a restore and a purge at once leave one winner, and a restore revives only what that delete removed.
-- The restore drill gets invariants (no live row under a deleted ledger) and a purge of an aged person on the scratch copy.
+- The restore drill gets an invariant (a deleted person has nothing live left: no sign-in, no membership, no ledger only they were in) and a purge of an aged person on the scratch copy.
 - The purge is irreversible, so it is tried on the drill dump first and never by hand on production.
 - Rollback to the release before this one is safe for data: old code ignores `cleared_at`, shows a cleared ledger as empty, and never purges.
+
+## Amendments
+
+- **2026-11-04, slice B (deleted people).** A person is in Recently deleted, and can be restored, while fewer than 30 days have passed since the delete (to the millisecond); the hourly job removes them in the first run after that, so "Delete now" also works on someone whose 30 days are over and whom the job has not reached yet. The days left count a part of a day as a whole one ("1 day left" on the last day, never "0"). Restore revives only the rows the delete stamped with the person's own moment (the person, their sign-in, their ledger and memberships); sessions are not revived, so the person signs in again. The drill invariant is "a deleted person has nothing live left", because the first draft ("no live row under a deleted ledger") is false after a delete: deleting a person soft-deletes the ledger but leaves its money rows as they are. A ledger another live person is a member of stays; if something in it still points at the person, the database refuses: "Delete now" answers `409` and the hourly job counts a failure (counts only in its log) and tries again next hour, and nothing is removed either way. The `409` text for a new person's email changes only when the email belongs to a deleted person; the web app shows its own text for a taken email until slice D.
 
 ## Not in this change
 
