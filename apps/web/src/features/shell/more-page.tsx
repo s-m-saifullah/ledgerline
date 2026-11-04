@@ -15,7 +15,7 @@ import { useCurrentMonth } from "../../lib/month";
 import { getHome } from "../home/api";
 import { getMe, meKey } from "../profile/api";
 import "./more.css";
-import { moreGroups } from "./nav";
+import { moreGroupsFor } from "./nav";
 
 /** As the prototype draws it, a row has a hint only where there is something to say: Settings carries the version, which used to be a line at the foot. Clients and Loans say who owes when someone does. */
 const hints: Record<string, string> = {
@@ -79,7 +79,7 @@ export function MorePage() {
         </section>
       )}
       <div className="more-grid">
-        {moreGroups.map((group, index) => (
+        {moreGroupsFor(me.data?.isAdmin === true).map((group, index) => (
           <section
             key={group.label}
             className={`more-sect more-g${index + 1}`}

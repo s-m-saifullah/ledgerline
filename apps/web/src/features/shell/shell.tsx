@@ -32,10 +32,9 @@ import {
   basePath,
   destinations,
   isActiveDestination,
-  moreGroups,
-  morePages,
+  moreGroupsFor,
+  navPagesFor,
   pageTitle,
-  profilePage,
   showsAdd,
 } from "./nav";
 import { type PageAdd, PageAddProvider } from "./page-add";
@@ -68,6 +67,7 @@ export function Shell({
   const ledger = ledgers.data?.items[0];
   // Whether I am the admin: the sidebar says so under my name (ADR 0048). A failed read just leaves the line blank.
   const me = useQuery({ queryKey: meKey, queryFn: getMe });
+  const isAdmin = me.data?.isAdmin === true;
   const sync = useLiveChanges(ledger?.id);
   const canAdd = !!ledger && ledger.role !== "viewer";
   const [quickAddOpen, setQuickAddOpen] = useState(false);
@@ -123,7 +123,7 @@ export function Shell({
         openAdd("open-navigation");
       },
     },
-    ...[...destinations, ...morePages, profilePage].map((page) => ({
+    ...navPagesFor(isAdmin).map((page) => ({
       key: page.to,
       label: ("paletteLabel" in page && page.paletteLabel) || page.label,
       icon: page.icon,
@@ -204,7 +204,7 @@ export function Shell({
             ))}
           </nav>
           <nav aria-label="More pages" className="ui-side-pages">
-            {moreGroups.map((group) => (
+            {moreGroupsFor(isAdmin).map((group) => (
               <div key={group.label} className="ui-side-group">
                 <p className="ui-side-group-label">{group.label}</p>
                 {group.pages.map(({ to, label, icon: Icon }) => (
@@ -241,8 +241,8 @@ export function Shell({
               </span>
               <div>
                 <strong>{session.user.name}</strong>
-                {/* The line is always there, so the block never changes height when the answer arrives. */}
-                <span>{me.data?.isAdmin ? "Admin" : "\u00a0"}</span>
+                {/* Only the admin has a second line; the link's 44 px minimum height keeps the block the same height for everyone. */}
+                {me.data?.isAdmin && <span>Admin</span>}
               </div>
               {/* Read aloud after the name, so the link's name holds what is shown and says where it goes. */}
               <span className="sr-only">, Profile</span>

@@ -120,14 +120,18 @@
   gap: 10px;
   padding: 6px 8px;
 }
-/* The name is a link to Profile: a 44 px target that reaches the avatar and both lines. */
+/*
+ * The name is a link to Profile: a target that reaches the avatar and both lines. The admin has a second line ("Admin");
+ * everyone else has the name alone, centred beside the avatar. Both are as tall as the two-line block, so the sidebar
+ * never changes height between one person and another.
+ */
 .ui-side-who {
   display: flex;
   align-items: center;
   flex: 1 1 auto;
   gap: 10px;
   min-width: 0;
-  min-height: 44px;
+  min-height: 54px;
   margin: -6px 0 -6px -8px;
   padding: 6px 8px;
   border-radius: var(--shape-field);

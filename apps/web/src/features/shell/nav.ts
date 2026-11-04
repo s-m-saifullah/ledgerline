@@ -89,6 +89,29 @@ export const moreGroups: readonly {
 export const morePages = moreGroups.flatMap((group) => group.pages);
 
 /**
+ * Users (ADR 0048) is for the admin only: it is not one of `moreGroups`, which every person sees, but joins the end of
+ * the last group for the admin (`moreGroupsFor`). The server refuses anyone else, so hiding it is only tidiness.
+ */
+export const usersPage: NavPage<"/users"> = {
+  to: "/users",
+  label: "Users",
+  icon: Users,
+};
+
+/** More's groups as this person sees them: the admin also finds Users at the end of the last group. */
+export function moreGroupsFor(isAdmin: boolean): readonly {
+  label: string;
+  pages: readonly NavPage<MorePath | "/users">[];
+}[] {
+  if (!isAdmin) return moreGroups;
+  return moreGroups.map((group, index) =>
+    index === moreGroups.length - 1
+      ? { ...group, pages: [...group.pages, usersPage] }
+      : group,
+  );
+}
+
+/**
  * Profile (ADR 0048) is reached from the name in the sidebar and from the first card on More, not from a group, so
  * More and the sidebar do not list it twice. It belongs to More's area: a back arrow to More, and More stays lit.
  */
@@ -98,8 +121,18 @@ export const profilePage: NavPage<"/profile"> = {
   icon: UserRound,
 };
 
+/** Every page the command palette can jump to for this person. */
+export const navPagesFor = (isAdmin: boolean) => [
+  ...destinations,
+  ...morePages,
+  profilePage,
+  ...(isAdmin ? [usersPage] : []),
+];
+
 const isMorePage = (pathname: string) =>
-  pathname === profilePage.to || morePages.some((page) => page.to === pathname);
+  pathname === profilePage.to ||
+  pathname === usersPage.to ||
+  morePages.some((page) => page.to === pathname);
 
 /** Pages that have an address of their own for one thing in them: `/clients/{id}` belongs to `/clients`, `/loans/{id}` to `/loans`. */
 const withAddresses = ["/clients", "/loans"];
@@ -115,10 +148,7 @@ export const isActiveDestination = (to: string, pathname: string) => {
 /** The page's name, for the document title, the top bar and the screen-reader announcement. */
 export function pageTitle(pathname: string) {
   const page = basePath(pathname);
-  return (
-    [...destinations, ...morePages, profilePage].find((row) => row.to === page)
-      ?.label ?? "Home"
-  );
+  return navPagesFor(true).find((row) => row.to === page)?.label ?? "Home";
 }
 
 /** A page opened from More has a back arrow in a phone's top bar. */
