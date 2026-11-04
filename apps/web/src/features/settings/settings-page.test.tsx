@@ -136,6 +136,18 @@ describe("SettingsPage", () => {
     await screen.findByText("Two-factor");
   });
 
+  it("puts Clear ledger last in Your data, after Import and export, in the same card", async () => {
+    mount();
+    const clear = await screen.findByRole("button", { name: /Clear ledger/ });
+    const card = clear.closest(".ui-card") as HTMLElement;
+    expect(
+      [...card.querySelectorAll(".ui-row-title")].map((t) => t.textContent),
+    ).toEqual(["Import and export", "Clear ledger"]);
+    expect(card.closest("section")?.querySelector("h2")).toHaveTextContent(
+      "Your data",
+    );
+  });
+
   it("draws none of the old page: no eyebrow, subtitle, scope labels or cards", async () => {
     mount();
     expect(screen.queryByText("MAKE IT YOURS")).toBeNull();
