@@ -277,6 +277,8 @@ describe("GET /users", () => {
           "email",
           "id",
           "isAdmin",
+          // A date or null (ADR 0049): the one thing about a ledger the admin may see.
+          "ledgerClearedAt",
           "mustChangePassword",
           "name",
           "twoFactorEnabled",

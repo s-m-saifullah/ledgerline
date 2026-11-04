@@ -132,6 +132,10 @@ export const ledgers = pgTable(
     baseCurrency: text("base_currency").notNull().default("USD"),
     timeZone: text("time_zone"),
     version: integer("version").notNull().default(1),
+    // When the ledger was cleared (ADR 0049): the rows that clear soft-deleted carry this exact `deleted_at`, and
+    // restoring or the hourly removal finds them by it. Null until someone clears the ledger, and again after a
+    // restore or the removal.
+    clearedAt: timestamp("cleared_at", { withTimezone: true }),
     ...audit(),
   },
   (table) => [check("ledgers_version_check", sql`${table.version} >= 1`)],

@@ -7,7 +7,7 @@
 # Checks that become manifest lines (check|name|value).
 VERIFY_CHECKS=(balances networth owed transfers splits linked receipts recurring fees tips loans imports tags two_factor)
 # Invariants that must return 0 on a restored database (deferred triggers do not run during pg_restore).
-VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links rule_tags two_factor_links account_flags user_ledgers deleted_people)
+VERIFY_INVARIANTS=(transfer_pairs split_allocations receipt_contacts recurring_links fee_links tip_links loan_links import_links tag_links rule_tags two_factor_links account_flags user_ledgers deleted_people cleared_ledgers)
 
 verify_requires() {
   case "$1" in
@@ -20,6 +20,7 @@ verify_requires() {
     tips|tip_links) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='tip_payment_id')" ;;
     imports|import_links) echo "SELECT to_regclass('public.import_batches') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='transactions' AND column_name='import_batch_id')" ;;
     two_factor|two_factor_links) echo "SELECT to_regclass('public.two_factor') IS NOT NULL" ;;
+    cleared_ledgers) echo "SELECT to_regclass('public.ledgers') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='ledgers' AND column_name='cleared_at')" ;;
     account_flags|user_ledgers|deleted_people) echo "SELECT to_regclass('public.auth_accounts') IS NOT NULL AND to_regclass('public.ledgers') IS NOT NULL AND to_regclass('public.ledger_members') IS NOT NULL AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='users' AND column_name='must_change_password')" ;;
     tags|tag_links) echo "SELECT to_regclass('public.tags') IS NOT NULL AND to_regclass('public.transaction_tags') IS NOT NULL" ;;
     rule_tags) echo "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='recurring_rules' AND column_name='tag_ids')" ;;
@@ -89,6 +90,8 @@ verify_sql() {
     user_ledgers) echo "SELECT count(*) FROM users u WHERE u.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM ledger_members m JOIN ledgers l ON l.id=m.ledger_id WHERE m.user_id=u.id AND m.role='owner' AND m.deleted_at IS NULL AND l.deleted_at IS NULL)" ;;
     # A deleted person (ADR 0049) has nothing live left: no sign-in, no membership and no ledger that only they were in.
     deleted_people) echo "SELECT count(*) FROM users u WHERE u.deleted_at IS NOT NULL AND (EXISTS (SELECT 1 FROM auth_accounts a WHERE a.user_id=u.id AND a.deleted_at IS NULL) OR EXISTS (SELECT 1 FROM ledger_members m WHERE m.user_id=u.id AND m.deleted_at IS NULL) OR EXISTS (SELECT 1 FROM ledger_members m JOIN ledgers l ON l.id=m.ledger_id WHERE m.user_id=u.id AND l.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM ledger_members o WHERE o.ledger_id=m.ledger_id AND o.user_id<>u.id AND o.deleted_at IS NULL)))" ;;
+    # A ledger with a recorded clear (ADR 0049) has nothing live that is older than the clear: the clear took every live row, and a restore or the removal empties the record.
+    cleared_ledgers) echo "SELECT count(*) FROM ledgers l WHERE l.cleared_at IS NOT NULL AND (EXISTS (SELECT 1 FROM transactions x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM accounts x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM categories x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM tags x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM contacts x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM receivables x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM receivable_payments x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM budgets x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM recurring_rules x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM currencies x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM exchange_rates x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at) OR EXISTS (SELECT 1 FROM import_batches x WHERE x.ledger_id=l.id AND x.deleted_at IS NULL AND x.created_at<l.cleared_at))" ;;
     *) return 1 ;;
   esac
 }

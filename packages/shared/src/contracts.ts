@@ -58,6 +58,15 @@ export const ledgerSchema = z.object({
   timeZone: timeZoneSchema.nullable(),
   version: versionSchema,
   role: z.enum(["owner", "editor", "viewer"]),
+  /**
+   * When the ledger was cleared and can still be restored (30 days); null when there is nothing to restore. The
+   * server always sends it; it is optional so an older server, or a copy of an answer made before it existed, still parses.
+   */
+  clearedAt: z.iso.datetime().nullable().optional(),
+});
+/** Clearing a ledger asks for the word, so it is never a slip (ADR 0049). */
+export const clearLedgerSchema = z.strictObject({
+  confirm: z.literal("CLEAR"),
 });
 export const updateLedgerSchema = z.object({
   timeZone: timeZoneSchema,
@@ -65,6 +74,7 @@ export const updateLedgerSchema = z.object({
 });
 export type Ledger = z.infer<typeof ledgerSchema>;
 export type UpdateLedger = z.infer<typeof updateLedgerSchema>;
+export type ClearLedger = z.infer<typeof clearLedgerSchema>;
 export const problemSchema = z.object({
   type: z.string(),
   title: z.string(),

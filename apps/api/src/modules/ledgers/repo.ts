@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import type { DatabaseConnection } from "../../db/client";
 import { ledgerMembers, ledgers } from "../../db/schema";
 
@@ -17,6 +17,10 @@ export function ledgerRepository(db: DatabaseConnection, userId: string) {
         timeZone: ledgers.timeZone,
         version: ledgers.version,
         role: ledgerMembers.role,
+        // Always an ISO date or null, so the row can be sent as it is.
+        clearedAt: sql<
+          string | null
+        >`to_char(${ledgers.clearedAt} at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')`,
       })
       .from(ledgers)
       .innerJoin(ledgerMembers, eq(ledgers.id, ledgerMembers.ledgerId));

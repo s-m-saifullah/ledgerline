@@ -34,6 +34,8 @@ data class LedgerSummary(
     val timeZone: String?,
     val version: Int,
     val role: String,
+    // When the ledger was cleared and can still be restored (ADR 0049); the app does not use it yet.
+    val clearedAt: String? = null,
 )
 
 /** `GET /ledgers/{ledgerId}/home?month=YYYY-MM`: the web's Home, read online by the phone's Home (slice 5). */

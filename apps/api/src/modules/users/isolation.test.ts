@@ -267,6 +267,10 @@ describe("the walk covers the whole API, so the proofs below mean something", ()
   it("finds every kind of ledger route, and the seed reaches every id a route names", () => {
     expect(reads.length).toBeGreaterThan(30);
     expect(writes.length).toBeGreaterThan(40);
+    // ADR 0049: the two routes that empty and refill a ledger are walked like every other write.
+    const templates = writes.map((call) => call.template);
+    expect(templates).toContain("POST /api/v1/ledgers/{ledgerId}/clear");
+    expect(templates).toContain("POST /api/v1/ledgers/{ledgerId}/restore");
     const pathParams = new Set<string>();
     for (const [template, operations] of Object.entries(document().paths))
       if (template.startsWith("/api/v1/ledgers/{ledgerId}"))

@@ -2,6 +2,17 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.55 — Clear a ledger and restore it
+
+Migration 0029 (ADR 0049, slice C): `ledgers.cleared_at`, a nullable date; nobody has a value until someone clears a ledger. New routes, and two additive fields; no existing field changes.
+
+- `POST /api/v1/ledgers/{ledgerId}/clear` with the body `{ "confirm": "CLEAR" }` (anything else is `400`): the owner empties the ledger so they can start fresh. Every live row of every table of the ledger (entries, accounts, categories, tags, budgets, clients and the rest, and the saved answers to retried writes) is soft-deleted with one moment; the ledger, its name, its currency and its members stay. `Idempotency-Key` and `Origin` like every ledger write. Owner only (editor and viewer `403`, not a member `404`). Answers `200` with the ledger, whose `clearedAt` is that moment. An empty ledger is left as it is and any undo is kept. Keys used before the clear no longer replay (`409`).
+- `POST /api/v1/ledgers/{ledgerId}/restore` (no body): brings back what the last clear removed, as it was, for 30 days after the clear (to the millisecond) and only while the ledger has nothing live in it. `409` "There is nothing to restore." or "Clear what is there now first." Same rules for the key, the origin and the owner. One undo slot: clearing again removes the older batch at once.
+- `POST /api/v1/users/{userId}/ledger/clear` and `/ledger/restore`: the same for a person's own ledger, **admin only**, no key (like the other user routes), the admin's own id `409`, a deleted person `404`. They answer with the person and never anything from the ledger.
+- **New fields:** `clearedAt` (a date or `null`) on every ledger answer, and `ledgerClearedAt` (a date or `null`) on every `ManagedUser`.
+- **For the phone's sync:** a clear and a restore raise every row's `version` by one (and `updatedAt`), so a pull after a clear shows the rows as tombstones and a pull after a restore shows them live again, each newer than the copy the phone holds.
+- **The hourly job** also removes a cleared batch for good 30 days after the clear (every row of that ledger deleted at or before the clear, so a row deleted earlier that points at the batch goes too), one transaction per ledger, counts only in the log.
+
 ## 0.1.54 — Deleted people: list, restore, delete now and the 30-day purge
 
 No migration (ADR 0049, slice B). New routes only, in the `Users` group; no existing response changes. All of them are **admin only** (no session `401`, anyone else `403`) and the writes need the app's `Origin` and take no `Idempotency-Key`, like the routes above.
