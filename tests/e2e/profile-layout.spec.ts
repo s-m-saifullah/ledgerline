@@ -335,8 +335,13 @@ test("on a desktop the sidebar's name leads to Profile, says Admin, and the pale
 test("the sidebar block does not change height when the answer about the admin arrives", async ({
   page,
 }) => {
+  // The answer is held until the test lets it go, so the block is measured before and after it, not by luck.
+  let release: () => void = () => {};
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route(/\/api\/v1\/me$/, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await held;
     await route.fulfill({
       json: {
         id: newId(),
@@ -353,11 +358,15 @@ test("the sidebar block does not change height when the answer about the admin a
   await page.goto("/transactions");
   const who = page.locator(".ui-side-who");
   await expect(who).toBeVisible();
+  await expect(who).not.toContainText("Admin");
   const before = await box(who);
+  release();
   await expect(who).toContainText("Admin");
-  const after = await box(who);
-  expect(Math.abs(after.height - before.height)).toBeLessThan(0.5);
-  expect(Math.abs(after.y - before.y)).toBeLessThan(0.5);
+  await expect(async () => {
+    const after = await box(who);
+    expect(Math.abs(after.height - before.height)).toBeLessThan(0.5);
+    expect(Math.abs(after.y - before.y)).toBeLessThan(0.5);
+  }).toPass();
 });
 
 test("a phone's sheet is a bottom sheet and from 700 px a right-hand drawer, for both sheets", async ({
