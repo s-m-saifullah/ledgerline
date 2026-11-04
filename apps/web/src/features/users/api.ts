@@ -1,5 +1,7 @@
 import {
   type CreateUser,
+  type DeletedUserList,
+  deletedUserListSchema,
   type ManagedUser,
   type ManagedUserList,
   managedUserListSchema,
@@ -10,6 +12,8 @@ import {
 import { api } from "../../lib/api";
 
 export const usersKey = ["users"] as const;
+/** Under `usersKey`, so refreshing the people refreshes the waiting list too. */
+export const deletedUsersKey = ["users", "deleted"] as const;
 
 /** The people on this server (admin only): account facts, never anything from a ledger (ADR 0048). */
 export async function listUsers(): Promise<ManagedUserList> {
@@ -48,4 +52,28 @@ export async function turnOffUserTwoFactor(id: string) {
 
 export async function deleteUser(id: string) {
   await api(`/users/${id}`, { method: "DELETE", body: "{}" });
+}
+
+/** The people deleted less than 30 days ago, newest first, with the day they are removed for good (ADR 0049). */
+export async function listDeletedUsers(): Promise<DeletedUserList> {
+  return deletedUserListSchema.parse(await api("/users/deleted"));
+}
+
+/** Brings a deleted person back exactly as they were. */
+export async function restoreUser(id: string) {
+  await api(`/users/${id}/restore`, { method: "POST", body: "{}" });
+}
+
+/** "Delete now": the person and everything of theirs are removed for good. */
+export async function purgeUser(id: string) {
+  await api(`/users/${id}/purge`, { method: "DELETE", body: "{}" });
+}
+
+/** Starts a person's ledger afresh; it can be restored for 30 days. The answer holds a date, never ledger data. */
+export async function clearUserLedger(id: string) {
+  await api(`/users/${id}/ledger/clear`, { method: "POST", body: "{}" });
+}
+
+export async function restoreUserLedger(id: string) {
+  await api(`/users/${id}/ledger/restore`, { method: "POST", body: "{}" });
 }

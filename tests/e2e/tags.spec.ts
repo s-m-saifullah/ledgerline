@@ -138,7 +138,7 @@ test("the Tags page adds, renames, archives and deletes tags, each from the tag'
   await tagRow(page, "Holiday").click();
   await page.getByRole("button", { name: "Archive", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.locator(".tg-fold > summary").click();
+  await page.locator(".ui-fold > summary").click();
   await expect(page.getByText("1 archived")).toBeVisible();
   await tagRow(page, "Holiday").click();
   await page.getByRole("button", { name: "Unarchive", exact: true }).click();

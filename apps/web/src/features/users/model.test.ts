@@ -2,7 +2,6 @@ import type { ManagedUser } from "@ledgerline/shared";
 import { describe, expect, it, vi } from "vitest";
 import {
   deleteConfirmed,
-  emailTakenMessage,
   firstName,
   makeTemporaryPassword,
   passwordWords,
@@ -120,10 +119,4 @@ describe("deleteConfirmed", () => {
     expect(deleteConfirmed("jordan@example.com", "jordan")).toBe(false);
     expect(deleteConfirmed("jordan@example.com", "")).toBe(false);
   });
-});
-
-it("says what a taken email means and what to do", () => {
-  expect(emailTakenMessage).toBe(
-    "Someone already has that email. Reset that person's password instead.",
-  );
 });

@@ -442,3 +442,202 @@ for (const theme of ["light", "dark"] as const)
     await settled(dialog(page));
     expect(await axe(page)).toEqual([]);
   });
+
+/* ---------- Clear ledger and Restore cleared ledger (ADR 0049) ---------- */
+
+const DAY = 24 * 60 * 60 * 1000;
+/** Answers the ledger list with the owner's ledger (or another role), cleared `daysAgo` days ago when given. */
+async function mockLedger(
+  page: Page,
+  { daysAgo, role = "owner" }: { daysAgo?: number; role?: string } = {},
+) {
+  const calls: {
+    method: string;
+    url: string;
+    body: unknown;
+    key: string | null;
+  }[] = [];
+  const ledger = {
+    id: fixtures[0],
+    name: "Synthetic settings layout ledger",
+    timeZone: null,
+    version: 1,
+    baseCurrency: "USD",
+    role,
+    clearedAt:
+      daysAgo === undefined
+        ? null
+        : new Date(Date.now() - daysAgo * DAY).toISOString(),
+  };
+  await page.route("**/api/v1/ledgers", (route) =>
+    route.fulfill({ json: { items: [ledger] } }),
+  );
+  await page.route(/\/api\/v1\/ledgers\/[^/]+\/(clear|restore)$/, (route) => {
+    const request = route.request();
+    calls.push({
+      method: request.method(),
+      url: new URL(request.url()).pathname,
+      body: request.postDataJSON(),
+      key: request.headers()["idempotency-key"] ?? null,
+    });
+    return route.fulfill({ json: ledger });
+  });
+  return calls;
+}
+const dataRows = (page: Page) => group(page, "Your data").locator(".ui-row");
+
+for (const theme of ["light", "dark"] as const)
+  for (const width of [320, 390, 1280])
+    test(`Your data at ${width} px in ${theme}: Clear ledger and, while an undo waits, Restore cleared ledger, as real targets`, async ({
+      page,
+    }) => {
+      await mockLedger(page, { daysAgo: 12.5 });
+      await open(page, width, theme);
+      expect(await noSideways(page)).toBe(true);
+      await expect(dataRows(page).locator(".ui-row-title")).toHaveText([
+        "Import and export",
+        "Restore cleared ledger",
+        "Clear ledger",
+      ]);
+      await expect(group(page, "Your data")).toContainText("18 days left");
+      await expect(group(page, "Your data")).toContainText("Undo for 30 days");
+      for (const row of await dataRows(page).all()) {
+        expect((await box(row)).height).toBeGreaterThanOrEqual(56);
+        expect(await is44(page, row)).toBe(true);
+        for (const part of ["ui-row-title", "ui-row-hint"])
+          for (const line of await row.locator(`.${part}`).all())
+            expect(
+              await line.evaluate(
+                (node) => node.scrollWidth <= node.clientWidth + 1,
+              ),
+            ).toBe(true);
+      }
+      // One hint at most per row, and red only on Clear ledger.
+      for (const row of await dataRows(page).all())
+        expect(await row.locator(".ui-row-hint").count()).toBeLessThanOrEqual(
+          1,
+        );
+      const colors = await dataRows(page)
+        .locator(".ui-row-title")
+        .evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).color));
+      expect(colors[2]).not.toBe(colors[0]);
+      expect(colors[1]).toBe(colors[0]);
+    });
+
+test("with nothing to undo, Your data has Import and export and Clear ledger, and no restore row", async ({
+  page,
+}) => {
+  await mockLedger(page);
+  await open(page, 390);
+  await expect(dataRows(page).locator(".ui-row-title")).toHaveText([
+    "Import and export",
+    "Clear ledger",
+  ]);
+  await expect(group(page, "Your data")).not.toContainText("Restore");
+});
+
+test("an editor or a viewer sees neither row", async ({ page }) => {
+  await mockLedger(page, { role: "editor" });
+  await open(page, 390);
+  await expect(dataRows(page)).toHaveCount(1);
+  await expect(group(page, "Your data")).not.toContainText("Clear ledger");
+});
+
+test("Clear ledger is a centred question that needs the word CLEAR, then writes once with a key and returns to its row", async ({
+  page,
+}) => {
+  const calls = await mockLedger(page);
+  await open(page, 390, "light");
+  const row = page.getByRole("button", { name: /Clear ledger/ });
+  await row.click();
+  const ask = dialog(page);
+  await expect(ask).toBeVisible();
+  await settled(ask);
+  const at = await box(ask);
+  const view = page.viewportSize() as { width: number; height: number };
+  expect(Math.abs(at.x + at.width / 2 - view.width / 2)).toBeLessThan(2);
+  expect(at.width).toBeLessThan(view.width);
+  await expect(ask).toHaveAccessibleName("Clear your ledger?");
+  const confirm = ask.getByRole("button", { name: "Clear", exact: true });
+  await expect(confirm).toBeDisabled();
+  const typed = ask.getByLabel("Type CLEAR to confirm");
+  await expect(typed).toHaveAttribute("placeholder", "CLEAR");
+  // This file's target check has no input in its list: measure the box itself.
+  expect((await box(typed)).height).toBeGreaterThanOrEqual(43.9);
+  for (const name of ["Cancel", "Clear"])
+    expect(
+      await is44(page, ask.getByRole("button", { name, exact: true })),
+    ).toBe(true);
+  await typed.fill("clear");
+  await expect(confirm).toBeEnabled();
+  // The one filled red button on the screen.
+  const bg = await confirm.evaluate((n) => getComputedStyle(n).backgroundColor);
+  const cancel = await ask
+    .getByRole("button", { name: "Cancel" })
+    .evaluate((n) => getComputedStyle(n).backgroundColor);
+  expect(bg).not.toBe(cancel);
+  await confirm.click();
+  await expect(ask).toBeHidden();
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toMatchObject({
+    method: "POST",
+    url: `/api/v1/ledgers/${fixtures[0]}/clear`,
+    body: { confirm: "CLEAR" },
+  });
+  expect(calls[0]?.key).toMatch(/^[0-9a-f-]{36}$/);
+  await expect(page.getByRole("status")).toContainText("Ledger cleared.");
+  await expect(row).toBeFocused();
+});
+
+test("Cancel on the Clear question writes nothing and returns to its row", async ({
+  page,
+}) => {
+  const calls = await mockLedger(page);
+  await open(page, 390);
+  const row = page.getByRole("button", { name: /Clear ledger/ });
+  await row.click();
+  await dialog(page).getByLabel("Type CLEAR to confirm").fill("CLEAR");
+  await dialog(page).getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog(page)).toBeHidden();
+  await expect(row).toBeFocused();
+  expect(calls).toEqual([]);
+});
+
+test("Restore cleared ledger asks with no typing and then writes", async ({
+  page,
+}) => {
+  const calls = await mockLedger(page, { daysAgo: 5 });
+  await open(page, 1280, "dark");
+  await page.getByRole("button", { name: /Restore cleared ledger/ }).click();
+  const ask = dialog(page);
+  await expect(ask).toHaveAccessibleName("Restore your cleared ledger?");
+  await settled(ask);
+  await expect(ask.getByLabel(/Type/)).toHaveCount(0);
+  await ask.getByRole("button", { name: "Restore", exact: true }).click();
+  await expect(ask).toBeHidden();
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toMatchObject({
+    method: "POST",
+    url: `/api/v1/ledgers/${fixtures[0]}/restore`,
+  });
+  await expect(page.getByRole("status")).toContainText("Ledger restored.");
+});
+
+for (const theme of ["light", "dark"] as const)
+  for (const width of [320, 390, 1280])
+    test(`has no accessibility violations at ${width} px in ${theme}: the Clear and Restore questions`, async ({
+      page,
+    }) => {
+      await mockLedger(page, { daysAgo: 5 });
+      await open(page, width, theme);
+      expect(await axe(page)).toEqual([]);
+      await page.getByRole("button", { name: /Clear ledger/ }).click();
+      await settled(dialog(page));
+      expect(await axe(page)).toEqual([]);
+      await dialog(page).getByRole("button", { name: "Cancel" }).click();
+      await page
+        .getByRole("button", { name: /Restore cleared ledger/ })
+        .click();
+      await settled(dialog(page));
+      expect(await axe(page)).toEqual([]);
+    });

@@ -1,0 +1,70 @@
+/* The fold (the Accounts fold's look): a plain first row that opens over a fifth of a second; a shut card of one summary row that opens to rows (Tags' archived, Users' recently deleted). */
+.ui-fold {
+  display: block;
+  /* The card class pads its content; here the summary row carries the padding, shut or open. */
+  padding: 0;
+  interpolate-size: allow-keywords;
+}
+.ui-fold::details-content {
+  block-size: 0;
+  overflow: clip;
+  transition:
+    block-size 200ms ease-out,
+    content-visibility 200ms allow-discrete;
+}
+.ui-fold[open]::details-content {
+  block-size: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-fold::details-content {
+    transition: none;
+  }
+}
+.ui-fold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  margin: 0;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--shape-card);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none;
+}
+.ui-fold > summary:hover {
+  background: var(--tint);
+}
+.ui-fold > summary::-webkit-details-marker,
+.ui-fold > summary::before {
+  display: none;
+}
+.ui-fold > summary > svg {
+  flex: none;
+  color: var(--muted);
+  transition: transform 150ms ease-out;
+}
+.ui-fold[open] > summary > svg {
+  transform: rotate(180deg);
+}
+/* styles.css gives every open details summary a 12 px margin below it; the rows belong right under this one. */
+.ui-fold[open] > summary {
+  margin: 0;
+  border-radius: var(--shape-card) var(--shape-card) 0 0;
+}
+.ui-fold-body {
+  display: grid;
+  min-width: 0;
+}
+.ui-fold-body > * {
+  border-top: 1px solid var(--border);
+}
+.ui-fold-body > :last-child {
+  border-end-start-radius: calc(var(--shape-card) - 1px);
+  border-end-end-radius: calc(var(--shape-card) - 1px);
+}

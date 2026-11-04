@@ -17,6 +17,7 @@ import {
   ThemeContext,
 } from "../../lib/preferences";
 import { TimeZoneCard } from "../ledger/time-zone-card";
+import { ClearLedger } from "./clear-ledger";
 import { DevicesCard } from "./devices-card";
 import "./settings.css";
 import { TwoFactorCard } from "./two-factor-card";
@@ -42,7 +43,9 @@ export function SettingsPage() {
   return (
     <div className="set-page">
       <div className="page-heading">
-        <h1>Settings</h1>
+        <h1 id="settings-title" tabIndex={-1}>
+          Settings
+        </h1>
       </div>
       <div className="set-cols">
         <div className="set-stack">
@@ -99,6 +102,7 @@ export function SettingsPage() {
                   </Link>
                 )}
               />
+              <ClearLedger onNotice={notify} />
             </ListCard>
           </section>
         </div>

@@ -1,4 +1,4 @@
-import type { ManagedUser } from "@ledgerline/shared";
+import type { DeletedUser, ManagedUser } from "@ledgerline/shared";
 import {
   Avatar,
   EmptyState,
@@ -10,17 +10,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { type ReactElement, type ReactNode, useState } from "react";
+import { Fold } from "../../components/fold";
 import { LoadError } from "../../components/load-error";
 import { Toast } from "../../components/toast";
+import { daysLeft, daysLeftText, isUrgent } from "../../lib/days-left";
 import { getMe, meKey } from "../profile/api";
 import { usePageAdd } from "../shell/page-add";
 import { AddUserSheet } from "./add-user-sheet";
-import { listUsers, usersKey } from "./api";
+import { deletedUsersKey, listDeletedUsers, listUsers, usersKey } from "./api";
+import { DeletedUserSheet } from "./deleted-user-sheet";
 import { userHint, userPill } from "./model";
 import { UserSheet } from "./user-sheet";
 import "./users.css";
 
-type Open = { id: number; person?: ManagedUser };
+type Open = { id: number; person?: ManagedUser; gone?: DeletedUser };
 
 const toProfile = (inner: ReactNode, className: string): ReactElement => (
   <Link to="/profile" className={className}>
@@ -42,14 +45,23 @@ export function UsersPage() {
     queryFn: listUsers,
     enabled: admin,
   });
+  const deleted = useQuery({
+    queryKey: deletedUsersKey,
+    queryFn: listDeletedUsers,
+    enabled: admin,
+  });
   const [open, setOpen] = useState<Open | null>(null);
   // One notice for the page; its number restarts the timer when the same words come twice in a row.
   const [notice, setNotice] = useState<{ id: number; text: string } | null>(
     null,
   );
-  const start = (person?: ManagedUser) => {
+  const start = (person?: ManagedUser, gone?: DeletedUser) => {
     setNotice(null);
-    setOpen({ id: Date.now(), ...(person ? { person } : {}) });
+    setOpen({
+      id: Date.now(),
+      ...(person ? { person } : {}),
+      ...(gone ? { gone } : {}),
+    });
   };
   usePageAdd(
     admin
@@ -59,9 +71,38 @@ export function UsersPage() {
   const saved = (text: string) => {
     setOpen(null);
     setNotice((last) => ({ id: (last?.id ?? 0) + 1, text }));
+    // `usersKey` is the start of the deleted list's key too, so both lists are read again.
     void client.invalidateQueries({ queryKey: usersKey });
   };
   const items = users.data?.items ?? [];
+  const waiting = deleted.data?.items ?? [];
+  const waitingRow = (person: DeletedUser) => {
+    const days = daysLeft(person.purgeAt);
+    return (
+      <ListRow
+        key={person.id}
+        lead={<Avatar name={person.name} />}
+        title={person.name}
+        hint={person.email}
+        value={
+          <StatusPill tone={isUrgent(days) ? "warning" : "neutral"}>
+            {daysLeftText(days)}
+          </StatusPill>
+        }
+        chevron
+        render={(inner, className) => (
+          <button
+            type="button"
+            id={`user-${person.id}`}
+            className={className}
+            onClick={() => start(undefined, person)}
+          >
+            {inner}
+          </button>
+        )}
+      />
+    );
+  };
   const row = (person: ManagedUser) => {
     const pill = userPill(person);
     const mine = person.id === me.data?.id;
@@ -142,6 +183,17 @@ export function UsersPage() {
           />
         </div>
       )}
+      {users.data && deleted.isError && (
+        <LoadError
+          message="We couldn't load recently deleted people."
+          onRetry={() => void deleted.refetch()}
+        />
+      )}
+      {waiting.length > 0 && (
+        <Fold summary={`${waiting.length} recently deleted`}>
+          {waiting.map(waitingRow)}
+        </Fold>
+      )}
       {notice && (
         <Toast
           key={notice.id}
@@ -152,9 +204,17 @@ export function UsersPage() {
           <p role="status">{notice.text}</p>
         </Toast>
       )}
-      {open && !open.person && (
+      {open && !open.person && !open.gone && (
         <AddUserSheet
           key={open.id}
+          onDismiss={() => setOpen(null)}
+          onSaved={saved}
+        />
+      )}
+      {open?.gone && (
+        <DeletedUserSheet
+          key={open.id}
+          person={open.gone}
           onDismiss={() => setOpen(null)}
           onSaved={saved}
         />

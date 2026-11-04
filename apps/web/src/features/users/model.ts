@@ -177,7 +177,3 @@ export const firstName = (name: string) =>
 /** Delete asks for the person's email; case and spaces around it do not matter. */
 export const deleteConfirmed = (email: string, typed: string) =>
   typed.trim().toLowerCase() === email.toLowerCase();
-
-/** What a 409 on adding a person means (the server's own words, kept here so the row can show them). */
-export const emailTakenMessage =
-  "Someone already has that email. Reset that person's password instead.";

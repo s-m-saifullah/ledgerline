@@ -2,8 +2,9 @@ import type { Tag } from "@ledgerline/shared";
 import { EmptyState, IconTile, ListCard, RowBody } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Plus, Search, TagIcon } from "lucide-react";
+import { Plus, Search, TagIcon } from "lucide-react";
 import { useState } from "react";
+import { Fold } from "../../components/fold";
 import { LoadError } from "../../components/load-error";
 import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
@@ -160,13 +161,7 @@ function LedgerTags({
       )}
       {active.length > 0 && <ListCard>{active.map(row)}</ListCard>}
       {archived.length > 0 && (
-        <details className="ui-card tg-fold">
-          <summary>
-            <span>{archived.length} archived</span>
-            <ChevronDown size={18} aria-hidden="true" />
-          </summary>
-          <div className="tg-fold-body">{archived.map(row)}</div>
-        </details>
+        <Fold summary={`${archived.length} archived`}>{archived.map(row)}</Fold>
       )}
       {notice && (
         <Toast
