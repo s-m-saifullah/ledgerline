@@ -809,7 +809,8 @@ select {
   display: flex;
   gap: 8px;
   padding-inline: 8px;
-  margin: 0;
+  /* The three button rows (AM and PM, these, and the actions) are one 12 px apart. */
+  margin: 12px 0 0;
   border: 0;
   min-width: 0;
 }
