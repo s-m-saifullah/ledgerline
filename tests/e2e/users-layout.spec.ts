@@ -300,19 +300,31 @@ test("a long name and email wrap in their row, never cut or pushed past the edge
   expect(await noSideways(page)).toBe(true);
 });
 
-test("only you: one row and a calm message with its own Add user", async ({
-  page,
-}) => {
-  await open(page, 390, undefined, { people: [sam] });
-  await expect(page.locator(".us-page .ui-row")).toHaveCount(1);
-  await expect(page.getByText("Only you have an account.")).toBeVisible();
-  const add = page
-    .locator(".ui-empty")
-    .getByRole("button", { name: "Add user" });
-  expect(await is44(page, add)).toBe(true);
-  await add.click();
-  await expect(page.getByRole("dialog", { name: "Add user" })).toBeVisible();
-});
+for (const width of [320, 390, 1280])
+  test(`only you at ${width} px: one row, a calm message and exactly one way to add a user`, async ({
+    page,
+  }) => {
+    await open(page, width, undefined, { people: [sam] });
+    await expect(page.locator(".us-page .ui-row")).toHaveCount(1);
+    await expect(page.getByText("Only you have an account.")).toBeVisible();
+    // The empty card holds the message and nothing to press.
+    await expect(page.locator(".ui-empty button")).toHaveCount(0);
+    // One Add user on screen: the page's own from 700 px, the phone's one Add button below it.
+    const header = page.locator("#add-user");
+    const phone = page.locator("#mobile-add-page");
+    if (width >= 700) {
+      await expect(header).toBeVisible();
+      await expect(phone).toBeHidden();
+    } else {
+      await expect(header).toBeHidden();
+      await expect(phone).toBeVisible();
+    }
+    await expect(
+      page.getByRole("button", { name: "Add user" }).filter({ visible: true }),
+    ).toHaveCount(1);
+    await (width >= 700 ? header : phone).click();
+    await expect(page.getByRole("dialog", { name: "Add user" })).toBeVisible();
+  });
 
 test("your own row opens Profile, not a sheet", async ({ page }) => {
   await open(page, 390);

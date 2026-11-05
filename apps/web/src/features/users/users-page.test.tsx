@@ -221,15 +221,20 @@ it("offers to try again when it cannot be checked who is signed in", async () =>
   expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
 });
 
-it("says so, with an Add user button, when only the admin has an account", async () => {
-  mount({ people: [sam] });
+it("says so, with no second Add user button, when only the admin has an account", async () => {
+  const { pageAdd } = mount({ people: [sam] });
   expect(
     await screen.findByText("Only you have an account."),
   ).toBeInTheDocument();
+  // The page's own Add user (and a phone's one Add button) is the only way to add; the empty card has none.
+  expect(screen.getAllByRole("button", { name: "Add user" })).toHaveLength(1);
+  expect(
+    document.querySelector(".ui-empty button, .ui-card button"),
+  ).toBeNull();
   const user = userEvent.setup();
-  const buttons = screen.getAllByRole("button", { name: "Add user" });
-  await user.click(buttons[buttons.length - 1] as HTMLElement);
+  await user.click(screen.getByRole("button", { name: "Add user" }));
   expect(sheet()).toHaveAccessibleName("Add user");
+  expect(pageAdd()).toMatchObject({ label: "Add user", disabled: false });
 });
 
 it("shows no empty message when there are other people", async () => {

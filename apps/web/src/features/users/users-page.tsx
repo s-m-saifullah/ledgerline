@@ -177,10 +177,7 @@ export function UsersPage() {
       {users.data && <ListCard>{items.map(row)}</ListCard>}
       {users.data && items.length === 1 && (
         <div className="ui-card">
-          <EmptyState
-            text="Only you have an account."
-            action={{ label: "Add user", onClick: () => start() }}
-          />
+          <EmptyState text="Only you have an account." />
         </div>
       )}
       {users.data && deleted.isError && (
