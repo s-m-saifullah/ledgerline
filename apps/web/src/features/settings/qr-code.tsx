@@ -17,6 +17,7 @@ export function QrCode({ text, label }: { text: string; label: string }) {
   return (
     <svg
       className="two-factor-qr"
+      data-secret=""
       viewBox={`0 0 ${size} ${size}`}
       role="img"
       aria-label={label}

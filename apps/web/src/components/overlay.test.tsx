@@ -1,7 +1,14 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { StrictMode, useState } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Overlay } from "./overlay";
 
 afterEach(cleanup);
@@ -353,5 +360,343 @@ describe("Overlay as a question", () => {
     expect(handle).toHaveAttribute("aria-hidden", "true");
     expect(handle).not.toHaveAttribute("tabindex");
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  });
+});
+
+describe("Overlay's dark overlay when the overlay goes away", () => {
+  const ghosts = () =>
+    document.querySelectorAll('.ui-scrim[data-state="closed"]');
+  const panels = () =>
+    document.querySelectorAll(".ui-sheet-out, .ui-question-out");
+  beforeEach(() => {
+    // A browser: it can tell whether less motion was asked for (jsdom has no matchMedia).
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: false })),
+    );
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    // Copies left behind by a test are not the next test's.
+    for (const left of document.querySelectorAll(
+      ".ui-scrim, .ui-sheet-out, .ui-question-out",
+    ))
+      left.remove();
+  });
+
+  it("leaves a hidden, click-through copy behind that fades, when its parent stops drawing it while open", async () => {
+    const view = render(<Overlay {...base}>content</Overlay>);
+    expect(ghosts()).toHaveLength(0);
+    view.unmount();
+    await Promise.resolve();
+    expect(ghosts()).toHaveLength(1);
+    const ghost = ghosts()[0] as HTMLElement;
+    expect(ghost).toHaveClass("ui-scrim");
+    expect(ghost).toHaveAttribute("aria-hidden", "true");
+    // No inline style: Radix's own `pointer-events: auto` would beat the CSS that lets taps through.
+    expect(ghost).not.toHaveAttribute("style");
+    expect(ghost.parentElement).toBe(document.body);
+  });
+
+  it("removes the copy when its fade ends", async () => {
+    render(<Overlay {...base}>content</Overlay>).unmount();
+    await Promise.resolve();
+    fireEvent.animationEnd(ghosts()[0] as Element);
+    expect(ghosts()).toHaveLength(0);
+  });
+
+  it("removes the copy after a short time even if the fade never reports its end", async () => {
+    vi.useFakeTimers();
+    render(<Overlay {...base}>content</Overlay>).unmount();
+    await Promise.resolve();
+    expect(ghosts()).toHaveLength(1);
+    act(() => vi.advanceTimersByTime(399));
+    expect(ghosts()).toHaveLength(1);
+    act(() => vi.advanceTimersByTime(2));
+    expect(ghosts()).toHaveLength(0);
+  });
+
+  it("does the same for a question", async () => {
+    render(
+      <Overlay {...base} kind="question" title="Delete it?">
+        text
+      </Overlay>,
+    ).unmount();
+    await Promise.resolve();
+    expect(ghosts()).toHaveLength(1);
+    expect(document.querySelectorAll(".ui-question-out")).toHaveLength(1);
+    expect(document.querySelectorAll(".ui-sheet-out")).toHaveLength(0);
+  });
+
+  describe("closed in place (the page keeps it mounted)", () => {
+    it("is gone at once and leaves a copy of the sheet to slide away, but none of the dark overlay (Radix fades that)", () => {
+      const view = render(<Overlay {...base}>content</Overlay>);
+      expect(panels()).toHaveLength(0);
+      view.rerender(
+        <Overlay {...base} open={false}>
+          content
+        </Overlay>,
+      );
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(panels()).toHaveLength(1);
+      expect(panels()[0]).toHaveClass("ui-sheet-out");
+      expect(ghosts()).toHaveLength(0);
+    });
+
+    it("leaves a question's copy when a question closes in place", () => {
+      const view = render(
+        <Overlay {...base} kind="question" title="Delete it?">
+          text
+        </Overlay>,
+      );
+      view.rerender(
+        <Overlay {...base} kind="question" title="Delete it?" open={false}>
+          text
+        </Overlay>,
+      );
+      expect(document.querySelectorAll(".ui-question-out")).toHaveLength(1);
+    });
+
+    it("leaves nothing more when it is later removed while closed", async () => {
+      const view = render(<Overlay {...base}>content</Overlay>);
+      view.rerender(
+        <Overlay {...base} open={false}>
+          content
+        </Overlay>,
+      );
+      expect(panels()).toHaveLength(1);
+      view.unmount();
+      await Promise.resolve();
+      expect(panels()).toHaveLength(1);
+      expect(ghosts()).toHaveLength(0);
+    });
+
+    it("leaves a copy each time it is closed again", () => {
+      const view = render(<Overlay {...base}>content</Overlay>);
+      for (const index of [1, 2]) {
+        view.rerender(
+          <Overlay {...base} open={false}>
+            content
+          </Overlay>,
+        );
+        view.rerender(
+          <Overlay {...base} open>
+            content
+          </Overlay>,
+        );
+        view.rerender(
+          <Overlay {...base} open={false}>
+            content
+          </Overlay>,
+        );
+        expect(panels().length).toBeGreaterThanOrEqual(index);
+      }
+    });
+
+    it("leaves a copy when one that started closed is opened and then closed", () => {
+      const view = render(
+        <Overlay {...base} open={false}>
+          content
+        </Overlay>,
+      );
+      expect(panels()).toHaveLength(0);
+      view.rerender(
+        <Overlay {...base} open>
+          content
+        </Overlay>,
+      );
+      expect(panels()).toHaveLength(0);
+      view.rerender(
+        <Overlay {...base} open={false}>
+          content
+        </Overlay>,
+      );
+      expect(panels()).toHaveLength(1);
+    });
+
+    it("leaves nothing for a person who asked for less motion", () => {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn(() => ({ matches: true })),
+      );
+      const view = render(<Overlay {...base}>content</Overlay>);
+      view.rerender(
+        <Overlay {...base} open={false}>
+          content
+        </Overlay>,
+      );
+      expect(panels()).toHaveLength(0);
+    });
+
+    it("leaves nothing for a sheet that was dragged off the screen", () => {
+      const view = render(<Overlay {...base}>content</Overlay>);
+      (screen.getByRole("dialog") as HTMLElement).style.transform =
+        "translateY(320px)";
+      view.rerender(
+        <Overlay {...base} open={false}>
+          content
+        </Overlay>,
+      );
+      expect(panels()).toHaveLength(0);
+    });
+  });
+
+  it("leaves nothing just because StrictMode ran the cleanup and the setup again at mount", async () => {
+    render(
+      <StrictMode>
+        <Overlay {...base}>content</Overlay>
+      </StrictMode>,
+    );
+    await Promise.resolve();
+    expect(ghosts()).toHaveLength(0);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("leaves nothing for a person who asked for less motion", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: true })),
+    );
+    render(<Overlay {...base}>content</Overlay>).unmount();
+    await Promise.resolve();
+    expect(ghosts()).toHaveLength(0);
+  });
+
+  it("is a sibling copy only: no second dialog, nothing to focus, nothing to read", async () => {
+    render(<Overlay {...base}>content</Overlay>).unmount();
+    await Promise.resolve();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect((ghosts()[0] as HTMLElement).children).toHaveLength(0);
+  });
+
+  it("leaves nothing in a browser that cannot say what motion was asked for", async () => {
+    vi.stubGlobal("matchMedia", undefined);
+    render(<Overlay {...base}>content</Overlay>).unmount();
+    await Promise.resolve();
+    expect(ghosts()).toHaveLength(0);
+    expect(panels()).toHaveLength(0);
+  });
+
+  describe("the sheet's own copy", () => {
+    const leaves = async (ui = <Overlay {...base}>content</Overlay>) => {
+      render(ui).unmount();
+      await Promise.resolve();
+      return panels()[0] as HTMLElement;
+    };
+
+    it("is a picture of the sheet under its own class, so nothing that looks for the open sheet finds it", async () => {
+      const copy = await leaves(
+        <Overlay {...base}>
+          <p>Name field</p>
+        </Overlay>,
+      );
+      expect(copy).toHaveClass("ui-sheet-out");
+      expect(copy).not.toHaveClass("ui-sheet");
+      expect(document.querySelectorAll(".ui-sheet")).toHaveLength(0);
+      expect(copy).toHaveTextContent("Name field");
+      expect(copy).toHaveAttribute("data-state", "closed");
+      expect(copy.parentElement).toBe(document.body);
+    });
+
+    it("is hidden from assistive technology, cannot take focus, and has no role, style or ids", async () => {
+      const copy = await leaves(
+        <Overlay {...base} footer={<button type="button">Save</button>}>
+          <input id="name" defaultValue="Ann" />
+        </Overlay>,
+      );
+      expect(copy).toHaveAttribute("aria-hidden", "true");
+      expect(copy).toHaveAttribute("inert");
+      expect(copy).not.toHaveAttribute("role");
+      expect(copy).not.toHaveAttribute("style");
+      expect(copy.id).toBe("");
+      expect(copy.querySelectorAll("[id]")).toHaveLength(0);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
+    });
+
+    it("never copies a password, a secret marked data-secret, or a link that carries one", async () => {
+      const copy = await leaves(
+        <Overlay {...base}>
+          <input
+            type="password"
+            defaultValue="pw-12345"
+            aria-label="Password"
+          />
+          <span data-secret="" data-testid="temporary-password">
+            maple-otter-1234-river
+          </span>
+          <ul data-secret="">
+            <li>backup-code-one</li>
+          </ul>
+          <a href="otpauth://totp/x?secret=ABCDEFGH">Open</a>
+          <p>Plain text stays.</p>
+        </Overlay>,
+      );
+      const text = copy.textContent ?? "";
+      expect(text).not.toContain("maple-otter-1234-river");
+      expect(text).not.toContain("backup-code-one");
+      expect(text).toContain("Plain text stays.");
+      expect(
+        (copy.querySelector('input[type="password"]') as HTMLInputElement)
+          .value,
+      ).toBe("");
+      expect(copy.querySelector("a")?.hasAttribute("href")).toBe(false);
+      expect(copy.innerHTML).not.toContain("ABCDEFGH");
+      expect(copy.innerHTML).not.toContain("pw-12345");
+      // Nor anywhere else in the page.
+      expect(document.body.textContent).not.toContain("maple-otter-1234-river");
+    });
+
+    it("is not drawn when the sheet was already dragged off the screen, but the dark overlay still fades", async () => {
+      const view = render(<Overlay {...base}>content</Overlay>);
+      (screen.getByRole("dialog") as HTMLElement).style.transform =
+        "translateY(320px)";
+      view.unmount();
+      await Promise.resolve();
+      expect(panels()).toHaveLength(0);
+      expect(ghosts()).toHaveLength(1);
+    });
+
+    it("is drawn when a spring-back left the sheet at translateY(0px)", async () => {
+      const view = render(<Overlay {...base}>content</Overlay>);
+      (screen.getByRole("dialog") as HTMLElement).style.transform =
+        "translateY(0px)";
+      view.unmount();
+      await Promise.resolve();
+      expect(panels()).toHaveLength(1);
+    });
+
+    it("goes when its own animation ends, not when something inside it does", async () => {
+      const copy = await leaves(
+        <Overlay {...base}>
+          <p>Inside</p>
+        </Overlay>,
+      );
+      fireEvent.animationEnd(copy.querySelector("p") as Element);
+      expect(panels()).toHaveLength(1);
+      fireEvent.animationEnd(copy);
+      expect(panels()).toHaveLength(0);
+    });
+
+    it("goes after a short time even if its animation never reports its end", async () => {
+      vi.useFakeTimers();
+      await leaves();
+      expect(panels()).toHaveLength(1);
+      act(() => vi.advanceTimersByTime(401));
+      expect(panels()).toHaveLength(0);
+      expect(ghosts()).toHaveLength(0);
+    });
+
+    it("is not left for a person who asked for less motion", async () => {
+      vi.stubGlobal(
+        "matchMedia",
+        vi.fn(() => ({ matches: true })),
+      );
+      render(<Overlay {...base}>content</Overlay>).unmount();
+      await Promise.resolve();
+      expect(panels()).toHaveLength(0);
+    });
   });
 });

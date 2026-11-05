@@ -91,7 +91,9 @@ export function useSheetDrag({
   const clear = (node: HTMLElement) => {
     node.style.transform = "";
     node.style.transition = "";
-    node.style.animation = "";
+    // The inline `animation: none` set when a press began stays: the sheet's entrance (`ui-up`) is over by then, and
+    // taking `none` away would play it again (the sheet jumps down and settles, and the click of a tap can land on the
+    // handle that moved under the finger).
   };
 
   const start = (event: PointerEvent<HTMLElement>) => {
