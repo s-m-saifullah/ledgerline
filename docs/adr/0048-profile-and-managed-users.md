@@ -57,4 +57,4 @@ Sharing a ledger between users, email change, photo, languages, deleting your ow
 3. API: the user routes, the cross-user isolation tests, the drill invariants (API 0.1.53).
 4. Web: Profile and Change password.
 5. Web: Users, the first sign-in card and the web's handling of the refusal.
-6. A server release (scratch drill from 0027 with two users, notes, the owner's approval).
+6. A server release (scratch drill from 0027 with two users, notes, the owner's approval). Done: released as `v0.7.0` on 2026-11-04, together with [0049](0049-deleted-people-and-cleared-ledgers.md).

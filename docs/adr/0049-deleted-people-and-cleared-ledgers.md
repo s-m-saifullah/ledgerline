@@ -63,4 +63,4 @@ A. This ADR, the rule lines in `CLAUDE.md` and `PLAN.md`, `SELF_HOSTING.md` and 
 B. API: deleted people (list, restore, purge now, the hourly purge, the new email message, drill invariants).
 C. API: migration 0029, clear and restore a ledger, the batch purge, sync tests.
 D. Web: the Users fold and sheets, the person-sheet actions, the Settings rows and the texts.
-E. A server release (scratch drill from schema 0027 with two users through 0029, an aged purge, notes, the owner's approval).
+E. A server release (scratch drill from schema 0027 with two users through 0029, an aged purge, notes, the owner's approval). Done: released as `v0.7.0` on 2026-11-04.
