@@ -4,6 +4,8 @@ Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations
 
 ## 0.1.55 — Clear a ledger and restore it
 
+Released in `v0.7.0` (2026-11-04).
+
 Migration 0029 (ADR 0049, slice C): `ledgers.cleared_at`, a nullable date; nobody has a value until someone clears a ledger. New routes, and two additive fields; no existing field changes.
 
 - `POST /api/v1/ledgers/{ledgerId}/clear` with the body `{ "confirm": "CLEAR" }` (anything else is `400`): the owner empties the ledger so they can start fresh. Every live row of every table of the ledger (entries, accounts, categories, tags, budgets, clients and the rest, and the saved answers to retried writes) is soft-deleted with one moment; the ledger, its name, its currency and its members stay. `Idempotency-Key` and `Origin` like every ledger write. Owner only (editor and viewer `403`, not a member `404`). Answers `200` with the ledger, whose `clearedAt` is that moment. An empty ledger is left as it is and any undo is kept. Keys used before the clear no longer replay (`409`).
@@ -15,6 +17,8 @@ Migration 0029 (ADR 0049, slice C): `ledgers.cleared_at`, a nullable date; nobod
 
 ## 0.1.54 — Deleted people: list, restore, delete now and the 30-day purge
 
+Released in `v0.7.0` (2026-11-04).
+
 No migration (ADR 0049, slice B). New routes only, in the `Users` group; no existing response changes. All of them are **admin only** (no session `401`, anyone else `403`) and the writes need the app's `Origin` and take no `Idempotency-Key`, like the routes above.
 
 - `GET /api/v1/users/deleted`: `{ items }`, newest deleted first, each `{ id, name, email, deletedAt, purgeAt }` where `purgeAt` is 30 days after `deletedAt`. Only people deleted less than 30 days ago are listed. Account facts only.
@@ -25,6 +29,8 @@ No migration (ADR 0049, slice B). New routes only, in the `Users` group; no exis
 - **`POST /api/v1/users` and a deleted person's email:** the answer is still `409`; its `detail` now says the person was deleted and how many days are left to restore them (or that they are being removed). It was "Someone already has that email" for every taken email.
 
 ## 0.1.53 — The admin's routes for the people on this server
+
+Released in `v0.7.0` (2026-11-04).
 
 No migration (ADR 0048, slice 3). New routes only, in a `Users` group; no existing response changes. All of them are **admin only**: no session is `401`, a person who is not the admin is `403` (whether or not the id they name exists), and every write needs `Origin` like the other writes. They take no `Idempotency-Key`. No response carries a password, a hash, a token or anything from a ledger, and the admin is not a member of anyone else's ledger, so the admin never sees anyone's money.
 
@@ -39,6 +45,8 @@ No migration (ADR 0048, slice 3). New routes only, in a `Users` group; no existi
 - Two tests prove the separation: every documented ledger route, read and write, is called by each person against each other person's ledger with that ledger's own ids and answers `404` while the ledger stays byte-for-byte the same, and no person's reads hold anything of anyone else's.
 
 ## 0.1.52 — My account, and a first-sign-in password change
+
+Released in `v0.7.0` (2026-11-04).
 
 Migration 0028 (ADR 0048): three columns on `users`, `is_admin`, `must_change_password` and `disabled_at`, all safe defaults, so an account that exists today reads "not temporary, not stopped"; the migration marks the earliest live account (the one the server was set up with) as the admin, and starting the API does the same for the configured owner. Only new routes, no existing response changes.
 
