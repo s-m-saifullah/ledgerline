@@ -61,8 +61,15 @@ const box = async (locator: Locator) => {
   if (!found) throw new Error("not on screen");
   return found;
 };
-async function openPicker(page: Page, width: number, theme: "light" | "dark") {
-  await page.emulateMedia({ reducedMotion: "reduce" });
+async function openPicker(
+  page: Page,
+  width: number,
+  theme: "light" | "dark",
+  motion = false,
+) {
+  await page.emulateMedia({
+    reducedMotion: motion ? "no-preference" : "reduce",
+  });
   await page.setViewportSize({ width, height: 900 });
   await signIn(page);
   await page.goto("/home");
@@ -139,3 +146,50 @@ for (const theme of ["light", "dark"] as const)
       expect(frame.y).toBeGreaterThanOrEqual(0);
       expect(frame.y + frame.height).toBeLessThanOrEqual(900);
     });
+
+test("the picker's dark overlay is the shared one: above the sheet it was opened from, and it fades out", async ({
+  page,
+}) => {
+  const picker = await openPicker(page, 390, "light", true);
+  const scrim = page.locator(".ui-scrim.date-time-overlay");
+  await expect(scrim).toHaveCount(1);
+  const levels = await page.evaluate(() => {
+    const z = (selector: string) =>
+      Number(
+        getComputedStyle(document.querySelector(selector) as Element).zIndex,
+      );
+    return { picker: z(".date-time-overlay"), sheet: z(".ui-sheet") };
+  });
+  expect(levels.picker).toBeGreaterThan(levels.sheet);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => {
+    const w = window as unknown as { __opacity: number[] };
+    w.__opacity = [];
+    const loop = () => {
+      const node = document.querySelector(".ui-scrim.date-time-overlay");
+      if (node) {
+        const style = getComputedStyle(node);
+        w.__opacity.push(
+          Number(style.opacity),
+          style.pointerEvents === "none" ? 1 : 0,
+        );
+      }
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+  await picker.getByRole("button", { name: "Close picker" }).click();
+  await expect(picker).toHaveCount(0);
+  await page.waitForTimeout(600);
+  const seen = await page.evaluate(
+    () => (window as unknown as { __opacity: number[] }).__opacity,
+  );
+  const opacities = seen.filter((_, index) => index % 2 === 0);
+  const passThrough = seen.filter((_, index) => index % 2 === 1);
+  // It got lighter over several frames after the picker went, and let taps through once it was closing.
+  expect(
+    opacities.filter((value) => value > 0.03 && value < 0.97).length,
+  ).toBeGreaterThanOrEqual(3);
+  expect(passThrough.at(-1)).toBe(1);
+  await expect(scrim).toHaveCount(0);
+});

@@ -300,12 +300,6 @@ select {
   padding: 24px;
   text-align: center;
 }
-.dialog-overlay {
-  position: fixed;
-  inset: 0;
-  background: #0008;
-  z-index: 30;
-}
 /* The heading or main region takes focus after a screen change (ADR 0040); it is not a control, so no ring. */
 #main-content:focus,
 #main-content h1:focus {
@@ -673,7 +667,8 @@ select {
   color: var(--accent);
   background: var(--accent-soft);
 }
-.date-time-overlay {
+/* The picker's overlay is the shared dark overlay (overlay.css), above the sheet it was opened from. */
+.ui-scrim.date-time-overlay {
   z-index: 35;
 }
 .date-time-picker {

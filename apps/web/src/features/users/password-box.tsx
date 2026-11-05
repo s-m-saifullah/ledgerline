@@ -32,6 +32,7 @@ export function PasswordBox({
             <span
               className="ui-row-title us-password"
               data-testid="temporary-password"
+              data-secret=""
             >
               {password}
             </span>

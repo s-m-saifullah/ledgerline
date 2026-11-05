@@ -157,7 +157,7 @@ export function DateTimeInput({
           </button>
         </Dialog.Trigger>
         <Dialog.Portal>
-          <Dialog.Overlay className="dialog-overlay date-time-overlay" />
+          <Dialog.Overlay className="ui-scrim date-time-overlay" />
           <Dialog.Content
             className="date-time-picker"
             // Radix sometimes does not treat this nested picker as the top layer and

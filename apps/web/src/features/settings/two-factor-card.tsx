@@ -326,7 +326,7 @@ function ScanStep({
       </ListCard>
       <div className="set-key">
         <span className="set-key-label">Key to type by hand</span>
-        <code className="two-factor-key">
+        <code className="two-factor-key" data-secret="">
           {secret.replace(/(.{4})/g, "$1 ").trim()}
         </code>
       </div>
@@ -385,7 +385,7 @@ function CodesStep({
       <p className="set-line">
         Each one signs you in once. They are shown only now.
       </p>
-      <ul className="backup-codes" aria-label="Backup codes">
+      <ul className="backup-codes" aria-label="Backup codes" data-secret="">
         {backupCodes.map((code) => (
           <li key={code} className="backup-code">
             {code}
