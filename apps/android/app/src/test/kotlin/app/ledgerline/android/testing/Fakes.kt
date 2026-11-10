@@ -91,3 +91,20 @@ class FakeFilterStore(var saved: app.ledgerline.android.settings.SavedFilters? =
 
     override fun clear() { saved = null }
 }
+
+/** The remembered payment choices, in memory. */
+class FakePaymentChoicesStore(var choices: app.ledgerline.android.settings.PaymentChoices = app.ledgerline.android.settings.PaymentChoices()) :
+    app.ledgerline.android.settings.PaymentChoicesStore {
+    var clears = 0
+
+    override fun load() = choices
+
+    override fun save(choices: app.ledgerline.android.settings.PaymentChoices) {
+        this.choices = choices
+    }
+
+    override fun clear() {
+        clears += 1
+        choices = app.ledgerline.android.settings.PaymentChoices()
+    }
+}

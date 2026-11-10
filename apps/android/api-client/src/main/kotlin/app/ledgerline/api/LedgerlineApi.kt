@@ -160,6 +160,15 @@ interface LedgerlineApi {
         @Body body: ExpectedVersion,
     )
 
+    /** Receiving a payment for a service (ADR 0050): one idempotent write; the server answers 201 with the payment and the service as it is now. */
+    @POST("api/v1/ledgers/{ledgerId}/receivables/{receivableId}/payments")
+    suspend fun createPayment(
+        @Path("ledgerId") ledgerId: String,
+        @Path("receivableId") receivableId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: CreatePayment,
+    ): ServicePayment
+
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")
     suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse

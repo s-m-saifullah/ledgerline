@@ -1,8 +1,8 @@
 package app.ledgerline.android.ui.clients
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,6 +18,7 @@ import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.ListRow
+import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.StatusPill
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.format.formatEntryDate
@@ -40,7 +41,7 @@ fun isOverdue(service: Service, today: String): Boolean =
 /**
  * A service: what it was, when it was done and what has been received, with Overdue beside the name when it is; at
  * the right what is left on it (an unpaid one) or what it cost with Paid in full (a paid one). A tap shows or hides
- * the payments received for it.
+ * the payments received for it, and for an unpaid one, Record payment.
  */
 @Composable
 internal fun ServiceRow(
@@ -49,6 +50,7 @@ internal fun ServiceRow(
     payments: Online<List<ServicePayment>>?,
     onTogglePayments: () -> Unit,
     onRetryPayments: () -> Unit,
+    onRecordPayment: (() -> Unit)? = null,
 ) {
     val unpaid = isUnpaid(service)
     val shown = if (unpaid) service.outstanding else service.amount
@@ -87,7 +89,16 @@ internal fun ServiceRow(
                 null
             },
         )
-        if (payments != null) Box(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)) { Payments(payments, onRetryPayments) }
+        if (payments != null) {
+            Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Payments(payments, onRetryPayments)
+                // Only an open service that still owes money can take a payment (ADR 0050).
+                // A real button, set apart from the payments above it: a bare coloured word did not read as something to press.
+                if (unpaid && onRecordPayment != null) {
+                    SecondaryButton(stringResource(R.string.client_record_payment), onRecordPayment, Modifier.fillMaxWidth().padding(top = 8.dp))
+                }
+            }
+        }
     }
 }
 

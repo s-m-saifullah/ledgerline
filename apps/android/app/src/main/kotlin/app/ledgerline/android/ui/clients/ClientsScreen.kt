@@ -5,10 +5,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.AutoLoadMore
 import java.time.LocalDate
 
@@ -24,9 +26,18 @@ fun ClientsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     model: ClientsViewModel = hiltViewModel(),
+    payment: RecordPaymentViewModel = hiltViewModel(),
 ) {
     val selected by model.selected.collectAsState()
-    DisposableEffect(Unit) { onDispose { model.close() } }
+    DisposableEffect(Unit) {
+        onDispose {
+            model.close()
+            payment.close()
+        }
+    }
+    // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
+    val reread by payment.reread.collectAsState()
+    LaunchedEffect(reread) { if (reread > 0) model.retry() }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -72,8 +83,16 @@ fun ClientsScreen(
                     onRetryServices = model::retry,
                     onRetryHistory = model::retry,
                     onRetryPayments = { model.retry() },
+                    onRecordPayment = { service -> (client as? Online.Ready)?.value?.let { payment.open(service, it.name) } },
                 ),
             )
         }
+    }
+    val sheet by payment.sheet.collectAsState()
+    sheet?.let { ui ->
+        PaymentSheet(
+            ui,
+            PaymentActions(edit = payment::edit, save = payment::save, dismissAsk = payment::dismissAsk, confirm = payment::confirm, close = payment::close),
+        )
     }
 }

@@ -249,7 +249,8 @@ private fun EditorBody(state: EditorState, newCategory: NewCategory?, actions: E
             }
             row {
                 WhenRow(
-                    form,
+                    form.date,
+                    form.time,
                     onDate = { pickingDate = true },
                     onTime = { pickingTime = true },
                     onClearTime = { actions.update { it.copy(time = null) } },
@@ -327,7 +328,7 @@ private fun SwapRow(enabled: Boolean, onSwap: () -> Unit) {
 /** When: the date, and a time that is optional (a ✕ clears it; "+ Add time" brings it back). */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun WhenRow(form: EditorForm, onDate: () -> Unit, onTime: () -> Unit, onClearTime: () -> Unit) {
+internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: () -> Unit, onClearTime: () -> Unit) {
     val palette = LocalPalette.current
     val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
     Row(
@@ -337,8 +338,7 @@ private fun WhenRow(form: EditorForm, onDate: () -> Unit, onTime: () -> Unit, on
     ) {
         Text(stringResource(R.string.editor_when), style = MaterialTheme.typography.bodyMedium, color = palette.muted)
         FlowRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.Center) {
-            ValuePill(if (form.date.isEmpty()) "" else formatEntryDate(form.date), onDate)
-            val time = form.time
+            ValuePill(if (date.isEmpty()) "" else formatEntryDate(date), onDate)
             if (time != null) {
                 // The time and its cross wrap together, so the cross never sits alone on a line.
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -426,7 +426,7 @@ private fun PendingRow(pending: Boolean, onChange: (Boolean) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DatePickerStep(date: String, onPick: (String) -> Unit, onClose: () -> Unit) {
+internal fun DatePickerStep(date: String, onPick: (String) -> Unit, onClose: () -> Unit) {
     val initial = runCatching { LocalDate.parse(date) }.getOrNull()?.atStartOfDay()?.toInstant(ZoneOffset.UTC)?.toEpochMilli()
     val picker = rememberDatePickerState(initialSelectedDateMillis = initial)
     DatePickerDialog(
@@ -443,7 +443,7 @@ private fun DatePickerStep(date: String, onPick: (String) -> Unit, onClose: () -
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimePickerStep(time: String?, onPick: (String) -> Unit, onClose: () -> Unit) {
+internal fun TimePickerStep(time: String?, onPick: (String) -> Unit, onClose: () -> Unit) {
     val start = time?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: LocalTime.now()
     val picker = rememberTimePickerState(start.hour, start.minute, DateFormat.is24HourFormat(LocalContext.current))
     val choose = { chosen: LocalTime ->
