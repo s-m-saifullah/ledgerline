@@ -19,6 +19,10 @@ interface LedgerlineApi {
     @GET("api/health")
     suspend fun health(): Health
 
+    /** The signed-in person. A person on a temporary password may call this and nothing else (ADR 0048). */
+    @GET("api/v1/me")
+    suspend fun me(): Me
+
     @GET("api/v1/ledgers")
     suspend fun ledgers(): LedgerList
 

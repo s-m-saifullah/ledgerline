@@ -3,6 +3,7 @@ package app.ledgerline.android.session
 import android.os.Build
 import app.ledgerline.android.BuildConfig
 import app.ledgerline.api.LedgerlineClients
+import app.ledgerline.api.SessionToken
 import app.ledgerline.api.appUserAgent
 import app.ledgerline.api.createClients
 import javax.inject.Inject
@@ -27,6 +28,16 @@ class ClientsProvider @Inject constructor(private val session: SessionManager) {
         cachedSync = origin to clients
         return clients
     }
+
+    /**
+     * Clients that send [token] instead of the session's, for the one question asked right after a sign-in, before the
+     * session accepts the token (ADR 0050). Not kept: the token goes out of scope with the answer.
+     */
+    fun forToken(origin: String, token: SessionToken): LedgerlineClients = createClients(
+        origin = origin,
+        userAgent = appUserAgent(BuildConfig.VERSION_NAME, Build.MODEL.orEmpty()),
+        token = { token.value },
+    )
 
     @Synchronized
     fun forOrigin(origin: String): LedgerlineClients {

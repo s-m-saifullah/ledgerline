@@ -35,6 +35,7 @@
     <string name="signin_error_server">The server had a problem. Try again in a moment.</string>
     <string name="signin_error_network">Could not reach the server. Check your connection and the address.</string>
     <string name="signin_error_unexpected">Something unexpected came back from the server. Check the address and try again.</string>
+    <string name="signin_error_password_change">Choose a new password on the web, then sign in here again.</string>
 
     <string name="code_title">Enter your code</string>
     <string name="code_intro">The six-digit code from your authenticator app.</string>

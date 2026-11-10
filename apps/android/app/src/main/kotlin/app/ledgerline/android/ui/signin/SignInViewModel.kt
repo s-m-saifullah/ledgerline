@@ -7,6 +7,7 @@ import app.ledgerline.android.session.ClientsProvider
 import app.ledgerline.android.session.SessionEnd
 import app.ledgerline.android.session.SessionManager
 import app.ledgerline.api.Challenge
+import app.ledgerline.api.SessionToken
 import app.ledgerline.api.SignInFailure
 import app.ledgerline.api.SignInResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,11 +17,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
+import retrofit2.HttpException
+import java.io.IOException
 import javax.inject.Inject
 
 enum class SignInStep { Password, Code }
 
-enum class SignInProblem { MissingFields, MissingCode, BadCredentials, WrongCode, RateLimited, AddressRejected, Server, Network, Unexpected }
+enum class SignInProblem {
+    MissingFields,
+    MissingCode,
+    BadCredentials,
+    WrongCode,
+    RateLimited,
+    AddressRejected,
+    Server,
+    Network,
+    Unexpected,
+
+    /** The person is still on the temporary password the admin gave them; it is changed on the web (ADR 0048). */
+    PasswordChangeRequired,
+}
 
 data class SignInUiState(
     val step: SignInStep = SignInStep.Password,
@@ -93,9 +110,14 @@ class SignInViewModel @Inject constructor(
             when (result) {
                 is SignInResult.SignedIn -> {
                     challenge = null
-                    // The session first, then the form: anything that sees the form finished must see the session.
-                    session.signedIn(result.token)
-                    _state.value = SignInUiState(email = current.email)
+                    if (onTemporaryPassword(origin, result.token)) {
+                        // Nothing was kept: no session, no stored token. The person goes back to the first step.
+                        _state.value = SignInUiState(email = current.email, problem = SignInProblem.PasswordChangeRequired)
+                    } else {
+                        // The session first, then the form: anything that sees the form finished must see the session.
+                        session.signedIn(result.token)
+                        _state.value = SignInUiState(email = current.email)
+                    }
                 }
                 is SignInResult.NeedsCode -> {
                     challenge = result.challenge
@@ -104,6 +126,28 @@ class SignInViewModel @Inject constructor(
                 is SignInResult.Failed -> _state.update { it.copy(submitting = false, problem = result.failure.toProblem()) }
             }
         }
+    }
+
+    /**
+     * Asks the server, with the token the sign-in just made and before the session has it, whether this person is
+     * still on a temporary password (ADR 0050). Such a person can sign in, but every other route then answers 403, so
+     * the app would load nothing and say only that it could not update. When the answer is yes the token's session is
+     * ended on the server at once (best effort) and nothing is kept. Any other outcome, including no answer, counts as
+     * no: a sign-in then goes on as it always did, and the server still refuses what it must.
+     */
+    private suspend fun onTemporaryPassword(origin: String, token: SessionToken): Boolean {
+        val asked = clients.forToken(origin, token)
+        val must = try {
+            asked.api.me().mustChangePassword
+        } catch (_: IOException) {
+            false
+        } catch (_: HttpException) {
+            false
+        } catch (_: SerializationException) {
+            false
+        }
+        if (must) asked.auth.signOut()
+        return must
     }
 
     private fun SignInFailure.toProblem() = when (this) {
