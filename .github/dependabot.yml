@@ -11,6 +11,10 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # Biome 2.6 needs a migrated biome.json and fixes for the lint rules it adds, so it is its own
+      # pull request. Patch releases of the current minor still arrive. Remove this entry then.
+      - dependency-name: "@biomejs/biome"
+        update-types: ["version-update:semver-minor"]
     groups:
       npm-minor-and-patch:
         update-types: ["minor", "patch"]

@@ -11,7 +11,7 @@ Read this at the start of every session and update it when a piece of work lands
 - **Known follow-ups:**
   - Dependabot's grouped npm and GitHub Actions updates were reviewed and merged on 2026-10-16 and shipped in `v0.1.4`; review the next ones when they appear.
   - Known gaps: merging a category leaves its budget on the archived source category; Home has no budget summary yet; an account's default bonus category is not repointed when its category is merged or archived; the Clients history line for a cross-currency payment shows the amount received, not the amount it settled; on Android the Transactions search ignores case but not accents ("cafe" does not find "Café"); filters kept for a time can name an account, category or tag that was later deleted (the box then shows empty until cleared); tags cannot be created on the phone. The Clients list has no Overdue pill on its rows (the contacts API has no due dates); a server field for it is planned next, now that the web redesign is deployed.
-  - Biome 2.6 is held back (see the 2026-10-31 housekeeping entry); upgrading it means migrating its configuration and fixing the lint rules it adds.
+  - Biome 2.6 is held back (see the 2026-10-31 housekeeping entry); upgrading it means migrating its configuration and fixing the lint rules it adds. Dependabot ignores Biome minor releases (`.github/dependabot.yml`) until that pull request; remove the entry then.
   - Off-site backups run daily (ADR 0037); repeat the restore check on your computer monthly.
 
 ## Phase checklist
