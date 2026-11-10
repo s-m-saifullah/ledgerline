@@ -31,6 +31,8 @@ import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
+import app.ledgerline.android.ui.design.WriteCopy
+import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
 import app.ledgerline.android.ui.editor.AmountInput
 import app.ledgerline.android.ui.editor.LocalCentsFirst
@@ -50,6 +52,13 @@ class LimitActions(
     val askRemove: () -> Unit,
     val dismissRemove: () -> Unit,
     val confirmRemove: () -> Unit,
+)
+
+private val LimitCopy = WriteCopy(
+    offline = R.string.limit_error_offline,
+    forbidden = R.string.limit_error_forbidden,
+    failed = R.string.limit_error_failed,
+    rejected = R.string.limit_error_rejected,
 )
 
 /** The Set limit sheet (ADR 0046); a swipe away or Cancel leaves the limit as it was. */
@@ -117,12 +126,7 @@ internal fun LimitSheetContent(ui: LimitUi, actions: LimitActions, modifier: Mod
         }
         ui.error?.let { error ->
             Text(
-                when (error) {
-                    LimitError.Offline -> stringResource(R.string.limit_error_offline)
-                    LimitError.Forbidden -> stringResource(R.string.limit_error_forbidden)
-                    LimitError.Failed -> stringResource(R.string.limit_error_failed)
-                    is LimitError.Rejected -> error.detail ?: stringResource(R.string.limit_error_rejected)
-                },
+                error.text(LimitCopy),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
             )

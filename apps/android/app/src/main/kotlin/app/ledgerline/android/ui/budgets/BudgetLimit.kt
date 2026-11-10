@@ -1,6 +1,6 @@
 package app.ledgerline.android.ui.budgets
 
-import app.ledgerline.android.online.Written
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.editor.AmountInput
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.ui.editor.currencyDigits
@@ -59,25 +59,5 @@ fun limitPresets(currency: String): List<Long> {
     return listOf(50L, 100L, 150L, 250L).map { it * unit }
 }
 
-/** Why a limit could not be saved. */
-sealed interface LimitError {
-    data object Offline : LimitError
-
-    data object Forbidden : LimitError
-
-    data object Failed : LimitError
-
-    /** The server's own sentence (a version that moved on, a category that cannot be budgeted); null when it gave none. */
-    data class Rejected(val detail: String?) : LimitError
-}
-
-internal fun Written<*>.toLimitError(): LimitError? = when (this) {
-    is Written.Done -> null
-    Written.Offline -> LimitError.Offline
-    Written.Forbidden -> LimitError.Forbidden
-    Written.Failed -> LimitError.Failed
-    is Written.Rejected -> LimitError.Rejected(detail)
-}
-
 /** The sheet as the screen sees it: the form, whether a write is in flight, how the last one ended, and whether Remove is being asked. */
-data class LimitUi(val form: LimitForm, val saving: Boolean = false, val error: LimitError? = null, val askRemove: Boolean = false)
+data class LimitUi(val form: LimitForm, val saving: Boolean = false, val error: WriteError? = null, val askRemove: Boolean = false)

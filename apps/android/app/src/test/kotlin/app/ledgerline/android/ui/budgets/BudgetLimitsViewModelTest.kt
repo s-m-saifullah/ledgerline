@@ -2,6 +2,7 @@ package app.ledgerline.android.ui.budgets
 
 import app.ledgerline.android.online.BudgetWrites
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.testing.OnlineHarness
 import app.ledgerline.api.ApiJson
 import app.ledgerline.api.Budget
@@ -141,7 +142,7 @@ class BudgetLimitsViewModelTest {
         model.openLimit(fun_)
         type("75")
         save()
-        assertEquals(LimitError.Offline, model.limit.value!!.error)
+        assertEquals(WriteError.Offline, model.limit.value!!.error)
         assertEquals("75", model.limit.value!!.form.text)
     }
 
@@ -179,7 +180,7 @@ class BudgetLimitsViewModelTest {
         type("150")
         val readsBefore = reads().size
         save()
-        assertEquals(LimitError.Rejected("This budget changed. Reload and edit it."), model.limit.value!!.error)
+        assertEquals(WriteError.Rejected("This budget changed. Reload and edit it."), model.limit.value!!.error)
         harness.until { reads().size > readsBefore }
     }
 
@@ -189,7 +190,7 @@ class BudgetLimitsViewModelTest {
         model.openLimit(fun_)
         type("75")
         save()
-        assertEquals(LimitError.Forbidden, model.limit.value!!.error)
+        assertEquals(WriteError.Forbidden, model.limit.value!!.error)
     }
 
     @Test
@@ -198,7 +199,7 @@ class BudgetLimitsViewModelTest {
         model.openLimit(fun_)
         type("75")
         save()
-        assertEquals(LimitError.Failed, model.limit.value!!.error)
+        assertEquals(WriteError.Failed, model.limit.value!!.error)
         assertEquals("75", model.limit.value!!.form.text)
     }
 
