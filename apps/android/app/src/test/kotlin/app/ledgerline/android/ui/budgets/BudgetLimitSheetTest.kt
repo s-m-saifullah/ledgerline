@@ -21,6 +21,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.api.BudgetLine
 import org.junit.Assert.assertEquals
@@ -52,7 +53,7 @@ class BudgetLimitSheetTest {
         )
     }
 
-    private fun ui(line: BudgetLine, text: String? = null, saving: Boolean = false, error: LimitError? = null, ask: Boolean = false): LimitUi {
+    private fun ui(line: BudgetLine, text: String? = null, saving: Boolean = false, error: WriteError? = null, ask: Boolean = false): LimitUi {
         val form = LimitForm.forLine(line, "2026-10")!!
         return LimitUi(if (text == null) form else form.copy(text = text), saving, error, ask)
     }
@@ -147,14 +148,14 @@ class BudgetLimitSheetTest {
 
     @Test
     fun eachErrorHasItsOwnSentence() {
-        val sentences = mapOf<LimitError, String>(
-            LimitError.Offline to "Needs a connection. Your amount is kept.",
-            LimitError.Forbidden to "Your account can't change budgets.",
-            LimitError.Failed to "Couldn't save. Try again.",
-            LimitError.Rejected(null) to "The server didn't accept this.",
-            LimitError.Rejected("This budget changed. Reload and edit it.") to "This budget changed. Reload and edit it.",
+        val sentences = mapOf<WriteError, String>(
+            WriteError.Offline to "Needs a connection. Your amount is kept.",
+            WriteError.Forbidden to "Your account can't change budgets.",
+            WriteError.Failed to "Couldn't save. Try again.",
+            WriteError.Rejected(null) to "The server didn't accept this.",
+            WriteError.Rejected("This budget changed. Reload and edit it.") to "This budget changed. Reload and edit it.",
         )
-        var shown by mutableStateOf<LimitError>(LimitError.Failed)
+        var shown by mutableStateOf<WriteError>(WriteError.Failed)
         compose.setContent { LimitSheetContent(ui(fresh, "75", error = shown), Taps().actions(), Modifier.requiredHeight(3000.dp)) }
         sentences.forEach { (error, sentence) ->
             shown = error

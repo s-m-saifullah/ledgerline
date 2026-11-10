@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.BudgetWrites
 import app.ledgerline.android.online.MonthlyRead
+import app.ledgerline.android.online.WriteKeys
 import app.ledgerline.android.online.Written
-import app.ledgerline.android.outbox.Uuid7
+import app.ledgerline.android.online.isStale
+import app.ledgerline.android.online.toWriteError
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.OnlineReader
@@ -44,7 +46,7 @@ class BudgetsViewModel @Inject constructor(
     fun retry() = read.retry()
 
     private val _limit = MutableStateFlow<LimitUi?>(null)
-    private val keys = mutableMapOf<String, String>()
+    private val keys = WriteKeys("bud")
 
     /** The Set limit sheet while it is open (null otherwise). */
     val limit: StateFlow<LimitUi?> = _limit
@@ -75,7 +77,7 @@ class BudgetsViewModel @Inject constructor(
         val ui = _limit.value ?: return
         val request = ui.form.request() ?: return
         if (ui.saving || !ui.form.canSave) return
-        val key = keyFor("set|${request.categoryId}|${request.month}|${request.amount.amount}|${request.expectedVersion}")
+        val key = keys.keyFor("set|${request.categoryId}|${request.month}|${request.amount.amount}|${request.expectedVersion}")
         send { ledger -> writes.set(ledger, key, request) }
     }
 
@@ -84,11 +86,9 @@ class BudgetsViewModel @Inject constructor(
         val ui = _limit.value ?: return
         val budget = ui.form.target.budget ?: return
         if (ui.saving || !ui.askRemove) return
-        val key = keyFor("remove|${budget.id}|${budget.version}")
+        val key = keys.keyFor("remove|${budget.id}|${budget.version}")
         send { ledger -> writes.remove(ledger, budget.id, key, budget.version) }
     }
-
-    private fun keyFor(change: String) = keys.getOrPut(change) { "bud-${Uuid7.next()}" }
 
     private fun send(call: suspend (String) -> Written<*>) {
         _limit.update { it?.copy(saving = true, error = null, askRemove = false) }
@@ -100,9 +100,9 @@ class BudgetsViewModel @Inject constructor(
                 _limit.value = null
                 read.retry()
             } else {
-                _limit.update { it?.copy(saving = false, error = result.toLimitError()) }
+                _limit.update { it?.copy(saving = false, error = result.toWriteError()) }
                 // A version that moved on or a budget already gone: show what the server says and read the month again.
-                if (result is Written.Rejected && (result.status == 409 || result.status == 404)) read.retry()
+                if (result.isStale()) read.retry()
             }
         }
     }

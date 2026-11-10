@@ -216,7 +216,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         BudgetsContent("2026-11", Online.Ready(budgetMonth("2026-11", listOf(budgetLine("Food", null, 0), budgetLine("Fun", null, 4200)))), {}, {}, {})
     }
 
-    private fun limitShot(name: String, line: app.ledgerline.api.BudgetLine, text: String? = null, error: app.ledgerline.android.ui.budgets.LimitError? = null, ask: Boolean = false) = shot(name, Tab.Budgets) {
+    private fun limitShot(name: String, line: app.ledgerline.api.BudgetLine, text: String? = null, error: app.ledgerline.android.online.WriteError? = null, ask: Boolean = false) = shot(name, Tab.Budgets) {
         val form = app.ledgerline.android.ui.budgets.LimitForm.forLine(line, "2026-10")!!
         val ui = app.ledgerline.android.ui.budgets.LimitUi(if (text == null) form else form.copy(text = text), error = error, askRemove = ask)
         val none = app.ledgerline.android.ui.budgets.LimitActions({}, {}, {}, {}, {}, {}, {}, {})
@@ -230,7 +230,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     fun budgetsLimitEdit() = limitShot("budgets-limit-edit", budgetLine("Food", 30000, 12883))
 
     @Test
-    fun budgetsLimitProblem() = limitShot("budgets-limit-problem", budgetLine("Transport", null, 6956), "0", app.ledgerline.android.ui.budgets.LimitError.Offline)
+    fun budgetsLimitProblem() = limitShot("budgets-limit-problem", budgetLine("Transport", null, 6956), "0", app.ledgerline.android.online.WriteError.Offline)
 
     @Test
     fun budgetsOffline() = shot("budgets-offline", Tab.Budgets) { BudgetsContent("2026-10", Online.Offline, {}, {}, {}) }
