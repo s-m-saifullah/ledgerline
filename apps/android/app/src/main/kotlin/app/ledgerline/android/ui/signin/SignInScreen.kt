@@ -207,4 +207,5 @@ private fun SignInProblem.messageRes() = when (this) {
     SignInProblem.Server -> R.string.signin_error_server
     SignInProblem.Network -> R.string.signin_error_network
     SignInProblem.Unexpected -> R.string.signin_error_unexpected
+    SignInProblem.PasswordChangeRequired -> R.string.signin_error_password_change
 }

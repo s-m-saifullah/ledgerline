@@ -215,6 +215,21 @@ class ContractTest {
     }
 
     @Test
+    fun meMatches() = assertMatches(
+        SchemaContract.differences(
+            Me.serializer().descriptor,
+            SchemaContract.response("/api/v1/me", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun theAccountReplyDecodesWhenAServerAddsFields() {
+        val text = """{"id":"01900000-0000-7000-8000-000000000001","name":"Sam","email":"you@example.com","isAdmin":true,""" +
+            """"mustChangePassword":true,"twoFactorEnabled":false,"somethingNew":1}"""
+        assertEquals(true, ApiJson.decodeFromString(Me.serializer(), text).mustChangePassword)
+    }
+
+    @Test
     fun homeMatches() = assertMatches(
         SchemaContract.differences(
             HomeSummary.serializer().descriptor,

@@ -652,6 +652,12 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     )
 
     @Test
+    fun signInOnATemporaryPassword() = signIn(
+        "signin-temporary-password",
+        app.ledgerline.android.ui.signin.SignInUiState(email = "you@example.com", problem = app.ledgerline.android.ui.signin.SignInProblem.PasswordChangeRequired),
+    )
+
+    @Test
     fun signInWhileWorking() = signIn("signin-working", app.ledgerline.android.ui.signin.SignInUiState(email = "you@example.com", password = "secret", submitting = true))
 
     @Test

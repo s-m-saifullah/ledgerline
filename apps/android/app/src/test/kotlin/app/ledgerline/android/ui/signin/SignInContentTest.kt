@@ -106,6 +106,13 @@ class SignInContentTest {
     }
 
     @Test
+    fun aPersonOnATemporaryPasswordIsToldToChooseANewOneOnTheWeb() {
+        show(SignInUiState(email = "you@example.com", problem = SignInProblem.PasswordChangeRequired))
+        compose.onNodeWithText("Choose a new password on the web, then sign in here again.").assertExists()
+        button("Sign in").assertIsEnabled()
+    }
+
+    @Test
     fun theServerIsOneRowWithoutTheSchemeAndATapOpensTheAddressScreen() {
         show()
         compose.onNodeWithText("Server").assertExists()

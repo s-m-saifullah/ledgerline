@@ -2,15 +2,18 @@ package app.ledgerline.android.ui
 
 import app.ledgerline.android.session.ClientsProvider
 import app.ledgerline.android.session.SessionManager
+import app.ledgerline.android.session.SessionState
 import app.ledgerline.android.testing.FakeClock
 import app.ledgerline.android.testing.FakeTokenProtector
 import app.ledgerline.android.testing.FakeServerAddressStore
 import app.ledgerline.android.ui.signin.SignInProblem
 import app.ledgerline.android.ui.signin.SignInStep
 import app.ledgerline.android.ui.signin.SignInViewModel
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -18,6 +21,8 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.SocketEffect.CloseSocket
+import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -65,6 +70,26 @@ class SignInViewModelTest {
         model.onPassword("correct horse")
     }
 
+    /** `GET /me` as the server answers it: the one thing the phone reads from it is `mustChangePassword`. */
+    private fun me(mustChangePassword: Boolean) =
+        """{"id":"01900000-0000-7000-8000-000000000001","name":"Sam","email":"you@example.com","isAdmin":false,""" +
+            """"mustChangePassword":$mustChangePassword,"twoFactorEnabled":false}"""
+
+    /** A finished sign-in is followed by the phone's one question about the account (ADR 0050). */
+    private fun accepted(token: String, mustChangePassword: Boolean = false) {
+        reply(200, "{}", "set-auth-token" to token)
+        reply(200, me(mustChangePassword))
+    }
+
+    private fun next() = server.takeRequest(5, TimeUnit.SECONDS)!!
+
+    /** Every state the session passes through, kept as it happens (a StateFlow alone would drop the short-lived ones). */
+    private fun watchSession(): MutableList<SessionState> {
+        val seen = mutableListOf<SessionState>()
+        CoroutineScope(Dispatchers.Unconfined).launch { session.state.collect { seen += it } }
+        return seen
+    }
+
     @Test
     fun emptyFieldsAreRefusedWithoutAnyRequest() {
         submit()
@@ -74,11 +99,108 @@ class SignInViewModelTest {
 
     @Test
     fun aPlainSignInStoresTheTokenAndClearsThePassword() {
-        reply(200, "{}", "set-auth-token" to "tok-1")
+        accepted("tok-1")
         fill()
         submit()
         assertEquals("tok-1", session.token.value?.value)
         assertEquals("", model.state.value.password)
+        assertNull(model.state.value.problem)
+    }
+
+    @Test
+    fun theAccountIsAskedAboutWithTheNewTokenBeforeTheSessionHasIt() {
+        accepted("tok-1")
+        fill()
+        val seen = watchSession()
+        submit()
+        assertEquals("/api/v1/auth/sign-in/email", next().url.encodedPath)
+        val question = next()
+        assertEquals("GET", question.method)
+        assertEquals("/api/v1/me", question.url.encodedPath)
+        assertEquals("Bearer tok-1", question.headers["Authorization"])
+        assertEquals(2, server.requestCount)
+        assertEquals(listOf(SessionState.SignedOut, SessionState.Offer), seen)
+    }
+
+    @Test
+    fun aPersonOnATemporaryPasswordIsToldWhyAndGetsNoSession() {
+        accepted("tok-t", mustChangePassword = true)
+        reply(200)
+        fill()
+        val seen = watchSession()
+        submit()
+        assertNull(session.token.value)
+        assertEquals(SessionState.SignedOut, session.state.value)
+        assertEquals(listOf<SessionState>(SessionState.SignedOut), seen)
+        assertEquals(SignInProblem.PasswordChangeRequired, model.state.value.problem)
+        assertEquals("you@example.com", model.state.value.email)
+        assertEquals("", model.state.value.password)
+        assertEquals(false, model.state.value.submitting)
+        assertEquals(SignInStep.Password, model.state.value.step)
+        assertNull(session.ended.value)
+    }
+
+    @Test
+    fun theSignInThatWasNotUsedIsEndedOnTheServerWithTheSameToken() {
+        accepted("tok-t", mustChangePassword = true)
+        reply(200)
+        fill()
+        submit()
+        next()
+        next()
+        val signOut = next()
+        assertEquals("POST", signOut.method)
+        assertEquals("/api/v1/auth/sign-out", signOut.url.encodedPath)
+        assertEquals("Bearer tok-t", signOut.headers["Authorization"])
+        assertEquals(3, server.requestCount)
+    }
+
+    @Test
+    fun theMessageStandsEvenWhenTheServerCannotBeToldToSignOut() {
+        accepted("tok-t", mustChangePassword = true)
+        reply(500)
+        fill()
+        submit()
+        assertNull(session.token.value)
+        assertEquals(SignInProblem.PasswordChangeRequired, model.state.value.problem)
+    }
+
+    @Test
+    fun aFailedQuestionStillSignsInAsBefore() {
+        reply(200, "{}", "set-auth-token" to "tok-1")
+        reply(500)
+        fill()
+        submit()
+        assertEquals("tok-1", session.token.value?.value)
+        assertNull(model.state.value.problem)
+    }
+
+    @Test
+    fun aDroppedConnectionDuringTheQuestionStillSignsInAsBefore() {
+        reply(200, "{}", "set-auth-token" to "tok-1")
+        server.enqueue(MockResponse.Builder().onRequestStart(CloseSocket()).build())
+        fill()
+        submit()
+        assertEquals("tok-1", session.token.value?.value)
+        assertNull(model.state.value.problem)
+    }
+
+    @Test
+    fun anAnswerTheAppDoesNotUnderstandStillSignsInAsBefore() {
+        reply(200, "{}", "set-auth-token" to "tok-1")
+        reply(200, "not json")
+        fill()
+        submit()
+        assertEquals("tok-1", session.token.value?.value)
+        assertNull(model.state.value.problem)
+    }
+
+    @Test
+    fun aWrongPasswordAsksNothingAboutTheAccount() {
+        reply(401)
+        fill()
+        submit()
+        assertEquals(1, server.requestCount)
     }
 
     @Test
@@ -97,10 +219,29 @@ class SignInViewModelTest {
         assertEquals(SignInProblem.WrongCode, model.state.value.problem)
         assertEquals(SignInStep.Code, model.state.value.step)
 
-        reply(200, "{}", "set-auth-token" to "tok-2")
+        accepted("tok-2")
         model.onCode("123456")
         submit()
         assertEquals("tok-2", session.token.value?.value)
+    }
+
+    @Test
+    fun aTemporaryPasswordIsNoticedOnlyOnceTheCodeIsAcceptedAndThenStartsOverAtThePassword() {
+        reply(200, """{"twoFactorRedirect":true}""", "Set-Cookie" to "two_factor=abc; Path=/")
+        fill()
+        submit()
+        assertEquals(1, server.requestCount)
+        assertEquals(SignInStep.Code, model.state.value.step)
+
+        accepted("tok-t", mustChangePassword = true)
+        reply(200)
+        model.onCode("123456")
+        submit()
+        assertNull(session.token.value)
+        assertEquals(SignInProblem.PasswordChangeRequired, model.state.value.problem)
+        assertEquals(SignInStep.Password, model.state.value.step)
+        assertEquals("", model.state.value.code)
+        assertEquals(4, server.requestCount)
     }
 
     @Test
