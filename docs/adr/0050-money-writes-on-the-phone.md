@@ -43,3 +43,8 @@ Accepted by the owner in chat on 2026-11-10. The first version of this ADR liste
 - **Recording a receipt is on the phone; editing and deleting one stay on the web.** The client's balance card has a filled **Record payment** button while they owe (the screen's one primary action; each service keeps its outlined button). The sheet has the amount with **Pay full balance**, a live "Pays, oldest first" preview, a currency row only when the client owes in several currencies, the same Account, Category and tip rows as slice 4a, and a question before it sends.
 - **One idempotent write**, `POST /contacts/{id}/receipts`, with `expectedAllocations` copied from the preview that matches the amount shown; a service that changed meanwhile is a `409`, which reads the client again and says so. An amount over the open total settles everything and the rest is one tip, as the web does.
 - **Order:** 4c is built before 4b (other currencies), so the rate lookup and the amount received are built once for both flows.
+
+## Amendment, 2026-11-11: neither side USD (slice 4b-2)
+
+Built as planned; two details the first plan did not fix. **Saving waits for a rate:** when the ledger holds no rate for the account's currency on the payment's date and none is typed, the phone does not send (the server would answer `409`); a look-up that failed does not block, because the server decides. A rate typed that cannot be stored also blocks, where the web silently uses the stored one. **The rate is for the account's currency** on the payment's date, valued against USD; it only prices the income entry, so the settled and received amounts do not change. The phone sends `fxRate` only when it was typed, never for a pair with USD in it.
+

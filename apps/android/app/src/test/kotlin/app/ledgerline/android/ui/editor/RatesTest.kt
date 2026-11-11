@@ -74,6 +74,14 @@ class RatesTest {
     }
 
     @Test
+    fun anAmountBeyondWhatAWebNumberHoldsExactlyIsRefusedEvenWhenTheResultWouldFit() {
+        // 2^53 is the first whole number the web cannot hold exactly; halved it would still fit, and the web refuses it.
+        assertThrows(ArithmeticException::class.java) { convertMinor(9_007_199_254_740_992L, "0.5", "USD", "USD") }
+        assertThrows(ArithmeticException::class.java) { convertMinor(-9_007_199_254_740_992L, "0.5", "USD", "USD") }
+        assertEquals(4_503_599_627_370_496L, convertMinor(9_007_199_254_740_991L, "0.5", "USD", "USD"))
+    }
+
+    @Test
     fun anAmountConvertsAtAStoredRate() {
         // 274.00 EUR at 1.0909 USD each is 298.9066 USD: 29,891 cents.
         assertEquals(29_891, convertMinor(27_400, "1.0909", "EUR", "USD"))
