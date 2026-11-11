@@ -12,6 +12,7 @@ import app.ledgerline.android.ui.signin.SignInViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.setMain
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import mockwebserver3.SocketEffect.CloseSocket
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -83,11 +85,22 @@ class SignInViewModelTest {
 
     private fun next() = server.takeRequest(5, TimeUnit.SECONDS)!!
 
-    /** Every state the session passes through, kept as it happens (a StateFlow alone would drop the short-lived ones). */
+    /**
+     * Every state the session passes through, kept as it happens (a StateFlow alone would drop the short-lived ones). The
+     * session changes on the network thread while the view model is still running there, so this watcher runs after the
+     * screen has finished its work and the test thread may read first: use [awaitSeen] before comparing, and a list that is
+     * safe to read from another thread.
+     */
     private fun watchSession(): MutableList<SessionState> {
-        val seen = mutableListOf<SessionState>()
+        val seen = CopyOnWriteArrayList<SessionState>()
         CoroutineScope(Dispatchers.Unconfined).launch { session.state.collect { seen += it } }
         return seen
+    }
+
+    /** Waits until the watcher has recorded [count] states, then returns what it saw. */
+    private fun awaitSeen(seen: List<SessionState>, count: Int): List<SessionState> {
+        runBlocking { withTimeout(5_000) { while (seen.size < count) delay(10) } }
+        return seen.toList()
     }
 
     @Test
@@ -119,7 +132,7 @@ class SignInViewModelTest {
         assertEquals("/api/v1/me", question.url.encodedPath)
         assertEquals("Bearer tok-1", question.headers["Authorization"])
         assertEquals(2, server.requestCount)
-        assertEquals(listOf(SessionState.SignedOut, SessionState.Offer), seen)
+        assertEquals(listOf(SessionState.SignedOut, SessionState.Offer), awaitSeen(seen, 2))
     }
 
     @Test
@@ -131,7 +144,10 @@ class SignInViewModelTest {
         submit()
         assertNull(session.token.value)
         assertEquals(SessionState.SignedOut, session.state.value)
-        assertEquals(listOf<SessionState>(SessionState.SignedOut), seen)
+        // Nothing can be waited for here, so give a late state time to be recorded before saying there was none.
+        awaitSeen(seen, 1)
+        Thread.sleep(300)
+        assertEquals(listOf<SessionState>(SessionState.SignedOut), seen.toList())
         assertEquals(SignInProblem.PasswordChangeRequired, model.state.value.problem)
         assertEquals("you@example.com", model.state.value.email)
         assertEquals("", model.state.value.password)
