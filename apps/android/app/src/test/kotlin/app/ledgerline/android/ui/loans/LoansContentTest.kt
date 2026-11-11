@@ -520,4 +520,15 @@ class LoansContentTest {
         // On one line: their middles are level.
         assertEquals((primary.top + primary.bottom).value, (menu.top + menu.bottom).value, 1f)
     }
+
+    @Test
+    fun theMoneyButtonsStayInPrivacyModeWhichOnlySpeaksTheFiguresInWords() {
+        val taps = MoneyTaps()
+        showPerson(moves = taps, private = true)
+        compose.onNodeWithText("$200.00").assertDoesNotExist()
+        compose.onNodeWithText("Record repayment").performClick()
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").performClick()
+        compose.onNodeWithText("Borrow money").performClick()
+        assertEquals(listOf("repay", "borrow"), taps.log)
+    }
 }
