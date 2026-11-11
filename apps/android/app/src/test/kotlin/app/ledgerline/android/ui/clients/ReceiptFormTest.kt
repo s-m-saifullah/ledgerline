@@ -154,4 +154,12 @@ class ReceiptFormTest {
         assertFalse(form(amount = "500.00").matches(preview()))
         assertFalse(form().matches(null))
     }
+
+    @Test
+    fun theSummaryCountsServicesPaidInFullAndWhetherOneIsPaidOnlyInPart() {
+        assertEquals(PaysSummary(2, false), paysSummary(listOf(allocation("a", 1, 100), allocation("b", 1, 50))))
+        assertEquals(PaysSummary(1, true), paysSummary(listOf(allocation("a", 1, 100), allocation("b", 1, 50, left = 10))))
+        assertEquals(PaysSummary(0, true), paysSummary(listOf(allocation("a", 1, 10, left = 90))))
+        assertEquals(PaysSummary(0, false), paysSummary(emptyList()))
+    }
 }

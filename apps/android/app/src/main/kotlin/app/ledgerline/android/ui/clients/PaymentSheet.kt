@@ -263,7 +263,7 @@ private fun Question(ui: PaymentUi, actions: PaymentActions) {
 
 /** A row that opens and shuts what is under it, as the prototype's `<details>` rows. */
 @Composable
-private fun FoldRow(title: String, open: Boolean, onToggle: () -> Unit) {
+internal fun FoldRow(title: String, open: Boolean, onToggle: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle, role = Role.Button).heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -280,11 +280,11 @@ private fun FoldRow(title: String, open: Boolean, onToggle: () -> Unit) {
 }
 
 @Composable
-private fun Hint(text: String) {
+internal fun Hint(text: String) {
     Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = ScreenMargin))
 }
 
-private fun List<app.ledgerline.android.ui.design.Choice>.labelOf(id: String?) = find { it.id == id }?.label.orEmpty()
+internal fun List<app.ledgerline.android.ui.design.Choice>.labelOf(id: String?) = find { it.id == id }?.label.orEmpty()
 
 private fun PaymentProblem.messageRes() = when (this) {
     PaymentProblem.AmountMissing -> R.string.editor_error_amount_missing

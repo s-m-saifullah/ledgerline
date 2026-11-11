@@ -6,6 +6,7 @@ import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.CreateReceipt
 import app.ledgerline.api.ExpectedAllocation
 import app.ledgerline.api.Money
+import app.ledgerline.api.ReceiptAllocation
 import app.ledgerline.api.ReceiptPreview
 import app.ledgerline.api.TipInput
 
@@ -28,6 +29,12 @@ enum class ReceiptProblem {
     /** Set by the sheet's logic, not by the form: the services this amount pays have not been read yet, or no longer match. */
     PreviewNotReady,
 }
+
+/** What a preview pays: how many services in full, and whether the last one only in part. */
+data class PaysSummary(val full: Int, val partial: Boolean)
+
+fun paysSummary(allocations: List<ReceiptAllocation>) =
+    PaysSummary(full = allocations.count { it.remainingAfter.amount == 0L }, partial = allocations.any { it.remainingAfter.amount > 0 })
 
 /** The longest note the server takes. */
 const val ReceiptNoteMax = 2_000

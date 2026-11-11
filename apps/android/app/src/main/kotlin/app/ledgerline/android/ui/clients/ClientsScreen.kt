@@ -27,17 +27,21 @@ fun ClientsScreen(
     modifier: Modifier = Modifier,
     model: ClientsViewModel = hiltViewModel(),
     payment: RecordPaymentViewModel = hiltViewModel(),
+    receipt: RecordReceiptViewModel = hiltViewModel(),
 ) {
     val selected by model.selected.collectAsState()
     DisposableEffect(Unit) {
         onDispose {
             model.close()
             payment.close()
+            receipt.close()
         }
     }
     // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
     val reread by payment.reread.collectAsState()
     LaunchedEffect(reread) { if (reread > 0) model.retry() }
+    val receiptReread by receipt.reread.collectAsState()
+    LaunchedEffect(receiptReread) { if (receiptReread > 0) model.retry() }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -84,6 +88,7 @@ fun ClientsScreen(
                     onRetryHistory = model::retry,
                     onRetryPayments = { model.retry() },
                     onRecordPayment = { service -> (client as? Online.Ready)?.value?.let { payment.open(service, it.name) } },
+                    onRecordReceipt = { (client as? Online.Ready)?.value?.let(receipt::open) },
                 ),
             )
         }
@@ -93,6 +98,16 @@ fun ClientsScreen(
         PaymentSheet(
             ui,
             PaymentActions(edit = payment::edit, save = payment::save, dismissAsk = payment::dismissAsk, confirm = payment::confirm, close = payment::close),
+        )
+    }
+    val receiptSheet by receipt.sheet.collectAsState()
+    receiptSheet?.let { ui ->
+        ReceiptSheet(
+            ui,
+            ReceiptActions(
+                edit = receipt::edit, payInFull = receipt::payInFull, chooseCurrency = receipt::chooseCurrency,
+                save = receipt::save, dismissAsk = receipt::dismissAsk, confirm = receipt::confirm, close = receipt::close,
+            ),
         )
     }
 }

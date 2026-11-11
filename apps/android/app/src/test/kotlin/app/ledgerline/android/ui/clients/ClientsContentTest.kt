@@ -248,6 +248,7 @@ class ClientsContentTest {
         val tabs = mutableListOf<ClientTab>()
         val payments = mutableListOf<String>()
         val recordings = mutableListOf<String>()
+        var receipts = 0
         var back = 0
     }
 
@@ -260,11 +261,16 @@ class ClientsContentTest {
         taps: ClientTaps = ClientTaps(),
         private: Boolean = false,
         payments: Map<String, Online<List<ServicePayment>>> = emptyMap(),
+        who: app.ledgerline.api.Contact = client,
+        receipts: Boolean = false,
     ) = compose.setContent {
         CompositionLocalProvider(LocalPrivacy provides private) {
             ClientContent(
-                Online.Ready(client), services, history, payments, "2026-10-23", tab,
-                ClientActions({ taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}, { taps.recordings += it.id }),
+                Online.Ready(who), services, history, payments, "2026-10-23", tab,
+                ClientActions(
+                    { taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}, { taps.recordings += it.id },
+                    onRecordReceipt = if (receipts) ({ taps.receipts++ }) else null,
+                ),
                 Modifier.requiredHeight(4000.dp),
             )
         }
@@ -451,6 +457,44 @@ class ClientsContentTest {
         client(taps = taps, payments = mapOf("notdue" to Online.Ready(emptyList())))
         compose.onNodeWithText("Record payment").performClick()
         assertEquals(listOf("notdue"), taps.recordings)
+    }
+
+    @Test
+    fun theBalanceCardOffersRecordPaymentFromTheClientAndTappingItReportsIt() {
+        val taps = ClientTaps()
+        client(taps = taps, receipts = true, payments = mapOf("notdue" to Online.Ready(emptyList()), "overdue" to Online.Ready(emptyList())))
+        // One in the balance card, and each of the two open services keeps its own.
+        compose.onAllNodesWithText("Record payment").assertCountEquals(3)
+        compose.onAllNodesWithText("Record payment")[0].performClick()
+        assertEquals(1, taps.receipts)
+        assertEquals(emptyList<String>(), taps.recordings)
+    }
+
+    @Test
+    fun withoutTheActionTheBalanceCardOffersNothing() {
+        client(receipts = false, payments = mapOf("notdue" to Online.Ready(emptyList()), "overdue" to Online.Ready(emptyList())))
+        compose.onAllNodesWithText("Record payment").assertCountEquals(2)
+    }
+
+    @Test
+    fun aSettledClientHasNoRecordPaymentInTheBalanceCard() {
+        client(services = page(paidA, paidB), who = contact("Settled Co"), receipts = true)
+        compose.onNodeWithText("Record payment").assertDoesNotExist()
+    }
+
+    @Test
+    fun aClientOwingInAnotherCurrencyOnlyCanStillBePaid() {
+        val euros = contact("Euro Co", balances = listOf(app.ledgerline.api.Money(5_000, "EUR")), owed = 0)
+        client(services = page(paidA), who = euros, receipts = true)
+        compose.onNodeWithText("Record payment").assertExists()
+    }
+
+    @Test
+    fun whoCanBePaidFollowsWhatTheyOweInAnyCurrency() {
+        org.junit.Assert.assertTrue(canRecordReceipt(contact("A", owed = 100)))
+        org.junit.Assert.assertTrue(canRecordReceipt(contact("B", balances = listOf(app.ledgerline.api.Money(5_000, "EUR")))))
+        org.junit.Assert.assertFalse(canRecordReceipt(contact("C")))
+        org.junit.Assert.assertFalse(canRecordReceipt(contact("D", balances = listOf(app.ledgerline.api.Money(0, "USD")))))
     }
 
     @Test

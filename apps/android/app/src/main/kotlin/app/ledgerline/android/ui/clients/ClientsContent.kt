@@ -31,6 +31,7 @@ import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
+import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchBox
@@ -226,7 +227,12 @@ class ClientActions(
     val onRetryPayments: (String) -> Unit,
     /** Opens the Record payment sheet for an unpaid service (ADR 0050); the default does nothing, for screens that only look. */
     val onRecordPayment: (Service) -> Unit = {},
+    /** Opens the Record payment sheet for the client (ADR 0050, slice 4c); the button shows only when this is set and while they owe. */
+    val onRecordReceipt: (() -> Unit)? = null,
 )
+
+/** A client can be paid when they owe something in some currency (the base total can read zero while a currency has no rate). */
+fun canRecordReceipt(client: Contact): Boolean = client.openBalances.any { it.amount > 0 }
 
 /**
  * One client (ADR 0046), read-only: a top bar with their name, a balance card (what they owe, what is overdue, how
@@ -253,7 +259,7 @@ internal fun ClientContent(
                 Online.Loading -> Unit
                 Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryClient) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.client_failed), actions.onRetryClient) }
-                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today)) }
+                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today), actions.onRecordReceipt?.takeIf { canRecordReceipt(client.value) }) }
             }
             val split = splitServices(loadedServices, today)
             val servicesState = services as? Online.Ready
@@ -324,7 +330,7 @@ private fun LazyListScope.historyItems(history: Online<Paged<HistoryEvent>>, act
  * when a service is overdue (how many, and the earliest due date), and how to reach them.
  */
 @Composable
-private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?) {
+private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, onRecordReceipt: (() -> Unit)? = null) {
     val owed = balances(client)
     val label = stringResource(R.string.client_open_balance)
     val overdueLine = overdue?.let { (count, due) -> pluralStringResource(R.plurals.client_overdue_line, count, count, formatShortDate(due)) }
@@ -340,6 +346,8 @@ private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?) {
             }
             if (overdueLine != null) Text(overdueLine, style = MaterialTheme.typography.bodySmall, color = LocalPalette.current.danger)
             contact.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            // The screen's one filled button (the prototype's `receive`); each unpaid service keeps its own outlined one.
+            if (onRecordReceipt != null) PrimaryButton(stringResource(R.string.client_record_payment), onRecordReceipt, Modifier.fillMaxWidth().padding(top = 4.dp))
         }
     }
 }
