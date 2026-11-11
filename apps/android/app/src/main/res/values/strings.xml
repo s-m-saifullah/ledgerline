@@ -633,4 +633,27 @@
     <string name="budget_set_limit">+ Set limit</string>
     <string name="budget_set_limit_action">Set limit</string>
     <string name="budget_edit_limit_action">Edit limit</string>
+
+    <!-- Record payment (ADR 0050, slice 4) -->
+    <string name="client_record_payment">Record payment</string>
+    <string name="payment_title">Record payment</string>
+    <string name="payment_client">Client: %1$s</string>
+    <string name="payment_outstanding">Outstanding</string>
+    <string name="payment_amount">Amount (%1$s)</string>
+    <string name="payment_tip_note">This settles %1$s. The extra %2$s is saved as a tip.</string>
+    <string name="payment_category">Category</string>
+    <string name="payment_tip_category">Tip category</string>
+    <string name="payment_error_tip_category">Choose a category for the tip.</string>
+    <string name="payment_other_currencies">Accounts in other currencies: use the web for now.</string>
+    <string name="payment_no_income">There are no income categories yet. Add one on the web.</string>
+    <string name="payment_fold">Date, time and note</string>
+    <string name="payment_save">Save payment</string>
+    <string name="payment_ask_title">Record payment?</string>
+    <string name="payment_ask_body">Record %1$s from %2$s into %3$s.</string>
+    <string name="payment_ask_tip">%1$s of it is saved as a tip.</string>
+    <string name="payment_ask_confirm">Record</string>
+    <string name="payment_error_offline">Needs a connection. What you entered is kept.</string>
+    <string name="payment_error_forbidden">Your account can\'t record payments in this ledger.</string>
+    <string name="payment_error_failed">Couldn\'t record the payment. Try again.</string>
+    <string name="payment_error_rejected">The server didn\'t accept this payment.</string>
 </resources>

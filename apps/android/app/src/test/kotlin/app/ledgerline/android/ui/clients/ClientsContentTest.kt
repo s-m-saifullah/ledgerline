@@ -247,6 +247,7 @@ class ClientsContentTest {
     private class ClientTaps {
         val tabs = mutableListOf<ClientTab>()
         val payments = mutableListOf<String>()
+        val recordings = mutableListOf<String>()
         var back = 0
     }
 
@@ -263,7 +264,7 @@ class ClientsContentTest {
         CompositionLocalProvider(LocalPrivacy provides private) {
             ClientContent(
                 Online.Ready(client), services, history, payments, "2026-10-23", tab,
-                ClientActions({ taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}),
+                ClientActions({ taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}, { taps.recordings += it.id }),
                 Modifier.requiredHeight(4000.dp),
             )
         }
@@ -442,6 +443,36 @@ class ClientsContentTest {
         client(taps = taps)
         compose.onNodeWithText("Photo set").performClick()
         assertEquals(listOf("notdue"), taps.payments)
+    }
+
+    @Test
+    fun anOpenUnpaidServiceOffersRecordPaymentAndTappingItNamesTheService() {
+        val taps = ClientTaps()
+        client(taps = taps, payments = mapOf("notdue" to Online.Ready(emptyList())))
+        compose.onNodeWithText("Record payment").performClick()
+        assertEquals(listOf("notdue"), taps.recordings)
+    }
+
+    @Test
+    fun aServiceThatIsNotOpenOffersNothingToRecord() {
+        client()
+        compose.onNodeWithText("Record payment").assertDoesNotExist()
+    }
+
+    @Test
+    fun everyOpenUnpaidServiceHasItsOwnRecordPayment() {
+        val taps = ClientTaps()
+        client(taps = taps, payments = mapOf("notdue" to Online.Ready(emptyList()), "overdue" to Online.Ready(emptyList())))
+        compose.onAllNodesWithText("Record payment").assertCountEquals(2)
+    }
+
+    @Test
+    fun aPaidOrWrittenOffServiceNeverOffersToRecordAPayment() {
+        client(
+            services = page(paidA, waived),
+            payments = mapOf("paid-a" to Online.Ready(emptyList()), "waived" to Online.Ready(emptyList())),
+        )
+        compose.onNodeWithText("Record payment").assertDoesNotExist()
     }
 
     @Test

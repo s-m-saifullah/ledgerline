@@ -18,11 +18,20 @@ const val Stamp = "2026-10-22T10:00:00.000Z"
 /** A UUID-shaped id; the mirror does not care which. */
 fun id(n: Int) = "01930000-0000-7000-8000-%012d".format(n)
 
-fun account(n: Int, version: Int = 1, name: String = "Account $n", deletedAt: String? = null, updatedAt: String = Stamp, openingAmount: Long = 0) =
-    SyncAccount(
-        id(n), Stamp, updatedAt, deletedAt, version, name, "bank", "USD", Money(openingAmount, "USD"),
-        null, null, null, null, null, null, null,
-    )
+fun account(
+    n: Int,
+    version: Int = 1,
+    name: String = "Account $n",
+    deletedAt: String? = null,
+    updatedAt: String = Stamp,
+    openingAmount: Long = 0,
+    currency: String = "USD",
+    archived: Boolean = false,
+    contactId: String? = null,
+) = SyncAccount(
+    id(n), Stamp, updatedAt, deletedAt, version, name, "bank", currency, Money(openingAmount, currency),
+    null, null, null, null, null, contactId, if (archived) Stamp else null,
+)
 
 fun syncCategory(
     n: Int,

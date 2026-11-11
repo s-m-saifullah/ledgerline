@@ -224,12 +224,14 @@ class ClientActions(
     val onRetryServices: () -> Unit,
     val onRetryHistory: () -> Unit,
     val onRetryPayments: (String) -> Unit,
+    /** Opens the Record payment sheet for an unpaid service (ADR 0050); the default does nothing, for screens that only look. */
+    val onRecordPayment: (Service) -> Unit = {},
 )
 
 /**
  * One client (ADR 0046), read-only: a top bar with their name, a balance card (what they owe, what is overdue, how
  * to reach them), the unpaid services pinned with Overdue marked, then Paid and History as a segmented control
- * (history is batched). Logging services and receiving payments stay on the web.
+ * (history is batched). An open unpaid service can record a payment (ADR 0050); logging services stays on the web.
  */
 @Composable
 internal fun ClientContent(
@@ -259,7 +261,7 @@ internal fun ClientContent(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionLabel(stringResource(R.string.client_unpaid_heading, countLabel(split.unpaid.size, servicesState?.value?.hasMore == true)))
-                        GroupedListCard { split.unpaid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }) } } }
+                        GroupedListCard { split.unpaid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }) } } }
                     }
                 }
             }
@@ -293,7 +295,7 @@ private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List
             val everything = services.value.items
             if (everything.isEmpty()) item { EmptyState(stringResource(R.string.services_empty)) }
             if (paid.isNotEmpty()) {
-                item { GroupedListCard { paid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }) } } } }
+                item { GroupedListCard { paid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }) } } } }
             }
             if (services.value.hasMore) {
                 item { LoadMore(stringResource(R.string.load_more_services), services.value.loadingMore, services.value.moreFailed, actions.onMoreServices) }

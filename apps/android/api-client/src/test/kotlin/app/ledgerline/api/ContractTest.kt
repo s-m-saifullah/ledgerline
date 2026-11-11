@@ -215,6 +215,32 @@ class ContractTest {
     }
 
     @Test
+    fun recordingAPaymentMatchesTheContract() {
+        val path = "/api/v1/ledgers/{ledgerId}/receivables/{receivableId}/payments"
+        assertMatches(SchemaContract.differences(CreatePayment.serializer().descriptor, SchemaContract.request(path, "post"), request = true))
+        assertMatches(SchemaContract.differences(ServicePayment.serializer().descriptor, SchemaContract.response(path, "post", "201")))
+    }
+
+    @Test
+    fun aPaymentSendsOnlyWhatItHas() {
+        fun body(payment: CreatePayment) = ApiJson.encodeToString(CreatePayment.serializer(), payment)
+        val settle = Money(12_000, "USD")
+        assertEquals(
+            """{"amount":{"amount":12000,"currency":"USD"},"accountId":"a1","categoryId":"c1","date":"2026-11-09","expectedReceivableVersion":3}""",
+            body(CreatePayment(settle, accountId = "a1", categoryId = "c1", date = "2026-11-09", expectedReceivableVersion = 3)),
+        )
+        assertEquals(
+            """{"amount":{"amount":12000,"currency":"USD"},"accountId":"a1","categoryId":"c1","date":"2026-11-09","time":"14:30","note":"Cash","tip":{"amount":{"amount":500,"currency":"USD"},"categoryId":"c2"},"expectedReceivableVersion":3}""",
+            body(
+                CreatePayment(
+                    settle, accountId = "a1", categoryId = "c1", date = "2026-11-09", time = "14:30", note = "Cash",
+                    tip = TipInput(Money(500, "USD"), "c2"), expectedReceivableVersion = 3,
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun meMatches() = assertMatches(
         SchemaContract.differences(
             Me.serializer().descriptor,

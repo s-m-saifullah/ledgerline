@@ -232,6 +232,41 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun budgetsLimitProblem() = limitShot("budgets-limit-problem", budgetLine("Transport", null, 6956), "0", app.ledgerline.android.online.WriteError.Offline)
 
+    private val paymentTarget = app.ledgerline.android.ui.clients.PaymentTarget("logo-refresh", 1, "Logo refresh for the new storefront", "Northwind Design", "USD", 45_000)
+
+    private fun paymentShot(
+        name: String,
+        form: app.ledgerline.android.ui.clients.PaymentForm,
+        other: Boolean = false,
+        noIncome: Boolean = false,
+        errors: Set<app.ledgerline.android.ui.clients.PaymentProblem> = emptySet(),
+        error: app.ledgerline.android.online.WriteError? = null,
+    ) = shot(name, Tab.More) {
+        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"))
+        val categories = if (noIncome) emptyList() else listOf(Choice("c1", "Freelance"), Choice("c2", "Freelance › Design work"), Choice("c3", "Tips"))
+        val ui = app.ledgerline.android.ui.clients.PaymentUi(form, accounts, categories, other, noIncome, errors, error = error)
+        app.ledgerline.android.ui.clients.PaymentSheetContent(ui, app.ledgerline.android.ui.clients.PaymentActions({}, {}, {}, {}, {}))
+    }
+
+    private val paymentStart get() = app.ledgerline.android.ui.clients.PaymentForm.forService(paymentTarget, "2026-11-09")
+
+    @Test
+    fun paymentStart() = paymentShot("payment-start", paymentStart, other = true)
+
+    @Test
+    fun paymentWithATip() = paymentShot("payment-tip", paymentStart.copy(amount = "460.25", accountId = "a1", categoryId = "c2", tipCategoryId = "c3"))
+
+    @Test
+    fun paymentProblems() = paymentShot(
+        "payment-problems",
+        paymentStart.copy(amount = "12abc"),
+        errors = setOf(app.ledgerline.android.ui.clients.PaymentProblem.AccountMissing, app.ledgerline.android.ui.clients.PaymentProblem.CategoryMissing),
+        error = app.ledgerline.android.online.WriteError.Offline,
+    )
+
+    @Test
+    fun paymentWithoutIncomeCategories() = paymentShot("payment-no-income", paymentStart.copy(accountId = "a1"), noIncome = true)
+
     @Test
     fun budgetsOffline() = shot("budgets-offline", Tab.Budgets) { BudgetsContent("2026-10", Online.Offline, {}, {}, {}) }
 

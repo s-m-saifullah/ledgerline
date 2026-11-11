@@ -20,6 +20,7 @@ import app.ledgerline.android.sync.SyncCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import app.ledgerline.android.outbox.WallClock
 import app.ledgerline.android.settings.FilterStore
+import app.ledgerline.android.settings.PaymentChoicesStore
 import app.ledgerline.android.settings.KeepMode
 import app.ledgerline.android.settings.PhoneSettings
 import app.ledgerline.android.settings.SavedFilters
@@ -72,6 +73,7 @@ class SignedInViewModel @Inject constructor(
     reads: MirrorReads,
     private val settings: PhoneSettings,
     private val filterStore: FilterStore,
+    private val paymentChoices: PaymentChoicesStore,
     private val clock: WallClock,
 ) : ViewModel() {
     private val ledger: Flow<String?> = reads.mirroredLedger()
@@ -279,6 +281,7 @@ class SignedInViewModel @Inject constructor(
             // The next sign-in starts on an unfiltered list, and nothing of it stays on the phone.
             _filters.value = EntryFilters()
             filterStore.clear()
+            paymentChoices.clear()
             expiry?.cancel()
             session.endSession(if (ended) null else SessionEnd.ServerNotReached)
         }

@@ -80,9 +80,15 @@ class SignOutTest {
             database.reads(),
             app.ledgerline.android.testing.FakePhoneSettings(),
             app.ledgerline.android.testing.FakeFilterStore(),
+            payments,
             app.ledgerline.android.outbox.FakeWallClock(),
         )
     }
+
+    /** What the last payment chose; it holds ids only, but nothing of a signed-out person stays on the phone. */
+    private val payments = app.ledgerline.android.testing.FakePaymentChoicesStore(
+        app.ledgerline.android.settings.PaymentChoices(accountId = "a1", categoryId = "c1", tipCategoryId = "c2"),
+    )
 
     @After
     fun close() {
@@ -93,6 +99,14 @@ class SignOutTest {
     private suspend fun signedOut() = withTimeout(5_000) { session.state.first { it == SessionState.SignedOut } }
 
     private suspend fun question() = withTimeout(5_000) { viewModel.confirmSignOut.first { it != null } }
+
+    @Test
+    fun signingOutForgetsTheChoicesOfTheLastPayment() = runBlocking {
+        viewModel.signOut()
+        signedOut()
+        assertEquals(1, payments.clears)
+        assertEquals(app.ledgerline.android.settings.PaymentChoices(), payments.choices)
+    }
 
     @Test
     fun withNothingWaitingSignOutGoesStraightThrough() = runBlocking {

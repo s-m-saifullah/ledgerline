@@ -93,6 +93,7 @@ class EntryFiltersViewModelTest {
             database.reads(),
             settings,
             store,
+            app.ledgerline.android.testing.FakePaymentChoicesStore(),
             clock,
         )
     }
