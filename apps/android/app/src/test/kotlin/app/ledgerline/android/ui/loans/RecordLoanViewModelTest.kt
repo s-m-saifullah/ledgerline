@@ -451,6 +451,19 @@ class RecordLoanViewModelTest {
     }
 
     @Test
+    fun savingWhileAMoveIsBeingSentDoesNotAskAgain() {
+        harness.delayMillis = 400
+        lendFifty()
+        viewModel.save()
+        viewModel.confirm()
+        assertTrue(ui().saving)
+        viewModel.save()
+        assertFalse(ui().asking)
+        harness.until { viewModel.sheet.value == null }
+        assertEquals(1, writes().size)
+    }
+
+    @Test
     fun theFormCannotBeEditedWhileSaving() {
         harness.delayMillis = 400
         lendFifty()

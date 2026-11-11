@@ -186,4 +186,24 @@ class LoanFormTest {
         assertEquals(-2_500L, euros.balance)
         assertFalse(euros.owedToYou)
     }
+
+    @Test
+    fun lendingNeverAsksForACurrencyEvenWithSeveralLoansOpen() {
+        val form = LoanForm.start(sam, LoanKind.Lend, listOf(theyOweUsd, theyOweEur), accounts, "2026-11-11")
+        assertEquals(emptyList<String>(), form.currencyChoices)
+        assertNull(form.currency)
+    }
+
+    @Test
+    fun aBalanceOfNothingIsNotOwedToYou() {
+        assertFalse(repay(emptyList()).owedToYou)
+        assertEquals(0L, repay(emptyList()).balance)
+    }
+
+    @Test
+    fun anAccountThatIsNotOfferedForARepaymentIsIgnoredEvenWhenChosen() {
+        val form = repay(listOf(theyOweUsd), accountId = "a-euro")
+        assertEquals(checking, form.account)
+        assertEquals("a-checking", repay(listOf(theyOweUsd), amount = "1", accountId = "a-euro").request()!!.accountId)
+    }
 }

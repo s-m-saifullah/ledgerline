@@ -96,10 +96,11 @@ class RecordLoanViewModel @Inject constructor(
     /** The question was answered yes: sends the move, once. */
     fun confirm() {
         val ui = _sheet.value ?: return
-        if (ui.saving || !ui.asking) return
+        // Saving is never asked at once (Save does nothing while a move is sent), so a question being asked is not a move being sent.
+        if (!ui.asking) return
         val form = ui.form
         val request = form.request() ?: return
-        val key = keys.keyFor("${form.kind}:${form.who.id}:$request")
+        val key = keys.keyFor(request.toString())
         _sheet.value = ui.copy(saving = true, error = null, asking = false)
         viewModelScope.launch {
             val ledger = reads.mirroredLedger().first()
