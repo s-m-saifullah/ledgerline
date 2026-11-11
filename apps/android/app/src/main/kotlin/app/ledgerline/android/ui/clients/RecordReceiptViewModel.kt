@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.online.RateReads
 import app.ledgerline.android.online.ReceiptWrites
 import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.online.WriteKeys
@@ -39,11 +40,9 @@ import javax.inject.Inject
  */
 data class ReceiptUi(
     val form: ReceiptForm,
-    /** Open accounts the payment can go into: the chosen currency, or any currency when one side is the base currency. */
+    /** Open accounts the payment can go into, in any currency (an account balance kept for a client is not one). */
     val accounts: List<Choice>,
     val categories: List<Choice>,
-    /** Some open account needs a rate set by hand (neither side is the base currency), so the sheet says those wait for the next slice. */
-    val otherCurrencyAccounts: Boolean,
     val noIncomeCategory: Boolean,
     val preview: Online<ReceiptPreview>? = null,
     val errors: Set<ReceiptProblem> = emptySet(),
@@ -56,12 +55,14 @@ data class ReceiptUi(
 }
 
 /**
- * Receiving a payment from a client (ADR 0050, slice 4c). Each change to the amount or currency reads which services it
+ * Receiving a payment from a client (ADR 0050, slices 4c to 4b-2). Each change to the amount or currency reads which services it
  * would pay (the newest answer wins). Save checks the form and the preview and asks the confirmation question; nothing is
  * sent until it is answered, and the write names the services of the preview that matches the amount, so a service that
  * changed meanwhile is refused with `409`. The write is one idempotent call with a key per change. A payment that went
  * through closes the sheet, remembers the choices and tells the screen to read the client again; a stale answer shows the
- * server's sentence, does the same and reads the preview again.
+ * server's sentence, does the same and reads the preview again. An account where neither side is the base currency reads
+ * the rate the ledger stores for the account's currency on the payment's date, again when the account or the date changes;
+ * a date with no rate stored blocks Save until one is typed, and a look-up that failed does not (the server decides).
  */
 @HiltViewModel
 class RecordReceiptViewModel @Inject constructor(
@@ -69,6 +70,7 @@ class RecordReceiptViewModel @Inject constructor(
     private val writes: ReceiptWrites,
     private val sync: SyncCoordinator,
     private val store: PaymentChoicesStore,
+    rates: RateReads,
 ) : ViewModel() {
     /** Today's date as the form starts with it; a test sets it. */
     internal var today: () -> String = { LocalDate.now().toString() }
@@ -82,6 +84,7 @@ class RecordReceiptViewModel @Inject constructor(
     private var openAccounts: List<AccountBalance> = emptyList()
     private var ledgerId: String? = null
     private var previewJob: Job? = null
+    private val follower = RateFollower(viewModelScope, rates)
 
     /** The sheet while it is open (null otherwise). */
     val sheet: StateFlow<ReceiptUi?> = _sheet.asStateFlow()
@@ -95,6 +98,7 @@ class RecordReceiptViewModel @Inject constructor(
         if (owed.isEmpty()) return
         keys.clear()
         previewJob?.cancel()
+        follower.stop()
         viewModelScope.launch {
             val ledger = reads.mirroredLedger().first() ?: return@launch
             ledgerId = ledger
@@ -102,7 +106,7 @@ class RecordReceiptViewModel @Inject constructor(
             val categories = categoryChoices(reads.liveCategories(ledger).first(), kind = "income", selectedId = null)
             val remembered = store.load()
             val start = ReceiptForm.forClient(ReceiptTarget(client.id, client.name, owed), today())
-            val accounts = accountsIn(start.currency)
+            val accounts = accountsIn()
             fun String?.ifOffered(choices: List<Choice>) = takeIf { id -> choices.any { it.id == id } }
             _sheet.value = ReceiptUi(
                 form = start.copy(
@@ -113,13 +117,22 @@ class RecordReceiptViewModel @Inject constructor(
                 ),
                 accounts = accounts,
                 categories = categories,
-                otherCurrencyAccounts = openAccounts.any { !usableAccount(start.currency, it.currency) },
                 noIncomeCategory = categories.isEmpty(),
             )
+            followRate(_sheet.value?.form?.rateKey)
         }
     }
 
-    private fun accountsIn(currency: String) = openAccounts.filter { usableAccount(currency, it.currency) }.map { Choice(it.id, it.name, it.currency) }
+    private fun accountsIn() = openAccounts.map { Choice(it.id, it.name, it.currency) }
+
+    private fun followRate(key: RateKey?) = follower.follow(ledgerId, key) { answer ->
+        _sheet.update { ui ->
+            if (ui == null || ui.form.rateKey != answer.key) return@update ui
+            val form = ui.form.copy(rateAnswer = answer)
+            // A question already being asked is withdrawn when this answer means the payment cannot be saved.
+            ui.copy(form = form, asking = ui.asking && form.problems().isEmpty())
+        }
+    }
 
     /** A change made by the person; it clears the problems and the last error, withdraws a question being asked and reads the preview again if the amount moved. */
     fun edit(change: (ReceiptForm) -> ReceiptForm) {
@@ -128,6 +141,7 @@ class RecordReceiptViewModel @Inject constructor(
         val form = change(ui.form)
         _sheet.value = ui.copy(form = form, errors = emptySet(), error = null, asking = false)
         if (form.previewAmount != ui.form.previewAmount || form.currency != ui.form.currency) readPreview()
+        if (form.rateKey != ui.form.rateKey) followRate(form.rateKey)
     }
 
     /** Pay full balance: the amount becomes everything they owe in the chosen currency. */
@@ -136,8 +150,7 @@ class RecordReceiptViewModel @Inject constructor(
     /** Another currency of a client who owes in several: nothing typed or chosen carries over except the date, time and note. */
     fun chooseCurrency(currency: String) {
         if (_sheet.value?.form?.currency == currency) return
-        edit { it.copy(currency = currency, amount = "", accountId = null, accountCurrency = null, received = "", tipAmount = "") }
-        _sheet.update { ui -> ui?.copy(accounts = accountsIn(currency), otherCurrencyAccounts = openAccounts.any { !usableAccount(currency, it.currency) }) }
+        edit { it.copy(currency = currency, amount = "", accountId = null, accountCurrency = null, received = "", tipAmount = "", rateTyped = "") }
     }
 
     /** Reads the services the amount would pay, once the amount has rested; an older read that has not come back is dropped. */
@@ -165,6 +178,8 @@ class RecordReceiptViewModel @Inject constructor(
         if (ui.saving) return
         val problems = ui.form.problems()
         val ready = (ui.preview as? Online.Ready)?.value
+        // A rate that could not be looked up is tried again; the question still goes ahead, the server decides.
+        if (ui.form.cross?.stored == StoredRate.Unavailable && ui.form.cross?.manualRate == null) followRate(ui.form.rateKey)
         when {
             problems.isNotEmpty() -> _sheet.value = ui.copy(errors = problems.toSet(), asking = false)
             !ui.form.matches(ready) -> {
@@ -217,6 +232,7 @@ class RecordReceiptViewModel @Inject constructor(
         if (_sheet.value?.saving == true) return
         keys.clear()
         previewJob?.cancel()
+        follower.stop()
         _sheet.value = null
     }
 }

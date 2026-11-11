@@ -4,10 +4,11 @@ import java.math.BigInteger
 import kotlin.math.abs
 
 /*
- * Exchange-rate text for the payment sheets (ADR 0050, slice 4b), ported from `packages/shared/src/currency.ts` so the line
- * under an amount received reads as it does on the web. Exact integer arithmetic, never floating point; a fixture
- * generated from the web's functions (`rate-parity.json`) keeps the two the same. This is only ever shown: the server
- * works out the rate it saves from the amounts it is sent, and checks them again.
+ * Exchange-rate math for the payment sheets (ADR 0050, slice 4b), ported from `packages/shared/src/currency.ts` so the line
+ * under an amount received reads as it does on the web, and a rate typed by hand is stored the way the web stores it. Exact
+ * integer arithmetic, never floating point; a fixture generated from the web's functions (`rate-parity.json`) keeps the
+ * two the same. Everything here is for showing and for the rate a person types: the server works out the value it saves
+ * from the amounts and the rate it is sent, and checks them again.
  */
 
 /** Rates carry at most this many digits after the point. */
@@ -62,6 +63,44 @@ fun invertRate(rate: String): String {
     val fraction = (inverted % unit).toString().padStart(places, '0').trimEnd('0')
     val whole = inverted / unit
     return if (fraction.isEmpty()) whole.toString() else "$whole.$fraction"
+}
+
+private val TypedRate = Regex("^\\d+(?:\\.\\d+)?$")
+private val StoredRate = Regex("^\\d{1,10}(?:\\.\\d{1,10})?$")
+private val MaxSafe = BigInteger.valueOf(9_007_199_254_740_991L)
+
+/**
+ * The rate to store for what a person typed, the base currency first ("1 USD is worth 122.5 BDT"): the inverse, as exact
+ * decimal text at the stored precision. Null when the text is not a positive amount, or the rate it makes cannot be stored
+ * (more than ten digits before the point, or nothing left after rounding).
+ */
+fun rateFromInverse(text: String): String? {
+    val typed = text.trim()
+    if (!TypedRate.matches(typed)) return null
+    val scaled = try {
+        parseRate(typed)
+    } catch (_: IllegalArgumentException) {
+        return null
+    }
+    if (scaled <= BigInteger.ZERO) return null
+    val stored = (RateScale * RateScale * Two + scaled) / (scaled * Two)
+    if (stored <= BigInteger.ZERO) return null
+    return formatRate(stored).takeIf { StoredRate.matches(it) }
+}
+
+/**
+ * [amount] in the smallest units of [from] as smallest units of [to], at [rate] (units of [to] per one unit of [from]).
+ * Rounds half away from zero. Throws [ArithmeticException] when either side leaves the range a JavaScript number holds
+ * exactly, as the web does.
+ */
+fun convertMinor(amount: Long, rate: String, from: String, to: String): Long {
+    val magnitude = BigInteger.valueOf(amount).abs()
+    if (magnitude > MaxSafe) throw ArithmeticException("Invalid amount")
+    val numerator = magnitude * parseRate(rate) * pow10(currencyDigits(to))
+    val denominator = RateScale * pow10(currencyDigits(from))
+    val rounded = (numerator * Two + denominator) / (denominator * Two)
+    if (rounded > MaxSafe) throw ArithmeticException("Converted amount exceeds the safe integer range")
+    return if (amount < 0) -rounded.toLong() else rounded.toLong()
 }
 
 /** "1 USD = 0.8915 EUR": the base currency always first. */

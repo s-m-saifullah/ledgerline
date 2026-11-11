@@ -28,6 +28,12 @@ enum class ReceiptProblem {
     /** A tip was typed (in the account's currency) and is not a valid amount above zero. */
     TipInvalid,
 
+    /** Neither side is the base currency and what was typed for the rate cannot be stored. */
+    RateInvalid,
+
+    /** Neither side is the base currency, the ledger holds no rate for the date and none was typed. */
+    RateMissing,
+
     /** The client owes nothing in the chosen currency. */
     NothingOwed,
     AccountMissing, CategoryMissing, TipCategoryMissing,
@@ -57,9 +63,11 @@ const val ReceiptNoteMax = 2_000
  * The Record payment form for a client (ADR 0050, slice 4c; the prototype's `OV.receive`): one amount, applied to the
  * client's oldest unpaid services first, in one currency. Money over the open total settles everything and the rest is
  * one tip, as the web splits it. The request names the services of the preview that matches the amount shown, so a
- * service that changed meanwhile is refused by the server. An account in another currency (one side the base currency,
- * ADR 0050 slice 4b-1) also asks for what arrived in it, shows the rate the two amounts fix and takes an optional tip in
- * its currency; the amount typed is then what settles, with no tip made of the extra.
+ * service that changed meanwhile is refused by the server. An account in another currency (ADR 0050 slice 4b-1) also asks
+ * for what arrived in it and takes an optional tip in its currency; the amount typed is then what settles, with no tip made
+ * of the extra. When one side is the base currency the two amounts fix the rate and it is shown; when neither is (slice
+ * 4b-2) the rate for the account's currency on the date is the one the ledger stores ([rateAnswer]) or one typed by hand
+ * ([rateTyped]), which is the only case where a rate is sent.
  */
 data class ReceiptForm(
     val target: ReceiptTarget,
@@ -78,9 +86,18 @@ data class ReceiptForm(
     val received: String = "",
     /** An optional tip in the account's currency, typed, when its currency differs from [currency]. */
     val tipAmount: String = "",
+    /** A rate set by hand, base currency first ("122.5"), when neither side is the base currency; blank uses the stored one. */
+    val rateTyped: String = "",
+    /** What the last look-up of the stored rate found, with what it asked for; only used while it still matches [rateKey]. */
+    val rateAnswer: RateAnswer? = null,
 ) {
+    /** The rate to look up: the account's currency on the date, when neither side is the base currency. */
+    val rateKey: RateKey? get() = accountCurrency?.takeIf { needsRate(currency, it) }?.let { RateKey(it, date) }
+
     /** The part that exists only when the account is in another currency than the one they owe in. */
-    val cross: CrossCurrency? get() = accountCurrency?.takeIf { it != currency }?.let { CrossCurrency(currency, it, received, tipAmount) }
+    val cross: CrossCurrency? get() = accountCurrency?.takeIf { it != currency }?.let { account ->
+        CrossCurrency(currency, account, received, tipAmount, rateTyped, rateKey?.let { rateAnswer.storedFor(it) } ?: StoredRate.Looking)
+    }
 
     /** The currency the tip is in: the account's when it differs, else the currency they owe in. */
     val tipCurrency: String get() = cross?.accountCurrency ?: currency
@@ -88,8 +105,9 @@ data class ReceiptForm(
     /** The rate the two amounts fix when the account is in another currency and one side is the base currency. */
     val rate: CrossRate? get() = cross?.rate(split?.settle)
 
-    /** The form with another account chosen; what was typed is kept. */
-    fun withAccount(id: String?, currency: String?) = copy(accountId = id, accountCurrency = currency)
+    /** The form with another account chosen; what was typed is kept, except a rate typed for another account's currency. */
+    fun withAccount(id: String?, currency: String?) =
+        copy(accountId = id, accountCurrency = currency, rateTyped = if (currency == accountCurrency) rateTyped else "")
 
     private val parsed: AmountInput get() = parseAmount(amount, currency)
 
@@ -120,6 +138,8 @@ data class ReceiptForm(
         cross?.let { c ->
             c.receivedIssue?.let { add(it.receivedReceiptProblem()) }
             if (c.tipIssue != null) add(ReceiptProblem.TipInvalid)
+            if (c.rateTypedIssue) add(ReceiptProblem.RateInvalid)
+            if (c.rateMissing) add(ReceiptProblem.RateMissing)
         }
         if (outstanding <= 0) add(ReceiptProblem.NothingOwed)
         if (accountId == null) add(ReceiptProblem.AccountMissing)
@@ -141,6 +161,7 @@ data class ReceiptForm(
         return CreateReceipt(
             amount = Money(split.settle, currency),
             receivedAmount = cross?.receivedMinor?.let { Money(it, cross!!.accountCurrency) },
+            fxRate = cross?.manualRate,
             accountId = accountId!!,
             categoryId = categoryId!!,
             date = date,

@@ -178,3 +178,20 @@ internal fun homeLoans(lent: Long, borrowed: Long) = app.ledgerline.api.HomeLoan
 /** A move on a loan account: positive sent money out to them, negative brought money in. */
 internal fun movement(id: String, date: String, cents: Long, payee: String? = null, note: String? = null, time: String? = null, currency: String = "USD") =
     app.ledgerline.android.mirror.EntryLine(id, date, time, "transfer", false, "cleared", cents, currency, payee, "Loan", null, null, null, "${date}T10:00:00Z", note)
+
+/** Where the phone looks up the stored rate (ADR 0050, slice 4b-2); the harness matches a route against the whole path and query. */
+internal const val RateLookupPath = ".*/exchange-rates/lookup\\?.*"
+
+/** What the server says to a look-up of [code] on [date]: [rate] is null when none is stored. */
+internal fun rateReply(harness: app.ledgerline.android.testing.OnlineHarness, code: String, date: String, rate: String?) =
+    harness.json(200, app.ledgerline.api.ApiJson.encodeToString(app.ledgerline.api.RateLookup.serializer(), app.ledgerline.api.RateLookup(code, date, "USD", rate, rate?.let { "2026-11-07" }, rate?.let { "api" })))
+
+/** The server answers a look-up by date: [byDate] holds the stored rate (null: none stored) for each date it knows; [status] other than 200 fails every look-up. */
+internal fun app.ledgerline.android.testing.OnlineHarness.routeRates(byDate: Map<String, String?>, status: Int = 200) = route(RateLookupPath) { target ->
+    val date = Regex("date=([^&]+)").find(target)!!.groupValues[1]
+    val code = Regex("code=([^&]+)").find(target)!!.groupValues[1]
+    if (status != 200) json(status, "{}") else rateReply(this, code, date, byDate[date])
+}
+
+internal fun app.ledgerline.android.testing.OnlineHarness.rateLookups() = targets.filter { it.contains("exchange-rates/lookup") }
+

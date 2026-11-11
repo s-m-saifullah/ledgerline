@@ -175,8 +175,8 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
         form.cross?.let { cross ->
             val issue = cross.receivedIssue?.takeIf { it != AmountIssue.Missing || ReceiptProblem.ReceivedMissing in ui.errors }
             ReceivedAmount(cross, form.rate, issue) { text -> actions.edit { it.copy(received = text) } }
+            AccountRate(cross, form.date) { text -> actions.edit { it.copy(rateTyped = text) } }
         }
-        if (ui.otherCurrencyAccounts) Hint(stringResource(R.string.payment_other_currencies))
         if (ui.noIncomeCategory) Hint(stringResource(R.string.payment_no_income))
         GroupedListCard {
             row { FoldRow(stringResource(if (form.cross != null) R.string.payment_fold_tip else R.string.payment_fold), foldOpen) { foldOpen = !foldOpen } }
@@ -348,6 +348,8 @@ private fun ReceiptProblem.messageRes() = when (this) {
     ReceiptProblem.ReceivedZero -> R.string.editor_error_amount_zero
     ReceiptProblem.ReceivedTooLarge -> R.string.editor_error_amount_large
     ReceiptProblem.TipInvalid -> R.string.payment_error_tip_invalid
+    // The rate line under the amount received says these itself, always, not only after Save.
+    ReceiptProblem.RateInvalid, ReceiptProblem.RateMissing -> error("Said by the rate line")
     ReceiptProblem.NothingOwed -> R.string.receipt_nothing_owed
     ReceiptProblem.AccountMissing -> R.string.editor_error_account
     ReceiptProblem.CategoryMissing -> R.string.editor_error_category

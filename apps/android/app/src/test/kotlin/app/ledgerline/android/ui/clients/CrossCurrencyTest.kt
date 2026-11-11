@@ -11,13 +11,101 @@ class CrossCurrencyTest {
     private fun cross(item: String = "USD", account: String = "EUR", received: String = "", tip: String = "") = CrossCurrency(item, account, received, tip)
 
     @Test
-    fun anAccountIsUsableWhenTheCurrenciesMatchOrOneSideIsTheBaseCurrency() {
-        assertTrue(usableAccount("USD", "USD"))
-        assertTrue(usableAccount("EUR", "EUR"))
-        assertTrue(usableAccount("USD", "EUR"))
-        assertTrue(usableAccount("EUR", "USD"))
-        assertFalse(usableAccount("EUR", "GBP"))
-        assertFalse(usableAccount("GBP", "EUR"))
+    fun onlyAPairWithoutTheBaseCurrencyNeedsARate() {
+        assertTrue(needsRate("EUR", "GBP"))
+        assertTrue(needsRate("GBP", "EUR"))
+        assertFalse(needsRate("EUR", "EUR"))
+        assertFalse(needsRate("USD", "EUR"))
+        assertFalse(needsRate("EUR", "USD"))
+        assertFalse(needsRate("USD", "USD"))
+    }
+
+    private fun gbp(received: String = "390.00", typed: String = "", stored: StoredRate = StoredRate.Looking) =
+        CrossCurrency("EUR", "GBP", received, "", rateTyped = typed, stored = stored)
+
+    private val found = StoredRate.Found("1.2658227848", "2026-11-07")
+
+    @Test
+    fun aRateIsOnlyNeededWhenNeitherSideIsTheBaseCurrency() {
+        assertTrue(gbp().needsRate)
+        assertFalse(cross(item = "USD", account = "EUR").needsRate)
+        assertFalse(cross(item = "EUR", account = "USD").needsRate)
+    }
+
+    @Test
+    fun aTypedRateIsReadBaseFirstAndStoredTheWayTheWebStoresIt() {
+        assertEquals("0.0081632653", gbp(typed = "122.5").manualRate)
+        assertEquals("0.0081632653", gbp(typed = " 122.5 ").manualRate)
+        assertNull(gbp(typed = "").manualRate)
+        assertNull(gbp(typed = "abc").manualRate)
+        assertNull(gbp(typed = "0").manualRate)
+    }
+
+    @Test
+    fun aTypedRateThatCannotBeStoredIsAProblemButABlankOneIsNot() {
+        assertFalse(gbp(typed = "").rateTypedIssue)
+        assertFalse(gbp(typed = "  ").rateTypedIssue)
+        assertFalse(gbp(typed = "122.5").rateTypedIssue)
+        assertTrue(gbp(typed = "abc").rateTypedIssue)
+        assertTrue(gbp(typed = "0").rateTypedIssue)
+        assertTrue(gbp(typed = "12,5").rateTypedIssue)
+    }
+
+    @Test
+    fun noRateIsTypedOrSentWhenOneSideIsTheBaseCurrency() {
+        val c = CrossCurrency("USD", "EUR", "92.00", "", rateTyped = "122.5", stored = found)
+        assertNull(c.manualRate)
+        assertFalse(c.rateTypedIssue)
+        assertNull(c.rateInUse)
+        assertNull(c.baseValue())
+        assertFalse(c.rateMissing)
+    }
+
+    @Test
+    fun theRateInUseIsTheOneTypedThenTheStoredOne() {
+        assertEquals("1.2658227848", gbp(stored = found).rateInUse)
+        assertEquals("0.0081632653", gbp(typed = "122.5", stored = found).rateInUse)
+        assertNull(gbp(stored = StoredRate.Missing).rateInUse)
+        assertNull(gbp(stored = StoredRate.Looking).rateInUse)
+        assertNull(gbp(stored = StoredRate.Unavailable).rateInUse)
+        assertEquals("0.0081632653", gbp(typed = "122.5", stored = StoredRate.Missing).rateInUse)
+        // A typed rate that is not valid is not used; the stored one still is.
+        assertEquals("1.2658227848", gbp(typed = "abc", stored = found).rateInUse)
+    }
+
+    @Test
+    fun onlyAFoundOutMissingRateWithNothingTypedBlocksSaving() {
+        assertTrue(gbp(stored = StoredRate.Missing).rateMissing)
+        assertFalse(gbp(stored = StoredRate.Missing, typed = "122.5").rateMissing)
+        assertFalse(gbp(stored = StoredRate.Missing, typed = "abc").rateMissing)
+        assertFalse(gbp(stored = StoredRate.Looking).rateMissing)
+        assertFalse(gbp(stored = StoredRate.Unavailable).rateMissing)
+        assertFalse(gbp(stored = found).rateMissing)
+    }
+
+    @Test
+    fun whatArrivedIsWorthAboutThisMuchInTheBaseCurrency() {
+        // 390.00 GBP at 1.2658227848 USD each: 493.67 USD, in cents.
+        assertEquals(49_367L, gbp(stored = found).baseValue())
+        // 390.00 GBP at 1 / 122.5: 3.18 USD.
+        assertEquals(318L, gbp(typed = "122.5", stored = found).baseValue())
+        assertNull(gbp(received = "", stored = found).baseValue())
+        assertNull(gbp(stored = StoredRate.Missing).baseValue())
+    }
+
+    @Test
+    fun theRateSentenceForTheAccountsCurrencyIsTheSameAsAnyOther() {
+        assertEquals("1 USD = 0.79 GBP", gbp(stored = found).rateInUse!!.let { CrossRate("GBP", it).sentence })
+        assertEquals("1 USD = 122.5 GBP", CrossRate("GBP", gbp(typed = "122.5").manualRate!!).sentence)
+    }
+
+    @Test
+    fun aStoredAnswerOnlyCountsForTheAccountAndDateItWasAskedFor() {
+        val answer = RateAnswer(RateKey("GBP", "2026-11-10"), found)
+        assertEquals(found, answer.storedFor(RateKey("GBP", "2026-11-10")))
+        assertEquals(StoredRate.Looking, answer.storedFor(RateKey("GBP", "2026-11-09")))
+        assertEquals(StoredRate.Looking, answer.storedFor(RateKey("EUR", "2026-11-10")))
+        assertEquals(StoredRate.Looking, (null as RateAnswer?).storedFor(RateKey("GBP", "2026-11-10")))
     }
 
     @Test
@@ -66,5 +154,6 @@ class CrossCurrencyTest {
         assertNull(cross(received = "92.00").rate(null))
         assertNull(cross(received = "92.00").rate(0))
         assertNull(cross(item = "EUR", account = "GBP", received = "92.00").rate(10_000))
+        assertNull(gbp(stored = found).rate(10_000))
     }
 }

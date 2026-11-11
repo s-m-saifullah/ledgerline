@@ -10,7 +10,8 @@ import kotlinx.serialization.Serializable
 /**
  * `POST /ledgers/{ledgerId}/receivables/{receivableId}/payments`. [amount] is what the payment settles, in the service's
  * currency and never more than what is outstanding: money over that goes in [tip], as the web sends it. [receivedAmount]
- * and [fxRate] are for an account in another currency and come with the next slice. [expectedReceivableVersion] is the
+ * is for an account in another currency. [fxRate] is a rate set by hand, for that account's currency, and only when neither
+ * the service nor the account is in the base currency (the server refuses it otherwise). [expectedReceivableVersion] is the
  * version of the service the phone holds, so a service that changed meanwhile is refused with `409`.
  */
 @Serializable
@@ -64,7 +65,7 @@ data class ReceiptAllocation(
 /**
  * `POST /ledgers/{ledgerId}/contacts/{contactId}/receipts`. [amount] is what the receipt settles, never more than the open
  * total: money over that goes in [tip], once for the whole receipt. [expectedAllocations] are copied from the preview, so a
- * service that changed meanwhile is refused with `409`. [receivedAmount] and [fxRate] come with the other-currencies slice.
+ * service that changed meanwhile is refused with `409`. [receivedAmount] and [fxRate] are as for a payment for one service.
  */
 @Serializable
 data class CreateReceipt(

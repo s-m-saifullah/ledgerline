@@ -6,6 +6,7 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -247,6 +248,39 @@ class ContractTest {
             SchemaContract.response("/api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipt-preview", "get", "200"),
         ),
     )
+
+    @Test
+    fun theRateLookupMatchesTheContract() = assertMatches(
+        SchemaContract.differences(
+            RateLookup.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/exchange-rates/lookup", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun aRateLookupReadsWithAndWithoutARate() {
+        val found = ApiJson.decodeFromString(
+            RateLookup.serializer(),
+            """{"code":"GBP","date":"2026-11-10","baseCurrency":"USD","rate":"1.2658227848","rateDate":"2026-11-07","source":"api"}""",
+        )
+        assertEquals(RateLookup("GBP", "2026-11-10", "USD", "1.2658227848", "2026-11-07", "api"), found)
+        val missing = ApiJson.decodeFromString(
+            RateLookup.serializer(),
+            """{"code":"GBP","date":"2026-11-10","baseCurrency":"USD","rate":null,"rateDate":null,"source":null}""",
+        )
+        assertEquals(RateLookup("GBP", "2026-11-10", "USD", null, null, null), missing)
+    }
+
+    @Test
+    fun aPaymentAcrossTwoOtherCurrenciesSendsTheRateOnlyWhenItHasOne() {
+        fun body(payment: CreatePayment) = ApiJson.encodeToString(CreatePayment.serializer(), payment)
+        val base = CreatePayment(
+            Money(45_000, "EUR"), receivedAmount = Money(39_000, "GBP"), accountId = "a1", categoryId = "c1", date = "2026-11-10",
+            expectedReceivableVersion = 2,
+        )
+        assertFalse(body(base).contains("fxRate"))
+        assertTrue(body(base.copy(fxRate = "1.2658227848")).contains(""""fxRate":"1.2658227848""""))
+    }
 
     @Test
     fun recordingAReceiptMatchesTheContract() {

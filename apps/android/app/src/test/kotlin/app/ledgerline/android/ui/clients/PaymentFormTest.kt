@@ -239,4 +239,112 @@ class PaymentFormTest {
         assertEquals("410.00", moved.received)
         assertEquals("5.50", moved.tipAmount)
     }
+
+    // ---- neither side the base currency (ADR 0050, slice 4b-2)
+
+    private val euroService = target.copy(currency = "EUR", outstanding = 45_000)
+    private val aKey = RateKey("GBP", "2026-11-10")
+    private val stored = RateAnswer(aKey, StoredRate.Found("1.2658227848", "2026-11-07"))
+
+    private fun pounds(
+        typed: String = "",
+        answer: RateAnswer? = stored,
+        received: String = "390.00",
+        date: String = "2026-11-10",
+        account: String = "GBP",
+        service: PaymentTarget = euroService,
+    ) = PaymentForm(service, "450.00", "a1", "c1", null, date = date, accountCurrency = account, received = received, rateTyped = typed, rateAnswer = answer)
+
+    @Test
+    fun aRateIsAskedForTheAccountsCurrencyOnThePaymentsDateOnlyWhenNeitherSideIsTheBaseCurrency() {
+        assertEquals(aKey, pounds().rateKey)
+        assertEquals(RateKey("GBP", "2026-11-09"), pounds(date = "2026-11-09").rateKey)
+        assertNull(pounds(account = "USD").rateKey)
+        assertNull(pounds(account = "EUR").rateKey)
+        assertNull(across().rateKey)
+        assertNull(form().rateKey)
+        assertNull(form().copy(accountCurrency = null).rateKey)
+    }
+
+    @Test
+    fun aStoredRateIsSentNowhereTheServiceUsesItsOwn() {
+        val request = pounds().request()!!
+        assertEquals(Money(45_000, "EUR"), request.amount)
+        assertEquals(Money(39_000, "GBP"), request.receivedAmount)
+        assertNull(request.fxRate)
+    }
+
+    @Test
+    fun aRateTypedByHandIsSentInTheStoredForm() {
+        assertEquals("0.0081632653", pounds(typed = "122.5").request()!!.fxRate)
+    }
+
+    @Test
+    fun aTypedRateIsNeverSentWhenOneSideIsTheBaseCurrency() {
+        assertNull(across().copy(rateTyped = "122.5").request()!!.fxRate)
+        assertNull(across(account = "USD", target = euroService).copy(rateTyped = "122.5").request()!!.fxRate)
+        assertNull(form().copy(rateTyped = "122.5").request()!!.fxRate)
+    }
+
+    @Test
+    fun aTypedRateThatCannotBeStoredIsSaidAndNothingIsSent() {
+        assertEquals(listOf(PaymentProblem.RateInvalid), pounds(typed = "abc").problems())
+        assertNull(pounds(typed = "0").request())
+    }
+
+    @Test
+    fun noRateStoredForTheDateBlocksSavingUntilOneIsTyped() {
+        val none = RateAnswer(aKey, StoredRate.Missing)
+        assertEquals(listOf(PaymentProblem.RateMissing), pounds(answer = none).problems())
+        assertNull(pounds(answer = none).request())
+        assertEquals("0.0081632653", pounds(answer = none, typed = "122.5").request()!!.fxRate)
+    }
+
+    @Test
+    fun aLookUpStillOutOrThatFailedDoesNotBlockSavingTheServerDecides() {
+        assertEquals(emptyList<PaymentProblem>(), pounds(answer = null).problems())
+        assertEquals(emptyList<PaymentProblem>(), pounds(answer = RateAnswer(aKey, StoredRate.Unavailable)).problems())
+        assertNull(pounds(answer = null).request()!!.fxRate)
+    }
+
+    @Test
+    fun anAnswerForAnotherDateOrAccountIsNeverUsed() {
+        val none = RateAnswer(RateKey("GBP", "2026-11-09"), StoredRate.Missing)
+        assertEquals(emptyList<PaymentProblem>(), pounds(answer = none).problems())
+        assertNull(pounds(answer = none).cross!!.rateInUse)
+        val other = RateAnswer(RateKey("CHF", "2026-11-10"), StoredRate.Missing)
+        assertEquals(emptyList<PaymentProblem>(), pounds(answer = other).problems())
+    }
+
+    @Test
+    fun theRateInUseIsShownWithWhatArrivedAndNoCrossRateIsFixedByTheAmounts() {
+        val form = pounds()
+        assertNull(form.rate)
+        assertEquals("1.2658227848", form.cross!!.rateInUse)
+        assertEquals(49_367L, form.cross!!.baseValue())
+    }
+
+    @Test
+    fun theAmountOverWhatIsOutstandingIsNotATipHereEither() {
+        val over = pounds().copy(amount = "500.00")
+        assertEquals(Split(50_000, 0), over.split)
+        assertEquals(0L, over.tipMinor)
+    }
+
+    @Test
+    fun choosingAnAccountInAnotherCurrencyDropsTheRateTypedForTheOldOne() {
+        val typed = pounds(typed = "122.5")
+        assertEquals("", typed.withAccount("a9", "CHF").rateTyped)
+        assertEquals("122.5", typed.withAccount("a8", "GBP").rateTyped)
+        assertEquals("", typed.withAccount(null, null).rateTyped)
+        assertEquals("390.00", typed.withAccount("a9", "CHF").received)
+    }
+
+    @Test
+    fun changingTheDateKeepsAHandSetRateButNotTheStoredAnswer() {
+        val moved = pounds(typed = "122.5").copy(date = "2026-11-09")
+        assertEquals("122.5", moved.rateTyped)
+        assertEquals("0.0081632653", moved.request()!!.fxRate)
+        assertEquals(StoredRate.Looking, moved.cross!!.stored)
+    }
 }

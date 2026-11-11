@@ -187,6 +187,14 @@ interface LedgerlineApi {
         @Body body: CreateReceipt,
     ): Receipt
 
+    /** The rate an entry in [code] on [date] would be saved with: a read, nothing is changed (ADR 0050, slice 4b-2). */
+    @GET("api/v1/ledgers/{ledgerId}/exchange-rates/lookup")
+    suspend fun rateLookup(
+        @Path("ledgerId") ledgerId: String,
+        @Query("code") code: String,
+        @Query("date") date: String,
+    ): RateLookup
+
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")
     suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse

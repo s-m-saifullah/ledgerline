@@ -227,4 +227,65 @@ class ReceiptFormTest {
         assertNull(across(received = "").rate)
         assertNull(form().rate)
     }
+
+    // ---- neither side the base currency (ADR 0050, slice 4b-2)
+
+    private val aKey = RateKey("GBP", "2026-11-10")
+    private val stored = RateAnswer(aKey, StoredRate.Found("1.2658227848", "2026-11-07"))
+
+    private fun pounds(typed: String = "", answer: RateAnswer? = stored, received: String = "170.00") =
+        form(amount = "200.00", currency = "EUR").copy(accountCurrency = "GBP", received = received, rateTyped = typed, rateAnswer = answer)
+
+    private fun euroPreview() = ReceiptPreview(
+        "client-1", Money(20_000, "EUR"), Money(20_000, "EUR"), false, false,
+        listOf(allocation("s9", 4, 20_000).copy(outstanding = Money(20_000, "EUR"), applied = Money(20_000, "EUR"), remainingAfter = Money(0, "EUR"))),
+    )
+
+    @Test
+    fun aRateIsAskedForTheAccountsCurrencyOnThePaymentsDateOnlyWhenNeitherSideIsTheBaseCurrency() {
+        assertEquals(aKey, pounds().rateKey)
+        assertEquals(RateKey("GBP", "2026-11-03"), pounds().copy(date = "2026-11-03").rateKey)
+        assertNull(pounds().copy(accountCurrency = "USD").rateKey)
+        assertNull(pounds().copy(accountCurrency = "EUR").rateKey)
+        assertNull(across().rateKey)
+        assertNull(form().rateKey)
+    }
+
+    @Test
+    fun aStoredRateIsNotSentButOneTypedByHandIs() {
+        assertNull(pounds().request(euroPreview())!!.fxRate)
+        val typed = pounds(typed = "122.5").request(euroPreview())!!
+        assertEquals("0.0081632653", typed.fxRate)
+        assertEquals(Money(17_000, "GBP"), typed.receivedAmount)
+    }
+
+    @Test
+    fun aTypedRateIsNeverSentWhenOneSideIsTheBaseCurrency() {
+        assertNull(across().copy(rateTyped = "122.5").request(preview())!!.fxRate)
+        assertNull(form().copy(rateTyped = "122.5").request(preview())!!.fxRate)
+    }
+
+    @Test
+    fun aTypedRateThatCannotBeStoredAndAMissingOneBlockSaving() {
+        assertEquals(listOf(ReceiptProblem.RateInvalid), pounds(typed = "abc").problems())
+        assertNull(pounds(typed = "abc").request(euroPreview()))
+        val none = RateAnswer(aKey, StoredRate.Missing)
+        assertEquals(listOf(ReceiptProblem.RateMissing), pounds(answer = none).problems())
+        assertNull(pounds(answer = none).request(euroPreview()))
+        assertEquals("0.0081632653", pounds(answer = none, typed = "122.5").request(euroPreview())!!.fxRate)
+    }
+
+    @Test
+    fun aLookUpStillOutOrThatFailedDoesNotBlockSaving() {
+        assertEquals(emptyList<ReceiptProblem>(), pounds(answer = null).problems())
+        assertEquals(emptyList<ReceiptProblem>(), pounds(answer = RateAnswer(aKey, StoredRate.Unavailable)).problems())
+        assertEquals(emptyList<ReceiptProblem>(), pounds(answer = RateAnswer(RateKey("GBP", "2026-11-01"), StoredRate.Missing)).problems())
+    }
+
+    @Test
+    fun choosingAnotherAccountCurrencyDropsTheRateTypedForTheOldOne() {
+        val typed = pounds(typed = "122.5")
+        assertEquals("", typed.withAccount("a9", "CHF").rateTyped)
+        assertEquals("122.5", typed.withAccount("a8", "GBP").rateTyped)
+    }
 }

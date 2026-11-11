@@ -237,21 +237,20 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     private fun paymentShot(
         name: String,
         form: app.ledgerline.android.ui.clients.PaymentForm,
-        other: Boolean = false,
         noIncome: Boolean = false,
         errors: Set<app.ledgerline.android.ui.clients.PaymentProblem> = emptySet(),
         error: app.ledgerline.android.online.WriteError? = null,
     ) = shot(name, Tab.More) {
-        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"), Choice("e1", "Euro account", "EUR"))
+        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"), Choice("e1", "Euro account", "EUR"), Choice("g1", "Pound account", "GBP"))
         val categories = if (noIncome) emptyList() else listOf(Choice("c1", "Freelance"), Choice("c2", "Freelance › Design work"), Choice("c3", "Tips"))
-        val ui = app.ledgerline.android.ui.clients.PaymentUi(form, accounts, categories, other, noIncome, errors, error = error)
+        val ui = app.ledgerline.android.ui.clients.PaymentUi(form, accounts, categories, noIncome, errors, error = error)
         app.ledgerline.android.ui.clients.PaymentSheetContent(ui, app.ledgerline.android.ui.clients.PaymentActions({}, {}, {}, {}, {}))
     }
 
     private val paymentStart get() = app.ledgerline.android.ui.clients.PaymentForm.forService(paymentTarget, "2026-11-09")
 
     @Test
-    fun paymentStart() = paymentShot("payment-start", paymentStart, other = true)
+    fun paymentStart() = paymentShot("payment-start", paymentStart)
 
     @Test
     fun paymentWithATip() = paymentShot("payment-tip", paymentStart.copy(amount = "460.25", accountId = "a1", categoryId = "c2", tipCategoryId = "c3"))
@@ -268,7 +267,6 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     fun paymentAcrossCurrencies() = paymentShot(
         "payment-across",
         paymentStart.copy(accountId = "e1", accountCurrency = "EUR", categoryId = "c2", received = "410.00", tipAmount = "5.50", tipCategoryId = "c3"),
-        other = true,
     )
 
     @Test
@@ -277,6 +275,30 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         paymentStart.copy(accountId = "e1", accountCurrency = "EUR", categoryId = "c2", received = "4x"),
         errors = setOf(app.ledgerline.android.ui.clients.PaymentProblem.CategoryMissing),
     )
+
+    private val poundKey = app.ledgerline.android.ui.clients.RateKey("GBP", "2026-11-09")
+    private val euroPaymentTarget = app.ledgerline.android.ui.clients.PaymentTarget("print-layout", 1, "Print layout for the spring catalogue", "Northwind Design", "EUR", 45_000)
+
+    private fun poundPayment(answer: app.ledgerline.android.ui.clients.StoredRate?, typed: String = "", received: String = "390.00") =
+        app.ledgerline.android.ui.clients.PaymentForm.forService(euroPaymentTarget, "2026-11-09").copy(
+            accountId = "g1", accountCurrency = "GBP", categoryId = "c2", received = received, rateTyped = typed,
+            rateAnswer = answer?.let { app.ledgerline.android.ui.clients.RateAnswer(poundKey, it) },
+        )
+
+    @Test
+    fun paymentNeitherSideDollars() = paymentShot(
+        "payment-pounds",
+        poundPayment(app.ledgerline.android.ui.clients.StoredRate.Found("1.2658227848", "2026-11-07")),
+    )
+
+    @Test
+    fun paymentNeitherSideDollarsRateByHand() = paymentShot("payment-pounds-typed", poundPayment(app.ledgerline.android.ui.clients.StoredRate.Found("1.2658227848", "2026-11-09"), typed = "122.5"))
+
+    @Test
+    fun paymentNeitherSideDollarsNoRate() = paymentShot("payment-pounds-missing", poundPayment(app.ledgerline.android.ui.clients.StoredRate.Missing))
+
+    @Test
+    fun paymentNeitherSideDollarsBadRate() = paymentShot("payment-pounds-bad", poundPayment(app.ledgerline.android.ui.clients.StoredRate.Found("1.2658227848", "2026-11-09"), typed = "12,5"))
 
     @Test
     fun paymentWithoutIncomeCategories() = paymentShot("payment-no-income", paymentStart.copy(accountId = "a1"), noIncome = true)
@@ -295,21 +317,20 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         form: app.ledgerline.android.ui.clients.ReceiptForm,
         read: Online<app.ledgerline.api.ReceiptPreview>? = null,
         target: app.ledgerline.android.ui.clients.ReceiptTarget = receiptTarget,
-        other: Boolean = false,
         errors: Set<app.ledgerline.android.ui.clients.ReceiptProblem> = emptySet(),
         error: app.ledgerline.android.online.WriteError? = null,
         asking: Boolean = false,
     ) = shot(name, Tab.More) {
-        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"), Choice("e1", "Euro account", "EUR"))
+        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"), Choice("e1", "Euro account", "EUR"), Choice("g1", "Pound account", "GBP"))
         val categories = listOf(Choice("c1", "Freelance"), Choice("c2", "Freelance › Design work"), Choice("c3", "Tips"))
-        val ui = app.ledgerline.android.ui.clients.ReceiptUi(form.copy(target = target), accounts, categories, other, false, read, errors, error = error, asking = asking)
+        val ui = app.ledgerline.android.ui.clients.ReceiptUi(form.copy(target = target), accounts, categories, false, read, errors, error = error, asking = asking)
         app.ledgerline.android.ui.clients.ReceiptSheetContent(ui, app.ledgerline.android.ui.clients.ReceiptActions({}, {}, {}, {}, {}, {}, {}))
     }
 
     private val receiptStart get() = app.ledgerline.android.ui.clients.ReceiptForm.forClient(receiptTarget, "2026-11-10")
 
     @Test
-    fun receiptStart() = receiptShot("receipt-start", receiptStart, other = true)
+    fun receiptStart() = receiptShot("receipt-start", receiptStart)
 
     @Test
     fun receiptPartial() = receiptShot(
@@ -332,7 +353,22 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         "receipt-across",
         receiptStart.copy(amount = "1700.00", accountId = "e1", accountCurrency = "EUR", categoryId = "c2", received = "1560.00", tipAmount = "5.50", tipCategoryId = "c3"),
         read = receiptPreview(170_000, receiptAllocation("Brand refresh, phase 2", 160_000), receiptAllocation("Landing page copy", 10_000)),
-        other = true,
+    )
+
+    @Test
+    fun receiptNeitherSideDollars() = receiptShot(
+        "receipt-pounds",
+        app.ledgerline.android.ui.clients.ReceiptForm.forClient(app.ledgerline.android.ui.clients.ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(20_000, "EUR"))), "2026-11-10").copy(
+            amount = "200.00", accountId = "g1", accountCurrency = "GBP", categoryId = "c2", received = "170.00",
+            rateAnswer = app.ledgerline.android.ui.clients.RateAnswer(app.ledgerline.android.ui.clients.RateKey("GBP", "2026-11-10"), app.ledgerline.android.ui.clients.StoredRate.Found("1.2658227848", "2026-11-10")),
+        ),
+        read = Online.Ready(
+            app.ledgerline.api.ReceiptPreview(
+                "northwind-design", Money(20_000, "EUR"), Money(20_000, "EUR"), false, false,
+                listOf(app.ledgerline.api.ReceiptAllocation("svc-1", "Brand refresh", "2026-10-01", 1, Money(20_000, "EUR"), Money(20_000, "EUR"), Money(0, "EUR"))),
+            ),
+        ),
+        target = app.ledgerline.android.ui.clients.ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(20_000, "EUR"))),
     )
 
     @Test
