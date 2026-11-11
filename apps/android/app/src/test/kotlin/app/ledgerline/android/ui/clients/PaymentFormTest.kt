@@ -148,4 +148,95 @@ class PaymentFormTest {
         assertEquals(0L, form(amount = "abc").tipMinor)
         assertEquals(0L, form(amount = "10").tipMinor)
     }
+
+    // ---- an account in another currency (ADR 0050, slice 4b-1)
+
+    private fun across(amount: String = "450.00", received: String = "410.00", tip: String = "", tipCategoryId: String? = null, account: String = "EUR", target: PaymentTarget = this.target) =
+        PaymentForm(target, amount, "a1", "c1", tipCategoryId, date = "2026-11-10", accountCurrency = account, received = received, tipAmount = tip)
+
+    @Test
+    fun anAccountInTheServicesCurrencyIsNotAPaymentAcrossCurrencies() {
+        val same = form().copy(accountCurrency = "USD", received = "999", tipAmount = "5")
+        assertNull(same.cross)
+        assertNull(same.request()!!.receivedAmount)
+        assertNull(same.request()!!.tip)
+    }
+
+    @Test
+    fun anAccountInAnotherCurrencyAsksForWhatArrivedAndSendsItWithoutARate() {
+        val request = across().request()!!
+        assertEquals(Money(45_000, "USD"), request.amount)
+        assertEquals(Money(41_000, "EUR"), request.receivedAmount)
+        assertNull(request.fxRate)
+        assertNull(request.tip)
+    }
+
+    @Test
+    fun theAmountIsNotSplitIntoATipWhenTheAccountIsInAnotherCurrency() {
+        val over = across(amount = "460.25")
+        assertEquals(Split(46_025, 0), over.split)
+        assertEquals(0, over.tipMinor)
+        assertEquals(Money(46_025, "USD"), over.request()!!.amount)
+        assertNull(over.request()!!.tip)
+    }
+
+    @Test
+    fun theTipIsTypedAndSentInTheAccountsCurrency() {
+        val tipped = across(tip = "5.50", tipCategoryId = "c2")
+        assertEquals(550L, tipped.tipMinor)
+        assertEquals("EUR", tipped.tipCurrency)
+        assertEquals(TipInput(Money(550, "EUR"), "c2"), tipped.request()!!.tip)
+    }
+
+    @Test
+    fun aTypedTipNeedsItsOwnCategory() {
+        assertEquals(listOf(PaymentProblem.TipCategoryMissing), across(tip = "5.50").problems())
+    }
+
+    @Test
+    fun whatArrivedIsRequiredAndSaidWhenItIsNotRight() {
+        assertEquals(listOf(PaymentProblem.ReceivedMissing), across(received = "").problems())
+        assertEquals(listOf(PaymentProblem.ReceivedInvalid), across(received = "x").problems())
+        assertEquals(listOf(PaymentProblem.ReceivedTooPrecise), across(received = "1.234").problems())
+        assertEquals(listOf(PaymentProblem.ReceivedZero), across(received = "0").problems())
+        assertEquals(listOf(PaymentProblem.ReceivedTooLarge), across(received = "99999999999999999").problems())
+        assertNull(across(received = "").request())
+    }
+
+    @Test
+    fun aTipThatIsNotRightIsAProblemAndNothingIsSent() {
+        assertEquals(listOf(PaymentProblem.TipInvalid), across(tip = "abc").problems())
+        assertEquals(listOf(PaymentProblem.TipInvalid), across(tip = "0").problems())
+        assertNull(across(tip = "abc").request())
+    }
+
+    @Test
+    fun nothingAboutWhatArrivedIsAskedWhenTheAccountIsInTheServicesCurrency() {
+        assertTrue(form().copy(accountCurrency = "USD", received = "").problems().isEmpty())
+    }
+
+    @Test
+    fun theRateSentenceFollowsTheTwoAmountsAndDisappearsWhenTheyAreNotThere() {
+        assertEquals("1 USD = 0.911111 EUR", across().rate!!.sentence)
+        assertNull(across(received = "").rate)
+        assertNull(across(amount = "").rate)
+        assertNull(form().rate)
+    }
+
+    @Test
+    fun aServiceInEurosPaidIntoDollarsReadsTheRateTheOtherWay() {
+        val euros = target.copy(currency = "EUR", outstanding = 45_000)
+        val form = across(account = "USD", received = "490.00", target = euros)
+        assertEquals(Money(49_000, "USD"), form.request()!!.receivedAmount)
+        assertEquals("1 USD = 0.918367 EUR", form.rate!!.sentence)
+    }
+
+    @Test
+    fun choosingAnotherAccountKeepsWhatWasTyped() {
+        val moved = across(received = "410.00", tip = "5.50").withAccount("a2", "GBP")
+        assertEquals("a2", moved.accountId)
+        assertEquals("GBP", moved.accountCurrency)
+        assertEquals("410.00", moved.received)
+        assertEquals("5.50", moved.tipAmount)
+    }
 }

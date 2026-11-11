@@ -63,7 +63,9 @@ internal fun service(
     id: String = description.lowercase().replace(' ', '-'),
     writtenOff: Long = 0,
     reason: String? = null,
+    currency: String = "USD",
 ): Service {
+    fun usd(amount: Long) = Money(amount, currency)
     val outstanding = if (writtenOff > 0) 0 else cents - received
     return Service(
         contactId = "northwind-design",

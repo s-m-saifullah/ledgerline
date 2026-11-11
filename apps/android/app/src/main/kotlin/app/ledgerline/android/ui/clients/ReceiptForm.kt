@@ -22,12 +22,26 @@ data class ReceiptTarget(
 enum class ReceiptProblem {
     AmountMissing, AmountInvalid, AmountTooPrecise, AmountZero, AmountTooLarge,
 
+    /** The account is in another currency and the amount that arrived in it is missing or not right. */
+    ReceivedMissing, ReceivedInvalid, ReceivedTooPrecise, ReceivedZero, ReceivedTooLarge,
+
+    /** A tip was typed (in the account's currency) and is not a valid amount above zero. */
+    TipInvalid,
+
     /** The client owes nothing in the chosen currency. */
     NothingOwed,
     AccountMissing, CategoryMissing, TipCategoryMissing,
 
     /** Set by the sheet's logic, not by the form: the services this amount pays have not been read yet, or no longer match. */
     PreviewNotReady,
+}
+
+internal fun AmountIssue.receivedReceiptProblem() = when (this) {
+    AmountIssue.Missing -> ReceiptProblem.ReceivedMissing
+    AmountIssue.Invalid -> ReceiptProblem.ReceivedInvalid
+    AmountIssue.TooPrecise -> ReceiptProblem.ReceivedTooPrecise
+    AmountIssue.Zero -> ReceiptProblem.ReceivedZero
+    AmountIssue.TooLarge -> ReceiptProblem.ReceivedTooLarge
 }
 
 /** What a preview pays: how many services in full, and whether the last one only in part. */
@@ -43,8 +57,9 @@ const val ReceiptNoteMax = 2_000
  * The Record payment form for a client (ADR 0050, slice 4c; the prototype's `OV.receive`): one amount, applied to the
  * client's oldest unpaid services first, in one currency. Money over the open total settles everything and the rest is
  * one tip, as the web splits it. The request names the services of the preview that matches the amount shown, so a
- * service that changed meanwhile is refused by the server. An account in another currency comes with the next slice, so
- * the account is always in [currency] here.
+ * service that changed meanwhile is refused by the server. An account in another currency (one side the base currency,
+ * ADR 0050 slice 4b-1) also asks for what arrived in it, shows the rate the two amounts fix and takes an optional tip in
+ * its currency; the amount typed is then what settles, with no tip made of the extra.
  */
 data class ReceiptForm(
     val target: ReceiptTarget,
@@ -57,17 +72,35 @@ data class ReceiptForm(
     /** "HH:mm", or null when no time was set. */
     val time: String? = null,
     val note: String = "",
+    /** The currency of the chosen account (null until one is chosen); another one than [currency] makes this a payment across currencies. */
+    val accountCurrency: String? = null,
+    /** What arrived in the account, typed, when its currency differs from [currency]. */
+    val received: String = "",
+    /** An optional tip in the account's currency, typed, when its currency differs from [currency]. */
+    val tipAmount: String = "",
 ) {
+    /** The part that exists only when the account is in another currency than the one they owe in. */
+    val cross: CrossCurrency? get() = accountCurrency?.takeIf { it != currency }?.let { CrossCurrency(currency, it, received, tipAmount) }
+
+    /** The currency the tip is in: the account's when it differs, else the currency they owe in. */
+    val tipCurrency: String get() = cross?.accountCurrency ?: currency
+
+    /** The rate the two amounts fix when the account is in another currency and one side is the base currency. */
+    val rate: CrossRate? get() = cross?.rate(split?.settle)
+
+    /** The form with another account chosen; what was typed is kept. */
+    fun withAccount(id: String?, currency: String?) = copy(accountId = id, accountCurrency = currency)
+
     private val parsed: AmountInput get() = parseAmount(amount, currency)
 
     /** What the client owes in [currency]. */
     val outstanding: Long get() = target.owed.firstOrNull { it.currency == currency }?.amount ?: 0
 
     /** What the amount settles and what is the tip, or null while the amount is not a valid one. */
-    val split: Split? get() = (parsed as? AmountInput.Valid)?.let { splitExtra(it.minor, outstanding) }
+    val split: Split? get() = (parsed as? AmountInput.Valid)?.let { if (cross != null) Split(it.minor, 0) else splitExtra(it.minor, outstanding) }
 
-    /** The tip in minor units: zero when the amount is not over the open total or is not valid yet. */
-    val tipMinor: Long get() = split?.tip ?: 0
+    /** The tip in minor units of [tipCurrency]: what was typed for an account in another currency, else the money over the open total. */
+    val tipMinor: Long get() = cross?.tipMinor ?: (split?.tip ?: 0)
 
     /** What the server is asked to preview: the part that settles, never the tip; null while there is nothing to ask. */
     val previewAmount: Long? get() = split?.settle?.takeIf { it > 0 }
@@ -83,6 +116,10 @@ data class ReceiptForm(
             AmountInput.Zero -> add(ReceiptProblem.AmountZero)
             AmountInput.TooLarge -> add(ReceiptProblem.AmountTooLarge)
             is AmountInput.Valid -> Unit
+        }
+        cross?.let { c ->
+            c.receivedIssue?.let { add(it.receivedReceiptProblem()) }
+            if (c.tipIssue != null) add(ReceiptProblem.TipInvalid)
         }
         if (outstanding <= 0) add(ReceiptProblem.NothingOwed)
         if (accountId == null) add(ReceiptProblem.AccountMissing)
@@ -103,12 +140,13 @@ data class ReceiptForm(
         val split = split ?: return null
         return CreateReceipt(
             amount = Money(split.settle, currency),
+            receivedAmount = cross?.receivedMinor?.let { Money(it, cross!!.accountCurrency) },
             accountId = accountId!!,
             categoryId = categoryId!!,
             date = date,
             time = time,
             note = note.trim().take(ReceiptNoteMax).ifEmpty { null },
-            tip = if (split.tip > 0) TipInput(Money(split.tip, currency), tipCategoryId!!) else null,
+            tip = if (tipMinor > 0) TipInput(Money(tipMinor, tipCurrency), tipCategoryId!!) else null,
             expectedAllocations = preview!!.allocations.map { ExpectedAllocation(it.receivableId, it.version, it.applied.amount) },
         )
     }

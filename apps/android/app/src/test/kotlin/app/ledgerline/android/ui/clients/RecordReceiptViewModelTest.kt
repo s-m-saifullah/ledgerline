@@ -76,6 +76,7 @@ class RecordReceiptViewModelTest {
                 accounts = listOf(
                     account(1, name = "Everyday checking"), account(2, name = "Savings"), account(3, name = "Euro account", currency = "EUR"),
                     account(4, name = "Old account", archived = true), account(5, name = "Client balance", contactId = "northwind-design"),
+                    account(6, name = "Pound account", currency = "GBP"),
                 ),
                 categories = categories,
             ).toRows(Ledger),
@@ -185,8 +186,8 @@ class RecordReceiptViewModelTest {
         assertEquals("USD", opened.form.currency)
         assertEquals("2026-11-10", opened.form.date)
         assertEquals(ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(60_000, "USD"))), opened.form.target)
-        assertEquals(listOf("Everyday checking", "Savings"), opened.accounts.map { it.label })
-        assertTrue(opened.otherCurrencyAccounts)
+        assertEquals(listOf("Euro account", "Everyday checking", "Pound account", "Savings"), opened.accounts.map { it.label })
+        assertFalse(opened.otherCurrencyAccounts)
         assertEquals(listOf("Freelance", "Freelance › Design work", "Tips"), opened.categories.map { it.label })
         assertFalse(opened.noIncomeCategory)
         assertNull(opened.preview)
@@ -215,7 +216,7 @@ class RecordReceiptViewModelTest {
         assertEquals(tips, opened.form.categoryId)
         assertEquals(design, opened.form.tipCategoryId)
         viewModel.close()
-        store.choices = PaymentChoices(accountId = id(3), categoryId = id(11), tipCategoryId = "gone")
+        store.choices = PaymentChoices(accountId = id(4), categoryId = id(11), tipCategoryId = "gone")
         val ignored = openSheet()
         assertNull(ignored.form.accountId)
         assertNull(ignored.form.categoryId)
@@ -232,7 +233,8 @@ class RecordReceiptViewModelTest {
         assertEquals("EUR", ui().form.currency)
         assertEquals("", ui().form.amount)
         assertNull(ui().form.accountId)
-        assertEquals(listOf("Euro account"), ui().accounts.map { it.label })
+        // Euros can go into euros or dollars; the pound account needs a rate set by hand.
+        assertEquals(listOf("Euro account", "Everyday checking", "Savings"), ui().accounts.map { it.label })
         assertTrue(ui().otherCurrencyAccounts)
         assertNull(ui().preview)
     }
@@ -244,6 +246,61 @@ class RecordReceiptViewModelTest {
         viewModel.chooseCurrency("USD")
         assertEquals("10.00", ui().form.amount)
         assertEquals(checking, ui().form.accountId)
+    }
+
+    @Test
+    fun aRememberedAccountComesBackWithItsCurrency() {
+        store.choices = PaymentChoices(accountId = id(3))
+        assertEquals("EUR", openSheet().form.accountCurrency)
+        viewModel.close()
+        store.choices = PaymentChoices()
+        assertNull(openSheet().form.accountCurrency)
+    }
+
+    @Test
+    fun choosingAnotherCurrencyForgetsTheAccountAndWhatWasTypedForIt() {
+        val both = contact("Northwind Design", balances = listOf(Money(60_000, "USD"), Money(20_000, "EUR")), owed = 60_000)
+        openSheet(both)
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(received = "9.00", tipAmount = "1.00") }
+        viewModel.chooseCurrency("EUR")
+        assertNull(ui().form.accountId)
+        assertNull(ui().form.accountCurrency)
+        assertEquals("", ui().form.received)
+        assertEquals("", ui().form.tipAmount)
+    }
+
+    @Test
+    fun aPaymentIntoAnEuroAccountSendsWhatArrivedSharedAcrossTheServicesAndATipInEuros() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(amount = "600.00", categoryId = freelance, received = "550.00", tipAmount = "5.50", tipCategoryId = tips) }
+        ready()
+        sent()
+        harness.until { viewModel.sheet.value == null }
+        assertEquals(
+            """{"amount":{"amount":60000,"currency":"USD"},"receivedAmount":{"amount":55000,"currency":"EUR"},"accountId":"${id(3)}","categoryId":"$freelance","date":"2026-11-10",""" +
+                """"tip":{"amount":{"amount":550,"currency":"EUR"},"categoryId":"$tips"},""" +
+                """"expectedAllocations":[{"receivableId":"s1","expectedVersion":2,"applied":45000},{"receivableId":"s2","expectedVersion":5,"applied":15000}]}""",
+            writes().single().body,
+        )
+    }
+
+    @Test
+    fun aPaymentAcrossCurrenciesAsksForTheServicesOfTheTypedAmountNotATip() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(amount = "650.00") }
+        ready()
+        assertTrue(previews().single().contains("amount=65000"))
+    }
+
+    @Test
+    fun anAmountThatArrivedIsRequiredBeforeAnythingIsAsked() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(amount = "600.00", categoryId = freelance) }
+        ready()
+        viewModel.save()
+        assertEquals(setOf(ReceiptProblem.ReceivedMissing), ui().errors)
+        assertFalse(ui().asking)
+        assertNothingWritten()
     }
 
     @Test

@@ -173,4 +173,58 @@ class ReceiptFormTest {
     fun anAmountInACurrencyTheyOweNothingInAsksForNoPreview() {
         assertNull(form(amount = "10.00", currency = "GBP").previewAmount)
     }
+
+    // ---- an account in another currency (ADR 0050, slice 4b-1)
+
+    private fun across(amount: String = "600.00", received: String = "550.00", tip: String = "", tipCategoryId: String? = null, account: String = "EUR") =
+        form(amount = amount, tipCategoryId = tipCategoryId).copy(accountCurrency = account, received = received, tipAmount = tip)
+
+    @Test
+    fun anAccountInTheCurrencyTheyOweInIsNotAPaymentAcrossCurrencies() {
+        val same = form().copy(accountCurrency = "USD", received = "999", tipAmount = "5")
+        assertNull(same.cross)
+        assertNull(same.request(preview())!!.receivedAmount)
+    }
+
+    @Test
+    fun anAccountInAnotherCurrencySendsWhatArrivedSharedAcrossTheServices() {
+        val request = across().request(preview())!!
+        assertEquals(Money(60_000, "USD"), request.amount)
+        assertEquals(Money(55_000, "EUR"), request.receivedAmount)
+        assertNull(request.fxRate)
+        assertNull(request.tip)
+    }
+
+    @Test
+    fun theAmountAskedForIsWhatWasTypedAndNeverSplitIntoATipWhenTheAccountIsInAnotherCurrency() {
+        val over = across(amount = "650.00")
+        assertEquals(Split(65_000, 0), over.split)
+        assertEquals(65_000L, over.previewAmount)
+        assertEquals(0, over.tipMinor)
+    }
+
+    @Test
+    fun theTipIsTypedAndSentInTheAccountsCurrency() {
+        val tipped = across(tip = "5.50", tipCategoryId = "c2")
+        assertEquals(TipInput(Money(550, "EUR"), "c2"), tipped.request(preview())!!.tip)
+        assertEquals(listOf(ReceiptProblem.TipCategoryMissing), across(tip = "5.50").problems())
+    }
+
+    @Test
+    fun whatArrivedAndATypedTipAreCheckedLikeAnyAmount() {
+        assertEquals(listOf(ReceiptProblem.ReceivedMissing), across(received = "").problems())
+        assertEquals(listOf(ReceiptProblem.ReceivedInvalid), across(received = "x").problems())
+        assertEquals(listOf(ReceiptProblem.ReceivedTooPrecise), across(received = "1.234").problems())
+        assertEquals(listOf(ReceiptProblem.ReceivedZero), across(received = "0").problems())
+        assertEquals(listOf(ReceiptProblem.ReceivedTooLarge), across(received = "99999999999999999").problems())
+        assertEquals(listOf(ReceiptProblem.TipInvalid), across(tip = "abc").problems())
+        assertNull(across(received = "").request(preview()))
+    }
+
+    @Test
+    fun theRateSentenceFollowsTheTwoAmounts() {
+        assertEquals("1 USD = 0.916667 EUR", across().rate!!.sentence)
+        assertNull(across(received = "").rate)
+        assertNull(form().rate)
+    }
 }

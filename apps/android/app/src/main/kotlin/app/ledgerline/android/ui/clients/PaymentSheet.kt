@@ -148,7 +148,7 @@ internal fun PaymentSheetContent(ui: PaymentUi, actions: PaymentActions, modifie
             isError = amountProblem != null,
             supportingText = amountProblem?.let { stringResource(it.messageRes()) },
         )
-        if (split != null && tip > 0) {
+        if (split != null && tip > 0 && form.cross == null) {
             Text(
                 stringResource(R.string.payment_tip_note, money(split.settle, target.currency).text, money(tip, target.currency).text),
                 style = MaterialTheme.typography.bodyMedium,
@@ -178,11 +178,18 @@ internal fun PaymentSheetContent(ui: PaymentUi, actions: PaymentActions, modifie
                 }
             }
         }
+        form.cross?.let { cross ->
+            val issue = cross.receivedIssue?.takeIf { it != AmountIssue.Missing || PaymentProblem.ReceivedMissing in ui.errors }
+            ReceivedAmount(cross, form.rate, issue) { text -> actions.edit { it.copy(received = text) } }
+        }
         if (ui.otherCurrencyAccounts) Hint(stringResource(R.string.payment_other_currencies))
         if (ui.noIncomeCategory) Hint(stringResource(R.string.payment_no_income))
         GroupedListCard {
-            row { FoldRow(stringResource(R.string.payment_fold), foldOpen) { foldOpen = !foldOpen } }
+            row { FoldRow(stringResource(if (form.cross != null) R.string.payment_fold_tip else R.string.payment_fold), foldOpen) { foldOpen = !foldOpen } }
             if (foldOpen) {
+                form.cross?.let { cross ->
+                    row { TipAmount(cross, invalid = cross.tipIssue != null) { text -> actions.edit { it.copy(tipAmount = text) } } }
+                }
                 row {
                     WhenRow(
                         form.date,
@@ -213,7 +220,7 @@ internal fun PaymentSheetContent(ui: PaymentUi, actions: PaymentActions, modifie
             when (which) {
                 PaymentPicker.Account -> PickerContent(
                     stringResource(R.string.editor_account), ui.accounts, form.accountId,
-                    { id -> actions.edit { it.copy(accountId = id) }; close() }, close,
+                    { id -> actions.edit { it.withAccount(id, ui.accounts.find { account -> account.id == id }?.currency) }; close() }, close,
                 )
                 PaymentPicker.Category -> PickerContent(
                     stringResource(R.string.payment_category), ui.categories, form.categoryId,
@@ -237,15 +244,21 @@ private fun Question(ui: PaymentUi, actions: PaymentActions) {
     val form = ui.form
     val target = form.target
     val split = form.split ?: return
-    val total = money(split.settle + split.tip, target.currency)
+    val cross = form.cross
+    val total = if (cross != null) money(cross.receivedMinor ?: return, cross.accountCurrency) else money(split.settle + split.tip, target.currency)
     val account = ui.accounts.labelOf(form.accountId)
     AlertDialog(
         onDismissRequest = actions.dismissAsk,
         title = { Text(stringResource(R.string.payment_ask_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.payment_ask_body, total.text, target.clientName, account))
-                if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, target.currency).text))
+                if (cross != null) {
+                    Text(stringResource(R.string.payment_ask_body_across, total.text, target.clientName, account, money(split.settle, target.currency).text))
+                    if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
+                } else {
+                    Text(stringResource(R.string.payment_ask_body, total.text, target.clientName, account))
+                    if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, target.currency).text))
+                }
             }
         },
         confirmButton = {
@@ -292,6 +305,12 @@ private fun PaymentProblem.messageRes() = when (this) {
     PaymentProblem.AmountTooPrecise -> R.string.editor_error_amount_precise
     PaymentProblem.AmountZero -> R.string.editor_error_amount_zero
     PaymentProblem.AmountTooLarge -> R.string.editor_error_amount_large
+    PaymentProblem.ReceivedMissing -> R.string.editor_error_amount_missing
+    PaymentProblem.ReceivedInvalid -> R.string.editor_error_amount_invalid
+    PaymentProblem.ReceivedTooPrecise -> R.string.editor_error_amount_precise
+    PaymentProblem.ReceivedZero -> R.string.editor_error_amount_zero
+    PaymentProblem.ReceivedTooLarge -> R.string.editor_error_amount_large
+    PaymentProblem.TipInvalid -> R.string.payment_error_tip_invalid
     PaymentProblem.AccountMissing -> R.string.editor_error_account
     PaymentProblem.CategoryMissing -> R.string.editor_error_category
     PaymentProblem.TipCategoryMissing -> R.string.payment_error_tip_category

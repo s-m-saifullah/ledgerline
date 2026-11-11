@@ -644,7 +644,13 @@
     <string name="payment_category">Category</string>
     <string name="payment_tip_category">Tip category</string>
     <string name="payment_error_tip_category">Choose a category for the tip.</string>
-    <string name="payment_other_currencies">Accounts in other currencies: use the web for now.</string>
+    <string name="payment_other_currencies">Some accounts need a rate set by hand: use the web for now.</string>
+    <string name="payment_received">Amount received (%1$s)</string>
+    <string name="payment_tip_amount">Tip (%1$s, optional)</string>
+    <string name="payment_fold_tip">Tip, date, time and note</string>
+    <string name="payment_error_tip_invalid">Enter a tip like 2.50, or leave it empty.</string>
+    <string name="payment_ask_body_across">Record %1$s from %2$s into %3$s. It settles %4$s.</string>
+    <string name="payment_ask_tip_extra">A tip of %1$s is saved with it.</string>
     <string name="payment_no_income">There are no income categories yet. Add one on the web.</string>
     <string name="payment_fold">Date, time and note</string>
     <string name="payment_save">Save payment</string>

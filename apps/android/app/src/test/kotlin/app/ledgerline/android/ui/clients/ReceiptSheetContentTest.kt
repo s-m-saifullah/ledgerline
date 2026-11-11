@@ -68,12 +68,16 @@ class ReceiptSheetContentTest {
         saving: Boolean = false,
         error: WriteError? = null,
         asking: Boolean = false,
+        accounts: List<Choice> = this.accounts,
     ) = ReceiptUi(form.copy(target = target), accounts, if (noIncome) emptyList() else categories, other, noIncome, read, errors, saving, error, asking)
 
     private class Taps(private val form: () -> ReceiptForm) {
         val log = mutableListOf<String>()
+
+        /** What each edit would make of the form. */
+        val forms = mutableListOf<ReceiptForm>()
         fun actions() = ReceiptActions(
-            edit = { change -> log += "edit:" + change(form()).let { "${it.amount}|${it.accountId}|${it.categoryId}|${it.tipCategoryId}" } },
+            edit = { change -> log += "edit:" + change(form()).also { forms += it }.let { "${it.amount}|${it.accountId}|${it.categoryId}|${it.tipCategoryId}" } },
             payInFull = { log += "payInFull" },
             chooseCurrency = { log += "currency:$it" },
             save = { log += "save" },
@@ -293,14 +297,14 @@ class ReceiptSheetContentTest {
     @Test
     fun theHintsAboutOtherCurrenciesAndMissingIncomeCategoriesShowOnlyWhenTheyApply() {
         show(ui(other = true, noIncome = true))
-        compose.onNodeWithText("Accounts in other currencies: use the web for now.").assertExists()
+        compose.onNodeWithText("Some accounts need a rate set by hand: use the web for now.").assertExists()
         compose.onNodeWithText("There are no income categories yet. Add one on the web.").assertExists()
     }
 
     @Test
     fun noHintShowsWhenNothingApplies() {
         show(ui())
-        compose.onNodeWithText("Accounts in other currencies", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("need a rate set by hand", substring = true).assertDoesNotExist()
         compose.onNodeWithText("no income categories", substring = true).assertDoesNotExist()
     }
 
@@ -386,5 +390,92 @@ class ReceiptSheetContentTest {
         compose.onNodeWithText("$450.00", substring = true).assertDoesNotExist()
         compose.onNodeWithText("$50.00", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Northwind Design", substring = true).assertExists()
+    }
+
+    // ---- an account in another currency (ADR 0050, slice 4b-1)
+
+    private val euro = Choice("e1", "Euro account", "EUR")
+    private val withEuro = accounts + euro
+    private val across = chosen.copy(accountId = "e1", accountCurrency = "EUR", received = "550.00")
+
+    @Test
+    fun anAccountInAnotherCurrencyAsksWhatArrivedInItAndSaysTheRate() {
+        show(ui(across, accounts = withEuro, read = preview()))
+        compose.onNodeWithText("Amount received (EUR)").assertExists()
+        compose.onNodeWithText("1 USD = 0.916667 EUR").assertExists()
+    }
+
+    @Test
+    fun anAccountInTheCurrencyTheyOweInAsksNothingAboutWhatArrived() {
+        show(ui(chosen.copy(accountCurrency = "USD"), read = preview()))
+        compose.onNodeWithText("Amount received", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun typingWhatArrivedReportsIt() {
+        val taps = Taps { across }
+        show(ui(across, accounts = withEuro, read = preview()), taps)
+        compose.onNode(hasSetTextAction() and hasText("Amount received (EUR)")).performTextReplacement("500")
+        assertEquals("500", taps.forms.single().received)
+    }
+
+    @Test
+    fun aMissingAmountReceivedIsSaidOnceSaveWasPressed() {
+        show(ui(across.copy(received = ""), accounts = withEuro, read = preview(), errors = setOf(ReceiptProblem.ReceivedMissing)))
+        compose.onNodeWithText("Enter an amount.").assertExists()
+    }
+
+    @Test
+    fun moneyOverTheOpenBalanceIsNotCalledATipWhenTheAccountIsInAnotherCurrency() {
+        show(ui(across.copy(amount = "650.00"), accounts = withEuro))
+        compose.onNodeWithText("This settles", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Tip category").assertDoesNotExist()
+    }
+
+    @Test
+    fun aTipTypedForAnAccountInAnotherCurrencyIsNeverCalledTheExtraOverWhatIsOwed() {
+        show(ui(across.copy(amount = "460.25", tipAmount = "5.50", tipCategoryId = "c3"), accounts = withEuro))
+        compose.onNodeWithText("This settles", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("saved as a tip", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Tip category").assertExists()
+    }
+
+    @Test
+    fun theTipFieldIsInTheFoldInTheAccountsCurrency() {
+        show(ui(across.copy(tipAmount = "5.50"), accounts = withEuro, errors = setOf(ReceiptProblem.TipCategoryMissing)))
+        compose.onNodeWithText("Tip, date, time and note").performClick()
+        compose.onNodeWithText("Tip (EUR, optional)").assertExists()
+        compose.onNodeWithText("Choose a category for the tip.").assertExists()
+    }
+
+    @Test
+    fun aTipThatIsNotRightIsSaid() {
+        show(ui(across.copy(tipAmount = "abc"), accounts = withEuro))
+        compose.onNodeWithText("Tip, date, time and note").performClick()
+        compose.onNodeWithText("Enter a tip like 2.50, or leave it empty.").assertExists()
+    }
+
+    @Test
+    fun choosingAnAccountReportsItsCurrencyToo() {
+        val taps = Taps { start }
+        show(ui(accounts = withEuro), taps)
+        compose.onNodeWithText("Account").performClick()
+        compose.onNodeWithText("Euro account").performClick()
+        assertEquals("EUR", taps.forms.single().accountCurrency)
+    }
+
+    @Test
+    fun theQuestionNamesWhatArrivedWhatItSettlesWhichServicesItPaysAndATipInTheAccountsCurrency() {
+        show(ui(across.copy(tipAmount = "5.50", tipCategoryId = "c3"), accounts = withEuro, read = preview(), asking = true))
+        compose.onNodeWithText("Record €550.00 from Northwind Design into Euro account. It settles $600.00.").assertExists()
+        compose.onAllNodesWithText("Pays 2 services in full.").assertCountEquals(2)
+        compose.onNodeWithText("A tip of €5.50 is saved with it.").assertExists()
+    }
+
+    @Test
+    fun theQuestionAcrossCurrenciesHidesEveryAmountInPrivacyMode() {
+        show(ui(across, accounts = withEuro, read = preview(), asking = true), private = true)
+        compose.onNodeWithText("€550.00", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("$600.00", substring = true).assertDoesNotExist()
     }
 }

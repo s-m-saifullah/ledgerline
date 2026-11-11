@@ -70,6 +70,7 @@ class RecordPaymentViewModelTest {
                 accounts = listOf(
                     account(1, name = "Everyday checking"), account(2, name = "Savings"), account(3, name = "Euro account", currency = "EUR"),
                     account(4, name = "Old account", archived = true), account(5, name = "Client balance", contactId = "northwind-design"),
+                    account(6, name = "Pound account", currency = "GBP"),
                 ),
                 categories = categories,
             ).toRows(Ledger),
@@ -130,6 +131,12 @@ class RecordPaymentViewModelTest {
 
     private fun writes() = harness.recorded.filter { it.method == "POST" }
 
+    /** A write happens on another thread, so "nothing was sent" is only true after a pause long enough for one to arrive. */
+    private fun assertNothingWritten() {
+        Thread.sleep(500)
+        assertTrue(writes().isEmpty())
+    }
+
     private fun sent() {
         viewModel.save()
         viewModel.confirm()
@@ -142,9 +149,9 @@ class RecordPaymentViewModelTest {
         assertEquals("450.00", opened.form.amount)
         assertEquals("2026-11-09", opened.form.date)
         assertEquals(PaymentTarget("logo-refresh", 1, "Logo refresh", "Northwind Design", "USD", 45_000), opened.form.target)
-        // Archived, other-currency and client balance accounts are left out; the euro account is why the hint shows.
-        assertEquals(listOf("Everyday checking", "Savings"), opened.accounts.map { it.label })
-        assertTrue(opened.otherCurrencyAccounts)
+        // A dollar service can go into any currency (one side is the base currency); archived and client balance accounts are left out.
+        assertEquals(listOf("Euro account", "Everyday checking", "Pound account", "Savings"), opened.accounts.map { it.label })
+        assertFalse(opened.otherCurrencyAccounts)
         // Income categories only, a subcategory under its main one, the archived one left out.
         assertEquals(listOf("Freelance", "Freelance › Design work", "Tips"), opened.categories.map { it.label })
         assertFalse(opened.noIncomeCategory)
@@ -180,12 +187,74 @@ class RecordPaymentViewModelTest {
 
     @Test
     fun rememberedChoicesThatAreGoneOrDoNotFitAreIgnored() {
-        // The euro account, the archived account and an unknown id are not offered; the expense category is not income.
-        store.choices = PaymentChoices(accountId = id(3), categoryId = id(11), tipCategoryId = "gone")
+        // The archived account and an unknown id are not offered; the expense category is not income.
+        store.choices = PaymentChoices(accountId = id(4), categoryId = id(11), tipCategoryId = "gone")
         val opened = openSheet()
         assertNull(opened.form.accountId)
         assertNull(opened.form.categoryId)
         assertNull(opened.form.tipCategoryId)
+    }
+
+    private val eurService = service("Print layout", 12_000, id = "print-layout", currency = "EUR")
+
+    @Test
+    fun aServiceInEurosCanGoIntoEurosOrDollarsButNotPoundsWhichNeedARateSetByHand() {
+        val opened = openSheet(eurService)
+        assertEquals(listOf("Euro account", "Everyday checking", "Savings"), opened.accounts.map { it.label })
+        assertTrue(opened.otherCurrencyAccounts)
+    }
+
+    @Test
+    fun aRememberedAccountComesBackWithItsCurrency() {
+        store.choices = PaymentChoices(accountId = id(3))
+        assertEquals("EUR", openSheet().form.accountCurrency)
+        viewModel.close()
+        store.choices = PaymentChoices(accountId = checking)
+        assertEquals("USD", openSheet().form.accountCurrency)
+        viewModel.close()
+        store.choices = PaymentChoices()
+        assertNull(openSheet().form.accountCurrency)
+    }
+
+    @Test
+    fun aPaymentIntoAnEuroAccountSendsWhatArrivedAndATipInEurosWithoutARate() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(categoryId = freelance, received = "410.00", tipAmount = "5.50", tipCategoryId = tips) }
+        sent()
+        harness.until { viewModel.sheet.value == null }
+        assertEquals(
+            """{"amount":{"amount":45000,"currency":"USD"},"receivedAmount":{"amount":41000,"currency":"EUR"},"accountId":"${id(3)}","categoryId":"$freelance","date":"2026-11-09",""" +
+                """"tip":{"amount":{"amount":550,"currency":"EUR"},"categoryId":"$tips"},"expectedReceivableVersion":1}""",
+            writes().single().body,
+        )
+    }
+
+    @Test
+    fun anAmountThatArrivedIsRequiredBeforeAnythingIsAsked() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(categoryId = freelance) }
+        viewModel.save()
+        assertEquals(setOf(PaymentProblem.ReceivedMissing), ui().errors)
+        assertFalse(ui().asking)
+        assertNothingWritten()
+    }
+
+    @Test
+    fun aBadTipIsSaidAndNothingIsAsked() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(categoryId = freelance, received = "410.00", tipAmount = "x") }
+        viewModel.save()
+        assertEquals(setOf(PaymentProblem.TipInvalid), ui().errors)
+        assertFalse(ui().asking)
+    }
+
+    @Test
+    fun theTipCategoryIsRememberedOnlyWhenATipWasSentAcrossCurrenciesToo() {
+        openSheet()
+        viewModel.edit { it.withAccount(id(3), "EUR").copy(categoryId = freelance, received = "410.00", tipAmount = "5.50", tipCategoryId = tips) }
+        sent()
+        harness.until { viewModel.sheet.value == null }
+        assertEquals(PaymentChoices(accountId = id(3), categoryId = freelance, tipCategoryId = tips), store.choices)
     }
 
     @Test

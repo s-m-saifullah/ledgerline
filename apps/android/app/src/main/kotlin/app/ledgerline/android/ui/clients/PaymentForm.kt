@@ -20,7 +20,24 @@ data class PaymentTarget(
 )
 
 /** What is wrong with the form; each is said next to the field it belongs to. */
-enum class PaymentProblem { AmountMissing, AmountInvalid, AmountTooPrecise, AmountZero, AmountTooLarge, AccountMissing, CategoryMissing, TipCategoryMissing }
+enum class PaymentProblem {
+    AmountMissing, AmountInvalid, AmountTooPrecise, AmountZero, AmountTooLarge,
+
+    /** The account is in another currency and the amount that arrived in it is missing or not right. */
+    ReceivedMissing, ReceivedInvalid, ReceivedTooPrecise, ReceivedZero, ReceivedTooLarge,
+
+    /** A tip was typed (in the account's currency) and is not a valid amount above zero. */
+    TipInvalid,
+    AccountMissing, CategoryMissing, TipCategoryMissing,
+}
+
+internal fun AmountIssue.receivedProblem() = when (this) {
+    AmountIssue.Missing -> PaymentProblem.ReceivedMissing
+    AmountIssue.Invalid -> PaymentProblem.ReceivedInvalid
+    AmountIssue.TooPrecise -> PaymentProblem.ReceivedTooPrecise
+    AmountIssue.Zero -> PaymentProblem.ReceivedZero
+    AmountIssue.TooLarge -> PaymentProblem.ReceivedTooLarge
+}
 
 /** What a payment settles and what is left over as a tip, in minor units. */
 data class Split(val settle: Long, val tip: Long)
@@ -35,8 +52,8 @@ const val PaymentNoteMax = 2_000
 /**
  * The Record payment form (ADR 0050, the prototype's `OV["pay-service"]`): the amount starts at what is outstanding, so
  * recording the full payment, which is also marking the service paid, is one confirmation away. The account and the
- * categories are the only things to choose. A payment in another currency comes with the next slice, so the account is
- * always in the service's currency here.
+ * categories are the only things to choose. An account in another currency (one side the base currency, ADR 0050 slice
+ * 4b-1) also asks for what arrived in it, shows the rate the two amounts fix and takes an optional tip in its currency.
  */
 data class PaymentForm(
     val target: PaymentTarget,
@@ -48,14 +65,35 @@ data class PaymentForm(
     /** "HH:mm", or null when no time was set. */
     val time: String? = null,
     val note: String = "",
+    /** The currency of the chosen account (null until one is chosen); another one than the service's makes this a payment across currencies. */
+    val accountCurrency: String? = null,
+    /** What arrived in the account, typed, when its currency differs from the service's. */
+    val received: String = "",
+    /** An optional tip in the account's currency, typed, when its currency differs from the service's. */
+    val tipAmount: String = "",
 ) {
+    /** The part that exists only when the account is in another currency than the service. */
+    val cross: CrossCurrency? get() = accountCurrency?.takeIf { it != target.currency }?.let { CrossCurrency(target.currency, it, received, tipAmount) }
+
+    /** The currency the tip is in: the account's when it differs from the service's, else the service's. */
+    val tipCurrency: String get() = cross?.accountCurrency ?: target.currency
+
+    /** The rate the two amounts fix when the account is in another currency and one side is the base currency. */
+    val rate: CrossRate? get() = cross?.rate(split?.settle)
+
+    /** The form with another account chosen; what was typed is kept. */
+    fun withAccount(id: String?, currency: String?) = copy(accountId = id, accountCurrency = currency)
+
     private val parsed: AmountInput get() = parseAmount(amount, target.currency)
 
     /** What the amount settles and what is the tip, or null while the amount is not a valid one. */
-    val split: Split? get() = (parsed as? AmountInput.Valid)?.let { splitExtra(it.minor, target.outstanding) }
+    val split: Split? get() = (parsed as? AmountInput.Valid)?.let { if (cross != null) Split(it.minor, 0) else splitExtra(it.minor, target.outstanding) }
 
-    /** The tip in minor units: zero when the amount is not over what is outstanding or is not valid yet. */
-    val tipMinor: Long get() = split?.tip ?: 0
+    /**
+     * The tip in minor units of [tipCurrency]: with an account in another currency what was typed for it (the amount over
+     * what is outstanding is not turned into a tip there, the server refuses it), else the money over what is outstanding.
+     */
+    val tipMinor: Long get() = cross?.tipMinor ?: (split?.tip ?: 0)
 
     fun problems(): List<PaymentProblem> = buildList {
         when (parsed) {
@@ -65,6 +103,10 @@ data class PaymentForm(
             AmountInput.Zero -> add(PaymentProblem.AmountZero)
             AmountInput.TooLarge -> add(PaymentProblem.AmountTooLarge)
             is AmountInput.Valid -> Unit
+        }
+        cross?.let { c ->
+            c.receivedIssue?.let { add(it.receivedProblem()) }
+            if (c.tipIssue != null) add(PaymentProblem.TipInvalid)
         }
         if (accountId == null) add(PaymentProblem.AccountMissing)
         if (categoryId == null) add(PaymentProblem.CategoryMissing)
@@ -77,12 +119,13 @@ data class PaymentForm(
         val split = split ?: return null
         return CreatePayment(
             amount = Money(split.settle, target.currency),
+            receivedAmount = cross?.receivedMinor?.let { Money(it, cross!!.accountCurrency) },
             accountId = accountId!!,
             categoryId = categoryId!!,
             date = date,
             time = time,
             note = note.trim().take(PaymentNoteMax).ifEmpty { null },
-            tip = if (split.tip > 0) TipInput(Money(split.tip, target.currency), tipCategoryId!!) else null,
+            tip = if (tipMinor > 0) TipInput(Money(tipMinor, tipCurrency), tipCategoryId!!) else null,
             expectedReceivableVersion = target.serviceVersion,
         )
     }

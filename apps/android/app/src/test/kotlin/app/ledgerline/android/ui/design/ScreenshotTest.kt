@@ -242,7 +242,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         errors: Set<app.ledgerline.android.ui.clients.PaymentProblem> = emptySet(),
         error: app.ledgerline.android.online.WriteError? = null,
     ) = shot(name, Tab.More) {
-        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"))
+        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"), Choice("e1", "Euro account", "EUR"))
         val categories = if (noIncome) emptyList() else listOf(Choice("c1", "Freelance"), Choice("c2", "Freelance › Design work"), Choice("c3", "Tips"))
         val ui = app.ledgerline.android.ui.clients.PaymentUi(form, accounts, categories, other, noIncome, errors, error = error)
         app.ledgerline.android.ui.clients.PaymentSheetContent(ui, app.ledgerline.android.ui.clients.PaymentActions({}, {}, {}, {}, {}))
@@ -262,6 +262,20 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         paymentStart.copy(amount = "12abc"),
         errors = setOf(app.ledgerline.android.ui.clients.PaymentProblem.AccountMissing, app.ledgerline.android.ui.clients.PaymentProblem.CategoryMissing),
         error = app.ledgerline.android.online.WriteError.Offline,
+    )
+
+    @Test
+    fun paymentAcrossCurrencies() = paymentShot(
+        "payment-across",
+        paymentStart.copy(accountId = "e1", accountCurrency = "EUR", categoryId = "c2", received = "410.00", tipAmount = "5.50", tipCategoryId = "c3"),
+        other = true,
+    )
+
+    @Test
+    fun paymentAcrossCurrenciesProblems() = paymentShot(
+        "payment-across-problems",
+        paymentStart.copy(accountId = "e1", accountCurrency = "EUR", categoryId = "c2", received = "4x"),
+        errors = setOf(app.ledgerline.android.ui.clients.PaymentProblem.CategoryMissing),
     )
 
     @Test
@@ -286,7 +300,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         error: app.ledgerline.android.online.WriteError? = null,
         asking: Boolean = false,
     ) = shot(name, Tab.More) {
-        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"))
+        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"), Choice("e1", "Euro account", "EUR"))
         val categories = listOf(Choice("c1", "Freelance"), Choice("c2", "Freelance › Design work"), Choice("c3", "Tips"))
         val ui = app.ledgerline.android.ui.clients.ReceiptUi(form.copy(target = target), accounts, categories, other, false, read, errors, error = error, asking = asking)
         app.ledgerline.android.ui.clients.ReceiptSheetContent(ui, app.ledgerline.android.ui.clients.ReceiptActions({}, {}, {}, {}, {}, {}, {}))
@@ -311,6 +325,14 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         "receipt-tip",
         receiptStart.copy(amount = "1750.00", accountId = "a1", categoryId = "c2", tipCategoryId = "c3"),
         read = receiptPreview(170_000, receiptAllocation("Brand refresh, phase 2", 160_000), receiptAllocation("Landing page copy", 10_000)),
+    )
+
+    @Test
+    fun receiptAcrossCurrencies() = receiptShot(
+        "receipt-across",
+        receiptStart.copy(amount = "1700.00", accountId = "e1", accountCurrency = "EUR", categoryId = "c2", received = "1560.00", tipAmount = "5.50", tipCategoryId = "c3"),
+        read = receiptPreview(170_000, receiptAllocation("Brand refresh, phase 2", 160_000), receiptAllocation("Landing page copy", 10_000)),
+        other = true,
     )
 
     @Test

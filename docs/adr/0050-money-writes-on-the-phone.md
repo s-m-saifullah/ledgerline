@@ -32,7 +32,7 @@ No server change is planned: `POST /receivables/{id}/payments`, `GET /contacts/{
 1. This ADR and the PROGRESS correction (documentation only).
 2. The sign-in message for a temporary password.
 3. The shared online-write helper and the money sheet.
-4. Receive payment, with a tip; mark paid. Split in three pull requests: 4a one service in its own currency (built), 4c a payment from a client (below), 4b other currencies for both.
+4. Receive payment, with a tip; mark paid. Split in three pull requests: 4a one service in its own currency (built), 4c a payment from a client (below), then other currencies for both, in two pull requests: 4b-1 where one side is USD (the amount received, the rate the two amounts fix and a tip in the account's currency) and 4b-2 where neither side is USD (the stored rate looked up, or one set by hand).
 5. Log service.
 6. Lend more and Repay.
 
