@@ -12,27 +12,44 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.design.Avatar
+import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.SheetTitle
+import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.FilterChip
@@ -242,13 +259,28 @@ internal fun PersonRow(person: LoanPerson, onClick: () -> Unit) {
     )
 }
 
-/** What one person's screen does, as plain data. */
-class PersonActions(val onBack: () -> Unit, val onRetryPerson: () -> Unit, val onRetryLoans: () -> Unit)
+/**
+ * What one person's screen does, as plain data. The three money moves (ADR 0050, slice 6) are offered only when the screen
+ * gives them: a screen that only looks leaves them out.
+ */
+class PersonActions(
+    val onBack: () -> Unit,
+    val onRetryPerson: () -> Unit,
+    val onRetryLoans: () -> Unit,
+    /** Opens the Record repayment sheet; the card's one filled button while something is open. */
+    val onRepay: (() -> Unit)? = null,
+    /** Opens the Lend money sheet; the card's one filled button while nothing is open, else a row of its menu. */
+    val onLend: (() -> Unit)? = null,
+    /** Opens the Borrow money sheet; a row of the card's menu. */
+    val onBorrow: (() -> Unit)? = null,
+)
 
 /**
- * One person (ADR 0046), read-only: a top bar with their name, a balance card (what they owe you or you owe them,
- * once per currency), then History: the latest moves on their loan accounts, from the phone's own entries, and the
- * balance from before Ledgerline as the last line. Lending and repaying stay on the web.
+ * One person (ADR 0046): a top bar with their name, a balance card (what they owe you or you owe them, once per currency)
+ * with the one filled button, Record repayment while anything is open and else Lend money, and a ⋮ menu for the other
+ * moves (ADR 0050, slice 6), then History: the latest moves on their loan accounts, from the phone's own entries, and the
+ * balance from before Ledgerline as the last line. Nothing to change is offered for an archived person, or until both
+ * the person and the balance are read.
  */
 @Composable
 internal fun PersonContent(
@@ -273,7 +305,8 @@ internal fun PersonContent(
                 Online.Offline -> item { RetryNote(stringResource(R.string.loans_offline), actions.onRetryLoans) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.loans_balance_failed), actions.onRetryLoans) }
                 is Online.Ready -> {
-                    if (loans.value.isEmpty()) item { EmptyState(stringResource(R.string.loans_nothing)) } else item { BalanceCard(loans.value) }
+                    val canMove = (person as? Online.Ready)?.value?.archivedAt == null && person is Online.Ready
+                    item { BalanceCard(loans.value, name.orEmpty(), if (canMove) actions else null) }
                 }
             }
             val opening = (loans as? Online.Ready)?.value.orEmpty().filter { it.openingBalance.amount != 0L }
@@ -293,9 +326,12 @@ internal fun PersonContent(
     }
 }
 
-/** What they owe you, or you owe them, once per currency: the word, then the amount large (or Settled for a currency at nothing). */
+/**
+ * What they owe you, or you owe them, once per currency: the word, then the amount large (or Settled for a currency at
+ * nothing); with no loan yet, one muted line. With [actions] the card ends with the one filled button and the ⋮ menu.
+ */
 @Composable
-private fun BalanceCard(loans: List<LoanBalance>) {
+private fun BalanceCard(loans: List<LoanBalance>, name: String, actions: PersonActions?) {
     val lines = loans.map { loan ->
         val amount = loan.balance.amount
         val label = when {
@@ -307,24 +343,88 @@ private fun BalanceCard(loans: List<LoanBalance>) {
         Triple(label, shown, isOwedToYou(loan))
     }
     val spoken = lines.joinToString(", ") { (label, shown, _) -> listOfNotNull(label, shown?.spoken).joinToString(" ") }
-    LedgerCard(
-        modifier = if (LocalPrivacy.current) Modifier.clearAndSetSemantics { contentDescription = spoken } else Modifier,
-        padding = PaddingValues(16.dp),
-    ) {
+    LedgerCard(padding = PaddingValues(16.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            lines.forEach { (label, shown, owedToYou) ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (shown != null) {
-                        Text(
-                            shown.text,
-                            style = MaterialTheme.typography.displaySmall.tabular(),
-                            color = if (owedToYou) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                            maxLines = 1,
-                            softWrap = false,
-                        )
+            // Only the figures are said in words in privacy mode: the buttons below keep their own names.
+            Column(
+                modifier = if (LocalPrivacy.current) Modifier.clearAndSetSemantics { contentDescription = spoken } else Modifier,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (lines.isEmpty()) Text(stringResource(R.string.loans_nothing), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                lines.forEach { (label, shown, owedToYou) ->
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (shown != null) {
+                            Text(
+                                shown.text,
+                                style = MaterialTheme.typography.displaySmall.tabular(),
+                                color = if (owedToYou) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
                     }
                 }
+            }
+            if (actions != null) MoveButtons(name, loans.any { it.balance.amount != 0L }, actions)
+        }
+    }
+}
+
+/**
+ * The one filled button of the card (the web's): Record repayment while anything is open, else Lend money, and beside it a
+ * ⋮ button that opens the other moves. A move the screen does not offer leaves its button out.
+ */
+@Composable
+private fun MoveButtons(name: String, hasOpen: Boolean, actions: PersonActions) {
+    var menu by rememberSaveable { mutableStateOf(false) }
+    val primary = if (hasOpen) actions.onRepay else actions.onLend
+    val lend = if (hasOpen) actions.onLend else null
+    val hasMenu = lend != null || actions.onBorrow != null
+    if (primary == null && !hasMenu) return
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (primary != null) {
+            PrimaryButton(stringResource(if (hasOpen) R.string.loans_record_repayment else R.string.loans_lend_money), primary, Modifier.weight(1f))
+        } else {
+            Box(Modifier.weight(1f))
+        }
+        if (hasMenu) {
+            val label = stringResource(R.string.loans_actions_for, name)
+            OutlinedIconButton(
+                onClick = { menu = true },
+                modifier = Modifier.size(TouchTarget).semantics { contentDescription = label },
+                shape = MaterialTheme.shapes.small,
+                border = BorderStroke(1.dp, LocalPalette.current.border),
+            ) {
+                Icon(painterResource(R.drawable.ic_more), contentDescription = null, tint = LocalPalette.current.text)
+            }
+        }
+    }
+    if (menu) {
+        PersonMenuSheet(
+            name,
+            onLend = lend?.let { { menu = false; it() } },
+            onBorrow = actions.onBorrow?.let { { menu = false; it() } },
+            onClose = { menu = false },
+        )
+    }
+}
+
+/** The ⋮ menu as a sheet; a swipe away or Cancel chooses nothing. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PersonMenuSheet(name: String, onLend: (() -> Unit)?, onBorrow: (() -> Unit)?, onClose: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onClose,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+    ) {
+        Column(modifier = Modifier.padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(Modifier.padding(horizontal = ScreenMargin)) { SheetTitle(name, onClose) }
+            GroupedListCard {
+                if (onLend != null) row { ListRow(title = stringResource(R.string.loans_lend_money), onClick = onLend) }
+                if (onBorrow != null) row { ListRow(title = stringResource(R.string.loans_borrow_money), onClick = onBorrow) }
             }
         }
     }

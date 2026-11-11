@@ -12,7 +12,6 @@ import app.ledgerline.android.online.WriteKeys
 import app.ledgerline.android.online.Written
 import app.ledgerline.android.online.isStale
 import app.ledgerline.android.online.toWriteError
-import app.ledgerline.android.settings.PaymentChoices
 import app.ledgerline.android.settings.PaymentChoicesStore
 import app.ledgerline.android.sync.SyncCoordinator
 import app.ledgerline.android.ui.design.Choice
@@ -207,7 +206,7 @@ class RecordReceiptViewModel @Inject constructor(
                 keys.clear()
                 val before = store.load()
                 store.save(
-                    PaymentChoices(
+                    before.copy(
                         accountId = ui.form.accountId,
                         categoryId = ui.form.categoryId,
                         tipCategoryId = if (request.tip != null) ui.form.tipCategoryId else before.tipCategoryId,

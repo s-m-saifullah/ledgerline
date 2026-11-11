@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -238,6 +239,28 @@ class ContractTest {
                     tip = TipInput(Money(500, "USD"), "c2"), expectedReceivableVersion = 3,
                 ),
             ),
+        )
+    }
+
+    @Test
+    fun lendingBorrowingAndRepayingMatchTheContract() {
+        // One path with an {action}: its body is a choice of three, and the first is the move of money the phone sends.
+        val path = "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/{action}"
+        val move = SchemaContract.request(path, "post")["anyOf"]!!.jsonArray[0].jsonObject
+        assertMatches(SchemaContract.differences(LoanMove.serializer().descriptor, move, request = true))
+        assertMatches(SchemaContract.differences(LoanResult.serializer().descriptor, SchemaContract.response(path, "post", "201")))
+    }
+
+    @Test
+    fun aLoanMoveSendsAnEmptyTimeAndNoteAsNullLikeTheWebDoes() {
+        fun body(move: LoanMove) = ApiJson.encodeToString(LoanMove.serializer(), move)
+        assertEquals(
+            """{"accountId":"a1","amount":{"amount":5000,"currency":"USD"},"date":"2026-11-11","time":null,"note":null}""",
+            body(LoanMove(accountId = "a1", amount = Money(5_000, "USD"), date = "2026-11-11")),
+        )
+        assertEquals(
+            """{"accountId":"a1","amount":{"amount":5000,"currency":"EUR"},"date":"2026-11-11","time":null,"note":"Lunch"}""",
+            body(LoanMove(accountId = "a1", amount = Money(5_000, "EUR"), date = "2026-11-11", note = "Lunch")),
         )
     }
 

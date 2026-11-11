@@ -87,7 +87,7 @@ class SignOutTest {
 
     /** What the last payment chose; it holds ids only, but nothing of a signed-out person stays on the phone. */
     private val payments = app.ledgerline.android.testing.FakePaymentChoicesStore(
-        app.ledgerline.android.settings.PaymentChoices(accountId = "a1", categoryId = "c1", tipCategoryId = "c2"),
+        app.ledgerline.android.settings.PaymentChoices(accountId = "a1", categoryId = "c1", tipCategoryId = "c2", loanAccountId = "a3"),
     )
 
     @After
