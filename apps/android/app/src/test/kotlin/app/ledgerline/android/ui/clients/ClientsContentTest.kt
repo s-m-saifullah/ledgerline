@@ -248,6 +248,8 @@ class ClientsContentTest {
         val tabs = mutableListOf<ClientTab>()
         val payments = mutableListOf<String>()
         val recordings = mutableListOf<String>()
+        val edits = mutableListOf<String>()
+        val deletes = mutableListOf<String>()
         var receipts = 0
         var logs = 0
         var back = 0
@@ -265,6 +267,7 @@ class ClientsContentTest {
         who: app.ledgerline.api.Contact = client,
         receipts: Boolean = false,
         logging: Boolean = false,
+        changing: Boolean = false,
     ) = compose.setContent {
         CompositionLocalProvider(LocalPrivacy provides private) {
             ClientContent(
@@ -273,6 +276,8 @@ class ClientsContentTest {
                     { taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}, { taps.recordings += it.id },
                     onRecordReceipt = if (receipts) ({ taps.receipts++ }) else null,
                     onLogService = if (logging) ({ taps.logs++ }) else null,
+                    onEditService = if (changing) ({ taps.edits += it.id }) else null,
+                    onDeleteService = if (changing) ({ taps.deletes += it.id }) else null,
                 ),
                 Modifier.requiredHeight(4000.dp),
             )
@@ -570,6 +575,72 @@ class ClientsContentTest {
     fun logServiceIsStillThereWhileServicesAreLoadingOrFailed() {
         client(services = Online.Loading, logging = true)
         compose.onNodeWithText("Log service").assertExists()
+    }
+
+    @Test
+    fun anOpenedServiceOffersEditAndDeleteAndEachNamesTheService() {
+        val taps = ClientTaps()
+        client(taps = taps, changing = true, payments = mapOf("notdue" to Online.Ready(emptyList())))
+        compose.onNodeWithText("Edit service").performClick()
+        compose.onNodeWithText("Delete service").performClick()
+        assertEquals(listOf("notdue"), taps.edits)
+        assertEquals(listOf("notdue"), taps.deletes)
+    }
+
+    @Test
+    fun aServiceThatIsNotOpenedOffersNeitherEditNorDelete() {
+        client(changing = true)
+        compose.onNodeWithText("Edit service").assertDoesNotExist()
+        compose.onNodeWithText("Delete service").assertDoesNotExist()
+    }
+
+    @Test
+    fun withoutTheActionsNothingOffersEditOrDelete() {
+        client(changing = false, payments = mapOf("notdue" to Online.Ready(emptyList())))
+        compose.onNodeWithText("Edit service").assertDoesNotExist()
+        compose.onNodeWithText("Delete service").assertDoesNotExist()
+    }
+
+    @Test
+    fun aPaidServiceCanBeEditedAndDeletedToo() {
+        val taps = ClientTaps()
+        client(taps = taps, changing = true, payments = mapOf("paid-a" to Online.Ready(emptyList())))
+        compose.onNodeWithText("Edit service").performClick()
+        compose.onNodeWithText("Delete service").performClick()
+        assertEquals(listOf("paid-a"), taps.edits)
+        assertEquals(listOf("paid-a"), taps.deletes)
+    }
+
+    @Test
+    fun aWrittenOffServiceCanBeDeletedButNotEdited() {
+        val taps = ClientTaps()
+        client(services = page(waived), taps = taps, changing = true, payments = mapOf("waived" to Online.Ready(emptyList())))
+        compose.onNodeWithText("Edit service").assertDoesNotExist()
+        compose.onNodeWithText("Delete service").performClick()
+        assertEquals(listOf("waived"), taps.deletes)
+    }
+
+    @Test
+    fun editAndDeleteSitBesideRecordPaymentAndOnlyTheOpenedServiceHasThem() {
+        val taps = ClientTaps()
+        client(taps = taps, changing = true, payments = mapOf("notdue" to Online.Ready(emptyList())))
+        compose.onAllNodesWithText("Record payment").assertCountEquals(1)
+        compose.onAllNodesWithText("Edit service").assertCountEquals(1)
+        compose.onAllNodesWithText("Delete service").assertCountEquals(1)
+    }
+
+    @Test
+    fun editAndDeleteAreOfferedWhilePaymentsAreStillLoading() {
+        client(changing = true, payments = mapOf("notdue" to Online.Loading))
+        compose.onNodeWithText("Edit service").assertExists()
+        compose.onNodeWithText("Delete service").assertExists()
+    }
+
+    @Test
+    fun editAndDeleteAreStillOfferedForAnArchivedClientsService() {
+        client(services = page(paidA), who = contact("Old Co", archived = true), changing = true, payments = mapOf("paid-a" to Online.Ready(emptyList())))
+        compose.onNodeWithText("Edit service").assertExists()
+        compose.onNodeWithText("Delete service").assertExists()
     }
 
     @Test

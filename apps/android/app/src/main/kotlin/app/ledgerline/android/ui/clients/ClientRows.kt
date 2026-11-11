@@ -1,6 +1,7 @@
 package app.ledgerline.android.ui.clients
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -51,6 +52,9 @@ internal fun ServiceRow(
     onTogglePayments: () -> Unit,
     onRetryPayments: () -> Unit,
     onRecordPayment: (() -> Unit)? = null,
+    /** Edit and delete (ADR 0050, slice 5b); a written-off service is not edited (it is reopened first, on the web). */
+    onEdit: (() -> Unit)? = null,
+    onDelete: (() -> Unit)? = null,
 ) {
     val unpaid = isUnpaid(service)
     val shown = if (unpaid) service.outstanding else service.amount
@@ -96,6 +100,14 @@ internal fun ServiceRow(
                 // A real button, set apart from the payments above it: a bare coloured word did not read as something to press.
                 if (unpaid && onRecordPayment != null) {
                     SecondaryButton(stringResource(R.string.client_record_payment), onRecordPayment, Modifier.fillMaxWidth().padding(top = 8.dp))
+                }
+                val edit = onEdit?.takeIf { service.status != "writtenOff" }
+                if (edit != null || onDelete != null) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                        if (edit != null) SecondaryButton(stringResource(R.string.service_edit), edit, Modifier.weight(1f))
+                        // Red only for Delete (the design rules).
+                        if (onDelete != null) SecondaryButton(stringResource(R.string.service_delete), onDelete, Modifier.weight(1f), danger = true)
+                    }
                 }
             }
         }

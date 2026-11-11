@@ -232,6 +232,9 @@ class ClientActions(
     val onRecordReceipt: (() -> Unit)? = null,
     /** Opens the Log service sheet for the client (ADR 0050, slice 5); the buttons show only when this is set and the client is not archived. */
     val onLogService: (() -> Unit)? = null,
+    /** Edit and delete a service (ADR 0050, slice 5b), offered in an opened service; the default does nothing, for screens that only look. */
+    val onEditService: ((Service) -> Unit)? = null,
+    val onDeleteService: ((Service) -> Unit)? = null,
 )
 
 /** A client can be paid when they owe something in some currency (the base total can read zero while a currency has no rate). */
@@ -272,7 +275,7 @@ internal fun ClientContent(
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionLabel(stringResource(R.string.client_unpaid_heading, countLabel(split.unpaid.size, servicesState?.value?.hasMore == true)))
-                        GroupedListCard { split.unpaid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }) } } }
+                        GroupedListCard { split.unpaid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }, actions.onEditService?.let { edit -> { edit(service) } }, actions.onDeleteService?.let { delete -> { delete(service) } }) } } }
                     }
                 }
             }
@@ -306,7 +309,7 @@ private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List
             val everything = services.value.items
             if (everything.isEmpty()) item { EmptyState(stringResource(R.string.services_empty), logService?.let { stringResource(R.string.client_log_service) to it }) }
             if (paid.isNotEmpty()) {
-                item { GroupedListCard { paid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }) } } } }
+                item { GroupedListCard { paid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }, actions.onEditService?.let { edit -> { edit(service) } }, actions.onDeleteService?.let { delete -> { delete(service) } }) } } } }
             }
             if (services.value.hasMore) {
                 item { LoadMore(stringResource(R.string.load_more_services), services.value.loadingMore, services.value.moreFailed, actions.onMoreServices) }

@@ -676,7 +676,7 @@
     <string name="service_title">Log service</string>
     <string name="service_description">Description</string>
     <string name="service_description_hint">What was done</string>
-    <string name="service_due">Due date (optional)</string>
+    <string name="service_due">Due date</string>
     <string name="service_due_add">+ Add due date</string>
     <string name="service_due_clear">Clear due date</string>
     <string name="service_currency">Currency</string>
@@ -690,6 +690,18 @@
     <string name="service_hourly_rate_invalid">Enter a positive hourly rate such as 40.00.</string>
     <string name="service_hourly_range">That total is outside the amount range Ledgerline can store.</string>
     <string name="service_hourly_use">Use this total</string>
+    <string name="service_edit_title">Edit service</string>
+    <string name="service_currency_locked">It stays %1$s, the currency payments were recorded in.</string>
+    <string name="service_error_below_received">The amount can\'t be less than what was received (%1$s).</string>
+    <string name="service_edit">Edit service</string>
+    <string name="service_delete">Delete service</string>
+    <string name="service_delete_title">Delete service?</string>
+    <string name="service_delete_body">Delete a service only after its payments are deleted.</string>
+    <string name="service_delete_confirm">Delete</string>
+    <string name="service_delete_error_offline">Needs a connection.</string>
+    <string name="service_delete_error_forbidden">Your account can\'t delete services in this ledger.</string>
+    <string name="service_delete_error_failed">Couldn\'t delete the service. Try again.</string>
+    <string name="service_delete_error_rejected">The server didn\'t accept this.</string>
     <string name="service_save">Save service</string>
     <string name="service_error_offline">Needs a connection. What you entered is kept.</string>
     <string name="service_error_forbidden">Your account can\'t add services in this ledger.</string>

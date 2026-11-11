@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -19,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -73,7 +76,7 @@ class LogServiceSheetContentTest {
         compose.onNodeWithText("What was done").assertExists()
         compose.onNodeWithText("When").assertExists()
         compose.onNodeWithText("Nov 11, 2026").assertExists()
-        compose.onNodeWithText("Due date (optional)").assertExists()
+        compose.onNodeWithText("Due date").assertExists()
         compose.onNodeWithText("Service amount (USD)").assertExists()
         compose.onNodeWithText("Save service").assertIsEnabled()
     }
@@ -288,4 +291,103 @@ class LogServiceSheetContentTest {
 
     @Test
     fun theServersOwnSentenceIsShown() = endsWith(WriteError.Rejected("This client was archived."), "This client was archived.")
+
+    // ---- editing an existing service (ADR 0050, slice 5b)
+
+    private val saved = service("Logo refresh", 45_000, received = 10_000, date = "2026-10-02", time = "14:30", due = "2026-10-20", id = "logo-refresh")
+    private val edit get() = ServiceForm.forEditing(client, saved)
+
+    @Test
+    fun anEditSheetIsTitledEditServiceAndStartsFilledIn() {
+        show(ui(edit))
+        compose.onNodeWithText("Edit service").assertExists()
+        compose.onNodeWithText("Log service").assertDoesNotExist()
+        compose.onNodeWithText("Logo refresh").assertExists()
+        compose.onNodeWithText("450.00").assertExists()
+        compose.onNodeWithText("Oct 2, 2026").assertExists()
+        compose.onNodeWithText("Oct 20, 2026").assertExists()
+        compose.onNodeWithText("Save service").assertIsEnabled()
+    }
+
+    @Test
+    fun aNewServiceSheetIsStillTitledLogService() {
+        show(ui())
+        compose.onNodeWithText("Log service").assertExists()
+        compose.onNodeWithText("Edit service").assertDoesNotExist()
+    }
+
+    @Test
+    fun onceMoneyWasReceivedTheCurrencyRowIsLockedAndSaysWhy() {
+        val taps = Taps { edit }
+        show(ui(edit, currencies = listOf("USD", "EUR")), taps)
+        compose.onNodeWithText("Currency").assertExists()
+        compose.onNodeWithText("It stays USD, the currency payments were recorded in.").assertExists()
+        compose.onNodeWithText("Currency").performClick()
+        compose.onNodeWithText("EUR").assertDoesNotExist()
+        assertEquals(emptyList<String>(), taps.log)
+    }
+
+    @Test
+    fun aServiceWithNothingReceivedKeepsAChoosableCurrencyAndNoNote() {
+        val form = ServiceForm.forEditing(client, service("Logo", 45_000, id = "logo"))
+        val taps = Taps { form }
+        show(ui(form, currencies = listOf("USD", "EUR")), taps)
+        compose.onNodeWithText("It stays", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Currency").performClick()
+        compose.onNodeWithText("EUR").performClick()
+        assertEquals(listOf("EUR"), taps.forms.map { it.currency })
+    }
+
+    @Test
+    fun theLockedCurrencyRowIsNotShownWhenTheLedgerHasOnlyOneCurrency() {
+        show(ui(edit))
+        compose.onNodeWithText("Currency").assertDoesNotExist()
+        compose.onNodeWithText("It stays", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun anAmountBelowWhatWasReceivedIsSaidWithTheAmountReceived() {
+        show(ui(edit.copy(amount = "50.00")))
+        compose.onNodeWithText("The amount can't be less than what was received ($100.00).").assertExists()
+    }
+
+    @Test
+    fun theReceivedAmountInThatSentenceIsHiddenInPrivacyMode() {
+        show(ui(edit.copy(amount = "50.00")), private = true)
+        compose.onNodeWithText("$100.00", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("The amount can't be less than what was received", substring = true).assertExists()
+    }
+
+    @Test
+    fun anAmountAtOrAboveWhatWasReceivedSaysNothing() {
+        show(ui(edit.copy(amount = "100.00")))
+        compose.onNodeWithText("The amount can't be less", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun theTimeAndDueDateOfAnEditCanBeCleared() {
+        val taps = Taps { edit }
+        show(ui(edit), taps)
+        compose.onNode(hasContentDescription("Clear time")).performClick()
+        compose.onNode(hasContentDescription("Clear due date")).performClick()
+        // Each tap reports a change to the form the screen holds, so each shows only its own clear.
+        assertNull(taps.forms[0].serviceTime)
+        assertEquals("2026-10-20", taps.forms[0].dueDate)
+        assertNull(taps.forms[1].dueDate)
+        assertEquals("14:30", taps.forms[1].serviceTime)
+    }
+
+    @Test
+    fun theTimeAndTheDueDateEndAtTheSameEdgeAndEachCrossSitsInsideItsPill() {
+        show(ui(edit))
+        val time = compose.onNodeWithText("2:30 PM").getBoundsInRoot()
+        val due = compose.onNodeWithText("Oct 20, 2026").getBoundsInRoot()
+        assertEquals(time.right, due.right)
+        val clearTime = compose.onNode(hasContentDescription("Clear time")).getBoundsInRoot()
+        val clearDue = compose.onNode(hasContentDescription("Clear due date")).getBoundsInRoot()
+        assertEquals(clearTime.right, clearDue.right)
+        // The cross follows its text inside the same pill: its centre is past the text's end and within the pill's padding.
+        assertTrue((clearTime.left + clearTime.right) / 2 > time.right && (clearTime.left + clearTime.right) / 2 < time.right + 40.dp)
+        assertTrue((clearDue.left + clearDue.right) / 2 > due.right && (clearDue.left + clearDue.right) / 2 < due.right + 40.dp)
+    }
 }

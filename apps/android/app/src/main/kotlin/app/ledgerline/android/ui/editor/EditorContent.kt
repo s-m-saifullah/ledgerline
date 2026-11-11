@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -340,14 +343,8 @@ internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: ()
         FlowRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.Center) {
             ValuePill(if (date.isEmpty()) "" else formatEntryDate(date), onDate)
             if (time != null) {
-                // The time and its cross wrap together, so the cross never sits alone on a line.
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    ValuePill(formatTime(time, is24Hour), onTime)
-                    val clear = stringResource(R.string.editor_time_clear)
-                    IconButton(onClick = onClearTime, modifier = Modifier.size(TouchTarget).semantics { contentDescription = clear }) {
-                        Icon(painterResource(R.drawable.ic_close), contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
-                    }
-                }
+                // The cross is inside the pill, so the time and its cross always wrap together.
+                ValuePill(formatTime(time, is24Hour), onTime, onClear = onClearTime, clearLabel = stringResource(R.string.editor_time_clear))
             } else {
                 ValuePill(stringResource(R.string.editor_add_time), onTime, dashed = true)
             }
@@ -355,19 +352,47 @@ internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: ()
     }
 }
 
-/** A tappable value in a pill: 36 dp to look at, 48 dp to touch. */
+/**
+ * A tappable value in a pill: 36 dp to look at, 48 dp to touch. With [onClear] a ✕ sits inside the pill, after the value, and
+ * clears it; its touch area is 48 dp, a little beyond the pill, and it is named [clearLabel] for a screen reader.
+ */
 @Composable
-internal fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = false) {
+internal fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = false, onClear: (() -> Unit)? = null, clearLabel: String = "") {
     val palette = LocalPalette.current
-    Box(modifier = Modifier.clickable(onClick = onClick, role = Role.Button).heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
-        Box(
-            modifier = Modifier
-                .height(36.dp)
-                .then(if (dashed) Modifier.border(1.dp, palette.border, RoundedCornerShape(18.dp)) else Modifier.background(palette.border.copy(alpha = 0.5f), RoundedCornerShape(18.dp)))
-                .padding(horizontal = 14.dp),
-            contentAlignment = Alignment.Center,
+    if (onClear == null) {
+        Box(modifier = Modifier.clickable(onClick = onClick, role = Role.Button).heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .height(36.dp)
+                    .then(if (dashed) Modifier.border(1.dp, palette.border, RoundedCornerShape(18.dp)) else Modifier.background(palette.border.copy(alpha = 0.5f), RoundedCornerShape(18.dp)))
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text, style = MaterialTheme.typography.labelLarge, color = if (dashed) palette.muted else palette.text, maxLines = 1)
+            }
+        }
+        return
+    }
+    Box(modifier = Modifier.heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
+        Row(
+            modifier = Modifier.height(36.dp).background(palette.border.copy(alpha = 0.5f), RoundedCornerShape(18.dp)),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text, style = MaterialTheme.typography.labelLarge, color = if (dashed) palette.muted else palette.text, maxLines = 1)
+            Box(
+                modifier = Modifier.fillMaxHeight().clickable(onClick = onClick, role = Role.Button).padding(start = 14.dp, end = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text, style = MaterialTheme.typography.labelLarge, color = palette.text, maxLines = 1)
+            }
+            // A 32 dp slot in the pill whose touch area is 48 dp: it reaches past the pill rather than making it taller.
+            Box(modifier = Modifier.width(32.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.requiredSize(TouchTarget).clickable(onClick = onClear, role = Role.Button).semantics { contentDescription = clearLabel },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(painterResource(R.drawable.ic_close), contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
+                }
+            }
         }
     }
 }

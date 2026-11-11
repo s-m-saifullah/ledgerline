@@ -1,5 +1,7 @@
 package app.ledgerline.api
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 
 /*
@@ -19,4 +21,23 @@ data class CreateService(
     val serviceTime: String? = null,
     val dueDate: String? = null,
     val amount: Money,
+)
+
+/**
+ * `PATCH /ledgers/{ledgerId}/receivables/{receivableId}` (ADR 0050, slice 5b). Every field is sent, and a cleared time or due
+ * date is an explicit `null` (a missing time would keep the saved one). [expectedVersion] is the version the phone holds, so
+ * a service that changed meanwhile is refused with `409`. The server also refuses a currency change once a payment exists,
+ * an amount below what was received, and a client change once a payment exists.
+ */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class UpdateService(
+    val contactId: String,
+    val description: String,
+    val serviceDate: String,
+    // Optional in the contract, but always sent: a missing time keeps the saved one, so clearing it needs an explicit null.
+    @EncodeDefault val serviceTime: String? = null,
+    val dueDate: String?,
+    val amount: Money,
+    val expectedVersion: Int,
 )
