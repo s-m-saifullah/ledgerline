@@ -433,6 +433,14 @@ class ReceiptSheetContentTest {
     }
 
     @Test
+    fun aTipTypedForAnAccountInAnotherCurrencyIsNeverCalledTheExtraOverWhatIsOwed() {
+        show(ui(across.copy(amount = "460.25", tipAmount = "5.50", tipCategoryId = "c3"), accounts = withEuro))
+        compose.onNodeWithText("This settles", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("saved as a tip", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Tip category").assertExists()
+    }
+
+    @Test
     fun theTipFieldIsInTheFoldInTheAccountsCurrency() {
         show(ui(across.copy(tipAmount = "5.50"), accounts = withEuro, errors = setOf(ReceiptProblem.TipCategoryMissing)))
         compose.onNodeWithText("Tip, date, time and note").performClick()

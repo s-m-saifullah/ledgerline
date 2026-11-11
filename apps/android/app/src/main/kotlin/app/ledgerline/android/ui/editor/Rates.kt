@@ -13,7 +13,7 @@ import kotlin.math.abs
 /** Rates carry at most this many digits after the point. */
 private const val RateDecimals = 10
 private val RateScale = BigInteger.TEN.pow(RateDecimals)
-private val Two = BigInteger.TWO
+private val Two = BigInteger.valueOf(2)
 
 private fun pow10(digits: Int): BigInteger = BigInteger.TEN.pow(digits)
 

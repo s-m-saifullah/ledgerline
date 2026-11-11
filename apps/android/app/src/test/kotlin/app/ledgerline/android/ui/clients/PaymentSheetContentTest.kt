@@ -349,6 +349,14 @@ class PaymentSheetContentTest {
     }
 
     @Test
+    fun aTipTypedForAnAccountInAnotherCurrencyIsNeverCalledTheExtraOverWhatIsOwed() {
+        show(ui(across.copy(amount = "460.25", tipAmount = "5.50", tipCategoryId = "c3"), accounts = withEuro))
+        compose.onNodeWithText("This settles", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("saved as a tip", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Tip category").assertExists()
+    }
+
+    @Test
     fun theTipFieldIsInTheFoldInTheAccountsCurrencyAndAsksForItsCategoryOnceTyped() {
         show(ui(across.copy(tipAmount = "5.50", tipCategoryId = null), accounts = withEuro, errors = setOf(PaymentProblem.TipCategoryMissing)))
         compose.onNodeWithText("Tip (EUR, optional)").assertDoesNotExist()
