@@ -94,6 +94,16 @@ class CrossCurrencyTest {
     }
 
     @Test
+    fun theWorthIsConvertedFromTheAccountsCurrencyIntoDollarsWhateverTheirDecimals() {
+        // 41,000 yen (no decimals) at 0.0065746219 USD each is 269.56 USD; the same pair the other way round would be far off.
+        val yen = CrossCurrency("EUR", "JPY", "41000", "", stored = StoredRate.Found("0.0065746219", null))
+        assertEquals(26_956L, yen.baseValue())
+        // A currency with three decimals (1.250 BHD at 2.6525 USD each is 3.32 USD).
+        val dinar = CrossCurrency("EUR", "BHD", "1.250", "", stored = StoredRate.Found("2.6525", null))
+        assertEquals(332L, dinar.baseValue())
+    }
+
+    @Test
     fun theRateSentenceForTheAccountsCurrencyIsTheSameAsAnyOther() {
         assertEquals("1 USD = 0.79 GBP", gbp(stored = found).rateInUse!!.let { CrossRate("GBP", it).sentence })
         assertEquals("1 USD = 122.5 GBP", CrossRate("GBP", gbp(typed = "122.5").manualRate!!).sentence)

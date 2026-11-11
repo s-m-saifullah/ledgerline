@@ -689,6 +689,15 @@ class RecordReceiptViewModelTest {
     }
 
     @Test
+    fun aRememberedPoundAccountLooksUpTheRateAsTheSheetOpens() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        store.choices = PaymentChoices(accountId = pound)
+        openSheet(contact("Northwind Design", balances = listOf(Money(20_000, "EUR")), owed = 20_000))
+        harness.until { stored() is StoredRate.Found }
+        assertEquals(1, harness.rateLookups().size)
+    }
+
+    @Test
     fun noLookUpIsMadeForTheCurrencyTheyOweInOrForDollars() {
         harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
         routePreview()

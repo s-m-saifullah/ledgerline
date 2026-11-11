@@ -627,6 +627,19 @@ class RecordPaymentViewModelTest {
     }
 
     @Test
+    fun savingWithARateTypedDoesNotLookTheStoredOneUpAgain() {
+        routeRates(mapOf(), status = 500)
+        aPoundPayment()
+        harness.until { stored() == StoredRate.Unavailable }
+        viewModel.edit { it.copy(rateTyped = "122.5") }
+        viewModel.save()
+        assertTrue(ui().asking)
+        // A look-up runs on another thread, so "none was made" is only true after a pause long enough for one to arrive.
+        Thread.sleep(500)
+        assertEquals(1, lookups().size)
+    }
+
+    @Test
     fun anAnswerThatMakesTheRateMissingWithdrawsAQuestionAlreadyBeingAsked() {
         val release = java.util.concurrent.CountDownLatch(1)
         harness.route(RateLookupPath) { _ ->

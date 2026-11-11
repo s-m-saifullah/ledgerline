@@ -66,7 +66,7 @@ fun invertRate(rate: String): String {
 }
 
 private val TypedRate = Regex("^\\d+(?:\\.\\d+)?$")
-private val StoredRate = Regex("^\\d{1,10}(?:\\.\\d{1,10})?$")
+private val StorableRate = Regex("^\\d{1,10}(?:\\.\\d{1,10})?$")
 private val MaxSafe = BigInteger.valueOf(9_007_199_254_740_991L)
 
 /**
@@ -85,7 +85,7 @@ fun rateFromInverse(text: String): String? {
     if (scaled <= BigInteger.ZERO) return null
     val stored = (RateScale * RateScale * Two + scaled) / (scaled * Two)
     if (stored <= BigInteger.ZERO) return null
-    return formatRate(stored).takeIf { StoredRate.matches(it) }
+    return formatRate(stored).takeIf { StorableRate.matches(it) }
 }
 
 /**
