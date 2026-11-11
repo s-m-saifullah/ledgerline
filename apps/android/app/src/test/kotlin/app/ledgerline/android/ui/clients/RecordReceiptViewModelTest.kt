@@ -157,6 +157,12 @@ class RecordReceiptViewModelTest {
 
     private fun writes() = harness.recorded.filter { it.method == "POST" }
 
+    /** A write happens on another thread, so "nothing was sent" is only true after a pause long enough for one to arrive. */
+    private fun assertNothingWritten() {
+        Thread.sleep(500)
+        assertTrue(writes().isEmpty())
+    }
+
     /** The sheet with an amount typed, the preview read and the account and category chosen. */
     private fun filled(amount: String = "600.00", tip: String? = null) {
         openSheet()
@@ -344,7 +350,7 @@ class RecordReceiptViewModelTest {
         viewModel.save()
         assertEquals(setOf(ReceiptProblem.AmountMissing, ReceiptProblem.AccountMissing, ReceiptProblem.CategoryMissing), ui().errors)
         assertFalse(ui().asking)
-        assertTrue(writes().isEmpty())
+        assertNothingWritten()
     }
 
     @Test
@@ -355,7 +361,7 @@ class RecordReceiptViewModelTest {
         viewModel.save()
         assertEquals(setOf(ReceiptProblem.PreviewNotReady), ui().errors)
         assertFalse(ui().asking)
-        assertTrue(writes().isEmpty())
+        assertNothingWritten()
     }
 
     @Test
@@ -373,7 +379,7 @@ class RecordReceiptViewModelTest {
         viewModel.save()
         assertTrue(ui().asking)
         assertTrue(ui().errors.isEmpty())
-        assertTrue(writes().isEmpty())
+        assertNothingWritten()
     }
 
     @Test
@@ -383,7 +389,7 @@ class RecordReceiptViewModelTest {
         viewModel.dismissAsk()
         assertFalse(ui().asking)
         assertEquals(checking, ui().form.accountId)
-        assertTrue(writes().isEmpty())
+        assertNothingWritten()
     }
 
     @Test
@@ -393,14 +399,14 @@ class RecordReceiptViewModelTest {
         viewModel.edit { it.copy(amount = "100.00") }
         assertFalse(ui().asking)
         viewModel.confirm()
-        assertTrue(writes().isEmpty())
+        assertNothingWritten()
     }
 
     @Test
     fun confirmingWithoutBeingAskedSendsNothing() {
         filled()
         viewModel.confirm()
-        assertTrue(writes().isEmpty())
+        assertNothingWritten()
     }
 
     @Test
@@ -549,6 +555,34 @@ class RecordReceiptViewModelTest {
         harness.until { viewModel.sheet.value == null }
         assertEquals(1, writes().size)
         harness.delayMillis = 0
+    }
+
+    @Test
+    fun nothingCanBeEditedWhileAPaymentIsBeingSent() {
+        filled()
+        harness.delayMillis = 400
+        viewModel.save()
+        viewModel.confirm()
+        assertTrue(ui().saving)
+        viewModel.edit { it.copy(amount = "1.00") }
+        assertEquals("600.00", ui().form.amount)
+        harness.until { viewModel.sheet.value == null }
+        harness.delayMillis = 0
+    }
+
+    @Test
+    fun aZeroBalanceBesideARealOneIsNotACurrencyTheyOweIn() {
+        val mixed = contact("Northwind Design", balances = listOf(Money(0, "USD"), Money(20_000, "EUR")), owed = 0)
+        val opened = openSheet(mixed)
+        assertEquals(listOf("EUR"), opened.currencies)
+        assertEquals("EUR", opened.form.currency)
+    }
+
+    @Test
+    fun aClientWhoseOnlyBalanceIsZeroOpensNoSheet() {
+        viewModel.open(contact("Northwind Design", balances = listOf(Money(0, "USD")), owed = 0))
+        assertTrue(harness.quiet())
+        assertNull(viewModel.sheet.value)
     }
 
     @Test

@@ -197,7 +197,6 @@ class RecordReceiptViewModel @Inject constructor(
                         tipCategoryId = if (request.tip != null) ui.form.tipCategoryId else before.tipCategoryId,
                     ),
                 )
-                previewJob?.cancel()
                 _sheet.value = null
                 _reread.update { it + 1 }
                 sync.pullNow()

@@ -322,6 +322,12 @@ class ReceiptSheetContentTest {
     }
 
     @Test
+    fun payFullBalanceIsOffTheTableWhenTheyOweNothingInTheCurrency() {
+        show(ui(start.copy(currency = "GBP")))
+        compose.onNodeWithText("Pay full balance").assertIsNotEnabled()
+    }
+
+    @Test
     fun eachWayAWriteCanFailHasItsOwnSentence() {
         val sentences = mapOf<WriteError, String>(
             WriteError.Offline to "Needs a connection. What you entered is kept.",
