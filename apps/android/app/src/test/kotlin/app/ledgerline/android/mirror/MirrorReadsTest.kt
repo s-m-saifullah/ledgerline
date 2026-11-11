@@ -42,6 +42,13 @@ class MirrorReadsTest {
         store.replaceAll(ledger, MirrorRows.merge(changes.map { it.toRows(ledger) }), "c", Stamp)
 
     @Test
+    fun theLedgersAddedCurrenciesAreTheLiveOnesByCode() = runBlocking {
+        load(changes(currencies = listOf(syncCurrency(1, "GBP"), syncCurrency(2, "EUR"), syncCurrency(3, "JPY", deletedAt = Stamp))))
+        assertEquals(listOf("EUR", "GBP"), reads.liveCurrencyCodes(ledger))
+        assertEquals(emptyList<String>(), reads.liveCurrencyCodes("another-ledger"))
+    }
+
+    @Test
     fun aBalanceIsTheOpeningBalancePlusClearedLiveEntriesOfThatAccountOnly() = runBlocking {
         load(
             changes(

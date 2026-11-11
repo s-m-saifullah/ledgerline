@@ -69,7 +69,10 @@ fun changes(
     transactions: List<SyncTransaction> = emptyList(),
     links: List<SyncTransactionTag> = emptyList(),
     categories: List<SyncCategory> = emptyList(),
-) = SyncChanges(accounts, categories, tags, emptyList(), emptyList(), transactions, emptyList(), links)
+    currencies: List<app.ledgerline.api.SyncCurrency> = emptyList(),
+) = SyncChanges(accounts, categories, tags, currencies, emptyList(), transactions, emptyList(), links)
+
+fun syncCurrency(n: Int, code: String, deletedAt: String? = null) = app.ledgerline.api.SyncCurrency(id(n), Stamp, Stamp, deletedAt, 1, code)
 
 fun page(changes: SyncChanges = changes(), cursor: String = "c1", hasMore: Boolean = false, serverTime: String = Stamp) =
     SyncResponse(changes, cursor, hasMore, serverTime)

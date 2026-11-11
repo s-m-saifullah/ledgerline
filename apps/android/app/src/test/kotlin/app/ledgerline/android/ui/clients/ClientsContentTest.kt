@@ -249,6 +249,7 @@ class ClientsContentTest {
         val payments = mutableListOf<String>()
         val recordings = mutableListOf<String>()
         var receipts = 0
+        var logs = 0
         var back = 0
     }
 
@@ -263,6 +264,7 @@ class ClientsContentTest {
         payments: Map<String, Online<List<ServicePayment>>> = emptyMap(),
         who: app.ledgerline.api.Contact = client,
         receipts: Boolean = false,
+        logging: Boolean = false,
     ) = compose.setContent {
         CompositionLocalProvider(LocalPrivacy provides private) {
             ClientContent(
@@ -270,6 +272,7 @@ class ClientsContentTest {
                 ClientActions(
                     { taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}, { taps.recordings += it.id },
                     onRecordReceipt = if (receipts) ({ taps.receipts++ }) else null,
+                    onLogService = if (logging) ({ taps.logs++ }) else null,
                 ),
                 Modifier.requiredHeight(4000.dp),
             )
@@ -495,6 +498,78 @@ class ClientsContentTest {
         org.junit.Assert.assertTrue(canRecordReceipt(contact("B", balances = listOf(app.ledgerline.api.Money(5_000, "EUR")))))
         org.junit.Assert.assertFalse(canRecordReceipt(contact("C")))
         org.junit.Assert.assertFalse(canRecordReceipt(contact("D", balances = listOf(app.ledgerline.api.Money(0, "USD")))))
+    }
+
+    @Test
+    fun theBalanceCardOffersLogServiceAndTappingItReportsIt() {
+        val taps = ClientTaps()
+        client(taps = taps, logging = true)
+        compose.onNodeWithText("Log service").performClick()
+        assertEquals(1, taps.logs)
+    }
+
+    @Test
+    fun withoutTheActionNothingOffersLogService() {
+        client(logging = false)
+        compose.onNodeWithText("Log service").assertDoesNotExist()
+    }
+
+    @Test
+    fun logServiceSitsBesideRecordPaymentAndNeitherTakesTheOthersTap() {
+        val taps = ClientTaps()
+        client(taps = taps, receipts = true, logging = true)
+        compose.onAllNodesWithText("Record payment").assertCountEquals(1)
+        compose.onNodeWithText("Log service").performClick()
+        assertEquals(1, taps.logs)
+        assertEquals(0, taps.receipts)
+        compose.onNodeWithText("Record payment").performClick()
+        assertEquals(1, taps.receipts)
+        assertEquals(1, taps.logs)
+    }
+
+    @Test
+    fun aSettledClientStillOffersLogServiceButNotRecordPayment() {
+        client(services = page(paidA, paidB), who = contact("Settled Co"), receipts = true, logging = true)
+        compose.onNodeWithText("Log service").assertExists()
+        compose.onNodeWithText("Record payment").assertDoesNotExist()
+    }
+
+    @Test
+    fun anArchivedClientOffersNoLogService() {
+        client(services = page(paidA), who = contact("Old Co", archived = true), logging = true)
+        compose.onNodeWithText("Log service").assertDoesNotExist()
+    }
+
+    @Test
+    fun aClientWithNoServicesSaysSoAndOffersLogServiceAlsoThere() {
+        val taps = ClientTaps()
+        client(services = page(), who = contact("New Co"), taps = taps, logging = true)
+        compose.onNodeWithText("No services yet.").assertExists()
+        compose.onNodeWithText("Services are logged in the web app.", substring = true).assertDoesNotExist()
+        // One in the balance card and one in the empty state.
+        compose.onAllNodesWithText("Log service").assertCountEquals(2)
+        compose.onAllNodesWithText("Log service")[1].performClick()
+        assertEquals(1, taps.logs)
+    }
+
+    @Test
+    fun aClientWithNoServicesAndNoActionOffersNothing() {
+        client(services = page(), who = contact("New Co"), logging = false)
+        compose.onNodeWithText("No services yet.").assertExists()
+        compose.onNodeWithText("Log service").assertDoesNotExist()
+    }
+
+    @Test
+    fun anArchivedClientWithNoServicesOffersNoLogServiceEither() {
+        client(services = page(), who = contact("Old Co", archived = true), logging = true)
+        compose.onNodeWithText("No services yet.").assertExists()
+        compose.onNodeWithText("Log service").assertDoesNotExist()
+    }
+
+    @Test
+    fun logServiceIsStillThereWhileServicesAreLoadingOrFailed() {
+        client(services = Online.Loading, logging = true)
+        compose.onNodeWithText("Log service").assertExists()
     }
 
     @Test

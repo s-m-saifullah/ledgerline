@@ -388,6 +388,27 @@ class ContractTest {
     )
 
     @Test
+    fun loggingAServiceMatchesTheContract() {
+        val path = "/api/v1/ledgers/{ledgerId}/receivables"
+        assertMatches(SchemaContract.differences(CreateService.serializer().descriptor, SchemaContract.request(path, "post"), request = true))
+        assertMatches(SchemaContract.differences(Service.serializer().descriptor, SchemaContract.response(path, "post", "201")))
+    }
+
+    @Test
+    fun aServiceSendsOnlyWhatItHas() {
+        fun body(service: CreateService) = ApiJson.encodeToString(CreateService.serializer(), service)
+        val cost = Money(12_000, "USD")
+        assertEquals(
+            """{"contactId":"c1","description":"Logo","serviceDate":"2026-11-11","amount":{"amount":12000,"currency":"USD"}}""",
+            body(CreateService("c1", "Logo", "2026-11-11", amount = cost)),
+        )
+        assertEquals(
+            """{"contactId":"c1","description":"Logo","serviceDate":"2026-11-11","serviceTime":"09:30","dueDate":"2026-12-01","amount":{"amount":12000,"currency":"USD"}}""",
+            body(CreateService("c1", "Logo", "2026-11-11", serviceTime = "09:30", dueDate = "2026-12-01", amount = cost)),
+        )
+    }
+
+    @Test
     fun paymentsMatch() = assertMatches(
         SchemaContract.differences(
             PaymentList.serializer().descriptor,

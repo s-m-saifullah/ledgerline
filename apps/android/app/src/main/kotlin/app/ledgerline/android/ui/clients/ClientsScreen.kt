@@ -28,6 +28,7 @@ fun ClientsScreen(
     model: ClientsViewModel = hiltViewModel(),
     payment: RecordPaymentViewModel = hiltViewModel(),
     receipt: RecordReceiptViewModel = hiltViewModel(),
+    logService: LogServiceViewModel = hiltViewModel(),
 ) {
     val selected by model.selected.collectAsState()
     DisposableEffect(Unit) {
@@ -35,6 +36,7 @@ fun ClientsScreen(
             model.close()
             payment.close()
             receipt.close()
+            logService.close()
         }
     }
     // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
@@ -42,6 +44,8 @@ fun ClientsScreen(
     LaunchedEffect(reread) { if (reread > 0) model.retry() }
     val receiptReread by receipt.reread.collectAsState()
     LaunchedEffect(receiptReread) { if (receiptReread > 0) model.retry() }
+    val logged by logService.reread.collectAsState()
+    LaunchedEffect(logged) { if (logged > 0) model.retry() }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -89,6 +93,7 @@ fun ClientsScreen(
                     onRetryPayments = { model.retry() },
                     onRecordPayment = { service -> (client as? Online.Ready)?.value?.let { payment.open(service, it.name) } },
                     onRecordReceipt = { (client as? Online.Ready)?.value?.let(receipt::open) },
+                    onLogService = { (client as? Online.Ready)?.value?.let(logService::open) },
                 ),
             )
         }
@@ -109,5 +114,9 @@ fun ClientsScreen(
                 save = receipt::save, dismissAsk = receipt::dismissAsk, confirm = receipt::confirm, close = receipt::close,
             ),
         )
+    }
+    val logSheet by logService.sheet.collectAsState()
+    logSheet?.let { ui ->
+        LogServiceSheet(ui, LogServiceActions(edit = logService::edit, save = logService::save, close = logService::close))
     }
 }

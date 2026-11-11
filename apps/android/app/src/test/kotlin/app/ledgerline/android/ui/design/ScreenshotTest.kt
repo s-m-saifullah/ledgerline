@@ -303,6 +303,50 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun paymentWithoutIncomeCategories() = paymentShot("payment-no-income", paymentStart.copy(accountId = "a1"), noIncome = true)
 
+    private val serviceClient = app.ledgerline.android.ui.clients.ServiceClient("northwind-design", "Northwind Design")
+
+    private fun serviceShot(
+        name: String,
+        form: app.ledgerline.android.ui.clients.ServiceForm,
+        currencies: List<String> = listOf("USD"),
+        errors: Set<app.ledgerline.android.ui.clients.ServiceProblem> = emptySet(),
+        error: app.ledgerline.android.online.WriteError? = null,
+        open: Boolean = false,
+    ) = shot(name, Tab.More) {
+        val ui = app.ledgerline.android.ui.clients.LogServiceUi(form, currencies, errors, error = error)
+        app.ledgerline.android.ui.clients.LogServiceSheetContent(ui, app.ledgerline.android.ui.clients.LogServiceActions({}, {}, {}), startOpen = open)
+    }
+
+    private val serviceStart get() = app.ledgerline.android.ui.clients.ServiceForm.forClient(serviceClient, "2026-11-11")
+
+    @Test
+    fun serviceStart() = serviceShot("service-start", serviceStart)
+
+    @Test
+    fun serviceFilledWithSeveralCurrencies() = serviceShot(
+        "service-filled",
+        serviceStart.copy(description = "Catalogue spreads for the spring print run", amount = "80.00", currency = "EUR", serviceTime = "09:30", dueDate = "2026-12-01"),
+        currencies = listOf("USD", "EUR", "GBP"),
+    )
+
+    @Test
+    fun serviceHourlyHelper() = serviceShot(
+        "service-hourly",
+        serviceStart.copy(description = "", hours = "3.5", hourlyRate = "40"),
+        open = true,
+    )
+
+    @Test
+    fun serviceHourlyProblem() = serviceShot("service-hourly-problem", serviceStart.copy(hours = "3.567", hourlyRate = "40"), open = true)
+
+    @Test
+    fun serviceProblems() = serviceShot(
+        "service-problems",
+        serviceStart.copy(amount = "12abc"),
+        errors = setOf(app.ledgerline.android.ui.clients.ServiceProblem.DescriptionMissing),
+        error = app.ledgerline.android.online.WriteError.Offline,
+    )
+
     private val receiptTarget = app.ledgerline.android.ui.clients.ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(170_000, "USD")))
 
     private fun receiptAllocation(description: String, applied: Long, left: Long = 0) = app.ledgerline.api.ReceiptAllocation(
@@ -479,7 +523,33 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             mapOf("website-audit" to Online.Ready(listOf(auditPayment))),
             today = "2026-10-23",
             tab = ClientTab.Paid,
-            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onRecordPayment = {}, onRecordReceipt = {}),
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onRecordPayment = {}, onRecordReceipt = {}, onLogService = {}),
+        )
+    }
+
+    @Test
+    fun clientSettled() = shot("client-settled", Tab.More) {
+        ClientContent(
+            Online.Ready(northwind.copy(openBalance = Money(0, "USD"), openBalances = emptyList(), oldestOpenServiceDate = null)),
+            Online.Ready(Paged(listOf(audit), hasMore = false)),
+            Online.Loading,
+            emptyMap(),
+            today = "2026-10-23",
+            tab = ClientTab.Paid,
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onRecordPayment = {}, onRecordReceipt = {}, onLogService = {}),
+        )
+    }
+
+    @Test
+    fun clientNoServices() = shot("client-no-services", Tab.More) {
+        ClientContent(
+            Online.Ready(northwind.copy(openBalance = Money(0, "USD"), openBalances = emptyList(), oldestOpenServiceDate = null)),
+            Online.Ready(Paged(emptyList<Service>(), hasMore = false)),
+            Online.Loading,
+            emptyMap(),
+            today = "2026-10-23",
+            tab = ClientTab.Paid,
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onLogService = {}),
         )
     }
 
