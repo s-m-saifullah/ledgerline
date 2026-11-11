@@ -160,6 +160,14 @@ interface LedgerlineApi {
         @Body body: ExpectedVersion,
     )
 
+    /** Logging a service for a client (ADR 0050, slice 5): one idempotent write; the server answers 201 with the service. */
+    @POST("api/v1/ledgers/{ledgerId}/receivables")
+    suspend fun createService(
+        @Path("ledgerId") ledgerId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: CreateService,
+    ): Service
+
     /** Receiving a payment for a service (ADR 0050): one idempotent write; the server answers 201 with the payment and the service as it is now. */
     @POST("api/v1/ledgers/{ledgerId}/receivables/{receivableId}/payments")
     suspend fun createPayment(

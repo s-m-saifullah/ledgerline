@@ -1,0 +1,1203 @@
+{
+  "note": "Generated from packages/shared/src/receivables.ts (hoursToHundredths, hourlyTotal); synthetic numbers.",
+  "hours": [
+    {
+      "text": "3.5",
+      "hundredths": 350
+    },
+    {
+      "text": "0.25",
+      "hundredths": 25
+    },
+    {
+      "text": "1",
+      "hundredths": 100
+    },
+    {
+      "text": "0",
+      "hundredths": null
+    },
+    {
+      "text": "0.0",
+      "hundredths": null
+    },
+    {
+      "text": "0.00",
+      "hundredths": null
+    },
+    {
+      "text": "0.01",
+      "hundredths": 1
+    },
+    {
+      "text": "00.5",
+      "hundredths": 50
+    },
+    {
+      "text": "9999.99",
+      "hundredths": 999999
+    },
+    {
+      "text": "10000",
+      "hundredths": null
+    },
+    {
+      "text": "10000.5",
+      "hundredths": null
+    },
+    {
+      "text": "1.234",
+      "hundredths": null
+    },
+    {
+      "text": "-1",
+      "hundredths": null
+    },
+    {
+      "text": "abc",
+      "hundredths": null
+    },
+    {
+      "text": "",
+      "hundredths": null
+    },
+    {
+      "text": " ",
+      "hundredths": null
+    },
+    {
+      "text": " 2.5 ",
+      "hundredths": 250
+    },
+    {
+      "text": "2.",
+      "hundredths": null
+    },
+    {
+      "text": ".5",
+      "hundredths": null
+    },
+    {
+      "text": "1,5",
+      "hundredths": null
+    },
+    {
+      "text": "1e2",
+      "hundredths": null
+    },
+    {
+      "text": "12345",
+      "hundredths": null
+    },
+    {
+      "text": "0.1",
+      "hundredths": 10
+    },
+    {
+      "text": "7.05",
+      "hundredths": 705
+    },
+    {
+      "text": "100",
+      "hundredths": 10000
+    },
+    {
+      "text": "99.9",
+      "hundredths": 9990
+    },
+    {
+      "text": "1.50",
+      "hundredths": 150
+    },
+    {
+      "text": "01",
+      "hundredths": 100
+    },
+    {
+      "text": "0001.5",
+      "hundredths": 150
+    },
+    {
+      "text": "484.294",
+      "hundredths": null
+    },
+    {
+      "text": "99853.0",
+      "hundredths": null
+    },
+    {
+      "text": "55.3",
+      "hundredths": 5530
+    },
+    {
+      "text": "0731.6",
+      "hundredths": 73160
+    },
+    {
+      "text": "705",
+      "hundredths": 70500
+    },
+    {
+      "text": "6418",
+      "hundredths": 641800
+    },
+    {
+      "text": "08.602",
+      "hundredths": null
+    },
+    {
+      "text": "32.2",
+      "hundredths": 3220
+    },
+    {
+      "text": "99.686",
+      "hundredths": null
+    },
+    {
+      "text": "2594",
+      "hundredths": 259400
+    },
+    {
+      "text": "54.71",
+      "hundredths": 5471
+    },
+    {
+      "text": "07356.175",
+      "hundredths": null
+    },
+    {
+      "text": "75.4",
+      "hundredths": 7540
+    },
+    {
+      "text": "448.39",
+      "hundredths": 44839
+    },
+    {
+      "text": "5797",
+      "hundredths": 579700
+    },
+    {
+      "text": "4.768",
+      "hundredths": null
+    },
+    {
+      "text": "93.2",
+      "hundredths": 9320
+    },
+    {
+      "text": "2197.910",
+      "hundredths": null
+    },
+    {
+      "text": "4.262",
+      "hundredths": null
+    },
+    {
+      "text": "5.938",
+      "hundredths": null
+    },
+    {
+      "text": "79983.0",
+      "hundredths": null
+    },
+    {
+      "text": "0215.20",
+      "hundredths": 21520
+    },
+    {
+      "text": "050.48",
+      "hundredths": 5048
+    },
+    {
+      "text": "7914.97",
+      "hundredths": 791497
+    },
+    {
+      "text": "6",
+      "hundredths": 600
+    },
+    {
+      "text": "891",
+      "hundredths": 89100
+    },
+    {
+      "text": "6.0",
+      "hundredths": 600
+    },
+    {
+      "text": "479.48",
+      "hundredths": 47948
+    },
+    {
+      "text": "5.383",
+      "hundredths": null
+    },
+    {
+      "text": "6.8",
+      "hundredths": 680
+    },
+    {
+      "text": "10703",
+      "hundredths": null
+    },
+    {
+      "text": "5.143",
+      "hundredths": null
+    },
+    {
+      "text": "75",
+      "hundredths": 7500
+    },
+    {
+      "text": "15793.8",
+      "hundredths": null
+    },
+    {
+      "text": "0013",
+      "hundredths": 1300
+    },
+    {
+      "text": "546.8",
+      "hundredths": 54680
+    },
+    {
+      "text": "19.54",
+      "hundredths": 1954
+    },
+    {
+      "text": "617.76",
+      "hundredths": 61776
+    },
+    {
+      "text": "12470.91",
+      "hundredths": null
+    },
+    {
+      "text": "37952.04",
+      "hundredths": null
+    },
+    {
+      "text": "2279.55",
+      "hundredths": 227955
+    },
+    {
+      "text": "9065.846",
+      "hundredths": null
+    },
+    {
+      "text": "9.548",
+      "hundredths": null
+    },
+    {
+      "text": "28309",
+      "hundredths": null
+    },
+    {
+      "text": "7.772",
+      "hundredths": null
+    },
+    {
+      "text": "7488",
+      "hundredths": 748800
+    },
+    {
+      "text": "78564.415",
+      "hundredths": null
+    },
+    {
+      "text": "3.2",
+      "hundredths": 320
+    },
+    {
+      "text": "6535.97",
+      "hundredths": 653597
+    },
+    {
+      "text": "3.0",
+      "hundredths": 300
+    },
+    {
+      "text": "8.4",
+      "hundredths": 840
+    },
+    {
+      "text": "6.14",
+      "hundredths": 614
+    },
+    {
+      "text": "1211.9",
+      "hundredths": 121190
+    },
+    {
+      "text": "425",
+      "hundredths": 42500
+    },
+    {
+      "text": "223.081",
+      "hundredths": null
+    },
+    {
+      "text": "61658.81",
+      "hundredths": null
+    },
+    {
+      "text": "396.518",
+      "hundredths": null
+    },
+    {
+      "text": "1869.229",
+      "hundredths": null
+    },
+    {
+      "text": "409.50",
+      "hundredths": 40950
+    },
+    {
+      "text": "6.252",
+      "hundredths": null
+    }
+  ],
+  "total": [
+    {
+      "rate": 1,
+      "hundredths": 1,
+      "total": 0
+    },
+    {
+      "rate": 1,
+      "hundredths": 2,
+      "total": 0
+    },
+    {
+      "rate": 1,
+      "hundredths": 25,
+      "total": 0
+    },
+    {
+      "rate": 1,
+      "hundredths": 50,
+      "total": 1
+    },
+    {
+      "rate": 1,
+      "hundredths": 100,
+      "total": 1
+    },
+    {
+      "rate": 1,
+      "hundredths": 350,
+      "total": 4
+    },
+    {
+      "rate": 1,
+      "hundredths": 999999,
+      "total": 10000
+    },
+    {
+      "rate": 1,
+      "hundredths": 1000000,
+      "total": 10000
+    },
+    {
+      "rate": 2,
+      "hundredths": 1,
+      "total": 0
+    },
+    {
+      "rate": 2,
+      "hundredths": 2,
+      "total": 0
+    },
+    {
+      "rate": 2,
+      "hundredths": 25,
+      "total": 1
+    },
+    {
+      "rate": 2,
+      "hundredths": 50,
+      "total": 1
+    },
+    {
+      "rate": 2,
+      "hundredths": 100,
+      "total": 2
+    },
+    {
+      "rate": 2,
+      "hundredths": 350,
+      "total": 7
+    },
+    {
+      "rate": 2,
+      "hundredths": 999999,
+      "total": 20000
+    },
+    {
+      "rate": 2,
+      "hundredths": 1000000,
+      "total": 20000
+    },
+    {
+      "rate": 99,
+      "hundredths": 1,
+      "total": 1
+    },
+    {
+      "rate": 99,
+      "hundredths": 2,
+      "total": 2
+    },
+    {
+      "rate": 99,
+      "hundredths": 25,
+      "total": 25
+    },
+    {
+      "rate": 99,
+      "hundredths": 50,
+      "total": 50
+    },
+    {
+      "rate": 99,
+      "hundredths": 100,
+      "total": 99
+    },
+    {
+      "rate": 99,
+      "hundredths": 350,
+      "total": 347
+    },
+    {
+      "rate": 99,
+      "hundredths": 999999,
+      "total": 989999
+    },
+    {
+      "rate": 99,
+      "hundredths": 1000000,
+      "total": 990000
+    },
+    {
+      "rate": 100,
+      "hundredths": 1,
+      "total": 1
+    },
+    {
+      "rate": 100,
+      "hundredths": 2,
+      "total": 2
+    },
+    {
+      "rate": 100,
+      "hundredths": 25,
+      "total": 25
+    },
+    {
+      "rate": 100,
+      "hundredths": 50,
+      "total": 50
+    },
+    {
+      "rate": 100,
+      "hundredths": 100,
+      "total": 100
+    },
+    {
+      "rate": 100,
+      "hundredths": 350,
+      "total": 350
+    },
+    {
+      "rate": 100,
+      "hundredths": 999999,
+      "total": 999999
+    },
+    {
+      "rate": 100,
+      "hundredths": 1000000,
+      "total": 1000000
+    },
+    {
+      "rate": 4000,
+      "hundredths": 1,
+      "total": 40
+    },
+    {
+      "rate": 4000,
+      "hundredths": 2,
+      "total": 80
+    },
+    {
+      "rate": 4000,
+      "hundredths": 25,
+      "total": 1000
+    },
+    {
+      "rate": 4000,
+      "hundredths": 50,
+      "total": 2000
+    },
+    {
+      "rate": 4000,
+      "hundredths": 100,
+      "total": 4000
+    },
+    {
+      "rate": 4000,
+      "hundredths": 350,
+      "total": 14000
+    },
+    {
+      "rate": 4000,
+      "hundredths": 999999,
+      "total": 39999960
+    },
+    {
+      "rate": 4000,
+      "hundredths": 1000000,
+      "total": 40000000
+    },
+    {
+      "rate": 4050,
+      "hundredths": 1,
+      "total": 41
+    },
+    {
+      "rate": 4050,
+      "hundredths": 2,
+      "total": 81
+    },
+    {
+      "rate": 4050,
+      "hundredths": 25,
+      "total": 1013
+    },
+    {
+      "rate": 4050,
+      "hundredths": 50,
+      "total": 2025
+    },
+    {
+      "rate": 4050,
+      "hundredths": 100,
+      "total": 4050
+    },
+    {
+      "rate": 4050,
+      "hundredths": 350,
+      "total": 14175
+    },
+    {
+      "rate": 4050,
+      "hundredths": 999999,
+      "total": 40499960
+    },
+    {
+      "rate": 4050,
+      "hundredths": 1000000,
+      "total": 40500000
+    },
+    {
+      "rate": 12345,
+      "hundredths": 1,
+      "total": 123
+    },
+    {
+      "rate": 12345,
+      "hundredths": 2,
+      "total": 247
+    },
+    {
+      "rate": 12345,
+      "hundredths": 25,
+      "total": 3086
+    },
+    {
+      "rate": 12345,
+      "hundredths": 50,
+      "total": 6173
+    },
+    {
+      "rate": 12345,
+      "hundredths": 100,
+      "total": 12345
+    },
+    {
+      "rate": 12345,
+      "hundredths": 350,
+      "total": 43208
+    },
+    {
+      "rate": 12345,
+      "hundredths": 999999,
+      "total": 123449877
+    },
+    {
+      "rate": 12345,
+      "hundredths": 1000000,
+      "total": 123450000
+    },
+    {
+      "rate": 999999,
+      "hundredths": 1,
+      "total": 10000
+    },
+    {
+      "rate": 999999,
+      "hundredths": 2,
+      "total": 20000
+    },
+    {
+      "rate": 999999,
+      "hundredths": 25,
+      "total": 250000
+    },
+    {
+      "rate": 999999,
+      "hundredths": 50,
+      "total": 500000
+    },
+    {
+      "rate": 999999,
+      "hundredths": 100,
+      "total": 999999
+    },
+    {
+      "rate": 999999,
+      "hundredths": 350,
+      "total": 3499997
+    },
+    {
+      "rate": 999999,
+      "hundredths": 999999,
+      "total": 9999980000
+    },
+    {
+      "rate": 999999,
+      "hundredths": 1000000,
+      "total": 9999990000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 1,
+      "total": 10000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 2,
+      "total": 20000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 25,
+      "total": 250000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 50,
+      "total": 500000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 100,
+      "total": 1000000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 350,
+      "total": 3500000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 999999,
+      "total": 9999990000000
+    },
+    {
+      "rate": 1000000000,
+      "hundredths": 1000000,
+      "total": 10000000000000
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 1,
+      "total": 90071992547410
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 2,
+      "total": 180143985094820
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 25,
+      "total": 2251799813685248
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 50,
+      "total": 4503599627370496
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 100,
+      "total": 9007199254740991
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 350,
+      "total": null
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 999999,
+      "total": null
+    },
+    {
+      "rate": 9007199254740991,
+      "hundredths": 1000000,
+      "total": null
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 1,
+      "total": 12345678901
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 2,
+      "total": 24691357802
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 25,
+      "total": 308641972531
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 50,
+      "total": 617283945062
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 100,
+      "total": 1234567890123
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 350,
+      "total": 4320987615431
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 999999,
+      "total": null
+    },
+    {
+      "rate": 1234567890123,
+      "hundredths": 1000000,
+      "total": null
+    },
+    {
+      "rate": 614,
+      "hundredths": 611404,
+      "total": 3754021
+    },
+    {
+      "rate": 4,
+      "hundredths": 1765,
+      "total": 71
+    },
+    {
+      "rate": 10954317,
+      "hundredths": 193,
+      "total": 21141832
+    },
+    {
+      "rate": 8566350,
+      "hundredths": 263912,
+      "total": 22607625612
+    },
+    {
+      "rate": 1391306,
+      "hundredths": 2,
+      "total": 27826
+    },
+    {
+      "rate": 481,
+      "hundredths": 6,
+      "total": 29
+    },
+    {
+      "rate": 162510983879,
+      "hundredths": 33,
+      "total": 53628624680
+    },
+    {
+      "rate": 10,
+      "hundredths": 84355,
+      "total": 8436
+    },
+    {
+      "rate": 4850,
+      "hundredths": 399961,
+      "total": 19398109
+    },
+    {
+      "rate": 389,
+      "hundredths": 92470,
+      "total": 359708
+    },
+    {
+      "rate": 30589308985509,
+      "hundredths": 55,
+      "total": 16824119942030
+    },
+    {
+      "rate": 44273,
+      "hundredths": 6798,
+      "total": 3009679
+    },
+    {
+      "rate": 330104,
+      "hundredths": 35,
+      "total": 115536
+    },
+    {
+      "rate": 8530665927101,
+      "hundredths": 145993,
+      "total": null
+    },
+    {
+      "rate": 94168227934279,
+      "hundredths": 1,
+      "total": 941682279343
+    },
+    {
+      "rate": 44317,
+      "hundredths": 68020,
+      "total": 30144423
+    },
+    {
+      "rate": 94029753119685,
+      "hundredths": 12,
+      "total": 11283570374362
+    },
+    {
+      "rate": 53176653687843,
+      "hundredths": 180,
+      "total": 95717976638117
+    },
+    {
+      "rate": 841,
+      "hundredths": 1911,
+      "total": 16072
+    },
+    {
+      "rate": 76238223,
+      "hundredths": 364,
+      "total": 277507132
+    },
+    {
+      "rate": 7307264,
+      "hundredths": 129,
+      "total": 9426371
+    },
+    {
+      "rate": 495869018,
+      "hundredths": 13,
+      "total": 64462972
+    },
+    {
+      "rate": 701773413,
+      "hundredths": 67,
+      "total": 470188187
+    },
+    {
+      "rate": 765508228215,
+      "hundredths": 920,
+      "total": 7042675699578
+    },
+    {
+      "rate": 83,
+      "hundredths": 9,
+      "total": 7
+    },
+    {
+      "rate": 79458363,
+      "hundredths": 272005,
+      "total": 216130720278
+    },
+    {
+      "rate": 73,
+      "hundredths": 981641,
+      "total": 716598
+    },
+    {
+      "rate": 8,
+      "hundredths": 28,
+      "total": 2
+    },
+    {
+      "rate": 636,
+      "hundredths": 8,
+      "total": 51
+    },
+    {
+      "rate": 171590291430,
+      "hundredths": 200,
+      "total": 343180582860
+    },
+    {
+      "rate": 14700801694,
+      "hundredths": 6988,
+      "total": 1027292022377
+    },
+    {
+      "rate": 1405,
+      "hundredths": 15427,
+      "total": 216749
+    },
+    {
+      "rate": 388899,
+      "hundredths": 624,
+      "total": 2426730
+    },
+    {
+      "rate": 85538294,
+      "hundredths": 9,
+      "total": 7698446
+    },
+    {
+      "rate": 85,
+      "hundredths": 324,
+      "total": 275
+    },
+    {
+      "rate": 7864500035067,
+      "hundredths": 1419,
+      "total": 111597255497601
+    },
+    {
+      "rate": 73,
+      "hundredths": 7634,
+      "total": 5573
+    },
+    {
+      "rate": 666082136,
+      "hundredths": 3635,
+      "total": 24212085644
+    },
+    {
+      "rate": 87223472470,
+      "hundredths": 6688,
+      "total": 5833505838794
+    },
+    {
+      "rate": 78977,
+      "hundredths": 75,
+      "total": 59233
+    },
+    {
+      "rate": 25155557157,
+      "hundredths": 85,
+      "total": 21382223583
+    },
+    {
+      "rate": 336224691,
+      "hundredths": 6296,
+      "total": 21168706545
+    },
+    {
+      "rate": 12,
+      "hundredths": 6281,
+      "total": 754
+    },
+    {
+      "rate": 434467834654,
+      "hundredths": 46,
+      "total": 199855203941
+    },
+    {
+      "rate": 1,
+      "hundredths": 81,
+      "total": 1
+    },
+    {
+      "rate": 4,
+      "hundredths": 85793,
+      "total": 3432
+    },
+    {
+      "rate": 362927169,
+      "hundredths": 39,
+      "total": 141541596
+    },
+    {
+      "rate": 760,
+      "hundredths": 9,
+      "total": 68
+    },
+    {
+      "rate": 438,
+      "hundredths": 9,
+      "total": 39
+    },
+    {
+      "rate": 290,
+      "hundredths": 9,
+      "total": 26
+    },
+    {
+      "rate": 892126325751,
+      "hundredths": 82402,
+      "total": 735129934945339
+    },
+    {
+      "rate": 7033,
+      "hundredths": 4765,
+      "total": 335122
+    },
+    {
+      "rate": 17042958,
+      "hundredths": 81387,
+      "total": 13870752227
+    },
+    {
+      "rate": 546534664231,
+      "hundredths": 195087,
+      "total": 1066218080408331
+    },
+    {
+      "rate": 995183982188,
+      "hundredths": 641,
+      "total": 6379129325825
+    },
+    {
+      "rate": 5019277,
+      "hundredths": 259748,
+      "total": 13037471622
+    },
+    {
+      "rate": 356732632,
+      "hundredths": 2317,
+      "total": 8265495083
+    },
+    {
+      "rate": 22337924,
+      "hundredths": 10,
+      "total": 2233792
+    },
+    {
+      "rate": 7,
+      "hundredths": 35456,
+      "total": 2482
+    },
+    {
+      "rate": 41616767389,
+      "hundredths": 3,
+      "total": 1248503022
+    },
+    {
+      "rate": 84280819,
+      "hundredths": 428,
+      "total": 360721905
+    },
+    {
+      "rate": 479480101960,
+      "hundredths": 1525,
+      "total": 7312071554890
+    },
+    {
+      "rate": 357287976,
+      "hundredths": 39989,
+      "total": 142875888723
+    },
+    {
+      "rate": 711490423652,
+      "hundredths": 731,
+      "total": 5200994996896
+    },
+    {
+      "rate": 8124,
+      "hundredths": 7,
+      "total": 569
+    },
+    {
+      "rate": 76937485,
+      "hundredths": 6,
+      "total": 4616249
+    },
+    {
+      "rate": 981303114677,
+      "hundredths": 18,
+      "total": 176634560642
+    },
+    {
+      "rate": 537204,
+      "hundredths": 50,
+      "total": 268602
+    },
+    {
+      "rate": 3486151753460,
+      "hundredths": 296598,
+      "total": null
+    },
+    {
+      "rate": 94290,
+      "hundredths": 78,
+      "total": 73546
+    },
+    {
+      "rate": 6419102477376,
+      "hundredths": 127,
+      "total": 8152260146268
+    },
+    {
+      "rate": 48891,
+      "hundredths": 66,
+      "total": 32268
+    },
+    {
+      "rate": 9966,
+      "hundredths": 605,
+      "total": 60294
+    },
+    {
+      "rate": 7320180,
+      "hundredths": 5041,
+      "total": 369010274
+    },
+    {
+      "rate": 5,
+      "hundredths": 7715,
+      "total": 386
+    },
+    {
+      "rate": 17098,
+      "hundredths": 8331,
+      "total": 1424434
+    },
+    {
+      "rate": 3256679310,
+      "hundredths": 1,
+      "total": 32566793
+    },
+    {
+      "rate": 389036863344,
+      "hundredths": 37,
+      "total": 143943639437
+    },
+    {
+      "rate": 8617019656,
+      "hundredths": 802,
+      "total": 69108497641
+    },
+    {
+      "rate": 7590901119,
+      "hundredths": 3,
+      "total": 227727034
+    }
+  ]
+}

@@ -207,7 +207,7 @@
     <string name="client_failed">Couldn\'t load this client.</string>
     <string name="services_loading">Loading services…</string>
     <string name="services_failed">Couldn\'t load services.</string>
-    <string name="services_empty">No services yet. Services are logged in the web app.</string>
+    <string name="services_empty">No services yet.</string>
     <string name="load_more_services">Load more services</string>
     <string name="service_paid">Paid</string>
     <string name="service_written_off">Written off</string>
@@ -671,6 +671,30 @@
     <string name="payment_error_forbidden">Your account can\'t record payments in this ledger.</string>
     <string name="payment_error_failed">Couldn\'t record the payment. Try again.</string>
     <string name="payment_error_rejected">The server didn\'t accept this payment.</string>
+
+    <string name="client_log_service">Log service</string>
+    <string name="service_title">Log service</string>
+    <string name="service_description">Description</string>
+    <string name="service_description_hint">What was done</string>
+    <string name="service_due">Due date (optional)</string>
+    <string name="service_due_add">+ Add due date</string>
+    <string name="service_due_clear">Clear due date</string>
+    <string name="service_currency">Currency</string>
+    <string name="service_amount">Service amount (%1$s)</string>
+    <string name="service_error_description">Describe what was done.</string>
+    <string name="service_fold">Paid by the hour? Work out the amount</string>
+    <string name="service_hours">Hours</string>
+    <string name="service_hourly_rate">Hourly rate (%1$s)</string>
+    <string name="service_hourly_result">%1$s h at %2$s/h = %3$s</string>
+    <string name="service_hourly_hours_invalid">Enter hours as a number with up to two decimals, such as 3.5.</string>
+    <string name="service_hourly_rate_invalid">Enter a positive hourly rate such as 40.00.</string>
+    <string name="service_hourly_range">That total is outside the amount range Ledgerline can store.</string>
+    <string name="service_hourly_use">Use this total</string>
+    <string name="service_save">Save service</string>
+    <string name="service_error_offline">Needs a connection. What you entered is kept.</string>
+    <string name="service_error_forbidden">Your account can\'t add services in this ledger.</string>
+    <string name="service_error_failed">Couldn\'t save the service. Try again.</string>
+    <string name="service_error_rejected">The server didn\'t accept this service.</string>
     <string name="receipt_open_balance">Open balance %1$s</string>
     <string name="receipt_pay_full">Pay full balance</string>
     <string name="receipt_currency">Currency</string>

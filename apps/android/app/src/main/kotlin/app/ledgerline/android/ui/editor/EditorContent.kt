@@ -357,7 +357,7 @@ internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: ()
 
 /** A tappable value in a pill: 36 dp to look at, 48 dp to touch. */
 @Composable
-private fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = false) {
+internal fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = false) {
     val palette = LocalPalette.current
     Box(modifier = Modifier.clickable(onClick = onClick, role = Role.Button).heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
         Box(

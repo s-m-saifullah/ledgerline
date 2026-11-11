@@ -140,6 +140,10 @@ interface MirrorReads {
     )
     suspend fun entriesUsingCategory(ledgerId: String, categoryId: String): Int
 
+    /** The currencies the ledger has added besides the base one, as codes. */
+    @Query("SELECT code FROM currencies WHERE ledgerId = :ledgerId AND deletedAt IS NULL ORDER BY code")
+    suspend fun liveCurrencyCodes(ledgerId: String): List<String>
+
     @Query("SELECT * FROM tags WHERE ledgerId = :ledgerId AND deletedAt IS NULL")
     fun liveTags(ledgerId: String): Flow<List<TagRow>>
 

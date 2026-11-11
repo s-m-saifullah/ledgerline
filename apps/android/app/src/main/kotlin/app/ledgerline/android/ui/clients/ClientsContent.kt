@@ -32,6 +32,7 @@ import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
 import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchBox
@@ -229,6 +230,8 @@ class ClientActions(
     val onRecordPayment: (Service) -> Unit = {},
     /** Opens the Record payment sheet for the client (ADR 0050, slice 4c); the button shows only when this is set and while they owe. */
     val onRecordReceipt: (() -> Unit)? = null,
+    /** Opens the Log service sheet for the client (ADR 0050, slice 5); the buttons show only when this is set and the client is not archived. */
+    val onLogService: (() -> Unit)? = null,
 )
 
 /** A client can be paid when they owe something in some currency (the base total can read zero while a currency has no rate). */
@@ -253,13 +256,15 @@ internal fun ClientContent(
     Column(modifier) {
         val name = (client as? Online.Ready)?.value?.let { if (it.archivedAt != null) stringResource(R.string.client_archived, it.name) else it.name }
         TopBar(name ?: stringResource(R.string.clients_title), onBack = actions.onBack)
+        // An archived client takes no new service (as on the web).
+        val logService = actions.onLogService?.takeIf { (client as? Online.Ready)?.value?.archivedAt == null }
         LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             val loadedServices = (services as? Online.Ready)?.value?.items.orEmpty()
             when (client) {
                 Online.Loading -> Unit
                 Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryClient) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.client_failed), actions.onRetryClient) }
-                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today), actions.onRecordReceipt?.takeIf { canRecordReceipt(client.value) }) }
+                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today), actions.onRecordReceipt?.takeIf { canRecordReceipt(client.value) }, logService) }
             }
             val split = splitServices(loadedServices, today)
             val servicesState = services as? Online.Ready
@@ -285,21 +290,21 @@ internal fun ClientContent(
                 )
             }
             when (tab) {
-                ClientTab.Paid -> paidItems(services, split.paid, payments, today, actions)
+                ClientTab.Paid -> paidItems(services, split.paid, payments, today, actions, logService)
                 ClientTab.History -> historyItems(history, actions)
             }
         }
     }
 }
 
-private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List<Service>, payments: Map<String, Online<List<ServicePayment>>>, today: String, actions: ClientActions) {
+private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List<Service>, payments: Map<String, Online<List<ServicePayment>>>, today: String, actions: ClientActions, logService: (() -> Unit)?) {
     when (services) {
         Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.services_loading)) } }
         Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryServices) }
         Online.Failed -> item { RetryNote(stringResource(R.string.services_failed), actions.onRetryServices) }
         is Online.Ready -> {
             val everything = services.value.items
-            if (everything.isEmpty()) item { EmptyState(stringResource(R.string.services_empty)) }
+            if (everything.isEmpty()) item { EmptyState(stringResource(R.string.services_empty), logService?.let { stringResource(R.string.client_log_service) to it }) }
             if (paid.isNotEmpty()) {
                 item { GroupedListCard { paid.forEach { service -> row { ServiceRow(service, today, payments[service.id], { actions.onTogglePayments(service.id) }, { actions.onRetryPayments(service.id) }, { actions.onRecordPayment(service) }) } } } }
             }
@@ -330,7 +335,7 @@ private fun LazyListScope.historyItems(history: Online<Paged<HistoryEvent>>, act
  * when a service is overdue (how many, and the earliest due date), and how to reach them.
  */
 @Composable
-private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, onRecordReceipt: (() -> Unit)? = null) {
+private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, onRecordReceipt: (() -> Unit)? = null, onLogService: (() -> Unit)? = null) {
     val owed = balances(client)
     val label = stringResource(R.string.client_open_balance)
     val overdueLine = overdue?.let { (count, due) -> pluralStringResource(R.plurals.client_overdue_line, count, count, formatShortDate(due)) }
@@ -346,8 +351,14 @@ private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, onRecordRe
             }
             if (overdueLine != null) Text(overdueLine, style = MaterialTheme.typography.bodySmall, color = LocalPalette.current.danger)
             contact.forEach { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            // The screen's one filled button (the prototype's `receive`); each unpaid service keeps its own outlined one.
-            if (onRecordReceipt != null) PrimaryButton(stringResource(R.string.client_record_payment), onRecordReceipt, Modifier.fillMaxWidth().padding(top = 4.dp))
+            // Record payment is the screen's one filled button (the prototype's `receive`); each unpaid service keeps its own
+            // outlined one, and Log service is outlined beside it (also for a client who owes nothing).
+            if (onRecordReceipt != null || onLogService != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    if (onRecordReceipt != null) PrimaryButton(stringResource(R.string.client_record_payment), onRecordReceipt, Modifier.weight(1f))
+                    if (onLogService != null) SecondaryButton(stringResource(R.string.client_log_service), onLogService, Modifier.weight(1f))
+                }
+            }
         }
     }
 }
