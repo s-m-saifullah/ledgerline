@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -24,6 +25,7 @@ import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,14 +46,13 @@ class PaymentSheetContentTest {
 
     private fun ui(
         form: PaymentForm = start,
-        other: Boolean = false,
         noIncome: Boolean = false,
         errors: Set<PaymentProblem> = emptySet(),
         saving: Boolean = false,
         error: WriteError? = null,
         asking: Boolean = false,
         accounts: List<Choice> = this.accounts,
-    ) = PaymentUi(form, accounts, if (noIncome) emptyList() else categories, other, noIncome, errors, saving, error, asking)
+    ) = PaymentUi(form, accounts, if (noIncome) emptyList() else categories, noIncome, errors, saving, error, asking)
 
     private class Taps(private val form: () -> PaymentForm) {
         val log = mutableListOf<String>()
@@ -188,12 +189,6 @@ class PaymentSheetContentTest {
         show(ui(chosen.copy(amount = "460.25")), private = true)
         compose.onNodeWithText("$10.25", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Tip category").assertExists()
-    }
-
-    @Test
-    fun theHintAboutOtherCurrenciesShowsOnlyWhenThereAreSuchAccounts() {
-        show(ui(other = true))
-        compose.onNodeWithText("Some accounts need a rate set by hand: use the web for now.").assertExists()
     }
 
     @Test
@@ -409,4 +404,141 @@ class PaymentSheetContentTest {
         compose.onNodeWithText("€410.00", substring = true).assertDoesNotExist()
         compose.onNodeWithText("$450.00", substring = true).assertDoesNotExist()
     }
+
+    // ---- neither side the base currency (ADR 0050, slice 4b-2)
+
+    private val euroTarget = PaymentTarget("print-layout", 1, "Print layout", "Northwind Design", "EUR", 12_000)
+    private val withPound = accounts + Choice("g1", "Pound account", "GBP")
+    private val key = RateKey("GBP", "2026-11-09")
+
+    private fun pounds(answer: StoredRate? = StoredRate.Found("1.2658227848", "2026-11-09"), typed: String = "", received: String = "130.00") =
+        PaymentForm(euroTarget, "120.00", "g1", "c1", null, date = "2026-11-09", accountCurrency = "GBP", received = received, rateTyped = typed, rateAnswer = answer?.let { RateAnswer(key, it) })
+
+    @Test
+    fun theStoredRateIsSaidWithWhatArrivedIsWorthInDollarsAndAWayToSetItYourself() {
+        show(ui(pounds(), accounts = withPound))
+        compose.onNodeWithText("About $164.56 · 1 USD = 0.79 GBP").assertExists()
+        compose.onNodeWithText("Set the rate yourself").assertIsEnabled()
+    }
+
+    @Test
+    fun noRateRowShowsWhenOneSideIsDollars() {
+        show(ui(across, accounts = withEuro))
+        compose.onNodeWithText("Set the rate yourself").assertDoesNotExist()
+        compose.onNodeWithText("Looking up the exchange rate…").assertDoesNotExist()
+    }
+
+    @Test
+    fun noRateRowShowsForAnAccountInTheServicesCurrency() {
+        show(ui(chosen.copy(accountCurrency = "USD")))
+        compose.onNodeWithText("Set the rate yourself").assertDoesNotExist()
+    }
+
+    @Test
+    fun theWorthInDollarsIsHiddenInPrivacyModeButTheRateIsNot() {
+        show(ui(pounds(), accounts = withPound), private = true)
+        compose.onNodeWithText("$164.56", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("1 USD = 0.79 GBP", substring = true).assertExists()
+    }
+
+    @Test
+    fun aRateFromAnEarlierDaySaysSoAndOneFromTheSameDayDoesNot() {
+        show(ui(pounds(StoredRate.Found("1.2658227848", "2026-11-07")), accounts = withPound))
+        compose.onNodeWithText("About $164.56 · 1 USD = 0.79 GBP (rate from 2026-11-07)").assertExists()
+    }
+
+    @Test
+    fun theSameDaysRateSaysNothingAboutWhereItIsFrom() {
+        show(ui(pounds(), accounts = withPound))
+        compose.onNodeWithText("(rate from", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("(set by you)", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aRateSetByHandSaysSoAndIsWorthWhatItSays() {
+        show(ui(pounds(typed = "122.5"), accounts = withPound))
+        compose.onNodeWithText("About $1.06 · 1 USD = 122.5 GBP (set by you)").assertExists()
+    }
+
+    @Test
+    fun noWorthIsSaidWhileWhatArrivedIsMissing() {
+        show(ui(pounds(received = ""), accounts = withPound))
+        compose.onNodeWithText("1 USD = 0.79 GBP").assertExists()
+        compose.onNodeWithText("About", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun whileTheRateIsBeingLookedUpOrCouldNotBeTheSheetSaysSo() {
+        show(ui(pounds(answer = null), accounts = withPound))
+        compose.onNodeWithText("Looking up the exchange rate…").assertExists()
+    }
+
+    @Test
+    fun aLookUpThatFailedSaysSo() {
+        show(ui(pounds(StoredRate.Unavailable), accounts = withPound))
+        compose.onNodeWithText("Couldn't look up the exchange rate.").assertExists()
+    }
+
+    @Test
+    fun aDateWithNoStoredRateSaysSoAtOnceNotOnlyAfterSave() {
+        show(ui(pounds(StoredRate.Missing), accounts = withPound))
+        compose.onNodeWithText("No GBP rate is stored for this date yet. Set one to save this payment.").assertExists()
+    }
+
+    @Test
+    fun aTypedRateTakesTheMissingSentenceAway() {
+        show(ui(pounds(StoredRate.Missing, typed = "122.5"), accounts = withPound))
+        compose.onNodeWithText("No GBP rate", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun settingTheRateYourselfOpensAFieldWithTheRateInUseAndReportsNothingUntilTyped() {
+        val taps = Taps { pounds() }
+        show(ui(pounds(), accounts = withPound), taps)
+        compose.onNodeWithText("Set the rate yourself").performClick()
+        compose.onNode(hasSetTextAction() and hasContentDescription("1 USD is worth (GBP)")).assertExists()
+        compose.onNode(hasSetTextAction() and hasText("0.79")).assertExists()
+        compose.onNodeWithText("Use the stored rate").assertExists()
+        compose.onNodeWithText("Set the rate yourself").assertDoesNotExist()
+        assertTrue(taps.log.isEmpty())
+    }
+
+    @Test
+    fun typingARateReportsWhatWasTyped() {
+        val taps = Taps { pounds() }
+        show(ui(pounds(), accounts = withPound), taps)
+        compose.onNodeWithText("Set the rate yourself").performClick()
+        compose.onNode(hasSetTextAction() and hasText("0.79")).performTextReplacement("122.5")
+        assertEquals("122.5", taps.forms.single().rateTyped)
+    }
+
+    @Test
+    fun aRateTypedWithoutALeadingZeroIsAcceptedAndSaidAsSetByYou() {
+        show(ui(pounds(typed = ".8"), accounts = withPound))
+        compose.onNodeWithText("Enter a positive amount such as 122.5.").assertDoesNotExist()
+        compose.onNodeWithText("(set by you)", substring = true).assertExists()
+    }
+
+    @Test
+    fun aRateThatCannotBeStoredIsSaidNextToTheField() {
+        show(ui(pounds(typed = "abc"), accounts = withPound))
+        compose.onNodeWithText("Enter a positive amount such as 122.5.").assertExists()
+    }
+
+    @Test
+    fun aFormWithARateTypedOpensWithTheFieldAndUseTheStoredRateDropsIt() {
+        val taps = Taps { pounds(typed = "122.5") }
+        show(ui(pounds(typed = "122.5"), accounts = withPound), taps)
+        compose.onNode(hasSetTextAction() and hasText("122.5")).assertExists()
+        compose.onNodeWithText("Use the stored rate").performClick()
+        assertEquals("", taps.forms.single().rateTyped)
+        compose.onNodeWithText("Set the rate yourself").assertExists()
+    }
+
+    @Test
+    fun theOldHintAboutAccountsThatNeedARateIsGone() {
+        show(ui(pounds(), accounts = withPound))
+        compose.onNodeWithText("need a rate set by hand", substring = true).assertDoesNotExist()
+    }
 }
+

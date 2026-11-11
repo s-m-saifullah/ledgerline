@@ -28,6 +28,12 @@ enum class PaymentProblem {
 
     /** A tip was typed (in the account's currency) and is not a valid amount above zero. */
     TipInvalid,
+
+    /** Neither side is the base currency and what was typed for the rate cannot be stored. */
+    RateInvalid,
+
+    /** Neither side is the base currency, the ledger holds no rate for the date and none was typed. */
+    RateMissing,
     AccountMissing, CategoryMissing, TipCategoryMissing,
 }
 
@@ -52,8 +58,10 @@ const val PaymentNoteMax = 2_000
 /**
  * The Record payment form (ADR 0050, the prototype's `OV["pay-service"]`): the amount starts at what is outstanding, so
  * recording the full payment, which is also marking the service paid, is one confirmation away. The account and the
- * categories are the only things to choose. An account in another currency (one side the base currency, ADR 0050 slice
- * 4b-1) also asks for what arrived in it, shows the rate the two amounts fix and takes an optional tip in its currency.
+ * categories are the only things to choose. An account in another currency (ADR 0050 slice 4b-1) also asks for what arrived
+ * in it and takes an optional tip in its currency; when one side is the base currency the two amounts fix the rate and it is
+ * shown, and when neither is (slice 4b-2) the rate for the account's currency on the date is the one the ledger stores
+ * ([rateAnswer]) or one typed by hand ([rateTyped]), which is the only case where a rate is sent.
  */
 data class PaymentForm(
     val target: PaymentTarget,
@@ -71,9 +79,18 @@ data class PaymentForm(
     val received: String = "",
     /** An optional tip in the account's currency, typed, when its currency differs from the service's. */
     val tipAmount: String = "",
+    /** A rate set by hand, base currency first ("122.5"), when neither side is the base currency; blank uses the stored one. */
+    val rateTyped: String = "",
+    /** What the last look-up of the stored rate found, with what it asked for; only used while it still matches [rateKey]. */
+    val rateAnswer: RateAnswer? = null,
 ) {
+    /** The rate to look up: the account's currency on the date, when neither side is the base currency. */
+    val rateKey: RateKey? get() = accountCurrency?.takeIf { needsRate(target.currency, it) }?.let { RateKey(it, date) }
+
     /** The part that exists only when the account is in another currency than the service. */
-    val cross: CrossCurrency? get() = accountCurrency?.takeIf { it != target.currency }?.let { CrossCurrency(target.currency, it, received, tipAmount) }
+    val cross: CrossCurrency? get() = accountCurrency?.takeIf { it != target.currency }?.let { account ->
+        CrossCurrency(target.currency, account, received, tipAmount, rateTyped, rateKey?.let { rateAnswer.storedFor(it) } ?: StoredRate.Looking)
+    }
 
     /** The currency the tip is in: the account's when it differs from the service's, else the service's. */
     val tipCurrency: String get() = cross?.accountCurrency ?: target.currency
@@ -81,8 +98,9 @@ data class PaymentForm(
     /** The rate the two amounts fix when the account is in another currency and one side is the base currency. */
     val rate: CrossRate? get() = cross?.rate(split?.settle)
 
-    /** The form with another account chosen; what was typed is kept. */
-    fun withAccount(id: String?, currency: String?) = copy(accountId = id, accountCurrency = currency)
+    /** The form with another account chosen; what was typed is kept, except a rate typed for another account's currency. */
+    fun withAccount(id: String?, currency: String?) =
+        copy(accountId = id, accountCurrency = currency, rateTyped = if (currency == accountCurrency) rateTyped else "")
 
     private val parsed: AmountInput get() = parseAmount(amount, target.currency)
 
@@ -107,6 +125,8 @@ data class PaymentForm(
         cross?.let { c ->
             c.receivedIssue?.let { add(it.receivedProblem()) }
             if (c.tipIssue != null) add(PaymentProblem.TipInvalid)
+            if (c.rateTypedIssue) add(PaymentProblem.RateInvalid)
+            if (c.rateMissing) add(PaymentProblem.RateMissing)
         }
         if (accountId == null) add(PaymentProblem.AccountMissing)
         if (categoryId == null) add(PaymentProblem.CategoryMissing)
@@ -120,6 +140,7 @@ data class PaymentForm(
         return CreatePayment(
             amount = Money(split.settle, target.currency),
             receivedAmount = cross?.receivedMinor?.let { Money(it, cross!!.accountCurrency) },
+            fxRate = cross?.manualRate,
             accountId = accountId!!,
             categoryId = categoryId!!,
             date = date,

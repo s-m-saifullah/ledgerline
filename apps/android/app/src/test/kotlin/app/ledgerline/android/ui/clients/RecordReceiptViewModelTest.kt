@@ -12,6 +12,7 @@ import app.ledgerline.android.mirror.page
 import app.ledgerline.android.mirror.syncCategory
 import app.ledgerline.android.mirror.toRows
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.online.RateReads
 import app.ledgerline.android.online.ReceiptWrites
 import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.outbox.FakeServer
@@ -128,7 +129,8 @@ class RecordReceiptViewModelTest {
         val runner = SyncRunner(engine, PushEngine(FakeServer(), outboxFor(database), lock), FakeLookup(), choice, harness.session)
         val sync = SyncCoordinator(harness.session, runner, engine, FakeScheduler(), choice, FakeClock())
         val writer = if (origin == null) harness.writer() else harness.writer(origin)
-        return RecordReceiptViewModel(database.reads(), ReceiptWrites(writer, if (readOrigin == null) harness.reader() else harness.reader(readOrigin)), sync, store).also {
+        val reader = if (readOrigin == null) harness.reader() else harness.reader(readOrigin)
+        return RecordReceiptViewModel(database.reads(), ReceiptWrites(writer, reader), sync, store, RateReads(reader)).also {
             it.today = { "2026-11-10" }
             it.previewDelayMillis = 0
         }
@@ -187,7 +189,6 @@ class RecordReceiptViewModelTest {
         assertEquals("2026-11-10", opened.form.date)
         assertEquals(ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(60_000, "USD"))), opened.form.target)
         assertEquals(listOf("Euro account", "Everyday checking", "Pound account", "Savings"), opened.accounts.map { it.label })
-        assertFalse(opened.otherCurrencyAccounts)
         assertEquals(listOf("Freelance", "Freelance › Design work", "Tips"), opened.categories.map { it.label })
         assertFalse(opened.noIncomeCategory)
         assertNull(opened.preview)
@@ -233,9 +234,8 @@ class RecordReceiptViewModelTest {
         assertEquals("EUR", ui().form.currency)
         assertEquals("", ui().form.amount)
         assertNull(ui().form.accountId)
-        // Euros can go into euros or dollars; the pound account needs a rate set by hand.
-        assertEquals(listOf("Euro account", "Everyday checking", "Savings"), ui().accounts.map { it.label })
-        assertTrue(ui().otherCurrencyAccounts)
+        // Every open account takes euros too, the pound account included.
+        assertEquals(listOf("Euro account", "Everyday checking", "Pound account", "Savings"), ui().accounts.map { it.label })
         assertNull(ui().preview)
     }
 
@@ -661,4 +661,152 @@ class RecordReceiptViewModelTest {
         sent()
         assertNotEquals(first, writes().last().idempotencyKey)
     }
+
+    // ---- neither side the base currency (ADR 0050, slice 4b-2)
+
+    private val pound = id(6)
+    private val bothCurrencies = contact("Northwind Design", balances = listOf(Money(60_000, "USD"), Money(20_000, "EUR")), owed = 60_000)
+
+    private fun stored() = ui().form.cross?.stored
+
+    /** A client who owes 200.00 in euros, paying 170.00 into the pound account. */
+    private fun aPoundReceipt() {
+        routePreview()
+        harness.route(ReceiptsPath) { recorded() }
+        openSheet(bothCurrencies)
+        viewModel.chooseCurrency("EUR")
+        viewModel.edit { it.withAccount(pound, "GBP").copy(amount = "200.00", categoryId = freelance, received = "170.00") }
+        ready()
+    }
+
+    @Test
+    fun anAccountWhereNeitherSideIsDollarsLooksUpTheStoredRateForItsCurrencyOnThePaymentsDate() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        assertEquals(listOf("/api/v1/ledgers/ledger-a/exchange-rates/lookup?code=GBP&date=2026-11-10"), harness.rateLookups())
+        assertEquals("1.2658227848", ui().form.cross!!.rateInUse)
+    }
+
+    @Test
+    fun aRememberedPoundAccountLooksUpTheRateAsTheSheetOpens() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        store.choices = PaymentChoices(accountId = pound)
+        openSheet(contact("Northwind Design", balances = listOf(Money(20_000, "EUR")), owed = 20_000))
+        harness.until { stored() is StoredRate.Found }
+        assertEquals(1, harness.rateLookups().size)
+    }
+
+    @Test
+    fun noLookUpIsMadeForTheCurrencyTheyOweInOrForDollars() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        routePreview()
+        openSheet(bothCurrencies)
+        viewModel.chooseCurrency("EUR")
+        viewModel.edit { it.withAccount(id(3), "EUR") }
+        viewModel.edit { it.withAccount(checking, "USD") }
+        assertTrue(harness.quiet())
+        assertTrue(harness.rateLookups().isEmpty())
+    }
+
+    @Test
+    fun changingTheDateAsksAgainForThatDate() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848", "2026-11-03" to "1.2000000000"))
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        viewModel.edit { it.copy(date = "2026-11-03") }
+        assertEquals(StoredRate.Looking, stored())
+        harness.until { (stored() as? StoredRate.Found)?.rate == "1.2000000000" }
+        assertEquals(2, harness.rateLookups().size)
+    }
+
+    @Test
+    fun choosingAnotherCurrencyClearsTheAccountTheTypedRateAndTheLookUp() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        aPoundReceipt()
+        viewModel.edit { it.copy(rateTyped = "122.5") }
+        viewModel.chooseCurrency("USD")
+        assertNull(ui().form.rateKey)
+        assertEquals("", ui().form.rateTyped)
+        assertNull(ui().form.accountId)
+    }
+
+    @Test
+    fun aStoredRateIsNotSentButATypedOneIs() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        sent()
+        harness.until { viewModel.sheet.value == null }
+        assertFalse(writes().single().body.contains("fxRate"))
+    }
+
+    @Test
+    fun aTypedRateIsSentInTheStoredForm() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        viewModel.edit { it.copy(rateTyped = "122.5") }
+        ready()
+        sent()
+        harness.until { viewModel.sheet.value == null }
+        assertTrue(writes().single().body.contains(""""fxRate":"0.0081632653""""))
+    }
+
+    @Test
+    fun aDateWithNoRateStoredBlocksSavingUntilOneIsTyped() {
+        harness.routeRates(mapOf("2026-11-10" to null))
+        aPoundReceipt()
+        harness.until { stored() == StoredRate.Missing }
+        viewModel.save()
+        assertEquals(setOf(ReceiptProblem.RateMissing), ui().errors)
+        assertFalse(ui().asking)
+        assertNothingWritten()
+        viewModel.edit { it.copy(rateTyped = "122.5") }
+        ready()
+        viewModel.save()
+        assertTrue(ui().asking)
+    }
+
+    @Test
+    fun aTypedRateThatCannotBeStoredIsRefusedAndNothingIsAsked() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        viewModel.edit { it.copy(rateTyped = "abc") }
+        ready()
+        viewModel.save()
+        assertEquals(setOf(ReceiptProblem.RateInvalid), ui().errors)
+        assertFalse(ui().asking)
+    }
+
+    @Test
+    fun aLookUpThatFailedDoesNotBlockSavingAndSavingTriesItAgain() {
+        harness.routeRates(mapOf(), status = 500)
+        aPoundReceipt()
+        harness.until { stored() == StoredRate.Unavailable }
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        viewModel.save()
+        assertTrue(ui().asking)
+        harness.until { stored() is StoredRate.Found }
+        assertEquals(2, harness.rateLookups().size)
+        assertTrue(ui().asking)
+    }
+
+    @Test
+    fun anAnswerThatMakesTheRateMissingWithdrawsAQuestionAlreadyBeingAsked() {
+        val release = java.util.concurrent.CountDownLatch(1)
+        harness.route(RateLookupPath) { _ ->
+            release.await(5, java.util.concurrent.TimeUnit.SECONDS)
+            rateReply(harness, "GBP", "2026-11-10", null)
+        }
+        aPoundReceipt()
+        viewModel.save()
+        assertTrue(ui().asking)
+        release.countDown()
+        harness.until { stored() == StoredRate.Missing }
+        harness.until { !ui().asking }
+        assertNothingWritten()
+    }
 }
+
