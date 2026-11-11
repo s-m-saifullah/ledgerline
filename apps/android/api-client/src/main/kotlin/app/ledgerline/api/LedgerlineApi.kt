@@ -169,6 +169,24 @@ interface LedgerlineApi {
         @Body body: CreatePayment,
     ): ServicePayment
 
+    /** Which services an amount from a client would pay, oldest first (ADR 0050, slice 4c). A read; nothing is changed. */
+    @GET("api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipt-preview")
+    suspend fun receiptPreview(
+        @Path("ledgerId") ledgerId: String,
+        @Path("contactId") contactId: String,
+        @Query("amount") amount: Long,
+        @Query("currency") currency: String,
+    ): ReceiptPreview
+
+    /** A payment from a client, applied to their oldest unpaid services (ADR 0050, slice 4c): one idempotent write; the server answers 201. */
+    @POST("api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipts")
+    suspend fun createReceipt(
+        @Path("ledgerId") ledgerId: String,
+        @Path("contactId") contactId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: CreateReceipt,
+    ): Receipt
+
     /** The push (ADR 0042): each mutation is its own idempotent write, so a batch may be sent again safely. */
     @POST("api/v1/ledgers/{ledgerId}/sync")
     suspend fun push(@Path("ledgerId") ledgerId: String, @Body body: SyncPush): SyncPushResponse
