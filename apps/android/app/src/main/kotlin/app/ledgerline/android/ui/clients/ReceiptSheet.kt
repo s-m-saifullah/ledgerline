@@ -138,7 +138,7 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
             supportingText = amountProblem?.let { stringResource(it.messageRes()) },
         )
         SecondaryButton(stringResource(R.string.receipt_pay_full), actions.payInFull, inset, enabled = form.outstanding > 0 && !ui.saving)
-        if (split != null && tip > 0) {
+        if (split != null && tip > 0 && form.cross == null) {
             Text(
                 stringResource(R.string.payment_tip_note, money(split.settle, form.currency).text, money(tip, form.currency).text),
                 style = MaterialTheme.typography.bodyMedium,
@@ -172,11 +172,18 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
                 }
             }
         }
+        form.cross?.let { cross ->
+            val issue = cross.receivedIssue?.takeIf { it != AmountIssue.Missing || ReceiptProblem.ReceivedMissing in ui.errors }
+            ReceivedAmount(cross, form.rate, issue) { text -> actions.edit { it.copy(received = text) } }
+        }
         if (ui.otherCurrencyAccounts) Hint(stringResource(R.string.payment_other_currencies))
         if (ui.noIncomeCategory) Hint(stringResource(R.string.payment_no_income))
         GroupedListCard {
-            row { FoldRow(stringResource(R.string.payment_fold), foldOpen) { foldOpen = !foldOpen } }
+            row { FoldRow(stringResource(if (form.cross != null) R.string.payment_fold_tip else R.string.payment_fold), foldOpen) { foldOpen = !foldOpen } }
             if (foldOpen) {
+                form.cross?.let { cross ->
+                    row { TipAmount(cross, invalid = cross.tipIssue != null) { text -> actions.edit { it.copy(tipAmount = text) } } }
+                }
                 row {
                     WhenRow(
                         form.date,
@@ -211,7 +218,7 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
                 )
                 ReceiptPicker.Account -> PickerContent(
                     stringResource(R.string.editor_account), ui.accounts, form.accountId,
-                    { id -> actions.edit { it.copy(accountId = id) }; close() }, close,
+                    { id -> actions.edit { it.withAccount(id, ui.accounts.find { account -> account.id == id }?.currency) }; close() }, close,
                 )
                 ReceiptPicker.Category -> PickerContent(
                     stringResource(R.string.payment_category), ui.categories, form.categoryId,
@@ -287,7 +294,8 @@ private fun PreviewRows(preview: ReceiptPreview, currency: String) {
 private fun Question(ui: ReceiptUi, actions: ReceiptActions) {
     val form = ui.form
     val split = form.split ?: return
-    val total = money(split.settle + split.tip, form.currency)
+    val cross = form.cross
+    val total = if (cross != null) money(cross.receivedMinor ?: return, cross.accountCurrency) else money(split.settle + split.tip, form.currency)
     val account = ui.accounts.labelOf(form.accountId)
     val allocations = (ui.preview as? Online.Ready)?.value?.allocations.orEmpty()
     val summary = paysSummary(allocations)
@@ -302,9 +310,17 @@ private fun Question(ui: ReceiptUi, actions: ReceiptActions) {
         title = { Text(stringResource(R.string.payment_ask_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.payment_ask_body, total.text, form.target.clientName, account))
+                if (cross != null) {
+                    Text(stringResource(R.string.payment_ask_body_across, total.text, form.target.clientName, account, money(split.settle, form.currency).text))
+                } else {
+                    Text(stringResource(R.string.payment_ask_body, total.text, form.target.clientName, account))
+                }
                 if (pays != null) Text(pays)
-                if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, form.currency).text))
+                if (cross != null) {
+                    if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
+                } else if (split.tip > 0) {
+                    Text(stringResource(R.string.payment_ask_tip, money(split.tip, form.currency).text))
+                }
             }
         },
         confirmButton = {
@@ -326,6 +342,12 @@ private fun ReceiptProblem.messageRes() = when (this) {
     ReceiptProblem.AmountTooPrecise -> R.string.editor_error_amount_precise
     ReceiptProblem.AmountZero -> R.string.editor_error_amount_zero
     ReceiptProblem.AmountTooLarge -> R.string.editor_error_amount_large
+    ReceiptProblem.ReceivedMissing -> R.string.editor_error_amount_missing
+    ReceiptProblem.ReceivedInvalid -> R.string.editor_error_amount_invalid
+    ReceiptProblem.ReceivedTooPrecise -> R.string.editor_error_amount_precise
+    ReceiptProblem.ReceivedZero -> R.string.editor_error_amount_zero
+    ReceiptProblem.ReceivedTooLarge -> R.string.editor_error_amount_large
+    ReceiptProblem.TipInvalid -> R.string.payment_error_tip_invalid
     ReceiptProblem.NothingOwed -> R.string.receipt_nothing_owed
     ReceiptProblem.AccountMissing -> R.string.editor_error_account
     ReceiptProblem.CategoryMissing -> R.string.editor_error_category

@@ -39,10 +39,10 @@ import javax.inject.Inject
  */
 data class ReceiptUi(
     val form: ReceiptForm,
-    /** Open accounts in the chosen currency; other currencies come with the next slice. */
+    /** Open accounts the payment can go into: the chosen currency, or any currency when one side is the base currency. */
     val accounts: List<Choice>,
     val categories: List<Choice>,
-    /** Some open account is in another currency than the chosen one, so the sheet says those wait for the next slice. */
+    /** Some open account needs a rate set by hand (neither side is the base currency), so the sheet says those wait for the next slice. */
     val otherCurrencyAccounts: Boolean,
     val noIncomeCategory: Boolean,
     val preview: Online<ReceiptPreview>? = null,
@@ -107,18 +107,19 @@ class RecordReceiptViewModel @Inject constructor(
             _sheet.value = ReceiptUi(
                 form = start.copy(
                     accountId = remembered.accountId.ifOffered(accounts),
+                    accountCurrency = accounts.find { it.id == remembered.accountId }?.currency,
                     categoryId = remembered.categoryId.ifOffered(categories),
                     tipCategoryId = remembered.tipCategoryId.ifOffered(categories),
                 ),
                 accounts = accounts,
                 categories = categories,
-                otherCurrencyAccounts = openAccounts.any { it.currency != start.currency },
+                otherCurrencyAccounts = openAccounts.any { !usableAccount(start.currency, it.currency) },
                 noIncomeCategory = categories.isEmpty(),
             )
         }
     }
 
-    private fun accountsIn(currency: String) = openAccounts.filter { it.currency == currency }.map { Choice(it.id, it.name, it.currency) }
+    private fun accountsIn(currency: String) = openAccounts.filter { usableAccount(currency, it.currency) }.map { Choice(it.id, it.name, it.currency) }
 
     /** A change made by the person; it clears the problems and the last error, withdraws a question being asked and reads the preview again if the amount moved. */
     fun edit(change: (ReceiptForm) -> ReceiptForm) {
@@ -135,8 +136,8 @@ class RecordReceiptViewModel @Inject constructor(
     /** Another currency of a client who owes in several: nothing typed or chosen carries over except the date, time and note. */
     fun chooseCurrency(currency: String) {
         if (_sheet.value?.form?.currency == currency) return
-        edit { it.copy(currency = currency, amount = "", accountId = null) }
-        _sheet.update { ui -> ui?.copy(accounts = accountsIn(currency), otherCurrencyAccounts = openAccounts.any { it.currency != currency }) }
+        edit { it.copy(currency = currency, amount = "", accountId = null, accountCurrency = null, received = "", tipAmount = "") }
+        _sheet.update { ui -> ui?.copy(accounts = accountsIn(currency), otherCurrencyAccounts = openAccounts.any { !usableAccount(currency, it.currency) }) }
     }
 
     /** Reads the services the amount would pay, once the amount has rested; an older read that has not come back is dropped. */

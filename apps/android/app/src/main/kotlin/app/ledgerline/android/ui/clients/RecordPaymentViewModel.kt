@@ -31,10 +31,10 @@ import javax.inject.Inject
  */
 data class PaymentUi(
     val form: PaymentForm,
-    /** Open accounts in the service's currency; other currencies come with the next slice. */
+    /** Open accounts the payment can go into: the service's currency, or any currency when one side is the base currency. */
     val accounts: List<Choice>,
     val categories: List<Choice>,
-    /** Some open account is in another currency, so the sheet says those wait for the next slice. */
+    /** Some open account needs a rate set by hand (neither side is the base currency), so the sheet says those wait for the next slice. */
     val otherCurrencyAccounts: Boolean,
     /** There is no income category to choose, so a payment cannot be recorded yet. */
     val noIncomeCategory: Boolean,
@@ -85,12 +85,13 @@ class RecordPaymentViewModel @Inject constructor(
                 outstanding = service.outstanding.amount,
             )
             val open = reads.accountBalancesNow(ledger, includeHidden = false).filter { it.archivedAt == null }
-            val accounts = open.filter { it.currency == target.currency }.map { Choice(it.id, it.name, it.currency) }
+            val accounts = open.filter { usableAccount(target.currency, it.currency) }.map { Choice(it.id, it.name, it.currency) }
             val categories = categoryChoices(reads.liveCategories(ledger).first(), kind = "income", selectedId = null)
             val remembered = store.load()
             fun String?.ifOffered(choices: List<Choice>) = takeIf { id -> choices.any { it.id == id } }
             val form = PaymentForm.forService(target, today()).copy(
                 accountId = remembered.accountId.ifOffered(accounts),
+                accountCurrency = accounts.find { it.id == remembered.accountId }?.currency,
                 categoryId = remembered.categoryId.ifOffered(categories),
                 tipCategoryId = remembered.tipCategoryId.ifOffered(categories),
             )
@@ -98,7 +99,7 @@ class RecordPaymentViewModel @Inject constructor(
                 form = form,
                 accounts = accounts,
                 categories = categories,
-                otherCurrencyAccounts = open.any { it.currency != target.currency },
+                otherCurrencyAccounts = open.any { !usableAccount(target.currency, it.currency) },
                 noIncomeCategory = categories.isEmpty(),
             )
         }
