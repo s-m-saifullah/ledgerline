@@ -241,6 +241,40 @@ class ContractTest {
     }
 
     @Test
+    fun theReceiptPreviewMatchesTheContract() = assertMatches(
+        SchemaContract.differences(
+            ReceiptPreview.serializer().descriptor,
+            SchemaContract.response("/api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipt-preview", "get", "200"),
+        ),
+    )
+
+    @Test
+    fun recordingAReceiptMatchesTheContract() {
+        val path = "/api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipts"
+        assertMatches(SchemaContract.differences(CreateReceipt.serializer().descriptor, SchemaContract.request(path, "post"), request = true))
+        assertMatches(SchemaContract.differences(Receipt.serializer().descriptor, SchemaContract.response(path, "post", "201")))
+    }
+
+    @Test
+    fun aReceiptSendsOnlyWhatItHas() {
+        fun body(receipt: CreateReceipt) = ApiJson.encodeToString(CreateReceipt.serializer(), receipt)
+        val expected = listOf(ExpectedAllocation("s1", expectedVersion = 2, applied = 12_000), ExpectedAllocation("s2", expectedVersion = 5, applied = 3_000))
+        assertEquals(
+            """{"amount":{"amount":15000,"currency":"USD"},"accountId":"a1","categoryId":"c1","date":"2026-11-10","expectedAllocations":[{"receivableId":"s1","expectedVersion":2,"applied":12000},{"receivableId":"s2","expectedVersion":5,"applied":3000}]}""",
+            body(CreateReceipt(Money(15_000, "USD"), accountId = "a1", categoryId = "c1", date = "2026-11-10", expectedAllocations = expected)),
+        )
+        assertEquals(
+            """{"amount":{"amount":15000,"currency":"USD"},"accountId":"a1","categoryId":"c1","date":"2026-11-10","time":"09:05","note":"Cash","tip":{"amount":{"amount":500,"currency":"USD"},"categoryId":"c2"},"expectedAllocations":[{"receivableId":"s1","expectedVersion":2,"applied":12000},{"receivableId":"s2","expectedVersion":5,"applied":3000}]}""",
+            body(
+                CreateReceipt(
+                    Money(15_000, "USD"), accountId = "a1", categoryId = "c1", date = "2026-11-10", time = "09:05", note = "Cash",
+                    tip = TipInput(Money(500, "USD"), "c2"), expectedAllocations = expected,
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun meMatches() = assertMatches(
         SchemaContract.differences(
             Me.serializer().descriptor,

@@ -656,4 +656,25 @@
     <string name="payment_error_forbidden">Your account can\'t record payments in this ledger.</string>
     <string name="payment_error_failed">Couldn\'t record the payment. Try again.</string>
     <string name="payment_error_rejected">The server didn\'t accept this payment.</string>
+    <string name="receipt_open_balance">Open balance %1$s</string>
+    <string name="receipt_pay_full">Pay full balance</string>
+    <string name="receipt_currency">Currency</string>
+    <string name="receipt_pays_label">Pays, oldest first</string>
+    <string name="receipt_paid_full">Paid in full</string>
+    <string name="receipt_left">%1$s left</string>
+    <plurals name="receipt_pays_full">
+        <item quantity="one">Pays %1$d service in full.</item>
+        <item quantity="other">Pays %1$d services in full.</item>
+    </plurals>
+    <plurals name="receipt_pays_full_part">
+        <item quantity="one">Pays %1$d service in full and part of one more.</item>
+        <item quantity="other">Pays %1$d services in full and part of one more.</item>
+    </plurals>
+    <string name="receipt_pays_part">Pays part of one service.</string>
+    <string name="receipt_checking">Checking open services…</string>
+    <string name="receipt_preview_failed">Could not check which services this pays. Save tries again.</string>
+    <string name="receipt_over">That is more than the open balance of %1$s.</string>
+    <string name="receipt_too_many">This would cover more than 100 services. Record a smaller payment first.</string>
+    <string name="receipt_wait">Wait for the services above to match the amount.</string>
+    <string name="receipt_nothing_owed">They owe nothing in this currency.</string>
 </resources>

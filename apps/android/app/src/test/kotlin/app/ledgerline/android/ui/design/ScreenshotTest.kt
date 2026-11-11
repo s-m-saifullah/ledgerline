@@ -267,6 +267,69 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun paymentWithoutIncomeCategories() = paymentShot("payment-no-income", paymentStart.copy(accountId = "a1"), noIncome = true)
 
+    private val receiptTarget = app.ledgerline.android.ui.clients.ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(170_000, "USD")))
+
+    private fun receiptAllocation(description: String, applied: Long, left: Long = 0) = app.ledgerline.api.ReceiptAllocation(
+        "svc-$description", description, "2026-10-01", 1, Money(applied + left, "USD"), Money(applied, "USD"), Money(left, "USD"),
+    )
+
+    private fun receiptPreview(amount: Long, vararg allocations: app.ledgerline.api.ReceiptAllocation) =
+        Online.Ready(app.ledgerline.api.ReceiptPreview("northwind-design", Money(amount, "USD"), Money(170_000, "USD"), false, false, allocations.toList()))
+
+    private fun receiptShot(
+        name: String,
+        form: app.ledgerline.android.ui.clients.ReceiptForm,
+        read: Online<app.ledgerline.api.ReceiptPreview>? = null,
+        target: app.ledgerline.android.ui.clients.ReceiptTarget = receiptTarget,
+        other: Boolean = false,
+        errors: Set<app.ledgerline.android.ui.clients.ReceiptProblem> = emptySet(),
+        error: app.ledgerline.android.online.WriteError? = null,
+        asking: Boolean = false,
+    ) = shot(name, Tab.More) {
+        val accounts = listOf(Choice("a1", "Everyday checking", "USD"), Choice("a2", "Savings", "USD"))
+        val categories = listOf(Choice("c1", "Freelance"), Choice("c2", "Freelance › Design work"), Choice("c3", "Tips"))
+        val ui = app.ledgerline.android.ui.clients.ReceiptUi(form.copy(target = target), accounts, categories, other, false, read, errors, error = error, asking = asking)
+        app.ledgerline.android.ui.clients.ReceiptSheetContent(ui, app.ledgerline.android.ui.clients.ReceiptActions({}, {}, {}, {}, {}, {}, {}))
+    }
+
+    private val receiptStart get() = app.ledgerline.android.ui.clients.ReceiptForm.forClient(receiptTarget, "2026-11-10")
+
+    @Test
+    fun receiptStart() = receiptShot("receipt-start", receiptStart, other = true)
+
+    @Test
+    fun receiptPartial() = receiptShot(
+        "receipt-partial",
+        receiptStart.copy(amount = "1,700.00".replace(",", ""), accountId = "a1", categoryId = "c2"),
+        read = receiptPreview(
+            170_000, receiptAllocation("Brand refresh, phase 2", 160_000), receiptAllocation("Landing page copy", 10_000, left = 20_000),
+        ),
+    )
+
+    @Test
+    fun receiptWithATip() = receiptShot(
+        "receipt-tip",
+        receiptStart.copy(amount = "1750.00", accountId = "a1", categoryId = "c2", tipCategoryId = "c3"),
+        read = receiptPreview(170_000, receiptAllocation("Brand refresh, phase 2", 160_000), receiptAllocation("Landing page copy", 10_000)),
+    )
+
+    @Test
+    fun receiptSeveralCurrencies() = receiptShot(
+        "receipt-currencies",
+        receiptStart.copy(amount = "500.00", accountId = "a1"),
+        read = receiptPreview(50_000, receiptAllocation("Brand refresh, phase 2", 50_000, left = 110_000)),
+        target = app.ledgerline.android.ui.clients.ReceiptTarget("northwind-design", "Northwind Design", listOf(Money(170_000, "USD"), Money(20_000, "EUR"))),
+    )
+
+    @Test
+    fun receiptProblems() = receiptShot(
+        "receipt-problems",
+        receiptStart.copy(amount = "12abc"),
+        read = Online.Offline,
+        errors = setOf(app.ledgerline.android.ui.clients.ReceiptProblem.AccountMissing, app.ledgerline.android.ui.clients.ReceiptProblem.CategoryMissing),
+        error = app.ledgerline.android.online.WriteError.Offline,
+    )
+
     @Test
     fun budgetsOffline() = shot("budgets-offline", Tab.Budgets) { BudgetsContent("2026-10", Online.Offline, {}, {}, {}) }
 
@@ -358,7 +421,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             mapOf("website-audit" to Online.Ready(listOf(auditPayment))),
             today = "2026-10-23",
             tab = ClientTab.Paid,
-            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}),
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onRecordPayment = {}, onRecordReceipt = {}),
         )
     }
 
