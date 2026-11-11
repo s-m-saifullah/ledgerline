@@ -93,12 +93,12 @@ private val TypedByHand = Regex("^(\\d*)\\.?(\\d*)$")
 /**
  * What a person typed in the rate field, read as they meant it, then stored like [rateFromInverse]. The web's own function
  * wants a digit before the point, so ".8" and "8." fail there; on the phone both are fine (".8" is 0.8, and "8." is what
- * "8.5" passes through while it is typed). Anything that is not one number with at most one point is still refused.
+ * "8.5" passes through while it is typed). Anything that is not one number with at most one point is still refused, and so
+ * is zero, which includes an empty box or a lone point.
  */
 fun rateFromTyped(text: String): String? {
     val match = TypedByHand.matchEntire(text.trim()) ?: return null
     val (whole, fraction) = match.destructured
-    if (whole.isEmpty() && fraction.isEmpty()) return null
     return rateFromInverse(whole.ifEmpty { "0" } + if (fraction.isEmpty()) "" else ".$fraction")
 }
 
