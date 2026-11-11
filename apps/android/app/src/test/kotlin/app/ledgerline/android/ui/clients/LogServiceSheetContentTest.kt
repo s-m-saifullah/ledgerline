@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -20,6 +21,7 @@ import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -374,5 +376,18 @@ class LogServiceSheetContentTest {
         assertNull(taps.forms[1].dueDate)
         assertEquals("14:30", taps.forms[1].serviceTime)
     }
-}
 
+    @Test
+    fun theTimeAndTheDueDateEndAtTheSameEdgeAndEachCrossSitsInsideItsPill() {
+        show(ui(edit))
+        val time = compose.onNodeWithText("2:30 PM").getBoundsInRoot()
+        val due = compose.onNodeWithText("Oct 20, 2026").getBoundsInRoot()
+        assertEquals(time.right, due.right)
+        val clearTime = compose.onNode(hasContentDescription("Clear time")).getBoundsInRoot()
+        val clearDue = compose.onNode(hasContentDescription("Clear due date")).getBoundsInRoot()
+        assertEquals(clearTime.right, clearDue.right)
+        // The cross follows its text inside the same pill: its centre is past the text's end and within the pill's padding.
+        assertTrue((clearTime.left + clearTime.right) / 2 > time.right && (clearTime.left + clearTime.right) / 2 < time.right + 40.dp)
+        assertTrue((clearDue.left + clearDue.right) / 2 > due.right && (clearDue.left + clearDue.right) / 2 < due.right + 40.dp)
+    }
+}

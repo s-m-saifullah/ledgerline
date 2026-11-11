@@ -254,7 +254,10 @@ private fun LockedRow(label: String, value: String) {
 /** The longest hours text worth typing: "9999.99". */
 private const val HoursMax = 7
 
-/** Due date: optional, as the time is (a ✕ clears it; "+ Add due date" brings it back). */
+/**
+ * Due date: optional, as the time is (a ✕ inside the pill clears it; "+ Add due date" brings it back). Laid out as the When row
+ * above it, so the two pills end at the same edge.
+ */
 @Composable
 private fun DueRow(due: String?, onPick: () -> Unit, onClear: () -> Unit) {
     val palette = LocalPalette.current
@@ -263,15 +266,13 @@ private fun DueRow(due: String?, onPick: () -> Unit, onClear: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(stringResource(R.string.service_due), style = MaterialTheme.typography.bodyMedium, color = palette.muted, modifier = Modifier.weight(1f))
-        if (due != null) {
-            ValuePill(formatEntryDate(due), onPick)
-            val clear = stringResource(R.string.service_due_clear)
-            IconButton(onClick = onClear, modifier = Modifier.size(TouchTarget).semantics { contentDescription = clear }) {
-                Icon(painterResource(R.drawable.ic_close), contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
+        Text(stringResource(R.string.service_due), style = MaterialTheme.typography.bodyMedium, color = palette.muted)
+        Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            if (due != null) {
+                ValuePill(formatEntryDate(due), onPick, onClear = onClear, clearLabel = stringResource(R.string.service_due_clear))
+            } else {
+                ValuePill(stringResource(R.string.service_due_add), onPick, dashed = true)
             }
-        } else {
-            ValuePill(stringResource(R.string.service_due_add), onPick, dashed = true)
         }
     }
 }
