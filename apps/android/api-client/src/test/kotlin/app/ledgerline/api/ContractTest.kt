@@ -395,6 +395,33 @@ class ContractTest {
     }
 
     @Test
+    fun editingAServiceMatchesTheContract() {
+        val path = "/api/v1/ledgers/{ledgerId}/receivables/{receivableId}"
+        assertMatches(SchemaContract.differences(UpdateService.serializer().descriptor, SchemaContract.request(path, "patch"), request = true))
+        assertMatches(SchemaContract.differences(Service.serializer().descriptor, SchemaContract.response(path, "patch", "200")))
+    }
+
+    @Test
+    fun deletingAServiceMatchesTheContract() {
+        val path = "/api/v1/ledgers/{ledgerId}/receivables/{receivableId}"
+        assertMatches(SchemaContract.differences(ExpectedVersion.serializer().descriptor, SchemaContract.request(path, "delete"), request = true))
+    }
+
+    @Test
+    fun anEditedServiceSendsAClearedTimeAndDueDateAsNullNotAsMissing() {
+        fun body(service: UpdateService) = ApiJson.encodeToString(UpdateService.serializer(), service)
+        val cost = Money(12_000, "USD")
+        assertEquals(
+            """{"contactId":"c1","description":"Logo","serviceDate":"2026-11-11","serviceTime":null,"dueDate":null,"amount":{"amount":12000,"currency":"USD"},"expectedVersion":3}""",
+            body(UpdateService("c1", "Logo", "2026-11-11", null, null, cost, 3)),
+        )
+        assertEquals(
+            """{"contactId":"c1","description":"Logo","serviceDate":"2026-11-11","serviceTime":"09:30","dueDate":"2026-12-01","amount":{"amount":12000,"currency":"USD"},"expectedVersion":3}""",
+            body(UpdateService("c1", "Logo", "2026-11-11", "09:30", "2026-12-01", cost, 3)),
+        )
+    }
+
+    @Test
     fun aServiceSendsOnlyWhatItHas() {
         fun body(service: CreateService) = ApiJson.encodeToString(CreateService.serializer(), service)
         val cost = Money(12_000, "USD")

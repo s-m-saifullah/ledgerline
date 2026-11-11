@@ -339,6 +339,22 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
     @Test
     fun serviceHourlyProblem() = serviceShot("service-hourly-problem", serviceStart.copy(hours = "3.567", hourlyRate = "40"), open = true)
 
+    private val serviceSaved get() = service("Logo refresh for the new storefront", 45_000, received = 10_000, date = "2026-10-02", time = "14:30", due = "2026-10-20", id = "logo-refresh")
+
+    @Test
+    fun serviceEditLockedCurrency() = serviceShot(
+        "service-edit",
+        app.ledgerline.android.ui.clients.ServiceForm.forEditing(serviceClient, serviceSaved),
+        currencies = listOf("USD", "EUR", "GBP"),
+    )
+
+    @Test
+    fun serviceEditBelowReceived() = serviceShot(
+        "service-edit-problem",
+        app.ledgerline.android.ui.clients.ServiceForm.forEditing(serviceClient, serviceSaved).copy(amount = "50.00"),
+        error = app.ledgerline.android.online.WriteError.Rejected("This service changed. Reload and try again."),
+    )
+
     @Test
     fun serviceProblems() = serviceShot(
         "service-problems",
@@ -523,7 +539,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             mapOf("website-audit" to Online.Ready(listOf(auditPayment))),
             today = "2026-10-23",
             tab = ClientTab.Paid,
-            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onRecordPayment = {}, onRecordReceipt = {}, onLogService = {}),
+            actions = ClientActions({}, {}, {}, {}, {}, {}, {}, {}, {}, onRecordPayment = {}, onRecordReceipt = {}, onLogService = {}, onEditService = {}, onDeleteService = {}),
         )
     }
 

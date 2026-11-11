@@ -168,6 +168,24 @@ interface LedgerlineApi {
         @Body body: CreateService,
     ): Service
 
+    /** Editing a service (ADR 0050, slice 5b): one idempotent write; the server answers 200 with the service. */
+    @PATCH("api/v1/ledgers/{ledgerId}/receivables/{receivableId}")
+    suspend fun updateService(
+        @Path("ledgerId") ledgerId: String,
+        @Path("receivableId") receivableId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: UpdateService,
+    ): Service
+
+    /** Deleting a service (a soft delete); the server answers 204, and refuses while it has live payments. */
+    @HTTP(method = "DELETE", path = "api/v1/ledgers/{ledgerId}/receivables/{receivableId}", hasBody = true)
+    suspend fun deleteService(
+        @Path("ledgerId") ledgerId: String,
+        @Path("receivableId") receivableId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: ExpectedVersion,
+    )
+
     /** Receiving a payment for a service (ADR 0050): one idempotent write; the server answers 201 with the payment and the service as it is now. */
     @POST("api/v1/ledgers/{ledgerId}/receivables/{receivableId}/payments")
     suspend fun createPayment(

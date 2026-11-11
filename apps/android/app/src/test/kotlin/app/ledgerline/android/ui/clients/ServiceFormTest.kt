@@ -2,7 +2,9 @@ package app.ledgerline.android.ui.clients
 
 import app.ledgerline.api.CreateService
 import app.ledgerline.api.Money
+import app.ledgerline.api.UpdateService
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -151,4 +153,108 @@ class ServiceFormTest {
         assertEquals(1_400L, (yen.hourly as HourlyResult.Total).total)
         assertTrue(form().hourly == null)
     }
+
+    // ---- editing an existing service (ADR 0050, slice 5b)
+
+    private val saved = service("Logo refresh", 45_000, received = 10_000, date = "2026-10-02", time = "14:30", due = "2026-10-20", id = "logo-refresh")
+
+    private fun editing(service: app.ledgerline.api.Service = saved) = ServiceForm.forEditing(client, service)
+
+    @Test
+    fun anEditFormStartsWithWhatTheServiceHas() {
+        val form = editing()
+        assertEquals("Logo refresh", form.description)
+        assertEquals("2026-10-02", form.serviceDate)
+        assertEquals("14:30", form.serviceTime)
+        assertEquals("2026-10-20", form.dueDate)
+        assertEquals("USD", form.currency)
+        assertEquals("450.00", form.amount)
+        assertEquals("", form.hours)
+        assertEquals("", form.hourlyRate)
+        assertEquals(ServiceEdit("logo-refresh", 1, received = 10_000), form.editing)
+    }
+
+    @Test
+    fun anEditFormKeepsTheServicesOwnCurrencyAndItsDecimals() {
+        assertEquals("EUR", editing(service("Print", 12_000, currency = "EUR")).currency)
+        assertEquals("1500", editing(service("Print", 1_500, currency = "JPY")).amount)
+        assertEquals("12.345", editing(service("Print", 12_345, currency = "BHD")).amount)
+    }
+
+    @Test
+    fun aServiceWithoutATimeOrADueDateStartsWithNone() {
+        val form = editing(service("Logo", 1_000))
+        assertNull(form.serviceTime)
+        assertNull(form.dueDate)
+    }
+
+    @Test
+    fun theCurrencyIsLockedOnceMoneyWasReceivedAndOnlyThen() {
+        assertTrue(editing(saved).currencyLocked)
+        assertFalse(editing(service("Logo", 45_000, received = 0)).currencyLocked)
+        assertFalse(form().currencyLocked)
+    }
+
+    @Test
+    fun anUntouchedEditFormHasNoProblemsAndSendsEverythingWithTheVersion() {
+        assertEquals(emptyList<ServiceProblem>(), editing().problems())
+        assertEquals(
+            UpdateService("client-1", "Logo refresh", "2026-10-02", "14:30", "2026-10-20", Money(45_000, "USD"), 1),
+            editing().updateRequest(),
+        )
+    }
+
+    @Test
+    fun aClearedTimeAndDueDateAreSentAsNullsSoTheServerClearsThem() {
+        val body = editing().copy(serviceTime = null, dueDate = null).updateRequest()!!
+        assertNull(body.serviceTime)
+        assertNull(body.dueDate)
+    }
+
+    @Test
+    fun anEditedDescriptionAndAmountAreSentTrimmedAndExact() {
+        val body = editing().copy(description = "  New name ", amount = "500.5").updateRequest()!!
+        assertEquals("New name", body.description)
+        assertEquals(Money(50_050, "USD"), body.amount)
+    }
+
+    @Test
+    fun theEditRequestUsesTheVersionThePhoneHolds() {
+        val body = ServiceForm.forEditing(client, saved.copy(version = 7)).updateRequest()!!
+        assertEquals(7, body.expectedVersion)
+    }
+
+    @Test
+    fun anEditWithAProblemSendsNothing() {
+        assertNull(editing().copy(description = " ").updateRequest())
+        assertNull(editing().copy(amount = "").updateRequest())
+    }
+
+    @Test
+    fun anAmountBelowWhatWasReceivedIsAProblemButTheSameOrMoreIsNot() {
+        assertEquals(listOf(ServiceProblem.AmountBelowReceived), editing().copy(amount = "99.99").problems())
+        assertEquals(emptyList<ServiceProblem>(), editing().copy(amount = "100.00").problems())
+        assertEquals(emptyList<ServiceProblem>(), editing().copy(amount = "100.01").problems())
+        assertNull(editing().copy(amount = "99.99").updateRequest())
+    }
+
+    @Test
+    fun theReceivedFloorOnlyAppliesToAnEdit() {
+        assertEquals(emptyList<ServiceProblem>(), form(amount = "0.01").problems())
+    }
+
+    @Test
+    fun aBadAmountIsSaidAsAnAmountProblemNotAsBelowReceived() {
+        assertEquals(listOf(ServiceProblem.AmountInvalid), editing().copy(amount = "abc").problems())
+        assertEquals(listOf(ServiceProblem.AmountZero), editing(service("Logo", 45_000)).copy(amount = "0").problems())
+    }
+
+    @Test
+    fun theHourlyHelperStillFillsTheAmountOfAnEdit() {
+        val used = editing().copy(hours = "3.5", hourlyRate = "40").useTotal(label)
+        assertEquals("140.00", used.amount)
+        assertEquals("Logo refresh", used.description)
+        assertEquals(used.editing, editing().editing)
+    }
 }
+

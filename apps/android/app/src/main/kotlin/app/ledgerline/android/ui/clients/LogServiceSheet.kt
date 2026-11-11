@@ -74,6 +74,7 @@ private val ServiceCopy = WriteCopy(
 
 private val AmountProblems = setOf(
     ServiceProblem.AmountMissing, ServiceProblem.AmountInvalid, ServiceProblem.AmountTooPrecise, ServiceProblem.AmountZero, ServiceProblem.AmountTooLarge,
+    ServiceProblem.AmountBelowReceived,
 )
 
 /** The Log service sheet (ADR 0050, slice 5); a swipe away or Cancel saves nothing. */
@@ -112,7 +113,7 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
         modifier = modifier.verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(inset) { SheetTitle(stringResource(R.string.service_title), actions.close) }
+        Column(inset) { SheetTitle(stringResource(if (form.editing != null) R.string.service_edit_title else R.string.service_title), actions.close) }
         Hint(stringResource(R.string.payment_client, form.client.name))
         GroupedListCard {
             row {
@@ -139,9 +140,12 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
             }
             row { DueRow(form.dueDate, onPick = { pickingDue = true }, onClear = { actions.edit { it.copy(dueDate = null) } }) }
             if (ui.currencies.size > 1) {
-                row { PickRow(stringResource(R.string.service_currency), form.currency, stringResource(R.string.editor_choose), null) { picking = true } }
+                // Once money was received the server keeps the currency payments were recorded in, so the row is only a label.
+                if (form.currencyLocked) row { LockedRow(stringResource(R.string.service_currency), form.currency) }
+                else row { PickRow(stringResource(R.string.service_currency), form.currency, stringResource(R.string.editor_choose), null) { picking = true } }
             }
         }
+        if (ui.currencies.size > 1 && form.currencyLocked) Hint(stringResource(R.string.service_currency_locked, form.currency))
         AmountField(
             value = form.amount,
             onValueChange = { text -> actions.edit { it.copy(amount = text) } },
@@ -150,7 +154,13 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
             label = stringResource(R.string.service_amount, form.currency),
             modifier = Modifier.fillMaxWidth().then(inset),
             isError = amountProblem != null,
-            supportingText = amountProblem?.let { stringResource(it.messageRes()) },
+            supportingText = amountProblem?.let { problem ->
+                if (problem == ServiceProblem.AmountBelowReceived) {
+                    stringResource(R.string.service_error_below_received, money(form.editing?.received ?: 0, form.currency).text)
+                } else {
+                    stringResource(problem.messageRes())
+                }
+            },
         )
         GroupedListCard {
             row { FoldRow(stringResource(R.string.service_fold), foldOpen) { foldOpen = !foldOpen } }
@@ -227,6 +237,20 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
     if (pickingDue) DatePickerStep(form.dueDate ?: form.serviceDate, onPick = { date -> actions.edit { it.copy(dueDate = date) } }, onClose = { pickingDue = false })
 }
 
+/** A row that shows a value and does nothing when pressed, for what cannot be changed. */
+@Composable
+private fun LockedRow(label: String, value: String) {
+    val palette = LocalPalette.current
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = palette.muted)
+        Text(value, style = MaterialTheme.typography.titleMedium, color = palette.muted, textAlign = androidx.compose.ui.text.style.TextAlign.End, modifier = Modifier.weight(1f))
+    }
+}
+
 /** The longest hours text worth typing: "9999.99". */
 private const val HoursMax = 7
 
@@ -259,6 +283,8 @@ private fun ServiceProblem.messageRes() = when (this) {
     ServiceProblem.AmountTooPrecise -> R.string.editor_error_amount_precise
     ServiceProblem.AmountZero -> R.string.editor_error_amount_zero
     ServiceProblem.AmountTooLarge -> R.string.editor_error_amount_large
+    // Said with the amount received, where the sentence is shown.
+    ServiceProblem.AmountBelowReceived -> error("Said with the amount received")
 }
 
 private fun HourlyProblem.messageRes() = when (this) {

@@ -29,6 +29,7 @@ fun ClientsScreen(
     payment: RecordPaymentViewModel = hiltViewModel(),
     receipt: RecordReceiptViewModel = hiltViewModel(),
     logService: LogServiceViewModel = hiltViewModel(),
+    deleteService: DeleteServiceViewModel = hiltViewModel(),
 ) {
     val selected by model.selected.collectAsState()
     DisposableEffect(Unit) {
@@ -37,6 +38,7 @@ fun ClientsScreen(
             payment.close()
             receipt.close()
             logService.close()
+            deleteService.dismiss()
         }
     }
     // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
@@ -46,6 +48,8 @@ fun ClientsScreen(
     LaunchedEffect(receiptReread) { if (receiptReread > 0) model.retry() }
     val logged by logService.reread.collectAsState()
     LaunchedEffect(logged) { if (logged > 0) model.retry() }
+    val deleted by deleteService.reread.collectAsState()
+    LaunchedEffect(deleted) { if (deleted > 0) model.retry() }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
         isRefreshing = refreshing,
@@ -94,6 +98,8 @@ fun ClientsScreen(
                     onRecordPayment = { service -> (client as? Online.Ready)?.value?.let { payment.open(service, it.name) } },
                     onRecordReceipt = { (client as? Online.Ready)?.value?.let(receipt::open) },
                     onLogService = { (client as? Online.Ready)?.value?.let(logService::open) },
+                    onEditService = { service -> (client as? Online.Ready)?.value?.let { logService.openEdit(it, service) } },
+                    onDeleteService = deleteService::ask,
                 ),
             )
         }
@@ -119,4 +125,6 @@ fun ClientsScreen(
     logSheet?.let { ui ->
         LogServiceSheet(ui, LogServiceActions(edit = logService::edit, save = logService::save, close = logService::close))
     }
+    val deleteQuestion by deleteService.question.collectAsState()
+    deleteQuestion?.let { ui -> DeleteServiceQuestion(ui, DeleteServiceActions(confirm = deleteService::confirm, dismiss = deleteService::dismiss)) }
 }
