@@ -109,6 +109,12 @@ class LogServiceViewModelTest {
     }
 
     @Test
+    fun theBaseCurrencyIsNeverListedTwice() {
+        seed(listOf(syncCurrency(1, "USD"), syncCurrency(2, "EUR")))
+        assertEquals(listOf("USD", "EUR"), openSheet().currencies)
+    }
+
+    @Test
     fun anArchivedClientOpensNothing() {
         viewModel.open(contact("Old Client", archived = true))
         Thread.sleep(500)

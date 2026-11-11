@@ -95,6 +95,14 @@ class LogServiceSheetContentTest {
     }
 
     @Test
+    fun theDescriptionIsCutAtTheLongestTheServerTakes() {
+        val taps = Taps { start }
+        show(ui(), taps)
+        compose.onNode(hasSetTextAction() and hasContentDescription("Description")).performTextReplacement("x".repeat(2_100))
+        assertEquals(2_000, taps.forms.single().description.length)
+    }
+
+    @Test
     fun typingTheAmountReportsWhatWasTyped() {
         val taps = Taps { start }
         show(ui(start.copy(amount = "12.00")), taps)

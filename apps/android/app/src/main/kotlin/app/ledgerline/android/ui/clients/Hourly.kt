@@ -23,7 +23,6 @@ fun hoursToHundredths(text: String): Int? {
 /** What a person types for hours: the web's reader, but ".5", "2." and "1,5" are accepted as meant (a typed field is not strict). */
 fun hoursFromTyped(text: String): Int? {
     val cleaned = text.trim().replace(',', '.')
-    if (cleaned == ".") return null
     return hoursToHundredths(cleaned.let { if (it.startsWith(".")) "0$it" else it }.trimEnd('.'))
 }
 

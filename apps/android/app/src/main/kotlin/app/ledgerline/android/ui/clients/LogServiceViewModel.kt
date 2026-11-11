@@ -79,12 +79,12 @@ class LogServiceViewModel @Inject constructor(
     fun save() {
         val ui = _sheet.value ?: return
         if (ui.saving) return
-        val problems = ui.form.problems()
-        if (problems.isNotEmpty()) {
-            _sheet.value = ui.copy(errors = problems.toSet())
+        // A form with a problem has no request: the problems are shown instead.
+        val request = ui.form.request()
+        if (request == null) {
+            _sheet.value = ui.copy(errors = ui.form.problems().toSet())
             return
         }
-        val request = ui.form.request() ?: return
         val key = keys.keyFor(request.toString())
         _sheet.value = ui.copy(errors = emptySet(), saving = true, error = null)
         viewModelScope.launch {
