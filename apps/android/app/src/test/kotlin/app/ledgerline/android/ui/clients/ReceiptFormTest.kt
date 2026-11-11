@@ -162,4 +162,15 @@ class ReceiptFormTest {
         assertEquals(PaysSummary(0, true), paysSummary(listOf(allocation("a", 1, 10, left = 90))))
         assertEquals(PaysSummary(0, false), paysSummary(emptyList()))
     }
+
+    @Test
+    fun aClientWhoOnlyOwesEurosStartsInEuros() {
+        val euros = ReceiptTarget("client-3", "Berlin Studio", listOf(Money(9_000, "EUR")))
+        assertEquals("EUR", ReceiptForm.forClient(euros, "2026-11-10").currency)
+    }
+
+    @Test
+    fun anAmountInACurrencyTheyOweNothingInAsksForNoPreview() {
+        assertNull(form(amount = "10.00", currency = "GBP").previewAmount)
+    }
 }
