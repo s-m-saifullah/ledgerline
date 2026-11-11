@@ -4,7 +4,7 @@ import app.ledgerline.android.ui.editor.AmountInput
 import app.ledgerline.android.ui.editor.convertMinor
 import app.ledgerline.android.ui.editor.deriveRate
 import app.ledgerline.android.ui.editor.parseAmount
-import app.ledgerline.android.ui.editor.rateFromInverse
+import app.ledgerline.android.ui.editor.rateFromTyped
 import app.ledgerline.android.ui.editor.rateSentence
 
 /** The base currency of every ledger today (the web's `USD` everywhere it converts). */
@@ -93,7 +93,7 @@ data class CrossCurrency(
     val needsRate: Boolean get() = needsRate(itemCurrency, accountCurrency)
 
     /** The rate typed by hand as it is stored (base units per unit of the account's currency), or null. */
-    val manualRate: String? get() = if (needsRate) rateFromInverse(rateTyped) else null
+    val manualRate: String? get() = if (needsRate) rateFromTyped(rateTyped) else null
 
     /** Something was typed for the rate that cannot be stored; saving waits until it is fixed or cleared. */
     val rateTypedIssue: Boolean get() = needsRate && rateTyped.isNotBlank() && manualRate == null

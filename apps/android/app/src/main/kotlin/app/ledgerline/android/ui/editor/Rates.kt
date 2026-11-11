@@ -88,6 +88,20 @@ fun rateFromInverse(text: String): String? {
     return formatRate(stored).takeIf { StorableRate.matches(it) }
 }
 
+private val TypedByHand = Regex("^(\\d*)\\.?(\\d*)$")
+
+/**
+ * What a person typed in the rate field, read as they meant it, then stored like [rateFromInverse]. The web's own function
+ * wants a digit before the point, so ".8" and "8." fail there; on the phone both are fine (".8" is 0.8, and "8." is what
+ * "8.5" passes through while it is typed). Anything that is not one number with at most one point is still refused.
+ */
+fun rateFromTyped(text: String): String? {
+    val match = TypedByHand.matchEntire(text.trim()) ?: return null
+    val (whole, fraction) = match.destructured
+    if (whole.isEmpty() && fraction.isEmpty()) return null
+    return rateFromInverse(whole.ifEmpty { "0" } + if (fraction.isEmpty()) "" else ".$fraction")
+}
+
 /**
  * [amount] in the smallest units of [from] as smallest units of [to], at [rate] (units of [to] per one unit of [from]).
  * Rounds half away from zero. Throws [ArithmeticException] when either side leaves the range a JavaScript number holds

@@ -513,6 +513,13 @@ class PaymentSheetContentTest {
     }
 
     @Test
+    fun aRateTypedWithoutALeadingZeroIsAcceptedAndSaidAsSetByYou() {
+        show(ui(pounds(typed = ".8"), accounts = withPound))
+        compose.onNodeWithText("Enter a positive amount such as 122.5.").assertDoesNotExist()
+        compose.onNodeWithText("(set by you)", substring = true).assertExists()
+    }
+
+    @Test
     fun aRateThatCannotBeStoredIsSaidNextToTheField() {
         show(ui(pounds(typed = "abc"), accounts = withPound))
         compose.onNodeWithText("Enter a positive amount such as 122.5.").assertExists()

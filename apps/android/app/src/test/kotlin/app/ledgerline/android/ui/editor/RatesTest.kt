@@ -74,6 +74,31 @@ class RatesTest {
     }
 
     @Test
+    fun aRateTypedWithoutALeadingZeroOrWithATrailingPointIsReadAsItWasMeant() {
+        // The web's own function refuses ".8" and "8."; the phone's wrapper reads them as 0.8 and 8, so typing "8.5" never shows an error on the way.
+        assertEquals(null, rateFromInverse(".8"))
+        assertEquals(rateFromInverse("0.8"), rateFromTyped(".8"))
+        assertEquals("1.25", rateFromTyped(".8"))
+        assertEquals("0.8", invertRate(rateFromTyped(".8")!!))
+        assertEquals(rateFromInverse("8"), rateFromTyped("8."))
+        assertEquals(rateFromInverse("0.05"), rateFromTyped(" .05 "))
+    }
+
+    @Test
+    fun aTypedRateThatIsNotANumberIsStillRefused() {
+        listOf("", " ", ".", "..", "0.", ".0", "0", "0.0", "1.2.3", "-.8", "+.8", ".8.", "8..", "12,5", ",8", "abc", "1e3", ".8x").forEach { text ->
+            assertEquals("\"$text\"", null, rateFromTyped(text))
+        }
+    }
+
+    @Test
+    fun aTypedRateThatWorksWithoutTheTolerancePassesThroughUnchanged() {
+        listOf("122.5", "1", "0.8", "16300", "0.0000000001", "1.12345678901").forEach { text ->
+            assertEquals(text, rateFromInverse(text), rateFromTyped(text))
+        }
+    }
+
+    @Test
     fun anAmountBeyondWhatAWebNumberHoldsExactlyIsRefusedEvenWhenTheResultWouldFit() {
         // 2^53 is the first whole number the web cannot hold exactly; halved it would still fit, and the web refuses it.
         assertThrows(ArithmeticException::class.java) { convertMinor(9_007_199_254_740_992L, "0.5", "USD", "USD") }

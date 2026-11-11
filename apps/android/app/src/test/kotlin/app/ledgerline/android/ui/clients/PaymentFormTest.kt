@@ -280,6 +280,13 @@ class PaymentFormTest {
     }
 
     @Test
+    fun aRateTypedWithoutALeadingZeroIsSentAsTheSameRateWithOne() {
+        assertEquals("1.25", pounds(typed = ".8").request()!!.fxRate)
+        assertEquals(pounds(typed = "0.8").request()!!.fxRate, pounds(typed = ".8").request()!!.fxRate)
+        assertEquals(emptyList<PaymentProblem>(), pounds(typed = ".8").problems())
+    }
+
+    @Test
     fun aTypedRateIsNeverSentWhenOneSideIsTheBaseCurrency() {
         assertNull(across().copy(rateTyped = "122.5").request()!!.fxRate)
         assertNull(across(account = "USD", target = euroService).copy(rateTyped = "122.5").request()!!.fxRate)

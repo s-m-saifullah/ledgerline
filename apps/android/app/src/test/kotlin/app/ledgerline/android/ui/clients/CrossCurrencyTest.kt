@@ -42,6 +42,15 @@ class CrossCurrencyTest {
     }
 
     @Test
+    fun aRateTypedWithoutALeadingZeroIsValid() {
+        assertEquals("0.8", gbp(typed = ".8").rateInUse?.let { app.ledgerline.android.ui.editor.invertRate(it) })
+        assertEquals(gbp(typed = "0.8").manualRate, gbp(typed = ".8").manualRate)
+        assertFalse(gbp(typed = ".8").rateTypedIssue)
+        assertFalse(gbp(typed = "8.").rateTypedIssue)
+        assertTrue(gbp(typed = ".").rateTypedIssue)
+    }
+
+    @Test
     fun aTypedRateThatCannotBeStoredIsAProblemButABlankOneIsNot() {
         assertFalse(gbp(typed = "").rateTypedIssue)
         assertFalse(gbp(typed = "  ").rateTypedIssue)
