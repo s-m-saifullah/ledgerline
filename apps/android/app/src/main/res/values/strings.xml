@@ -273,6 +273,44 @@
     <string name="loans_balance_failed">Couldn\'t load the balance.</string>
     <string name="loans_line_settled">Settled (%1$s)</string>
 
+    <!-- Lend, Borrow and Repay (ADR 0050, slice 6) -->
+    <string name="loans_record_repayment">Record repayment</string>
+    <string name="loans_lend_money">Lend money</string>
+    <string name="loans_borrow_money">Borrow money</string>
+    <string name="loans_actions_for">More actions for %1$s</string>
+    <string name="loan_title_lend">Lend money to %1$s</string>
+    <string name="loan_title_borrow">Borrow money from %1$s</string>
+    <string name="loan_title_repay">Record a repayment</string>
+    <string name="loan_hint_lend">A transfer, not spending.</string>
+    <string name="loan_hint_borrow">A transfer, not income.</string>
+    <string name="loan_owes_you_now">%1$s owes you %2$s</string>
+    <string name="loan_you_owe_now">You owe %1$s %2$s</string>
+    <string name="loan_amount">Amount (%1$s)</string>
+    <string name="loan_currency">Currency</string>
+    <string name="loan_paid_from">Paid from</string>
+    <string name="loan_received_into">Received into</string>
+    <string name="loan_date">Date</string>
+    <string name="loan_fold">Date and note</string>
+    <string name="loan_save_lend">Lend</string>
+    <string name="loan_save_borrow">Borrow</string>
+    <string name="loan_save_repay">Record repayment</string>
+    <string name="loan_error_account">Choose one of your accounts.</string>
+    <string name="loan_error_more">That is more than what is open.</string>
+    <string name="loan_error_offline">Needs a connection. What you entered is kept.</string>
+    <string name="loan_error_forbidden">Your account can\'t change loans in this ledger.</string>
+    <string name="loan_error_failed">Couldn\'t save this. Try again.</string>
+    <string name="loan_error_rejected">The server didn\'t accept this.</string>
+    <string name="loan_ask_title_lend">Lend money?</string>
+    <string name="loan_ask_title_borrow">Borrow money?</string>
+    <string name="loan_ask_title_repay">Record repayment?</string>
+    <string name="loan_ask_body_lend">Lend %1$s to %2$s from %3$s.</string>
+    <string name="loan_ask_body_borrow">Borrow %1$s from %2$s into %3$s.</string>
+    <string name="loan_ask_body_repay_in">Record %1$s from %2$s into %3$s.</string>
+    <string name="loan_ask_body_repay_out">Record %1$s paid to %2$s from %3$s.</string>
+    <string name="loan_ask_confirm_lend">Lend</string>
+    <string name="loan_ask_confirm_borrow">Borrow</string>
+    <string name="loan_ask_confirm_repay">Record</string>
+
     <string name="home_loading">Loading this month…</string>
     <string name="home_offline">This month needs a connection.</string>
     <string name="home_failed">This month could not be loaded.</string>

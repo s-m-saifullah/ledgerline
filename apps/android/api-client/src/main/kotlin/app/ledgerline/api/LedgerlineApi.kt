@@ -195,6 +195,31 @@ interface LedgerlineApi {
         @Body body: CreatePayment,
     ): ServicePayment
 
+    /** Lending, borrowing and repaying (ADR 0050, slice 6): one idempotent write each; the server answers 201 with the loan as it is now. */
+    @POST("api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/lend")
+    suspend fun lendLoan(
+        @Path("ledgerId") ledgerId: String,
+        @Path("contactId") contactId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: LoanMove,
+    ): LoanResult
+
+    @POST("api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/borrow")
+    suspend fun borrowLoan(
+        @Path("ledgerId") ledgerId: String,
+        @Path("contactId") contactId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: LoanMove,
+    ): LoanResult
+
+    @POST("api/v1/ledgers/{ledgerId}/contacts/{contactId}/loans/repay")
+    suspend fun repayLoan(
+        @Path("ledgerId") ledgerId: String,
+        @Path("contactId") contactId: String,
+        @Header("Idempotency-Key") key: String,
+        @Body body: LoanMove,
+    ): LoanResult
+
     /** Which services an amount from a client would pay, oldest first (ADR 0050, slice 4c). A read; nothing is changed. */
     @GET("api/v1/ledgers/{ledgerId}/contacts/{contactId}/receipt-preview")
     suspend fun receiptPreview(

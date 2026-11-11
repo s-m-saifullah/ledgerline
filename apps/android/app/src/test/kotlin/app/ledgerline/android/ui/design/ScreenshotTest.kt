@@ -613,9 +613,73 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             Online.Ready(contact("Jo Chen", origin = "loan")),
             Online.Ready(listOf(loan("USD", -15000, opening = -5000), loan("EUR", 4000), loan("GBP", 0))),
             listOf(movement("m1", "2026-10-20", -2500, payee = "Birthday dinner"), movement("m2", "2026-10-02", 4000, note = "Flights", currency = "EUR")),
-            PersonActions({}, {}, {}),
+            PersonActions({}, {}, {}, {}, {}, {}),
         )
     }
+
+    /** Nothing open: the one filled button is Lend money. */
+    @Test
+    fun loanNothingOpen() = shot("loan-nothing-open", Tab.More) {
+        PersonContent(Online.Ready(contact("Casey Morgan", origin = "loan")), Online.Ready(listOf(loan("USD", 0, opening = 0))), emptyList(), PersonActions({}, {}, {}, {}, {}, {}))
+    }
+
+    /** A person with no loan yet can still be lent to. */
+    @Test
+    fun loanNoLoanYet() = shot("loan-none-yet", Tab.More) {
+        PersonContent(Online.Ready(contact("Casey Morgan", origin = "loan")), Online.Ready(emptyList()), emptyList(), PersonActions({}, {}, {}, {}, {}, {}))
+    }
+
+    /** An archived person has no buttons and no menu. */
+    @Test
+    fun loanArchived() = shot("loan-archived", Tab.More) {
+        PersonContent(Online.Ready(contact("Casey Morgan", origin = "loan", archived = true)), Online.Ready(listOf(loan("USD", 2500))), emptyList(), PersonActions({}, {}, {}, {}, {}, {}))
+    }
+
+    private val loanWho = app.ledgerline.android.ui.loans.LoanWho("sam-rivera", "Sam Rivera")
+    private val loanAccounts = listOf(
+        app.ledgerline.android.ui.loans.LoanAccount("a1", "Everyday checking", "USD"),
+        app.ledgerline.android.ui.loans.LoanAccount("a2", "Savings", "USD"),
+        app.ledgerline.android.ui.loans.LoanAccount("e1", "Euro account", "EUR"),
+    )
+
+    private fun loanShot(
+        name: String,
+        kind: app.ledgerline.android.ui.loans.LoanKind,
+        open: List<app.ledgerline.android.ui.loans.OpenLoan> = emptyList(),
+        error: app.ledgerline.android.online.WriteError? = null,
+        errors: Set<app.ledgerline.android.ui.loans.LoanProblem> = emptySet(),
+        change: (app.ledgerline.android.ui.loans.LoanForm) -> app.ledgerline.android.ui.loans.LoanForm = { it },
+    ) = shot(name, Tab.More) {
+        val form = change(app.ledgerline.android.ui.loans.LoanForm.start(loanWho, kind, open, loanAccounts, "2026-11-11"))
+        app.ledgerline.android.ui.loans.LoanSheetContent(
+            app.ledgerline.android.ui.loans.LoanUi(form, errors, error = error),
+            app.ledgerline.android.ui.loans.LoanActions({}, {}, {}, {}, {}),
+        )
+    }
+
+    @Test
+    fun loanLendSheet() = loanShot("loan-lend", app.ledgerline.android.ui.loans.LoanKind.Lend) { it.copy(amount = "50.00") }
+
+    @Test
+    fun loanBorrowSheet() = loanShot("loan-borrow", app.ledgerline.android.ui.loans.LoanKind.Borrow)
+
+    @Test
+    fun loanRepaySheet() = loanShot(
+        "loan-repay", app.ledgerline.android.ui.loans.LoanKind.Repay, listOf(app.ledgerline.android.ui.loans.OpenLoan("USD", 20_000)),
+    ) { it.copy(amount = "75.00") }
+
+    /** Two open loans: the Currency row shows, and only accounts in the chosen currency are offered. */
+    @Test
+    fun loanRepayTwoCurrencies() = loanShot(
+        "loan-repay-currency", app.ledgerline.android.ui.loans.LoanKind.Repay,
+        listOf(app.ledgerline.android.ui.loans.OpenLoan("USD", -15_000), app.ledgerline.android.ui.loans.OpenLoan("EUR", 4_000)),
+    ) { it.withCurrency("EUR").copy(amount = "10.00") }
+
+    @Test
+    fun loanProblems() = loanShot(
+        "loan-problems", app.ledgerline.android.ui.loans.LoanKind.Repay, listOf(app.ledgerline.android.ui.loans.OpenLoan("USD", 20_000)),
+        change = { it.copy(amount = "250.00") }, error = app.ledgerline.android.online.WriteError.Offline,
+    )
 
     private val moreSummaryFixture = app.ledgerline.android.ui.more.MoreSummary(
         owed = Money(35_400, "USD"), owedClients = 4, lent = Money(89_189, "USD"), categoryGroups = 9, categorySubs = 18, version = "0.1.4",

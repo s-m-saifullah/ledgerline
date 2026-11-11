@@ -517,6 +517,15 @@ class RecordReceiptViewModelTest {
     }
 
     @Test
+    fun aReceiptLeavesTheAccountOfTheLastLoanMoveAsItWas() {
+        store.choices = PaymentChoices(loanAccountId = "loan-account")
+        filled()
+        sent()
+        harness.until { viewModel.sheet.value == null }
+        assertEquals(PaymentChoices(accountId = checking, categoryId = freelance, tipCategoryId = null, loanAccountId = "loan-account"), store.choices)
+    }
+
+    @Test
     fun theTipCategoryIsRememberedOnlyWhenATipWasSent() {
         store.choices = PaymentChoices(tipCategoryId = design)
         filled(tip = tips)

@@ -18,6 +18,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
+import androidx.compose.ui.unit.width
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
@@ -255,15 +257,24 @@ class LoansContentTest {
         private: Boolean = false,
         name: String = "Sam Rivera",
         back: IntArray = IntArray(1),
+        person: Online<app.ledgerline.api.Contact> = Online.Ready(contact(name, origin = "loan")),
+        moves: MoneyTaps? = null,
     ) = compose.setContent {
         CompositionLocalProvider(LocalPrivacy provides private) {
             PersonContent(
-                Online.Ready(contact(name, origin = "loan")), loans, movements,
-                PersonActions({ back[0]++ }, {}, {}),
+                person, loans, movements,
+                PersonActions({ back[0]++ }, {}, {}, onRepay = moves?.let { { it.log += "repay" } }, onLend = moves?.let { { it.log += "lend" } }, onBorrow = moves?.let { { it.log += "borrow" } }),
                 Modifier.requiredHeight(3000.dp),
             )
         }
     }
+
+    /** What the person's money buttons report. */
+    private class MoneyTaps {
+        val log = mutableListOf<String>()
+    }
+
+    private val archivedSam = Online.Ready(contact("Sam Rivera", origin = "loan", archived = true))
 
     @Test
     fun aPersonsTopBarHasTheirNameAndABackArrow() {
@@ -407,5 +418,117 @@ class LoansContentTest {
         }
         assertEquals(accent, textColor("$77.00"))
         assertTrue(textColor("€55.00") != accent)
+    }
+
+    // Lend, borrow and repay (ADR 0050, slice 6): one filled button, and a menu behind the card's three dots.
+
+    @Test
+    fun whileSomethingIsOpenTheOneFilledButtonIsRecordRepaymentAndItReports() {
+        val taps = MoneyTaps()
+        showPerson(moves = taps)
+        compose.onNodeWithText("Record repayment").performClick()
+        assertEquals(listOf("repay"), taps.log)
+        // Lend is behind the menu, not beside the filled button.
+        compose.onNodeWithText("Lend money").assertDoesNotExist()
+    }
+
+    @Test
+    fun withNothingOpenTheOneFilledButtonIsLendMoneyAndItReports() {
+        val taps = MoneyTaps()
+        showPerson(loans = Online.Ready(listOf(loan("USD", 0))), moves = taps)
+        compose.onNodeWithText("Record repayment").assertDoesNotExist()
+        compose.onNodeWithText("Lend money").performClick()
+        assertEquals(listOf("lend"), taps.log)
+    }
+
+    @Test
+    fun aPersonWithNoLoanYetCanStillBeLentTo() {
+        val taps = MoneyTaps()
+        showPerson(loans = Online.Ready(emptyList()), moves = taps)
+        compose.onNodeWithText("Nothing lent or borrowed yet.").assertExists()
+        compose.onNodeWithText("Lend money").performClick()
+        assertEquals(listOf("lend"), taps.log)
+    }
+
+    @Test
+    fun anArchivedPersonHasNoMoneyButtonsAndNoMenu() {
+        showPerson(person = archivedSam, moves = MoneyTaps())
+        compose.onNodeWithText("Record repayment").assertDoesNotExist()
+        compose.onNodeWithText("Lend money").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").assertDoesNotExist()
+    }
+
+    @Test
+    fun withoutTheActionsThereAreNoButtonsAtAll() {
+        showPerson()
+        compose.onNodeWithText("Record repayment").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").assertDoesNotExist()
+    }
+
+    @Test
+    fun nothingCanBeDoneWhileThePersonOrTheBalanceIsNotRead() {
+        showPerson(person = Online.Loading, moves = MoneyTaps())
+        compose.onNodeWithText("Record repayment").assertDoesNotExist()
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").assertDoesNotExist()
+    }
+
+    @Test
+    fun nothingCanBeDoneWhileTheBalanceIsNotRead() {
+        showPerson(loans = Online.Failed, moves = MoneyTaps())
+        compose.onNodeWithText("Record repayment").assertDoesNotExist()
+        compose.onNodeWithText("Lend money").assertDoesNotExist()
+    }
+
+    @Test
+    fun theMenuListsLendAndBorrowWhileSomethingIsOpenAndReportsTheOneTapped() {
+        val taps = MoneyTaps()
+        showPerson(moves = taps)
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").performClick()
+        compose.onNodeWithText("Lend money").assertExists()
+        compose.onNodeWithText("Borrow money").assertExists()
+        compose.onNodeWithText("Lend money").performClick()
+        assertEquals(listOf("lend"), taps.log)
+        // The menu closes behind the choice.
+        compose.onNodeWithText("Borrow money").assertDoesNotExist()
+    }
+
+    @Test
+    fun theMenuLeavesOutLendWhenNothingIsOpenBecauseThatIsTheFilledButton() {
+        val taps = MoneyTaps()
+        showPerson(loans = Online.Ready(listOf(loan("USD", 0))), moves = taps)
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").performClick()
+        compose.onNodeWithText("Borrow money").assertExists()
+        compose.onAllNodesWithText("Lend money").assertCountEquals(1)
+        compose.onNodeWithText("Borrow money").performClick()
+        assertEquals(listOf("borrow"), taps.log)
+    }
+
+    @Test
+    fun theButtonsAreAtLeast48dpTall() {
+        showPerson(moves = MoneyTaps())
+        assertTrue(compose.onNodeWithText("Record repayment").getBoundsInRoot().height >= 48.dp)
+        val menu = compose.onNodeWithContentDescription("More actions for Sam Rivera").getBoundsInRoot()
+        assertTrue(menu.height >= 48.dp && menu.width >= 48.dp)
+    }
+
+    @Test
+    fun theMenuButtonSitsBesideTheFilledButtonAtItsRightEdge() {
+        showPerson(moves = MoneyTaps())
+        val primary = compose.onNodeWithText("Record repayment").getBoundsInRoot()
+        val menu = compose.onNodeWithContentDescription("More actions for Sam Rivera").getBoundsInRoot()
+        assertTrue(menu.left >= primary.right)
+        // On one line: their middles are level.
+        assertEquals((primary.top + primary.bottom).value, (menu.top + menu.bottom).value, 1f)
+    }
+
+    @Test
+    fun theMoneyButtonsStayInPrivacyModeWhichOnlySpeaksTheFiguresInWords() {
+        val taps = MoneyTaps()
+        showPerson(moves = taps, private = true)
+        compose.onNodeWithText("$200.00").assertDoesNotExist()
+        compose.onNodeWithText("Record repayment").performClick()
+        compose.onNodeWithContentDescription("More actions for Sam Rivera").performClick()
+        compose.onNodeWithText("Borrow money").performClick()
+        assertEquals(listOf("repay", "borrow"), taps.log)
     }
 }
