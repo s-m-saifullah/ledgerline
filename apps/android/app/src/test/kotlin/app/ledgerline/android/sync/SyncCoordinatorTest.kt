@@ -18,6 +18,7 @@ import app.ledgerline.android.outbox.OutboxStore
 import app.ledgerline.android.outbox.PushEngine
 import app.ledgerline.android.outbox.json
 import app.ledgerline.android.outbox.outboxFor
+import app.ledgerline.android.session.Protection
 import app.ledgerline.android.session.SessionEnd
 import app.ledgerline.android.session.SessionManager
 import app.ledgerline.android.session.SessionState
@@ -164,6 +165,22 @@ class SyncCoordinatorTest {
         assertEquals(1, protector.discardCount)
         sync.onState(session.state.value)
         assertEquals(1, scheduler.cancelled)
+    }
+
+    @Test
+    fun aStoredTokenThatCannotBeReadSendsNothingAndKeepsTheSignIn() = runBlocking {
+        // The phone's screen lock is off, so the stored token cannot be opened without the owner: the pull has no
+        // token to send, and a 401 to a request without one must not end the session.
+        val protector = FakeTokenProtector(protection = Protection.NoScreenLock, stored = token)
+        val (session, sync) = build(protector)
+        source.respond = { throw httpError(401) }
+
+        assertEquals(BackgroundOutcome.Retry, sync.backgroundPull(0))
+
+        assertTrue("asked: ${source.asked}", source.asked.isEmpty())
+        assertEquals(SessionState.Locked, session.state.value)
+        assertNull(session.ended.value)
+        assertEquals(0, protector.discardCount)
     }
 
     @Test
