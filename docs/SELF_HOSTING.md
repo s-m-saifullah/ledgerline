@@ -90,6 +90,32 @@ bash infra/scripts/offsite-restore.sh --config restore.env --identity ledgerline
 
 It downloads the newest archive, decrypts it, checks the checksum and runs the restore drill in a throwaway container, then deletes the decrypted files (they hold real data). It never touches a running database. Restoring into the running database still means a manual `pg_restore` that only you should authorise.
 
+## Health watch
+
+Nothing on the server tells you when it fails; the cron log only helps if you read it. The `Health watch` workflow (`.github/workflows/health-watch.yml`) runs every day at 09:00 UTC and fails, so GitHub emails you, when:
+
+- `PUBLIC_URL/api/health` does not answer, or the certificate has less than 14 days left;
+- the newest finished backup is 26 hours old or more (the nightly backup runs at 03:15);
+- the off-site copy is on and its last upload failed or is 48 hours old or more;
+- disk use where backups are kept is 85% or more.
+
+It sends nothing about money. The server answers one read-only script, `health-report.sh`, which prints ages and percentages only (it is copied with each release, or copy it by hand the first time).
+
+**Set it up once** (the server commands are yours):
+
+1. On your computer, make a key used for nothing else: `ssh-keygen -t ed25519 -N '' -C health-watch -f health-watch-key`.
+2. On the server, in the deploy user's `~/.ssh/authorized_keys`, add the public half locked to that one command. `restrict` turns off every other use (no shell, no forwarding):
+
+   ```text
+   restrict,command="bash /opt/ledgerline/health-report.sh" ssh-ed25519 AAAA... health-watch
+   ```
+
+3. In the repository's Settings, Environments, make a new environment named `monitoring` **with no required reviewer** (a reviewer would have to approve it every day). Add three secrets to it: `MONITOR_SSH_KEY` (the private key file's text), `MONITOR_KNOWN_HOSTS` (the server's line from `ssh-keyscan`) and `MONITOR_HOST` (the server's address). The deploy user comes from the `DEPLOY_USER` variable, as for releases. Then delete the key files from your computer.
+4. Make sure GitHub emails you about failed workflow runs (your profile's Settings, Notifications, Actions).
+5. Prove it: Actions, Health watch, Run workflow, once with the defaults (green), and once with `max_dump_hours` set to `1` (red, and an email arrives).
+
+Run the report by hand on the server with `bash /opt/ledgerline/health-report.sh`. GitHub stops scheduled workflows in a repository with no activity for 60 days; a green run now and then, or any commit, keeps it going.
+
 ## Adding people
 
 The admin can add people in the app (More, then Users, [ADR 0048](adr/0048-profile-and-managed-users.md)). Each person has their own account and their own empty ledger, and the admin never sees anyone's money. The browser makes a temporary password (three words and a number) for the admin to read out or copy; it is shown once and never stored. The person chooses their own at first sign-in. From a person's row the admin can reset their password, turn off their two-factor, sign out their devices, stop their sign-in or delete them. A deleted person moves to "Recently deleted" for 30 days: the admin can restore them with all their data, exactly as they were, or delete them at once; after 30 days the server removes them and their data for good and frees their email ([ADR 0049](adr/0049-deleted-people-and-cleared-ledgers.md)). Each person can clear their own ledger in Settings to start fresh, and the admin can clear a person's ledger from their row; either can be undone for 30 days, and the admin never sees what a ledger holds. A purge cannot reach backups already taken: they keep that data until they age out (seven days on the server, 90 days off-site). Whoever runs the server can still read the database and its backups, so tell the people you add who that is.
