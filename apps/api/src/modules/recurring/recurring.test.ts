@@ -4,7 +4,7 @@ import {
   recurringRuleSchema,
   recurringRunListSchema,
 } from "@ledgerline/shared";
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   afterAll,
   beforeAll,
@@ -296,6 +296,34 @@ describe("creating rules", () => {
     const response = await send("POST", "/recurring-rules", rent());
     expect(response.statusCode).toBe(409);
     expect(response.json().errors[0].field).toBe("timeZone");
+  });
+
+  it("a catch-up that fails after the save is logged by error class and code only, and the save still succeeds", async () => {
+    const error = vi.spyOn(app.log, "error");
+    // Saving a run is refused, so the occurrence fails and then so does recording that it failed.
+    await db.execute(
+      sql`CREATE FUNCTION zz_refuse_runs() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'refused a payee name' USING ERRCODE = 'XX999'; END $$`,
+    );
+    await db.execute(
+      sql`CREATE TRIGGER zz_refuse_runs BEFORE INSERT ON recurring_runs FOR EACH ROW EXECUTE FUNCTION zz_refuse_runs()`,
+    );
+    try {
+      const response = await send(
+        "POST",
+        "/recurring-rules",
+        rent({ startDate: "2026-10-01" }),
+      );
+      expect(response.statusCode).toBe(201);
+    } finally {
+      await db.execute(sql`DROP TRIGGER zz_refuse_runs ON recurring_runs`);
+      await db.execute(sql`DROP FUNCTION zz_refuse_runs()`);
+    }
+    expect(error).toHaveBeenCalledWith(
+      expect.objectContaining({ pgCode: "XX999" }),
+      "Could not create the entries that were already due",
+    );
+    expect(JSON.stringify(error.mock.calls)).not.toContain("payee name");
+    error.mockRestore();
   });
 
   it("saves a future rule and creates nothing yet", async () => {

@@ -117,6 +117,30 @@ describe("daily rate refresh", () => {
     expect(fetchRate).toHaveBeenCalledTimes(2);
   });
 
+  it("a ledger whose refresh throws is counted and logged by error class and code only, and the others still run", async () => {
+    const boom = Object.assign(new Error("secret payee Alice 123.45"), {
+      code: "40001",
+    });
+    const refused = vi.spyOn(db, "transaction").mockRejectedValueOnce(boom);
+    log.error.mockClear();
+    try {
+      const summary = await refreshLedgerRates(
+        db,
+        at("2026-10-11T01:00:00Z"),
+        fetchRate,
+        log,
+      );
+      expect(summary).toMatchObject({ ledgers: 2, fetched: 1, failed: 1 });
+    } finally {
+      refused.mockRestore();
+    }
+    expect(log.error).toHaveBeenCalledWith(
+      expect.objectContaining({ errorName: "Error", pgCode: "40001" }),
+      "Could not refresh rates for a ledger",
+    );
+    expect(JSON.stringify(log.error.mock.calls)).not.toContain("secret payee");
+  });
+
   it("fetches again on the next local day", async () => {
     await refreshLedgerRates(db, at("2026-10-11T01:00:00Z"), fetchRate, log);
     fetchRate.mockClear();

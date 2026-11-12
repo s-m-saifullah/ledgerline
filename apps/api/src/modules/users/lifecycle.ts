@@ -41,6 +41,7 @@ import {
   writeReceipts,
 } from "../../db/schema";
 import type { JobLog } from "../../jobs/runner";
+import { safeErrorFields } from "../../lib/error-log";
 import { ApiProblem } from "../../lib/problem";
 import { ledgerClearedAtFor } from "../ledgers/cleared-at";
 
@@ -310,8 +311,9 @@ export async function purgeDeletedPeople(db: Database, now: Date, log: JobLog) {
         return true;
       });
       if (done) purged += 1;
-    } catch {
+    } catch (error) {
       failed += 1;
+      log.error(safeErrorFields(error), "Could not remove a deleted person");
     }
   }
   if (purged) log.info({ purged }, "Removed deleted people");
