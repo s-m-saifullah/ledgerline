@@ -1,0 +1,71 @@
+name: Health watch
+# Once a day: is the app answering, is the certificate far from expiring, and are the backups fresh and the
+# disk not full. A failed run emails the repository owner through GitHub (Settings > Notifications > Actions).
+# It sends nothing about money anywhere, and the server answers only with ages and percentages.
+# Setup (once): docs/SELF_HOSTING.md, "Health watch".
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      max_dump_hours:
+        description: 'Fail when the newest backup is this many hours old or more (default 26)'
+        required: false
+        default: '26'
+      max_disk_pct:
+        description: 'Fail when disk use is this percent or more (default 85)'
+        required: false
+        default: '85'
+permissions:
+  contents: read
+jobs:
+  # The two checks are separate jobs so one failing never hides the other.
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+    steps:
+      - name: App answers and certificate is not close to expiring
+        run: |
+          set -euo pipefail
+          if [ -z "$PUBLIC_URL" ]; then
+            echo "::error::The PUBLIC_URL repository variable is not set, so nothing can be checked."
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 20 --retry 3 --retry-delay 10 --retry-all-errors "$PUBLIC_URL/api/health" > /dev/null
+          echo "The app answers its health check."
+          host="${PUBLIC_URL#*://}"
+          host="${host%%/*}"
+          port=443
+          case "$host" in *:*) port="${host##*:}"; host="${host%%:*}" ;; esac
+          if ! echo | openssl s_client -connect "$host:$port" -servername "$host" 2>/dev/null | openssl x509 -noout -checkend $((14 * 86400)) > /dev/null; then
+            echo "::error::The certificate expires within 14 days (or could not be read)."
+            exit 1
+          fi
+          echo "The certificate has more than 14 days left."
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # An unprotected environment on purpose: a protected one would wait for a reviewer every day. It holds
+    # its own key, which the server lets run one read-only report and nothing else.
+    environment: monitoring
+    env:
+      DEPLOY_USER: ${{ vars.DEPLOY_USER || 'ledgerline' }}
+      MAX_DUMP_HOURS: ${{ inputs.max_dump_hours || '26' }}
+      MAX_DISK_PCT: ${{ inputs.max_disk_pct || '85' }}
+    steps:
+      - name: Backups are fresh and the disk is not full
+        env:
+          SSH_KEY: ${{ secrets.MONITOR_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.MONITOR_KNOWN_HOSTS }}
+          MONITOR_HOST: ${{ secrets.MONITOR_HOST }}
+        run: |
+          set -euo pipefail
+          [[ "$MAX_DUMP_HOURS" =~ ^[0-9]+$ && "$MAX_DISK_PCT" =~ ^[0-9]+$ ]] || { echo "::error::The limits must be whole numbers."; exit 1; }
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -o BatchMode=yes -o ConnectTimeout=20 "$DEPLOY_USER@$MONITOR_HOST" "check $MAX_DUMP_HOURS $MAX_DISK_PCT"
