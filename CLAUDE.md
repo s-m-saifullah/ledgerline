@@ -78,7 +78,7 @@ Code is grouped by feature:
 
 - Images build for `linux/arm64` in GitHub Actions and go to a private container registry; the server pulls them over an SSH deploy on version tags.
 - The web container (Caddy serving the static build and proxying `/api`) binds `127.0.0.1:8080` only; a host reverse proxy owns ports 80/443. The API and PostgreSQL have no host ports.
-- The deploy takes a verified backup first, then runs the restore drill after release. Never delete the database volume or restore into the running database without written authorization.
+- The deploy takes a backup and drills that exact dump first (it stops, with nothing changed, if either fails), then drills a new backup after release. Never delete the database volume or restore into the running database without written authorization.
 - Domain, SSH alias, install directory and deploy user are configuration (repository variables and secrets), never hardcoded. See `docs/SELF_HOSTING.md`.
 
 ## Commands
