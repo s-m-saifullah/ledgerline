@@ -173,6 +173,7 @@ test("a Docker error while looking for the volume stops the deploy, never a fres
     container: false,
   });
   assert.notEqual(result.status, 0);
+  assert.match(result.stdout, /Could not ask Docker for the database volume/);
   assert.doesNotMatch(result.stdout, /fresh install/);
   assert.equal(calls, "");
   assert.equal(release, oldRelease);

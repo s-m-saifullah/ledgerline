@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,9 +23,10 @@ function run({
   pruneExit = 0,
   freeMb = 5000,
   env = {},
+  backupsFolder = true,
 }) {
   const dir = mkdtempSync(join(tmpdir(), "scheduled-test-"));
-  mkdirSync(join(dir, "backups"));
+  if (backupsFolder) mkdirSync(join(dir, "backups"));
   mkdirSync(join(dir, "bin"));
   copyFileSync(
     new URL("./scheduled-backup.sh", import.meta.url),
@@ -69,7 +71,7 @@ function run({
   try {
     calls = readFileSync(join(dir, "calls"), "utf8").trim().split("\n");
   } catch {}
-  return { result, calls };
+  return { result, calls, dir };
 }
 
 test("prunes first, then backs up and uploads off-site", () => {
@@ -168,4 +170,11 @@ test("when the free space cannot be read the backup still runs and the run still
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.match(result.stdout, /Could not read the free disk space/);
   assert.ok(calls.includes("backup.sh"));
+});
+
+test("a missing backups folder is created private, so the first run can still read the free space", () => {
+  const { result, dir } = run({ backupsFolder: false });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  assert.equal(statSync(join(dir, "backups")).mode & 0o777, 0o700);
+  assert.doesNotMatch(result.stdout, /Could not read the free disk space/);
 });
