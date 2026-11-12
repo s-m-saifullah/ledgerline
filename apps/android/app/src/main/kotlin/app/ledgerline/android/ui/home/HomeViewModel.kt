@@ -5,56 +5,36 @@ import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.OnlineReader
+import app.ledgerline.android.online.readOnTrigger
+import app.ledgerline.android.online.readings
+import app.ledgerline.android.online.view
 import app.ledgerline.api.HomeSummary
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import java.time.YearMonth
 import javax.inject.Inject
 
 /**
- * This month on Home, read online from `GET /home` (ADR 0043, slice 5). It is read when the mirror knows its
- * ledger, again after every pull (so an entry sent from the phone shows up) and on Retry or pull to refresh.
- * The month is the phone's own calendar month, as the web uses the browser's.
+ * This month on Home, read online from `GET /home` (ADR 0043, slice 5). It is read while Home is shown, once the
+ * mirror knows its ledger, again after every pull (so an entry sent from the phone shows up) and on Retry or pull to
+ * refresh; nothing is read while the lock screen is up. The month is the phone's own calendar month, as the web uses
+ * the browser's, taken when each read starts. A reload keeps the numbers on screen; another ledger, or none after a
+ * sign-out, shows Loading, so one person's numbers never appear under the next person's sign-in.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val reader: OnlineReader,
     reads: MirrorReads,
 ) : ViewModel() {
     private val retries = MutableStateFlow(0)
-    private val _month = MutableStateFlow<Online<HomeSummary>>(Online.Loading)
-    val month: StateFlow<Online<HomeSummary>> = _month.asStateFlow()
 
-    init {
-        // Room re-runs a watched query on every write to its table, so repeats of the same ledger and pull are dropped.
-        val pulled = reads.mirroredLedger().distinctUntilChanged().flatMapLatest { ledger ->
-            if (ledger == null) flowOf(null) else reads.cursorOf(ledger).map { ledger to it?.serverTime }
-        }.distinctUntilChanged()
-        viewModelScope.launch {
-            combine(pulled, retries) { ledger, _ -> ledger?.first }.collectLatest { ledger ->
-                if (ledger != null) load(ledger)
-            }
-        }
+    val month: StateFlow<Online<HomeSummary>> = readOnTrigger(viewModelScope, reads.readings(flowOf(Unit), retries), { it.view() }) { reading ->
+        reader.read { home(reading.ledger, YearMonth.now().toString()) }
     }
 
     fun retry() {
         retries.value += 1
-    }
-
-    private suspend fun load(ledger: String) {
-        // A reload keeps the numbers on screen until the answer arrives; only the first read shows Loading.
-        if (_month.value !is Online.Ready) _month.value = Online.Loading
-        _month.value = reader.read { home(ledger, YearMonth.now().toString()) }
     }
 }

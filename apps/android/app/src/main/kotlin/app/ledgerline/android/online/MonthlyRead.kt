@@ -17,8 +17,10 @@ import java.time.YearMonth
  * A screen that reads one month online (Budgets, Insights; ADR 0043, slice 5). [state] is read only while it is
  * collected, that is while the screen shows it (and for five seconds after), when the month changes, after every
  * pull (an entry sent from the phone changes the numbers) and on [retry]. It starts at the phone's own calendar
- * month, as the web does. A reload of the same month keeps its numbers on screen; another month shows Loading, so
- * one month's numbers never appear under another month's name. [monthOf] says which month an answer is for.
+ * month, as the web does. A reload of the same ledger and month keeps its numbers on screen; another month shows
+ * Loading, so one month's numbers never appear under another month's name, and another ledger (or none, after a
+ * sign-out) shows Loading too, so one person's numbers never appear under the next person's sign-in. [monthOf] says
+ * which month an answer is for.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MonthlyRead<T>(
@@ -34,12 +36,20 @@ class MonthlyRead<T>(
     /** The last answer, so a reload of the same month keeps its numbers on screen until the new ones arrive. */
     private var last: Online<T> = Online.Loading
 
+    /** The ledger [last] was read for. */
+    private var shownLedger: String? = null
+
     val state: StateFlow<Online<T>> = run {
         val pulled = reads.pulls()
         combine(pulled, _month, retries) { ledger, month, _ -> ledger?.first to month.toString() }
             .transformLatest { (ledger, month) ->
-                if (ledger == null) return@transformLatest
-                if ((last as? Online.Ready)?.value?.let(monthOf) != month) emit(Online.Loading)
+                if (ledger == null) {
+                    emit(Online.Loading)
+                    return@transformLatest
+                }
+                val sameView = shownLedger == ledger && (last as? Online.Ready)?.value?.let(monthOf) == month
+                if (!sameView) emit(Online.Loading)
+                shownLedger = ledger
                 emit(read(ledger, month))
             }
             .map { it.also { state -> last = state } }

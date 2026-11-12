@@ -20,12 +20,14 @@ data class Paged<T>(val items: List<T>, val hasMore: Boolean, val loadingMore: B
  * A list read online a page at a time (Clients, Loans; ADR 0043, slice 5). [state] reads the first page whenever
  * [trigger] emits, and only while it is collected (while the screen shows it, and five seconds after); [loadMore]
  * appends the next page. [view] says what a trigger shows (a search, a status, a client): a reload of the same view
- * keeps its rows on screen until the new first page arrives, another view shows Loading.
+ * keeps its rows on screen until the new first page arrives, another view shows Loading. A null trigger means the
+ * mirror has no ledger (the person signed out): the rows are forgotten and Loading shows, never the next person's list
+ * after the last person's rows.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class PagedRead<K, T>(
+class PagedRead<K : Any, T>(
     scope: CoroutineScope,
-    trigger: Flow<K>,
+    trigger: Flow<K?>,
     private val view: (K) -> Any,
     private val fetch: suspend (key: K, cursor: String?) -> Online<Page<T>>,
 ) {
@@ -35,6 +37,10 @@ class PagedRead<K, T>(
 
     val state: StateFlow<Online<Paged<T>>> = trigger
         .transformLatest { key ->
+            if (key == null) {
+                emit(Online.Loading)
+                return@transformLatest
+            }
             val id = view(key)
             if (shown != id || last !is Online.Ready) emit(Online.Loading)
             shown = id

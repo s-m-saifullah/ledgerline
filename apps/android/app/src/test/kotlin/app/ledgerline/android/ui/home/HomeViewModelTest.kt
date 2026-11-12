@@ -20,9 +20,11 @@ import app.ledgerline.api.HomeSetup
 import app.ledgerline.api.HomeSummary
 import app.ledgerline.api.Money
 import app.ledgerline.api.SessionToken
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -33,6 +35,7 @@ import mockwebserver3.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,6 +43,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.YearMonth
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 /** A Home where every amount is [amount] US cents and the owner has an account. */
@@ -180,5 +184,70 @@ class HomeViewModelTest {
         assertEquals(Online.Failed, settled { it.takeIf { state -> state == Online.Failed } })
         runBlocking { withTimeout(5_000) { session.state.first { it == SessionState.SignedOut } } }
         assertNull(session.token.value)
+    }
+
+    /** Keeps Home subscribed, as the activity does for the life of the app. */
+    private fun shown(seen: MutableList<Online<HomeSummary>> = mutableListOf()) =
+        CoroutineScope(Dispatchers.Main).launch { model.month.collect { seen += it } }
+
+    @Test
+    fun aLockedAppReadsNothingAndStaysLocked() {
+        val protector = FakeTokenProtector(stored = SessionToken("tok"))
+        session = SessionManager(protector, FakeClock())
+        assertEquals(SessionState.Locked, session.state.value)
+        answer(401)
+        answer(401)
+        start()
+        val job = shown()
+
+        // The 15-minute background pull wrote a new cursor while the lock screen was up.
+        pulled("2026-10-22T10:00:00.000Z")
+        pulled("2026-10-22T10:05:00.000Z")
+
+        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS))
+        assertEquals(SessionState.Locked, session.state.value)
+        assertEquals(0, protector.discardCount)
+        job.cancel()
+    }
+
+    @Test
+    fun whenTheLedgerGoesAwayHomeShowsLoading() {
+        answer(200, ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(100)))
+        start()
+        val job = shown()
+        pulled("2026-10-22T10:00:00.000Z")
+        assertEquals(100L, settled { (it as? Online.Ready)?.value?.inHand?.amount })
+
+        runBlocking { database.dao().wipeSyncCursors() }
+
+        assertEquals(Online.Loading, settled { it.takeIf { state -> state == Online.Loading } })
+        job.cancel()
+    }
+
+    @Test
+    fun aNewLedgerShowsLoadingAndNeverTheEarlierLedgersNumbers() {
+        answer(200, ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(100)))
+        server.enqueue(
+            MockResponse.Builder().code(200).body(ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(200)))
+                .headersDelay(1, TimeUnit.SECONDS).build(),
+        )
+        start()
+        val seen = CopyOnWriteArrayList<Online<HomeSummary>>()
+        val job = shown(seen)
+        pulled("2026-10-22T10:00:00.000Z")
+        assertEquals(100L, settled { (it as? Online.Ready)?.value?.inHand?.amount })
+
+        // Person A signs out (the mirror is wiped); person B's first pull then names another ledger.
+        val mark = seen.size
+        runBlocking {
+            database.dao().wipeSyncCursors()
+            database.dao().putCursor(SyncCursorRow("ledger-b", "c", "2026-10-22T11:00:00.000Z"))
+        }
+
+        assertEquals(200L, settled { (it as? Online.Ready)?.value?.inHand?.amount?.takeIf { amount -> amount == 200L } })
+        val after = seen.drop(mark)
+        assertEquals(Online.Loading, after.first())
+        assertTrue("A's numbers shown again: $after", after.none { (it as? Online.Ready)?.value?.inHand?.amount == 100L })
+        job.cancel()
     }
 }

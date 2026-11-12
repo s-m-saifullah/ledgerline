@@ -5,7 +5,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -25,12 +24,12 @@ fun MirrorReads.pulls(): Flow<Pair<String, String?>?> =
 data class Reading<P>(val ledger: String, val params: P, val refresh: Any)
 
 /**
- * A [Reading] whenever the ledger is known and [params], a pull or [retries] change; nothing before the mirror has a
- * ledger. A reload of the same ledger and params has the same view ([Reading.ledger] and [Reading.params]).
+ * A [Reading] whenever the ledger is known and [params], a pull or [retries] change, and null while the mirror has no
+ * ledger (before the first pull, or after a sign-out wiped it): the readers show Loading and forget their answer for
+ * null. A reload of the same ledger and params has the same view ([Reading.ledger] and [Reading.params]).
  */
-fun <P> MirrorReads.readings(params: Flow<P>, retries: Flow<Int>): Flow<Reading<P>> =
+fun <P> MirrorReads.readings(params: Flow<P>, retries: Flow<Int>): Flow<Reading<P>?> =
     kotlinx.coroutines.flow.combine(pulls(), params, retries) { pull, p, n -> pull?.let { Reading(it.first, p, it.second to n) } }
-        .filterNotNull()
 
 /** What a [Reading] shows, for the readers that keep rows on screen while they reload. */
 fun <P> Reading<P>.view(): Any = ledger to params
