@@ -263,3 +263,38 @@ test("over SSH, an empty command runs the default checks", () => {
   const { result } = run({ originalCommand: "" });
   assert.equal(result.status, 0, result.stdout);
 });
+
+test("the limits are exact: 26 whole hours fails, 25 passes; 48 for off-site", () => {
+  const dump = run({ dumpHours: 26.2 });
+  assert.equal(dump.result.status, 1);
+  const offsite = run({ offsite: { result: "ok", hours: 48.2 } });
+  assert.equal(offsite.result.status, 1);
+  assert.match(offsite.result.stdout, /^FAIL +off-site copy/m);
+});
+
+test("a dump with nothing in it is not a backup", () => {
+  const { result, dir } = run({ dumpHours: 1, olderDumpHours: 80 });
+  writeFileSync(join(dir, "backups", "ledgerline-20261112T030000Z-2.dump"), "");
+  const again = spawnSync("bash", ["health-report.sh"], {
+    cwd: dir,
+    env: {
+      ...process.env,
+      LEDGERLINE_DIR: dir,
+      PATH: `${join(dir, "bin")}:${process.env.PATH}`,
+    },
+    encoding: "utf8",
+  });
+  assert.equal(result.status, 0);
+  assert.equal(again.status, 1, again.stdout);
+});
+
+test("over SSH, text before 'check' is refused too", () => {
+  const { result } = run({ originalCommand: "x check 1 90" });
+  assert.equal(result.status, 2);
+});
+
+test("a file dated in the future reads as 0 hours, never a negative age", () => {
+  const { result } = run({ dumpHours: -2 });
+  assert.equal(result.status, 0, result.stdout);
+  assert.match(result.stdout, /newest backup: 0 h old/);
+});
