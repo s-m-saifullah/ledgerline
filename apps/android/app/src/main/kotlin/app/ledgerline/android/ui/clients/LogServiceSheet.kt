@@ -55,6 +55,7 @@ import app.ledgerline.android.ui.editor.ValuePill
 import app.ledgerline.android.ui.editor.WhenRow
 import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.format.formatEntryDate
+import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.android.ui.theme.LocalPalette
 
@@ -99,6 +100,7 @@ internal fun LogServiceSheet(ui: LogServiceUi, actions: LogServiceActions) {
 @Composable
 internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions, modifier: Modifier = Modifier, startOpen: Boolean = false) {
     val form = ui.form
+    val amountsHidden = LocalPrivacy.current
     var picking by remember { mutableStateOf(false) }
     var foldOpen by remember { mutableStateOf(startOpen) }
     var pickingDate by remember { mutableStateOf(false) }
@@ -210,7 +212,7 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
                         row {
                             SecondaryButton(
                                 stringResource(R.string.service_hourly_use),
-                                { actions.edit { it.useTotal() } },
+                                { actions.edit { it.useTotal(describe = !amountsHidden) } },
                                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                         }
