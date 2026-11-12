@@ -3,7 +3,11 @@ import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDatabase } from "./client";
 
 export async function applyMigrations(url: string) {
-  const { db, pool } = createDatabase(url);
+  // No statement or idle limit: a slow migration (building an index) must never be cut off at start-up.
+  const { db, pool } = createDatabase(url, {
+    statementTimeoutMillis: 0,
+    idleInTransactionMillis: 0,
+  });
   try {
     await migrate(db, { migrationsFolder: resolve("drizzle") });
   } finally {
