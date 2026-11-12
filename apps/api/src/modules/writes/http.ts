@@ -1,8 +1,8 @@
 import { idempotencyKeySchema, ledgerParamsSchema } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Config } from "../../config";
 import { ApiProblem } from "../../lib/problem";
+import { requestSession } from "../auth/request-session";
 import type { Auth } from "../auth/service";
 import type { WriteIdentity, WriteResult } from "./service";
 
@@ -11,9 +11,7 @@ export async function financialWriteIdentity(
   config: Config,
   request: FastifyRequest,
 ): Promise<WriteIdentity> {
-  const session = await auth.api.getSession({
-    headers: fromNodeHeaders(request.headers),
-  });
+  const session = await requestSession(auth, request);
   if (!session)
     throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
   if (request.headers.origin !== new URL(config.APP_URL).origin)

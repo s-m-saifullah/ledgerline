@@ -1,7 +1,7 @@
 import { passwordChangeRequiredType } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyRequest } from "fastify";
 import { ApiProblem } from "../../lib/problem";
+import { requestSession } from "./request-session";
 import type { Auth } from "./service";
 
 /** The only two routes a person on a temporary password may use besides the sign-in routes (ADR 0048). */
@@ -18,9 +18,7 @@ export function accountGuard(auth: Auth) {
     const route = request.routeOptions.url ?? "";
     if (!route.startsWith("/api/v1/") || route.startsWith("/api/v1/auth/"))
       return;
-    const found = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
+    const found = await requestSession(auth, request);
     if (!found) return;
     const person = found.user as {
       mustChangePassword?: boolean;

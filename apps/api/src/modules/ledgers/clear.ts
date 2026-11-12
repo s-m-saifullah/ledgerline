@@ -1,6 +1,7 @@
 import { getTableColumns, getTableName, sql } from "drizzle-orm";
 import type { Database, DatabaseConnection } from "../../db/client";
 import type { JobLog } from "../../jobs/runner";
+import { safeErrorFields } from "../../lib/error-log";
 import { ApiProblem } from "../../lib/problem";
 import { PURGE_ORDER, PURGED_TABLES, RETENTION_DAYS } from "../users/lifecycle";
 
@@ -153,8 +154,9 @@ export async function purgeClearedLedgers(
         return true;
       });
       if (done) purged += 1;
-    } catch {
+    } catch (error) {
       failed += 1;
+      log.error(safeErrorFields(error), "Could not remove a cleared ledger");
     }
   }
   if (purged) log.info({ purged }, "Removed cleared ledgers");

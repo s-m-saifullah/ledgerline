@@ -1242,6 +1242,14 @@ describe("the hourly removal of cleared batches", () => {
         { failed: 1 },
         "Could not remove cleared ledgers",
       );
+      // Why it failed is logged too, as the error class and database code only (never the message or the row).
+      expect(quiet.error).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pgCode: "23503",
+          constraint: "zz_clear_probe_account_id_fkey",
+        }),
+        "Could not remove a cleared ledger",
+      );
       const text = JSON.stringify([
         quiet.info.mock.calls,
         quiet.error.mock.calls,

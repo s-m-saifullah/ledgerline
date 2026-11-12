@@ -3,13 +3,13 @@ import {
   exportTransactionsQuerySchema,
   problemSchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
+import { requestSession } from "../auth/request-session";
 import type { Auth } from "../auth/service";
 import { accountsCsv, categoriesCsv, transactionsCsv } from "./service";
 
@@ -44,10 +44,8 @@ export async function exportRoutes(
   { db, auth }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
-  const actor = async (headers: Parameters<typeof fromNodeHeaders>[0]) => {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(headers),
-    });
+  const actor = async (request: FastifyRequest) => {
+    const session = await requestSession(auth, request);
     if (!session)
       throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
     return session.user.id;
@@ -77,7 +75,7 @@ export async function exportRoutes(
         "transactions",
         await transactionsCsv(
           db,
-          await actor(request.headers),
+          await actor(request),
           request.params.ledgerId,
           request.query,
         ),
@@ -95,11 +93,7 @@ export async function exportRoutes(
       sendCsv(
         reply,
         "accounts",
-        await accountsCsv(
-          db,
-          await actor(request.headers),
-          request.params.ledgerId,
-        ),
+        await accountsCsv(db, await actor(request), request.params.ledgerId),
       ),
   );
   app.get(
@@ -114,11 +108,7 @@ export async function exportRoutes(
       sendCsv(
         reply,
         "categories",
-        await categoriesCsv(
-          db,
-          await actor(request.headers),
-          request.params.ledgerId,
-        ),
+        await categoriesCsv(db, await actor(request), request.params.ledgerId),
       ),
   );
 }

@@ -16,6 +16,7 @@ import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { runRecurringRules } from "../../jobs/recurring";
+import { safeErrorFields } from "../../lib/error-log";
 import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
@@ -60,8 +61,12 @@ export async function recurringRoutes(
         ledgerId,
         ...(ruleId ? { ruleId } : {}),
       });
-    } catch {
-      // The hourly tick will try again; the save itself succeeded.
+    } catch (error) {
+      // The hourly tick will try again; the save itself succeeded. Say why, without the message (it can echo data).
+      request.log.error(
+        safeErrorFields(error),
+        "Could not create the entries that were already due",
+      );
     }
   }
   app.get(

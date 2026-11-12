@@ -1,5 +1,6 @@
 import { localDate } from "@ledgerline/shared";
 import type { Database } from "../db/client";
+import { safeErrorFields } from "../lib/error-log";
 import type { RateFetcher } from "../modules/currencies/provider";
 import { currencyRepository } from "../modules/currencies/repo";
 import { refreshRates } from "../modules/currencies/service";
@@ -39,8 +40,9 @@ export async function refreshLedgerRates(
       if (done) continue;
       await refreshRates(db, identity, {}, fetchRate);
       summary.fetched++;
-    } catch {
+    } catch (error) {
       summary.failed++;
+      log.error(safeErrorFields(error), "Could not refresh rates for a ledger");
     }
   }
   if (summary.fetched || summary.failed)

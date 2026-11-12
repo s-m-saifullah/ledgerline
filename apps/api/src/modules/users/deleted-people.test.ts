@@ -796,7 +796,12 @@ describe("the hourly purge", () => {
     // The failed one is whole: nothing was half removed.
     expect(await userRow(stuck.id)).toBeDefined();
     expect(await fingerprint(stuck.ledgerId)).toEqual(stuckBefore);
-    expect(log.error).toHaveBeenCalledTimes(1);
+    // The count, and one line per person it could not remove: the error class and database code only.
+    expect(log.error).toHaveBeenCalledTimes(2);
+    expect(log.error).toHaveBeenCalledWith(
+      expect.objectContaining({ pgCode: "23503" }),
+      "Could not remove a deleted person",
+    );
     const logged = JSON.stringify(log.error.mock.calls);
     for (const secret of [stuck.id, stuck.ledgerId, mailbox("tick-stuck")])
       expect(logged).not.toContain(secret);
