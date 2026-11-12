@@ -1,4 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
+import {
+  MutationObserver,
+  QueryClient,
+  QueryObserver,
+} from "@tanstack/react-query";
 import { expect, it } from "vitest";
 import { forgetPerson, forgetSession } from "./session-cache";
 
@@ -50,8 +54,54 @@ it("forgetSession signs the session out of the cache and drops the person's ledg
     ["tags", "x"],
   ])
     expect(client.getQueryData(key), key.join("/")).toBeUndefined();
-  // Anything else is left as it was.
-  expect(client.getQueryData(["settings-something-else"])).toEqual({
-    kept: true,
+});
+
+// Every family of money a page keeps, named in the web app's own query keys: none may outlive the sign-out.
+const allFamilies = [
+  ["budgets", "x"],
+  ["reports", "x"],
+  ["loans", "x"],
+  ["loanPeople", "x"],
+  ["loanPerson", "x"],
+  ["currencies", "x"],
+  ["recurring", "x"],
+  ["recurring-runs", "x"],
+  ["imports", "x"],
+  ["rate-lookup", "x"],
+  ["changes", "x"],
+  ["a-key-added-next-year", "x"],
+];
+
+it("forgetSession drops everything the person's pages kept, including keys nobody listed", async () => {
+  const client = filled();
+  for (const key of allFamilies) client.setQueryData(key, { kept: true });
+  await forgetSession(client);
+  for (const key of [...allFamilies, ["settings-something-else"]])
+    expect(client.getQueryData(key), key.join("/")).toBeUndefined();
+  expect(client.getQueryData(["session"])).toBeNull();
+});
+
+it("forgetSession also forgets finished changes, which hold what was typed", async () => {
+  const client = filled();
+  await new MutationObserver(client, {
+    mutationFn: async (amount: string) => amount,
+  }).mutate("12.34");
+  expect(client.getMutationCache().getAll()).toHaveLength(1);
+  await forgetSession(client);
+  expect(client.getMutationCache().getAll()).toHaveLength(0);
+});
+
+it("a page that is watching the session sees it end", async () => {
+  const client = filled();
+  const watcher = new QueryObserver(client, {
+    queryKey: ["session"],
+    queryFn: async () => ({ kept: true }),
+    staleTime: Infinity,
   });
+  const seen: unknown[] = [];
+  const stop = watcher.subscribe((result) => seen.push(result.data));
+  await forgetSession(client);
+  stop();
+  expect(watcher.getCurrentResult().data).toBeNull();
+  expect(seen.at(-1)).toBeNull();
 });

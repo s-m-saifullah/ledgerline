@@ -79,7 +79,8 @@ export function HourlyHelper({
                   onClick={() =>
                     onUse(
                       totalText(result.total, currency),
-                      descriptionBlank
+                      // The words hold the rate, so they are not saved while amounts are hidden.
+                      descriptionBlank && !secret
                         ? `${result.hours} h at ${result.rate}/h`
                         : null,
                     )
