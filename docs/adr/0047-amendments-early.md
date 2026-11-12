@@ -1,6 +1,6 @@
 # ADR 0047, early amendments
 
-Amendments to [ADR 0047](0047-web-redesign.md) from the first pull requests of the web redesign, moved unchanged so the ADR stays short. Newer amendments are in the ADR itself.
+Amendments to [ADR 0047](0047-web-redesign.md) from the first pull requests of the web redesign, moved unchanged so the ADR stays short. Newer amendments are in the ADR itself. (Two ADRs are numbered 0047: this file and the ADR it amends; neither was renumbered because other documents link to both.)
 
 - **Foundation (2026-10-29).** The shared pieces are in `packages/ui` (`pieces.tsx`, `pieces.css`; no router and no money: a link is a `render` prop, an amount a node) and the overlay, top bar and month control in `apps/web/src/components`. New classes start with `ui-`; the old radius tokens stay until the last old screen moves; the new shapes are `--shape-field/card/hero/sheet`. One layout system, `layout.css`: the body is a container named `app`, and 700 and 1100 px are the only widths new CSS may use (a test checks it). `useIsPhone` goes with the last screen that uses it (Categories, PR 12). The phone warns at 90 per cent of a limit (the prototype said 85).
 

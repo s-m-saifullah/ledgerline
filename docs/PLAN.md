@@ -16,7 +16,7 @@ Ledgerline is a self-hosted personal finance tracker: one place to record money 
 - Recurring transactions (rent, salary, subscriptions).
 - Dashboard and reports: spending by category, cash flow, net worth over time.
 - CSV import and export.
-- Multi-currency: daily rates from a free API, a manual override on any rate, totals in one base currency.
+- Multi-currency: daily rates from a free API (switchable off, ADR 0051), a manual override on any rate, totals in one base currency.
 
 **v1 does not do** (kept out on purpose): automatic bank syncing, investment tracking, shared household budgets, receipt OCR and storing receipt images or other attached files (ADR 0031). The data model leaves room for the others.
 
@@ -81,7 +81,7 @@ Every financial row belongs to a ledger, and users reach data only through ledge
 | recurring_rules, recurring_runs | what to create and when, and what happened to each occurrence |
 | import_batches | one CSV import and its entries (`transactions.import_batch_id`, ADR 0034) |
 | tags, transaction_tags | free-form labels and their links to entries (ADR 0035) |
-| goals | a later phase (no attachments, ADR 0031) |
+| goals | not built; a later phase on purpose (no attachments, ADR 0031) |
 
 **Rules every table follows**
 
@@ -113,7 +113,7 @@ Home, Transactions, Budgets, Insights and More, plus a central Add button (botto
 
 1. **Quick add:** Add, amount, category, Save, with Undo.
 2. **Transfer:** switch Add to Transfer and pick the two accounts.
-3. **Monthly review:** Budgets, open an over-budget category, recategorize or move budget.
+3. **Monthly review:** Budgets, open an over-budget category, recategorize (moving budget between categories is not built).
 4. **CSV import:** choose a file (it is read in the browser and never stored; ADR 0034), map columns (saved on the device) or use the template, preview with duplicates flagged, confirm; the batch can be undone.
 5. **First run:** create the owner account, add accounts with their balances, pick a starter category set, land on Home.
 
@@ -121,7 +121,7 @@ Home, Transactions, Budgets, Insights and More, plus a central Add button (botto
 
 - **Categories** are fully editable. The starter set is optional, previewed before anything is created, and ships as a neutral default plus optional add-on groups (ADR 0017). Archiving hides a category from pickers but keeps history; merging moves its transactions into another category.
 - **Money owed to you:** logging a service creates no income; a payment creates linked income in the receiving account and lowers the open balance; write-offs leave totals but stay in history.
-- **Currency:** base currency USD; the owner pins other currencies and more are added on demand. Rates come from the Frankfurter API with a free fallback; each transaction stores its `fx_rate` and `base_amount`; manual rates are never overwritten.
+- **Currency:** base currency USD; the owner pins other currencies and more are added on demand. Rates come from the Frankfurter API with a free fallback (the server's daily fetch; `RATES_ENABLED=false` turns it off and rates are set by hand, ADR 0051); each transaction stores its `fx_rate` and `base_amount`; manual rates are never overwritten.
 - **CSV:** every upload button has a template download; amounts are positive and `type` sets direction.
 
 ## API design
@@ -139,10 +139,10 @@ Versioned REST at `/api/v1`, described by an OpenAPI 3.1 file generated from the
 
 - Only 80/443 and SSH are open; PostgreSQL and the API are reachable only on the internal Docker network.
 - HTTPS everywhere with HSTS and secure headers.
-- Argon2id password hashing; public sign-up is off and the owner account is created on first run; optional TOTP two-factor sign-in with backup codes (ADR 0038); passkeys are planned.
+- Argon2id password hashing; public sign-up is off and the owner account is created on first run; optional TOTP two-factor sign-in with backup codes (ADR 0038); passkeys are planned, not built.
 - Secrets live only in `.env`; `.env.example` documents each one.
 - Backups: a verified `pg_dump` before every release and on a schedule, with a restore drill into a throwaway container. Each backup is also encrypted on the server with a public key and copied off-site with a write-only key (ADR 0037); the restore drill can be run on the off-site copy.
-- No third-party analytics or trackers; logs never contain amounts, payees or notes. The only outside call is the Android app's update check against the repository's public GitHub releases, sending nothing about the owner (ADR 0043).
+- No analytics or trackers; logs never contain amounts, payees or notes. Two outside calls, neither sending anything about the owner's money (ADR 0051): the server's daily exchange-rate fetch (currency codes and a date, only for ledgers that pin other currencies, off with `RATES_ENABLED=false`) and the Android app's update check against the repository's public GitHub releases (ADR 0043).
 
 ## Deployment
 
@@ -164,10 +164,10 @@ Releases: a version tag runs the full checks, builds `linux/arm64` images, pushe
 | 3 Insights and import | Reports, tags, CSV import and export | Imported statements match the bank |
 | 4 Hardening | Two-factor, off-site backups, restore drill, PWA, sync endpoint, accessibility | Restore drill passes; v1.0 tagged |
 | 5 Android | Compose app, Room offline cache, background sync, biometric lock, signed APK | |
-| After v1.0 | User-selectable accent color; invite a second user | |
+| After v1.0 | User-selectable accent color (not built; teal is the one accent); invite a second user (built as Users, ADR 0048) | |
 
 A phase is done only when its features have tests, it is deployed through CI, the backup still restores and any new decision is written up in `docs/adr/`.
 
 ## Android path
 
-The native app is a new client of the same API: Kotlin, Jetpack Compose and Material 3 themed with the Ledgerline tokens; Hilt; Retrofit with API types written by hand and checked against `openapi.json` by a contract test (the generator was unusable, ADR 0043); Room as an offline mirror; WorkManager for sync (`GET/POST /api/v1/ledgers/{ledgerId}/sync`, last write wins per row; see [ADR 0042](adr/0042-sync-and-bearer-tokens.md) and [ADR 0043](adr/0043-android-app.md)); the token is stored encrypted under a Keystore key behind a fingerprint or screen-lock prompt, with a 60-second background lock (an app-level lock, ADR 0043). Built so far: skeleton and server address, sign-in with two-factor, the lock, the read-only mirror (Accounts and Transactions) and offline expenses, income and same-currency transfers with an optional time through an outbox (conflicts wait for the owner), the bottom bar, More with privacy mode and screenshots blocked by default, and Home's month, Budgets, Insights, Clients and Loans read online, all in the web's design ([ADR 0045](adr/0045-one-design-for-web-and-android.md)); and the release APK signed by a tag-started GitHub workflow behind the owner's approval (`android-vX.Y.Z`, ADR 0043; first release `android-v0.1.2`), with its key backed up off-site by the owner. More polish follows before `v1.0`.
+The native app is a new client of the same API: Kotlin, Jetpack Compose and Material 3 themed with the Ledgerline tokens; Hilt; Retrofit with API types written by hand and checked against `openapi.json` by a contract test (the generator was unusable, ADR 0043); Room as an offline mirror; WorkManager for sync (`GET/POST /api/v1/ledgers/{ledgerId}/sync`, last write wins per row; see [ADR 0042](adr/0042-sync-and-bearer-tokens.md) and [ADR 0043](adr/0043-android-app.md)); the token is stored encrypted under a Keystore key behind a fingerprint or screen-lock prompt, with a 60-second background lock (an app-level lock, ADR 0043). Built so far (`android-v0.3.1`): skeleton and server address, sign-in with two-factor, the lock, the read-only mirror and offline expenses, income and same-currency transfers with an optional time through an outbox (conflicts wait for the owner), the bottom bar, More with privacy mode and screenshots blocked by default, Home, Budgets (with limits), Insights, Categories, Clients and Loans, and the money writes that need the server online: payments in any currency, log, edit and delete a service, and lend, borrow and repay ([ADR 0050](adr/0050-money-writes-on-the-phone.md)), all in the web's design ([ADR 0045](adr/0045-one-design-for-web-and-android.md), [ADR 0046](adr/0046-clutter-free-redesign.md)); and the release APK signed by a tag-started GitHub workflow behind the owner's approval (`android-vX.Y.Z`, ADR 0043), with its key backed up off-site by the owner. Still web only: the category tools (reorder, merge, the starter set), tags created on the phone, Profile and Change password, Users, Recently deleted and Clear ledger, and write off and reopen a service. More polish follows before `v1.0`.
