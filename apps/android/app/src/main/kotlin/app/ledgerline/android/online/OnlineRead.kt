@@ -12,12 +12,13 @@ import kotlinx.coroutines.flow.transformLatest
 /**
  * One thing read online whenever [trigger] emits, and only while it is collected (while the screen shows it, and
  * five seconds after). [view] says what a trigger shows (a client, a month): a reload of the same view keeps its
- * answer on screen until the new one arrives, another view shows Loading.
+ * answer on screen until the new one arrives, another view shows Loading. A null trigger means the mirror has no
+ * ledger (the person signed out): it shows Loading and forgets what it showed, so the next person never sees it.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-fun <K, T> readOnTrigger(
+fun <K : Any, T> readOnTrigger(
     scope: CoroutineScope,
-    trigger: Flow<K>,
+    trigger: Flow<K?>,
     view: (K) -> Any,
     read: suspend (K) -> Online<T>,
 ): StateFlow<Online<T>> {
@@ -25,6 +26,10 @@ fun <K, T> readOnTrigger(
     var last: Online<T> = Online.Loading
     return trigger
         .transformLatest { key ->
+            if (key == null) {
+                emit(Online.Loading)
+                return@transformLatest
+            }
             val id = view(key)
             if (shown != id || last !is Online.Ready) emit(Online.Loading)
             shown = id

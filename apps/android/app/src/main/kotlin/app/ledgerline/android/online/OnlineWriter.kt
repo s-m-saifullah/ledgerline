@@ -30,7 +30,10 @@ sealed interface Written<out T> {
     data object Failed : Written<Nothing>
 }
 
-/** Sends one write to the API with the open session. A refused token (401) ends the session, as the sync and reads do. */
+/**
+ * Sends one write to the API with the open session. A refused token (401) ends the session, as the sync and reads
+ * do, but only a token that was sent (see [OnlineReader]); with no open session nothing is sent.
+ */
 @Singleton
 class OnlineWriter @Inject constructor(
     private val addressStore: ServerAddressStore,
@@ -39,6 +42,7 @@ class OnlineWriter @Inject constructor(
 ) {
     suspend fun <T> write(call: suspend LedgerlineApi.() -> T): Written<T> {
         val origin = addressStore.origin.first() ?: return Written.Failed
+        val sent = session.token.value ?: return Written.Failed
         return try {
             Written.Done(clients.forOrigin(origin).api.call())
         } catch (e: CancellationException) {
@@ -48,7 +52,7 @@ class OnlineWriter @Inject constructor(
         } catch (e: HttpException) {
             when (e.code()) {
                 401 -> {
-                    session.tokenRejected()
+                    if (session.token.value == sent) session.tokenRejected()
                     Written.Failed
                 }
                 403 -> Written.Forbidden

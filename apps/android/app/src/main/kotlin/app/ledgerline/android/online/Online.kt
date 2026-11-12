@@ -28,7 +28,11 @@ sealed interface Online<out T> {
     data object Failed : Online<Nothing>
 }
 
-/** Reads one thing from the API with the open session. A refused token (401) ends the session, as the sync does. */
+/**
+ * Reads one thing from the API with the open session. A refused token (401) ends the session, as the sync does,
+ * but only a token that was sent: while the app is locked or signed out there is no token, nothing is sent, and a
+ * 401 that comes back after the app locked mid-request is not the server refusing the sign-in.
+ */
 @Singleton
 class OnlineReader @Inject constructor(
     private val addressStore: ServerAddressStore,
@@ -37,6 +41,7 @@ class OnlineReader @Inject constructor(
 ) {
     suspend fun <T> read(call: suspend LedgerlineApi.() -> T): Online<T> {
         val origin = addressStore.origin.first() ?: return Online.Failed
+        val sent = session.token.value ?: return Online.Failed
         return try {
             Online.Ready(clients.forOrigin(origin).api.call())
         } catch (e: CancellationException) {
@@ -44,7 +49,7 @@ class OnlineReader @Inject constructor(
         } catch (_: IOException) {
             Online.Offline
         } catch (e: HttpException) {
-            if (e.code() == 401) session.tokenRejected()
+            if (e.code() == 401 && session.token.value == sent) session.tokenRejected()
             Online.Failed
         } catch (_: SerializationException) {
             Online.Failed

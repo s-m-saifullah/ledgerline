@@ -20,19 +20,24 @@ import app.ledgerline.api.HomeSetup
 import app.ledgerline.api.HomeSummary
 import app.ledgerline.api.Money
 import app.ledgerline.api.SessionToken
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,6 +45,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.YearMonth
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 /** A Home where every amount is [amount] US cents and the owner has an account. */
@@ -180,5 +186,75 @@ class HomeViewModelTest {
         assertEquals(Online.Failed, settled { it.takeIf { state -> state == Online.Failed } })
         runBlocking { withTimeout(5_000) { session.state.first { it == SessionState.SignedOut } } }
         assertNull(session.token.value)
+    }
+
+    /** Keeps Home subscribed, as the activity does for the life of the app. */
+    private fun shown(seen: MutableList<Online<HomeSummary>> = mutableListOf()) =
+        CoroutineScope(Dispatchers.Main).launch { model.month.collect { seen += it } }
+
+    @Test
+    fun aLockedAppReadsNothingAndStaysLocked() {
+        val protector = FakeTokenProtector(stored = SessionToken("tok"))
+        session = SessionManager(protector, FakeClock())
+        assertEquals(SessionState.Locked, session.state.value)
+        answer(401)
+        answer(401)
+        start()
+        val job = shown()
+
+        // The 15-minute background pull wrote a new cursor while the lock screen was up.
+        pulled("2026-10-22T10:00:00.000Z")
+        pulled("2026-10-22T10:05:00.000Z")
+
+        assertNull(server.takeRequest(500, TimeUnit.MILLISECONDS))
+        assertEquals(SessionState.Locked, session.state.value)
+        assertEquals(0, protector.discardCount)
+        job.cancel()
+    }
+
+    @Test
+    fun whenTheLedgerGoesAwayHomeShowsLoading() {
+        answer(200, ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(100)))
+        start()
+        val job = shown()
+        pulled("2026-10-22T10:00:00.000Z")
+        assertEquals(100L, settled { (it as? Online.Ready)?.value?.inHand?.amount })
+
+        runBlocking { database.dao().wipeSyncCursors() }
+
+        assertEquals(Online.Loading, settled { it.takeIf { state -> state == Online.Loading } })
+        job.cancel()
+    }
+
+    @Test
+    fun aNewLedgerShowsLoadingAndNeverTheEarlierLedgersNumbers() {
+        // Answered by ledger, not in order: when the mirror is wiped its two watched queries may report in either
+        // order, so Home may read the old ledger once more before it learns there is none. B's answer is slow.
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val forB = "/ledgers/ledger-b/" in request.target
+                val body = ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(if (forB) 200 else 100))
+                val answer = MockResponse.Builder().code(200).body(body)
+                return (if (forB) answer.headersDelay(1, TimeUnit.SECONDS) else answer).build()
+            }
+        }
+        start()
+        val seen = CopyOnWriteArrayList<Online<HomeSummary>>()
+        val job = shown(seen)
+        pulled("2026-10-22T10:00:00.000Z")
+        assertEquals(100L, settled { (it as? Online.Ready)?.value?.inHand?.amount })
+
+        // Person A signs out (the mirror is wiped); person B's first pull then names another ledger.
+        val mark = seen.size
+        runBlocking {
+            database.dao().wipeSyncCursors()
+            database.dao().putCursor(SyncCursorRow("ledger-b", "c", "2026-10-22T11:00:00.000Z"))
+        }
+
+        assertEquals(200L, settled { (it as? Online.Ready)?.value?.inHand?.amount?.takeIf { amount -> amount == 200L } })
+        val after = seen.drop(mark)
+        assertEquals(Online.Loading, after.first())
+        assertTrue("A's numbers shown again: $after", after.none { (it as? Online.Ready)?.value?.inHand?.amount == 100L })
+        job.cancel()
     }
 }
