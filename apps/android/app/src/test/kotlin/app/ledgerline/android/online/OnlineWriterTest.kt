@@ -1,8 +1,14 @@
 package app.ledgerline.android.online
 
+import app.ledgerline.android.session.SessionManager
 import app.ledgerline.android.session.SessionState
+import app.ledgerline.android.testing.FakeClock
+import app.ledgerline.android.testing.FakeTokenProtector
 import app.ledgerline.android.testing.OnlineHarness
 import app.ledgerline.api.ExpectedVersion
+import app.ledgerline.api.SessionToken
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,6 +36,51 @@ class OnlineWriterTest {
 
     private fun problem(status: Int, detail: String) =
         harness.json(status, """{"type":"about:blank","title":"x","status":$status,"detail":"$detail","errors":[{"field":"name","message":"m"}]}""")
+
+    @Test
+    fun aLockedAppWritesNothingAndKeepsTheStoredSignIn() {
+        val protector = FakeTokenProtector(stored = SessionToken("tok"))
+        harness.session = SessionManager(protector, FakeClock())
+        assertEquals(SessionState.Locked, harness.session.state.value)
+        harness.route(".*") { problem(401, "Sign in.") }
+
+        assertEquals(Written.Failed, archive())
+
+        assertTrue("sent: ${harness.targets}", harness.targets.isEmpty())
+        assertEquals(SessionState.Locked, harness.session.state.value)
+        assertEquals(0, protector.discardCount)
+    }
+
+    @Test
+    fun aRefusalThatArrivesAfterTheAppLockedDoesNotEndTheSignIn() {
+        val protector = FakeTokenProtector()
+        harness.session = SessionManager(protector, FakeClock())
+        harness.session.signedIn(SessionToken("tok"))
+        runBlocking { harness.session.protect() }
+        harness.delayMillis = 400
+        harness.route(".*") { problem(401, "Sign in.") }
+
+        val answer = runBlocking {
+            val pending = async(Dispatchers.IO) { harness.writer().write { archiveCategory("ledger-a", "c1", "cat-key-0001", ExpectedVersion(2)) } }
+            harness.requests(1)
+            harness.session.lock()
+            pending.await()
+        }
+
+        assertEquals(Written.Failed, answer)
+        assertEquals(SessionState.Locked, harness.session.state.value)
+        assertEquals(0, protector.discardCount)
+    }
+
+    @Test
+    fun aSignedOutAppWritesNothing() {
+        harness.session = SessionManager(FakeTokenProtector(), FakeClock())
+        harness.route(".*") { problem(401, "Sign in.") }
+
+        assertEquals(Written.Failed, archive())
+
+        assertTrue("sent: ${harness.targets}", harness.targets.isEmpty())
+    }
 
     @Test
     fun aRefusalWithAProblemCarriesItsSentence() {
