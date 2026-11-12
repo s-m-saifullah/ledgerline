@@ -30,8 +30,10 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
+import mockwebserver3.Dispatcher
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -226,11 +228,16 @@ class HomeViewModelTest {
 
     @Test
     fun aNewLedgerShowsLoadingAndNeverTheEarlierLedgersNumbers() {
-        answer(200, ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(100)))
-        server.enqueue(
-            MockResponse.Builder().code(200).body(ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(200)))
-                .headersDelay(1, TimeUnit.SECONDS).build(),
-        )
+        // Answered by ledger, not in order: when the mirror is wiped its two watched queries may report in either
+        // order, so Home may read the old ledger once more before it learns there is none. B's answer is slow.
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                val forB = "/ledgers/ledger-b/" in request.target
+                val body = ApiJson.encodeToString(HomeSummary.serializer(), homeSummary(if (forB) 200 else 100))
+                val answer = MockResponse.Builder().code(200).body(body)
+                return (if (forB) answer.headersDelay(1, TimeUnit.SECONDS) else answer).build()
+            }
+        }
         start()
         val seen = CopyOnWriteArrayList<Online<HomeSummary>>()
         val job = shown(seen)
