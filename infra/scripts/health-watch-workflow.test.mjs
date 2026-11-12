@@ -62,7 +62,8 @@ test("the public check uses no secrets and no hard-coded address", () => {
   assert.match(publicJob, /vars\.PUBLIC_URL/);
   assert.match(publicJob, /\/api\/health/);
   assert.match(publicJob, /curl[^\n]*--fail/);
-  assert.match(publicJob, /openssl/);
+  assert.match(publicJob, /openssl s_client/);
+  assert.match(publicJob, /openssl x509 -noout -checkend/);
   assert.doesNotMatch(text, /https?:\/\/(?!example\.)[a-z0-9.-]+\.[a-z]{2,}/i);
 });
 

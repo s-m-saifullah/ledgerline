@@ -154,7 +154,10 @@ test("an off-site result older than 48 hours fails even when it said ok", () => 
 test("off-site configured but never run fails", () => {
   const { result } = run({ offsite: "none" });
   assert.equal(result.status, 1);
-  assert.match(result.stdout, /^FAIL +off-site copy/m);
+  assert.match(
+    result.stdout,
+    /^FAIL +off-site copy: configured but never ran/m,
+  );
 });
 
 test("off-site not configured is skipped, not failed", () => {
@@ -297,4 +300,28 @@ test("a file dated in the future reads as 0 hours, never a negative age", () => 
   const { result } = run({ dumpHours: -2 });
   assert.equal(result.status, 0, result.stdout);
   assert.match(result.stdout, /newest backup: 0 h old/);
+});
+
+test("over SSH, the second number is the disk limit", () => {
+  const { result } = run({
+    dumpHours: 5,
+    diskPct: 40,
+    originalCommand: "check 48 30",
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /^FAIL +disk/m);
+  assert.match(result.stdout, /limit 30%/);
+});
+
+test("a server folder that is not there fails", () => {
+  const { result } = run({ env: { LEDGERLINE_DIR: "/nonexistent-folder" } });
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /^FAIL/m);
+});
+
+test("with no backup at all the report still names no path", () => {
+  const { result, dir } = run({ dumpHours: null });
+  const text = result.stdout + result.stderr;
+  assert.ok(!text.includes(dir));
+  assert.doesNotMatch(text, /\//);
 });
