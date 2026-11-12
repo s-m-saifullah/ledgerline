@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRateProvider } from "./provider";
+import { createRateProvider, rateFetcherFor } from "./provider";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status });
@@ -65,5 +65,21 @@ describe("rate provider", () => {
     });
     await createRateProvider(fetcher)("EUR", "USD", "2026-10-01");
     expect(calls[1]).toContain("currency-api@2026-10-01");
+  });
+});
+
+describe("the rate fetch switch", () => {
+  it("makes no outside call at all while it is off", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => json(primary(1.1217)));
+    const found = await rateFetcherFor(false, fetcher)("EUR", "USD");
+    expect(found).toBeNull();
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("uses the sources while it is on", async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => json(primary(1.1217)));
+    const found = await rateFetcherFor(true, fetcher)("EUR", "USD");
+    expect(found).toEqual({ date: "2026-10-09", rate: "1.1217" });
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

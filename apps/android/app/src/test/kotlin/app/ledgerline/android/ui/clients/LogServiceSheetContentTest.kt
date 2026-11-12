@@ -226,6 +226,27 @@ class LogServiceSheetContentTest {
     }
 
     @Test
+    fun usingTheTotalWritesHowItWasWorkedOutIntoABlankDescription() {
+        val form = start.copy(hours = "3.5", hourlyRate = "40")
+        val taps = Taps { form }
+        show(ui(form), taps)
+        compose.onNodeWithText("Paid by the hour? Work out the amount").performClick()
+        compose.onNodeWithText("Use this total").performClick()
+        assertEquals("3.5 h at $40.00/h", taps.forms.single().description)
+    }
+
+    @Test
+    fun inPrivacyModeUsingTheTotalWritesNoRateIntoTheSavedDescription() {
+        val form = start.copy(hours = "3.5", hourlyRate = "40")
+        val taps = Taps { form }
+        show(ui(form), taps, private = true)
+        compose.onNodeWithText("Paid by the hour? Work out the amount").performClick()
+        compose.onNodeWithText("Use this total").performClick()
+        assertEquals("140.00", taps.forms.single().amount)
+        assertEquals("", taps.forms.single().description)
+    }
+
+    @Test
     fun usingTheTotalIsOutlinedWhileSaveIsTheOnePrimaryAction() {
         show(ui(start.copy(hours = "3.5", hourlyRate = "40")))
         compose.onNodeWithText("Paid by the hour? Work out the amount").performClick()

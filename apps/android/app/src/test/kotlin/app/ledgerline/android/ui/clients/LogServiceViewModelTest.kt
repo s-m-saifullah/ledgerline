@@ -183,7 +183,7 @@ class LogServiceViewModelTest {
     fun theHourlyHelperFillsTheAmountAndTheSavedServiceHasThatTotal() {
         openSheet()
         viewModel.edit { it.copy(hours = "3.5", hourlyRate = "40") }
-        viewModel.edit { it.useTotal { rate, _ -> "$$rate" } }
+        viewModel.edit { it.useTotal(rateLabel = { rate, _ -> "$$rate" }) }
         assertEquals("140.00", ui().form.amount)
         assertEquals("3.5 h at $4000/h", ui().form.description)
         sent()

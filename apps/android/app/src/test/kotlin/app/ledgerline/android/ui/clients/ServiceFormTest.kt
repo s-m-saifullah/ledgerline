@@ -128,6 +128,13 @@ class ServiceFormTest {
     }
 
     @Test
+    fun theWordsAreLeftOutWhenAmountsAreHiddenBecauseTheyHoldTheRate() {
+        val hidden = form(description = "  ", amount = "").copy(hours = "3.5", hourlyRate = "40").useTotal(label, describe = false)
+        assertEquals("140.00", hidden.amount)
+        assertEquals("  ", hidden.description)
+    }
+
+    @Test
     fun aDescriptionAlreadyTypedIsKept() {
         assertEquals("Logo refresh", form().copy(hours = "3.5", hourlyRate = "40").useTotal(label).description)
     }

@@ -7,7 +7,8 @@ vi.mock("../modules/users/lifecycle", () => ({ purgeDeletedPeople }));
 // ...and so do cleared ledgers, 30 days after the clear.
 const purgeClearedLedgers = vi.fn(async () => ({ purged: 2, failed: 0 }));
 vi.mock("../modules/ledgers/clear", () => ({ purgeClearedLedgers }));
-vi.mock("./rates", () => ({ refreshLedgerRates: vi.fn(async () => "rates") }));
+const refreshLedgerRates = vi.fn(async () => "rates");
+vi.mock("./rates", () => ({ refreshLedgerRates }));
 vi.mock("./recurring", () => ({
   runRecurringRules: vi.fn(async () => "recurring"),
 }));
@@ -29,6 +30,43 @@ describe("the hourly tick", () => {
     );
     expect(result).toEqual({
       rates: "rates",
+      recurring: "recurring",
+      purged: { purged: 3, failed: 1 },
+      clearedPurged: { purged: 2, failed: 0 },
+    });
+  });
+
+  it("fetches rates unless they are switched off", async () => {
+    refreshLedgerRates.mockClear();
+    const db = {} as Database;
+    const log = { info: vi.fn(), error: vi.fn() };
+    await runTick(db, new Date(), { fetchRate: vi.fn(), log });
+    expect(refreshLedgerRates).toHaveBeenCalledTimes(1);
+    refreshLedgerRates.mockClear();
+    await runTick(db, new Date(), {
+      fetchRate: vi.fn(),
+      log,
+      ratesEnabled: true,
+    });
+    expect(refreshLedgerRates).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips the rate step, and only that step, while rates are switched off", async () => {
+    refreshLedgerRates.mockClear();
+    purgeDeletedPeople.mockClear();
+    purgeClearedLedgers.mockClear();
+    const db = {} as Database;
+    const log = { info: vi.fn(), error: vi.fn() };
+    const result = await runTick(db, new Date(), {
+      fetchRate: vi.fn(),
+      log,
+      ratesEnabled: false,
+    });
+    expect(refreshLedgerRates).not.toHaveBeenCalled();
+    expect(purgeDeletedPeople).toHaveBeenCalledTimes(1);
+    expect(purgeClearedLedgers).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      rates: { ledgers: 0, fetched: 0, failed: 0 },
       recurring: "recurring",
       purged: { purged: 3, failed: 1 },
       clearedPurged: { purged: 2, failed: 0 },

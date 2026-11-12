@@ -89,3 +89,14 @@ export function createRateProvider(
     return null;
   };
 }
+
+/**
+ * The fetcher the server uses. With RATES_ENABLED=false nothing is ever fetched: every lookup is answered
+ * "no usable rate", the way an outage is, so the app keeps working with rates set by hand and no request leaves the server.
+ */
+export function rateFetcherFor(
+  enabled: boolean,
+  fetchImpl: typeof fetch = fetch,
+): RateFetcher {
+  return enabled ? createRateProvider(fetchImpl) : async () => null;
+}

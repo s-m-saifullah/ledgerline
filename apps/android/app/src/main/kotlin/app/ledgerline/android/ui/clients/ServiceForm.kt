@@ -100,12 +100,13 @@ data class ServiceForm(
     /**
      * Puts what the helper worked out in the amount (in the currency's decimals) and, when the description is blank, how it
      * was worked out ("3.5 h at $40.00/h", with the rate shown by [rateLabel]). Does nothing while the boxes do not give a total.
+     * With [describe] false (amounts are hidden) the description is left alone: the words hold the rate, and they are saved.
      */
-    fun useTotal(rateLabel: (Long, String) -> String = ::formatMoney): ServiceForm {
+    fun useTotal(rateLabel: (Long, String) -> String = ::formatMoney, describe: Boolean = true): ServiceForm {
         val result = hourly as? HourlyResult.Total ?: return this
         return copy(
             amount = amountText(result.total, currency),
-            description = if (description.isBlank()) "${result.hours} h at ${rateLabel(result.rate, currency)}/h" else description,
+            description = if (describe && description.isBlank()) "${result.hours} h at ${rateLabel(result.rate, currency)}/h" else description,
         )
     }
 

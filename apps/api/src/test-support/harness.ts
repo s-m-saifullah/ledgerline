@@ -17,7 +17,11 @@ export function requireTestDatabase(suite: string) {
 }
 
 /** A test configuration; `prefix` keeps each suite's secret and owner distinct. */
-export function testConfig(url: string, prefix: string): Config {
+export function testConfig(
+  url: string,
+  prefix: string,
+  extra: Record<string, string> = {},
+): Config {
   return readConfig({
     NODE_ENV: "test",
     DATABASE_URL: url,
@@ -26,6 +30,7 @@ export function testConfig(url: string, prefix: string): Config {
     OWNER_EMAIL: `${prefix}-owner@example.com`,
     OWNER_PASSWORD: `${prefix}-test-password-`.padEnd(28, "0"),
     OWNER_NAME: `${prefix} owner`,
+    ...extra,
   });
 }
 

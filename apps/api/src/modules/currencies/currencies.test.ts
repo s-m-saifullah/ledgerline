@@ -546,3 +546,82 @@ describe("ledger isolation", () => {
     ).toHaveLength(1);
   });
 });
+
+describe("the rate fetch switch (RATES_ENABLED)", () => {
+  const body = JSON.stringify([
+    { date: "2026-10-09", base: "EUR", quote: "USD", rate: 1.12 },
+  ]);
+  const refreshWith = async (candidate: Awaited<ReturnType<typeof buildApp>>) =>
+    candidate.inject({
+      method: "POST",
+      url: `${root()}/exchange-rates/refresh`,
+      headers: headers(),
+      payload: "{}",
+    });
+
+  it("reaches the outside source when it is on (so the check below is not vacuous)", async () => {
+    const outside = vi.fn(async () => new Response(body));
+    vi.stubGlobal("fetch", outside);
+    try {
+      const on = await buildApp(db, config);
+      await pin("EUR");
+      const result = refreshRatesResultSchema.parse(
+        (await refreshWith(on)).json(),
+      );
+      await on.close();
+      expect(outside).toHaveBeenCalled();
+      expect(result).toEqual({ updated: 1, keptManual: 0, failed: [] });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("makes no outside call while it is off, and lists every currency as not fetched", async () => {
+    const outside = vi.fn(async () => new Response(body));
+    vi.stubGlobal("fetch", outside);
+    try {
+      const off = await buildApp(
+        db,
+        testConfig(url, "currencies", { RATES_ENABLED: "false" }),
+      );
+      await pin("EUR");
+      await pin("JPY");
+      const response = await refreshWith(off);
+      await off.close();
+      expect(response.statusCode).toBe(200);
+      expect(refreshRatesResultSchema.parse(response.json())).toEqual({
+        updated: 0,
+        keptManual: 0,
+        failed: ["EUR", "JPY"],
+      });
+      expect(outside).not.toHaveBeenCalled();
+      expect(await list("EUR")).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("still lets a rate be set by hand while it is off", async () => {
+    const off = await buildApp(
+      db,
+      testConfig(url, "currencies", { RATES_ENABLED: "false" }),
+    );
+    await pin("EUR");
+    const response = await off.inject({
+      method: "PUT",
+      url: `${root()}/exchange-rates`,
+      headers: headers(),
+      payload: JSON.stringify({
+        code: "EUR",
+        date: "2026-10-09",
+        rate: "1.1",
+      }),
+    });
+    await off.close();
+    expect(response.statusCode).toBe(201);
+    expect((await list("EUR"))[0]).toMatchObject({
+      rate: "1.1",
+      source: "manual",
+    });
+  });
+});
