@@ -10,10 +10,13 @@ import type { JobLog } from "./runner";
 export async function runTick(
   db: Database,
   now: Date,
-  deps: { fetchRate: RateFetcher; log: JobLog },
+  deps: { fetchRate: RateFetcher; log: JobLog; ratesEnabled?: boolean },
 ) {
-  // Rates first, so entries created in this tick can use today's rates.
-  const rates = await refreshLedgerRates(db, now, deps.fetchRate, deps.log);
+  // Rates first, so entries created in this tick can use today's rates. With RATES_ENABLED=false there is no step.
+  const rates =
+    deps.ratesEnabled === false
+      ? { ledgers: 0, fetched: 0, failed: 0 }
+      : await refreshLedgerRates(db, now, deps.fetchRate, deps.log);
   const recurring = await runRecurringRules(db, now, deps.log);
   // People deleted more than 30 days ago go for good, with everything of theirs (ADR 0049).
   const purged = await purgeDeletedPeople(db, now, deps.log);

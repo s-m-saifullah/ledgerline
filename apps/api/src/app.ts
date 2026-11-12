@@ -34,8 +34,8 @@ import { budgetRoutes } from "./modules/budgets/routes";
 import { categoryRoutes } from "./modules/categories/routes";
 import { changeRoutes } from "./modules/changes/routes";
 import {
-  createRateProvider,
   type RateFetcher,
+  rateFetcherFor,
 } from "./modules/currencies/provider";
 import { currencyRoutes } from "./modules/currencies/routes";
 import { exportRoutes } from "./modules/exports/routes";
@@ -85,7 +85,7 @@ export async function buildApp(
   db: Database,
   config: Config,
   {
-    fetchRate = createRateProvider(),
+    fetchRate = rateFetcherFor(config.RATES_ENABLED),
     now = () => new Date(),
   }: { fetchRate?: RateFetcher; now?: () => Date } = {},
 ) {
