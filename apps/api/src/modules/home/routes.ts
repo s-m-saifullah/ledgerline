@@ -4,12 +4,12 @@ import {
   homeSummarySchema,
   problemSchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
+import { requestSession } from "../auth/request-session";
 import type { Auth } from "../auth/service";
 import { getHomeSummary } from "./service";
 
@@ -41,9 +41,7 @@ export async function homeRoutes(
       },
     },
     async (request) => {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(request.headers),
-      });
+      const session = await requestSession(auth, request);
       if (!session)
         throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
       return getHomeSummary(

@@ -1,7 +1,7 @@
 import { idempotencyKeySchema, problemSchema } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyRequest } from "fastify";
 import { z } from "zod";
+import { requestSession } from "../modules/auth/request-session";
 import type { Auth } from "../modules/auth/service";
 import { ApiProblem } from "./problem";
 
@@ -23,9 +23,7 @@ export const writeHeaders = z.looseObject({
 /** Returns a function that reads the signed-in user's id or throws 401. */
 export function createActor(auth: Auth) {
   return async function actor(request: FastifyRequest) {
-    const session = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
+    const session = await requestSession(auth, request);
     if (!session)
       throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
     return session.user.id;

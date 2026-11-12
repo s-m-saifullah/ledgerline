@@ -27,6 +27,7 @@ import { ApiProblem, problem } from "./lib/problem";
 import { accountRoutes } from "./modules/accounts/routes";
 import { mayReceiveDeviceToken } from "./modules/auth/device-token";
 import { accountGuard } from "./modules/auth/guard";
+import { requestSession } from "./modules/auth/request-session";
 import { createAuth } from "./modules/auth/service";
 import { sessionRoutes } from "./modules/auth/sessions-routes";
 import { budgetRoutes } from "./modules/budgets/routes";
@@ -363,9 +364,7 @@ export async function buildApp(
       },
     },
     async (request, reply) => {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(request.headers),
-      });
+      const session = await requestSession(auth, request);
       if (!session)
         return reply
           .code(401)
@@ -384,9 +383,7 @@ export async function buildApp(
       },
     },
     async (request, reply) => {
-      const session = await auth.api.getSession({
-        headers: fromNodeHeaders(request.headers),
-      });
+      const session = await requestSession(auth, request);
       if (!session)
         return reply
           .code(401)

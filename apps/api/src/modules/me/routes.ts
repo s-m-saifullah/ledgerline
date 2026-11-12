@@ -4,7 +4,6 @@ import {
   problemSchema,
   updateMeSchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
@@ -12,6 +11,7 @@ import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
 import { requireAppOrigin } from "../../lib/route-helpers";
+import { requestSession } from "../auth/request-session";
 import type { Auth } from "../auth/service";
 import {
   changePassword,
@@ -45,9 +45,7 @@ export async function meRoutes(
   const app = instance.withTypeProvider<ZodTypeProvider>();
   const limiter = createAttemptLimiter(now);
   const who = async (request: FastifyRequest) => {
-    const found = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
+    const found = await requestSession(auth, request);
     if (!found)
       throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
     return { userId: found.user.id, sessionId: found.session.id };
