@@ -45,7 +45,7 @@ The API also runs background jobs on the same PostgreSQL database (pg-boss, in i
 
 ## Updating and rolling back
 
-Each tagged release repeats step 5. The deploy script takes a verified backup first and stops if it fails, pulls the new images, waits for health and restores the previous images if the health check fails. Migrations run when the API starts and are not reversed by an image rollback, so migrations are written to stay backward compatible.
+Each tagged release repeats step 5. The deploy script first takes a backup and runs the restore drill on that exact dump, and stops, with nothing changed, if either fails. It then pulls the new images, waits for health (retrying while the web container starts) and restores the previous images if the health check fails. A server with a database volume (`ledgerline_db`) always gets the backup, even if the database container is stopped, which the script starts first; only a server with neither a volume nor a database container is treated as a fresh install. If the volume has another name (you set `COMPOSE_PROJECT_NAME`), set the same value when you run the script, or it stops and says so. After the release the workflow takes another backup and drills it, and that step fails if the backup does. Migrations run when the API starts and are not reversed by an image rollback, so migrations are written to stay backward compatible. Deploying the same version again keeps the older release as the rollback target.
 
 Manual rollback to an earlier release:
 
@@ -66,7 +66,7 @@ Schedule both from the deploy user's crontab, for example daily and weekly:
 45 3 * * 0 /opt/ledgerline/scheduled-backup.sh drill >> /opt/ledgerline/backups/cron.log 2>&1
 ```
 
-`prune-backups.sh` keeps seven days and always the newest three. Dumps stay on the server unless you turn on the off-site copy below. Before every release, and after any hotfix, take a backup and run the drill on it.
+`prune-backups.sh` keeps seven days and always the newest three finished dumps (a dump without its checksum, left by a full disk, does not count). The daily script prunes first, so a full disk cannot stop the backups for good, then checks the free space: below 200 MB (`MIN_FREE_MB`) it writes `Low disk space` to `cron.log` and exits 1, and it still tries the backup. A failed backup or drill also exits 1, and the cron log is the only place that shows it, so read it now and then. Dumps stay on the server unless you turn on the off-site copy below. `backup-and-drill.sh` takes a backup and drills the dump it just took; the deploy and the release workflow use it, and you can run it by hand before a hotfix.
 
 ## Off-site encrypted backups
 

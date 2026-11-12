@@ -40,3 +40,22 @@ test("the recovery scripts are valid shell and ask for RESET first", () => {
     );
   }
 });
+
+test("the proven backup helper is copied to the server", () => {
+  assert.ok(copied.includes("infra/scripts/backup-and-drill.sh"));
+});
+
+test("the post-deploy backup fails the step when it fails, and drills the dump it took", () => {
+  const lines = workflow
+    .split("\n")
+    .filter((line) => line.includes("backup-and-drill.sh"))
+    .filter((line) => line.includes("ssh "));
+  assert.equal(lines.length, 1, "the post-deploy ssh command was not found");
+  const [line] = lines;
+  // A `;` after the backup would let a failed backup pass; "the newest file" could be an older dump.
+  assert.doesNotMatch(line, /backup\.sh'/);
+  assert.doesNotMatch(line, /ls -t/);
+  // The result of the helper decides the step; the off-site copy is best effort.
+  assert.match(line, /backup-and-drill\.sh'; result=\\\$\?/);
+  assert.match(line, /exit \\\$result/);
+});
