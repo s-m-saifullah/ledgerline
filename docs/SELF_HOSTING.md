@@ -112,7 +112,7 @@ It sends nothing about money. The server answers one read-only script, `health-r
 
 3. In the repository's Settings, Environments, make a new environment named `monitoring` **with no required reviewer** (a reviewer would have to approve it every day). Add three secrets to it: `MONITOR_SSH_KEY` (the private key file's text), `MONITOR_KNOWN_HOSTS` (the server's line from `ssh-keyscan`) and `MONITOR_HOST` (the server's address). The deploy user comes from the `DEPLOY_USER` variable, as for releases. Then delete the key files from your computer.
 4. Make sure GitHub emails you about failed workflow runs (your profile's Settings, Notifications, Actions).
-5. Prove it: Actions, Health watch, Run workflow, once with the defaults (green), and once with `max_dump_hours` set to `1` (red, and an email arrives).
+5. Prove it: Actions, Health watch, Run workflow, once with the defaults (green), and once with `max_dump_hours` set to `0` (red, and an email arrives).
 
 Run the report by hand on the server with `bash /opt/ledgerline/health-report.sh`. GitHub stops scheduled workflows in a repository with no activity for 60 days; a green run now and then, or any commit, keeps it going.
 
