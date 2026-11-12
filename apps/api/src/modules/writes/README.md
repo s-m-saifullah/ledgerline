@@ -1,6 +1,6 @@
 # Financial write helpers
 
-Use these helpers for every Phase 1 financial mutation. Authentication endpoints keep their existing handlers.
+Use these helpers for every financial mutation on a ledger. Authentication and account endpoints (Users, Profile, sessions; ADR 0048) keep their existing handlers, and the sync push (`POST /sync`) runs each mutation through `runFinancialWrite`, with the mutation's `id` as its key instead of the header.
 
 1. Validate the body with a shared Zod schema. Declare problem responses and the required `Idempotency-Key` in the endpoint's OpenAPI schema.
 2. Call `financialWriteIdentity(auth, config, request)` to resolve the signed-in actor, trusted browser origin, ledger ID and key. Never accept an actor ID from the body.

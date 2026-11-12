@@ -3,7 +3,7 @@
 A private, self-hosted personal finance app. Record income, expenses and transfers, keep several accounts, track money people owe you, and see an honest picture of your money on one calm Home screen. Your data stays on your own server.
 
 - **Self-hosted:** runs as Docker containers on a small Linux server (ARM64 or x86-64 with your own image builds).
-- **Private by design:** no analytics, no trackers, no third-party calls from the app. Logs never contain amounts, payees or notes.
+- **Private by design:** no analytics and no trackers. Logs never contain amounts, payees or notes. The server makes one outside call, the daily exchange-rate fetch (currency codes and a date, never amounts; `RATES_ENABLED=false` turns it off), and the Android app checks the repository's public releases for updates, sending nothing about you.
 - **Exact money:** amounts are stored as integers in minor units (cents) with a currency code, never floating point.
 - **One API:** the web app and the Android app use the same documented REST API (`docs/openapi.json`); neither has a private shortcut.
 - **Calm interface:** mobile-first, light and dark themes, keyboard friendly, a privacy mode that blurs amounts.

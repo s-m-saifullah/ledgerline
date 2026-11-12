@@ -2,6 +2,8 @@
 
 Date: 2026-10-28. Status: accepted by the owner in chat, after reviewing and correcting an interactive prototype (the owner answered the open choices and asked for this ADR and its plan to be recorded). Amends [0045](0045-one-design-for-web-and-android.md) and [0046](0046-clutter-free-redesign.md) for the web, and the design rules in [CLAUDE.md](../../CLAUDE.md). Builds on [0039](0039-interactive-control-styles.md), [0040](0040-accessibility-pass.md), [0041](0041-pwa.md) and [0044](0044-live-updates-in-the-web-app.md).
 
+Note (2026-11-12): two ADRs are numbered 0047, this one and [0047-amendments-early](0047-amendments-early.md) (this one's early amendments); neither was renumbered because other documents link to both. The stack sentence under "Not changing" below names shadcn/ui and Recharts, which the web never used: it uses Radix dialog and slot under its own components and hand-written charts ([0036](0036-net-worth-over-time.md)).
+
 ## Context
 
 The phone redesign is finished and released ([0046](0046-clutter-free-redesign.md), `android-v0.2.0`). ADR 0046 suspended the rule that the web is the reference and said the web follows with its own plan. The web still has the older look: eyebrows and subtitles on most pages, long hint paragraphs, a breadcrumb in the top bar, a different button and card style, filters behind a disclosure, five icon buttons on every category row, an action bar on every service, a Status select where the phone has a Pending switch, and a layout that switches at one width (700 px) in CSS and again in JavaScript (`useIsPhone`), so Categories, Clients and Loans render different markup on a phone.

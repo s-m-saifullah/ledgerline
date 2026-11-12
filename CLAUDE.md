@@ -20,7 +20,7 @@ Self-hosted personal finance web app, deployed with Docker. A native Android app
 ## Stack (locked; do not swap without an ADR)
 
 - Monorepo: pnpm workspaces + Turborepo. TypeScript strict everywhere.
-- Web (`apps/web`): React 19, Vite, TanStack Router, TanStack Query, Tailwind CSS v4 with design tokens, shadcn/ui (Radix) + Lucide, Recharts, React Hook Form + Zod.
+- Web (`apps/web`): React 19, Vite, TanStack Router, TanStack Query, Tailwind CSS v4 with design tokens, Radix (dialog and slot) under our own components in `packages/ui` and `apps/web/src/components`, Lucide, hand-written charts (no chart library, ADR 0036), React Hook Form + Zod.
 - API (`apps/api`): Node.js 24 LTS, Fastify, Zod schemas to OpenAPI 3.1, Drizzle ORM + drizzle-kit migrations, PostgreSQL 18, Better Auth, pg-boss for jobs.
 - Shared (`packages/shared`): Zod schemas, types, money and date helpers. `packages/ui`: tokens and shared components. `packages/config`: tsconfig and Biome presets.
 - Quality: Biome (lint and format), Vitest, Testing Library, Playwright.
@@ -43,7 +43,7 @@ docs/               plan, API contract, ADRs, guides
 ```
 
 Code is grouped by feature:
-- API: `apps/api/src/modules/<feature>/{routes,service,repo,schema}.ts` plus tests.
+- API: `apps/api/src/modules/<feature>/` holds `routes.ts` (a few features split their routes into several files), `service.ts` and `repo.ts` plus tests. The Zod schemas live in `packages/shared/src`, not in the module. `writes` is the shared idempotent-write infrastructure, `auth` is flat files, and `contacts` has no routes of its own (`receivables` registers them). `me`, `users` and the ledger clear still run their own Drizzle queries in the service; new code goes through a `repo.ts`.
 - Web: `apps/web/src/features/<feature>/` (routes, components, hooks, API calls).
 - A feature may call another feature's **service**, never its tables or internal files.
 - Web helpers shared by several features go in `apps/web/src/lib/` or `components/`, not in one feature's folder (see `CONTRIBUTING.md`).
@@ -57,9 +57,9 @@ Code is grouped by feature:
 - **Ledger scoping:** every financial row has `ledger_id`; every query goes through a ledger-scoped repository. Add an integration test per endpoint proving another ledger's rows cannot be read or written.
 - **Transfers** are two transactions sharing `transfer_id`. **Balances** are computed (opening balance plus sum), not stored.
 - **Multi-currency:** base currency USD; each transaction stores `fx_rate` and `base_amount` at save time; manual rates (`source = manual`) are never overwritten.
-- **API:** REST under `/api/v1`, camelCase JSON, money as `{ amount, currency }`, ISO dates, UTC timestamps, cursor pagination, `Idempotency-Key` on writes, RFC 9457 problem+json errors. Web and Android use the same endpoints; no private shortcuts.
+- **API:** REST under `/api/v1`, camelCase JSON, money as `{ amount, currency }`, ISO dates, UTC timestamps, cursor pagination, `Idempotency-Key` on every ledger write, RFC 9457 problem+json errors. The exceptions: the sync push (each mutation carries its own id), the import preview (it writes nothing), and the account writes (Users, Profile, Change password, ending sessions; ADR 0048). Web and Android use the same endpoints; no private shortcuts.
 - **Auth:** public sign-up is off; the first account (the admin) is created on first run and adds other users, each with their own ledger and a temporary password they must change at first sign-in (ADR 0048). The admin never sees another user's money (the admin may clear or restore a ledger, never see it; a deleted person can be restored for 30 days, ADR 0049). Roles (owner, editor, viewer) exist through `ledger_members`; sharing a ledger is not built.
-- **Privacy:** no analytics or trackers; logs never contain amounts, payees or notes. The one outside call is the Android app's update check against the repository's public releases on GitHub, on its Settings button and when the app opens, sending nothing about the owner (ADR 0043). Secrets only in `.env` (never committed); keep `.env.example` current.
+- **Privacy:** no analytics or trackers; logs never contain amounts, payees or notes. Two outside calls, neither sending anything about the owner's money (ADR 0051): the server's daily exchange-rate fetch (currency codes and a date, to Frankfurter with a fallback on a public package CDN, only for ledgers that pin other currencies, off with `RATES_ENABLED=false`) and the Android app's update check against the repository's public releases on GitHub, on its Settings button and when the app opens (ADR 0043). Secrets only in `.env` (never committed); keep `.env.example` current.
 
 ## Design rules (UI)
 
@@ -72,7 +72,7 @@ Code is grouped by feature:
 - Check new UI at 320 px, 390 px and desktop in light and dark.
 - The Android app led the redesign (ADR 0046, which amends ADR 0045): build screens from `apps/android/.../ui/design`, keep text at 10 sp or more (one constant, `TEXT_FLOOR_SP`, which a unit test checks) and every text pair at 4.5:1 contrast (a unit test checks the palettes), keep touch targets at 48 dp, use the single teal accent (chart colours are tints of it), and review the Roborazzi screenshots (`-Pledgerline.screenshots`) at 320 and 390 dp, light and dark, and with the largest text.
 - The web follows the phone (ADR 0047, which amends ADRs 0045 and 0046 for the web): the same tokens, type scale (10 floor, 12, 14, 19, 27, 31, 35), grouped cards, one-hint rows and few words; shapes 12 (fields, buttons), 16 (cards), 20 (hero), 24 (sheets); 44 px touch targets; borders, never shadows; a bottom sheet on a phone, a right-hand drawer from 700 px and a centred dialog for questions; the layout switches by container width at 700 and 1100 px in CSS (no JavaScript branches that render different controls); the header switches light and dark in one click (System is in Settings); money owed is shown apart as Clients owe, People owe and You owe (the phone adds them together). Build web screens from the shared pieces in `packages/ui` and `apps/web/src/components`, and look at each at 320, 390 and desktop in light and dark before asking for the owner's browser check.
-- Android list screens with a search or filter end their list with `narrowingRoom(...)` and carry a "search stays put" test, or the search box jumps while typing (see `CONTRIBUTING.md`).
+- Android list screens with a search or filter keep them in a fixed header above the list (every list does today) or end the list with `narrowingRoom(...)`, and carry a "search stays put" test, or the search box jumps while typing (see `CONTRIBUTING.md`).
 
 ## Deployment facts
 

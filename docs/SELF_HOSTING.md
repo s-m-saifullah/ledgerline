@@ -39,9 +39,13 @@ A reverse proxy on the host owns ports 80/443 and routes your domain to `127.0.0
 
 ## Configuration
 
-`.env.example` documents each setting. Production requires `APP_URL` (your public address), `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ random characters), `OWNER_EMAIL`, `OWNER_PASSWORD` and the image names. Keep `.env` out of Git and out of backups you share.
+`.env.example` documents each setting. Production requires `APP_URL` (your public address), `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ random characters), `OWNER_EMAIL`, `OWNER_PASSWORD` and the image names. Keep `.env` out of Git and out of backups you share, but keep your own copy in a password manager: it is in no backup, and without `BETTER_AUTH_SECRET` the stored two-factor secrets can no longer be read after a rebuild.
 
-The API also runs background jobs on the same PostgreSQL database (pg-boss, in its own `pgboss` schema): an hourly tick that refreshes exchange rates once per ledger day and, later, creates recurring entries. They need no extra container or setting; `JOBS_ENABLED=false` switches them off for debugging. The backup and restore drill include the schema, and what is due is always worked out from your data, so the job tables carry nothing you could lose.
+The API also runs background jobs on the same PostgreSQL database (pg-boss, in its own `pgboss` schema): an hourly tick that refreshes exchange rates once per ledger day, creates recurring entries and removes what has passed its 30-day undo. They need no extra container or setting; `JOBS_ENABLED=false` switches them all off for debugging. The backup and restore drill include the schema, and what is due is always worked out from your data, so the job tables carry nothing you could lose.
+
+## What leaves the server
+
+Nothing about your money, ever, and no analytics or trackers. The server makes one kind of outside call: the daily exchange-rate fetch, which asks Frankfurter (and, if that fails, a public package CDN) for a rate, sending only a currency code, the base currency and a date, and so also revealing your server's address to those hosts. It runs only for ledgers that pinned another currency. Set `RATES_ENABLED=false` in `.env` to switch it off: nothing then leaves the server, the manual rate refresh lists every currency as not fetched, and you set each rate by hand ([ADR 0051](adr/0051-the-rate-fetch-is-an-outside-call.md)). The Android app's update check is the other outside call (it asks the repository's public releases whether a newer version exists).
 
 ## Updating and rolling back
 
@@ -67,6 +71,17 @@ Schedule both from the deploy user's crontab, for example daily and weekly:
 ```
 
 `prune-backups.sh` keeps seven days and always the newest three finished dumps (a dump without its checksum, left by a full disk, does not count). The daily script prunes first, so a full disk cannot stop the backups for good, then checks the free space: below 200 MB (`MIN_FREE_MB`) it writes `Low disk space` to `cron.log` and exits 1, and it still tries the backup. A failed backup or drill also exits 1, and the cron log is the only place that shows it, so read it now and then. Dumps stay on the server unless you turn on the off-site copy below. `backup-and-drill.sh` takes a backup and drills the dump it just took; the deploy and the release workflow use it, and you can run it by hand before a hotfix.
+
+## Rebuild on a new server
+
+Keep these outside the server: your `.env` (the password manager), the off-site backup's private key (`ledgerline-backup.key`), the read-only bucket settings (`restore.env`) and your repository with its Actions secrets. Then, after a lost or ruined server:
+
+1. On the new server, do steps 1 to 4 of First-time setup (install, route the domain, deploy key and variables). Step 3 writes a new `.env`: replace it with your saved one (same `BETTER_AUTH_SECRET` and database settings), mode 0600, owned by the deploy user.
+2. On your computer, fetch and check the newest off-site backup and keep the decrypted dump: `bash infra/scripts/offsite-restore.sh --config restore.env --identity ledgerline-backup.key --keep`. It prints where it kept the files. They hold real data: delete them when you are done.
+3. Copy the dump to the new server (`scp`, into `backups/`, mode 0600) and start only the empty database there: `docker compose --env-file .env -f docker-compose.yml up -d --wait db`.
+4. Restore into that empty database, and only an empty one: `docker compose --env-file .env -f docker-compose.yml exec -T db sh -c 'exec pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --exit-on-error' < backups/<the dump>`.
+5. Run the release workflow for your current version tag (step 5 of First-time setup). The deploy takes a backup of the restored data and drills it before it pulls the images; the migrations already in the dump are not run again.
+6. Sign in, check a balance you know, and, if you use two-factor, sign in with a code (it proves the saved `.env` is the right one). Delete the decrypted dump from your computer and from the server.
 
 ## Off-site encrypted backups
 
