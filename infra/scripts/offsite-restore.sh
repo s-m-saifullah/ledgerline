@@ -61,5 +61,5 @@ dump=$(ls "$work"/ledgerline-*.dump 2>/dev/null | head -n 1 || true)
 cp "$here/restore-drill.sh" "$here/verify-queries.sh" "$work/"
 dump_name=$(basename "$dump")
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$work":"$work" -e LEDGERLINE_DIR="$work" -e DUMP="$dump_name" \
-  "${OFFSITE_DRILL_IMAGE:-docker:cli}" sh -c 'apk add --no-cache bash coreutils >/dev/null 2>&1; cd "$LEDGERLINE_DIR"; exec bash restore-drill.sh "$DUMP"'
+  "${OFFSITE_DRILL_IMAGE:-docker:29.9.3-cli}" sh -c 'apk add --no-cache bash coreutils >/dev/null 2>&1; cd "$LEDGERLINE_DIR"; exec bash restore-drill.sh "$DUMP"'
 echo "Off-site restore check passed for $name"

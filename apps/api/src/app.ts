@@ -22,8 +22,10 @@ import { z } from "zod";
 import type { Config } from "./config";
 import type { Database } from "./db/client";
 import { user } from "./db/schema";
+import { addApiNoStore } from "./lib/api-cache";
 import { safeErrorFields } from "./lib/error-log";
 import { ApiProblem, problem } from "./lib/problem";
+import { isQuietRequest } from "./lib/request-log";
 import { accountRoutes } from "./modules/accounts/routes";
 import { mayReceiveDeviceToken } from "./modules/auth/device-token";
 import { accountGuard } from "./modules/auth/guard";
@@ -216,7 +218,9 @@ export async function buildApp(
       .type("application/problem+json")
       .send(problem(404, "Not found", "The requested resource was not found.")),
   );
+  addApiNoStore(app);
   app.addHook("onResponse", async (request, reply) => {
+    if (isQuietRequest(request.url)) return;
     app.log.info(
       {
         requestId: request.id,

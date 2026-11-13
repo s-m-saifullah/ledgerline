@@ -45,3 +45,14 @@ updates:
     ignore:
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
+  - package-ecosystem: docker-compose
+    directory: /infra/compose
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 1
+    ignore:
+      # A new PostgreSQL major needs a dump and restore, so it is decided deliberately. A new 18.x patch arrives as a
+      # pull request; the restore drill names the same image (infra/scripts/restore-drill.sh), and a test fails until
+      # both are changed together.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]

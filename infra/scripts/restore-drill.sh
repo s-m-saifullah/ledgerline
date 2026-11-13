@@ -13,7 +13,7 @@ name="ledgerline-restore-$(date +%s)-$$"
 cleanup() { docker rm -f "$name" >/dev/null; }
 trap cleanup EXIT
 # No network or host ports; this can never restore into the running app database.
-docker run -d --name "$name" --network none -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=restore postgres:18 >/dev/null
+docker run -d --name "$name" --network none -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=restore postgres:18.7 >/dev/null
 ready=false
 # The image first runs a temporary server that listens only on its socket, then restarts. Checking
 # over TCP waits for the final server; a socket check can pass just before that shutdown.
@@ -35,7 +35,7 @@ while IFS='|' read -r table count fingerprint; do
     seen_checks[$count]=$fingerprint
     continue
   fi
-  case "$table" in users|ledgers|ledger_members|accounts|categories|transactions|transaction_splits|contacts|receivables|receivable_payments|receivable_events|budgets|currencies|exchange_rates|recurring_rules|recurring_runs|import_batches|tags|transaction_tags|two_factor|write_receipts) ;; *) echo 'Invalid manifest table'; exit 1 ;; esac
+  case "$table" in users|ledgers|ledger_members|accounts|categories|transactions|transaction_splits|contacts|receivables|receivable_payments|receivable_events|budgets|currencies|exchange_rates|recurring_rules|recurring_runs|import_batches|tags|transaction_tags|two_factor|write_receipts|auth_accounts|auth_sessions|auth_verifications) ;; *) echo 'Invalid manifest table'; exit 1 ;; esac
   [[ "$count" =~ ^[0-9]+$ && "$fingerprint" =~ ^[0-9a-f]{32}$ ]] || { echo 'Invalid snapshot manifest'; exit 1; }
   [[ -z "${seen_tables[$table]:-}" ]] || { echo "Duplicate manifest table"; exit 1; }
   seen_tables[$table]=1
