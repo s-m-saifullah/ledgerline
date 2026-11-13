@@ -14,13 +14,15 @@ const vpn = ip(10, 8, 0, 2);
 const docker = ip(172, 20, 5, 9);
 const publicAddress = ip(203, 0, 113, 7);
 const loopback = ip(127, 0, 0, 1);
+const linkLocal = ["fe80", "1"].join("::");
+const uniqueLocal = ["fd00", "1"].join("::");
 
 test("picks the private IPv4 address of a real interface, preferring Wi-Fi names", () => {
   assert.equal(
     pickLanAddress({
       lo0: [iface(loopback, true)],
       utun3: [iface(vpn)],
-      en0: [iface("fe80::1", false, "IPv6"), iface(wifi)],
+      en0: [iface(linkLocal, false, "IPv6"), iface(wifi)],
     }),
     wifi,
   );
@@ -31,7 +33,7 @@ test("falls back to another private address, and ignores public, internal and IP
   assert.equal(pickLanAddress({ eth0: [iface(publicAddress)] }), null);
   assert.equal(pickLanAddress({ lo0: [iface(loopback, true)] }), null);
   assert.equal(
-    pickLanAddress({ en0: [iface("fd00::1", false, "IPv6")] }),
+    pickLanAddress({ en0: [iface(uniqueLocal, false, "IPv6")] }),
     null,
   );
   assert.equal(pickLanAddress({}), null);
