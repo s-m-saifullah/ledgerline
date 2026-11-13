@@ -2,7 +2,7 @@
 
 ## One run per PR update
 
-The Checks workflow runs for PRs targeting `main` and for pushes to `main`. Feature-branch pushes do not start a second workflow alongside the PR check. Open a PR (a draft is fine) when remote checks are needed; a feature branch without a PR has no automatic checks. The post-merge `main` check validates the actual merged commit. New commits cancel superseded runs for the same ref.
+The Checks workflow runs for PRs targeting `main` and for pushes to `main`. Feature-branch pushes do not start a second workflow alongside the PR check. Open a PR (a draft is fine) when remote checks are needed; a feature branch without a PR has no automatic checks. The post-merge `main` check validates the actual merged commit. A new commit on a pull request cancels that pull request's superseded run; a run on `main` or a release's checks is never cancelled (an `android-v*` tag is refused until `main`'s own check has passed on its commit, so a cancelled `main` run would block the tag).
 
 Before merging, review the final PR head and its single successful `check` job (the one required result; it gates the parallel jobs described below). Do not require two duplicate push/PR runs or manually rerun a passing suite without a change, failure or unresolved concern. A new application change still requires checks on its new head. Never push directly to `main`; a successful check is not merge or deployment authorization.
 
@@ -53,9 +53,17 @@ The Android app ([ADR 0043](adr/0043-android-app.md)) has its own `android` job 
 
 ## Releases and policy changes
 
-Release calls supply an explicit checkout ref and always run the full suite, even when the last commit changes only documentation. Preserve this rule and the locked Node 24 stack. Browser worker settings are unchanged by this optimization.
+Release calls supply an explicit checkout ref and always run the full suite, even when the last commit changes only documentation. The server release (`v*`) starts with a `tag-on-main` job (`infra/scripts/tag-on-main.sh`): the tag's commit must be on `main`, or nothing is tested, built or deployed; the deploy job then waits for the owner's approval in the `production` environment, which holds the deploy secrets and may only run for `v*` tags. Tags are also protected by a repository ruleset ([SELF_HOSTING.md](SELF_HOSTING.md), "Protect the releases"). Preserve this rule and the locked Node 24 stack. Browser worker settings are unchanged by this optimization.
 
 CI-policy changes require `node --test infra/scripts/ci-scope.test.mjs infra/scripts/ci-gate.test.mjs` (the `scope` job runs every `infra/scripts/*.test.mjs` file, including the deploy, backup-pruning, Home-consistency, tested-tree, smoke-configuration and audit script tests), workflow syntax validation, and the full PR check. The policy tests cover documentation/mixed/contract paths, full PR/push ranges, renames, deletions, missing comparisons and forced release validation.
+
+## Pinned actions, one Node version, flaky tests
+
+Every external action in the workflows is pinned to a full commit with its version in a comment (`uses: owner/action@<40 hex digits> # v1.2.3`), so a moved tag cannot change what runs next to the signing key or the registry login. Dependabot's `github-actions` entry proposes new pins and updates the comment. `workflow-pins.test.mjs` fails on any unpinned action. In the repository's Settings, Actions, General, "Require actions to be pinned to a full-length commit SHA" makes GitHub refuse an unpinned one too.
+
+`.node-version` is the one Node version: the checks use it (`setup-node`) and the API and web images are built on the same exact version, so the tests run on the Node that serves production. `node-version.test.mjs` ties them together; when Dependabot raises the Node tag in a Dockerfile, that test fails until `.node-version` is raised with it.
+
+Playwright retries a failed browser test once in CI. The browser job also writes a JSON report and a step lists the tests that failed and then passed (`infra/scripts/flaky-report.mjs`: a warning annotation per test and a list in the step summary). It only reports; a flaky test is fixed, not tolerated.
 
 ## Public audit
 

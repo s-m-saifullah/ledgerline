@@ -43,6 +43,8 @@ updates:
       interval: weekly
     open-pull-requests-limit: 2
     ignore:
+      # A new Node patch arrives as a pull request on the Dockerfiles; `.node-version` must be raised with it (a script test
+      # fails until both match), so the checks run on the Node that serves production.
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
