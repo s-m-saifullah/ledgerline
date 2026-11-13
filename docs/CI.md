@@ -12,7 +12,7 @@ The workflow runs its suites side by side so a pull request waits for the slowes
 
 | Job | What it does | Runs when |
 | --- | --- | --- |
-| `scope` | Classifies the change, runs the script tests and the public audit, decides what must run, and does the documentation whitespace check | always |
+| `scope` | Classifies the change, runs the script tests (including one that starts the real Caddy image with the real `Caddyfile` and asks it for assets, the app page and a missing file) and the public audit, decides what must run, and does the documentation whitespace check | always |
 | `unit` | Lint, typecheck, unit and integration tests, build, the API contract and its version note | the web or API suites are affected |
 | `e2e` | The browser tests, split in three shards on separate runners (each with its own database; Playwright splits by test count, so the layout specs, which run in the desktop project only, are not listed for the mobile project, or their skipped tests would unbalance the shards); Chromium and the system libraries it needs are installed every run, with no cache (a pull request can read only caches saved on itself or on `main`, and `main` skips this suite, so the cache never hit; the download takes seconds, and the occasional slow run is Ubuntu's package mirror serving one runner slowly) | the web or API suites are affected |
 | `android` | The Android build and tests and the debug APK | the Android build is affected (next section) |
