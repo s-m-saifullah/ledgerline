@@ -163,3 +163,52 @@ test("every text field in the Add sheet is 16 px on a phone", async ({
   expect(sizes.length).toBeGreaterThan(3);
   for (const field of sizes) expect(field).toEqual({ ...field, size: "16px" });
 });
+
+// The bottom bar's labels are 12 px from a 380 px wide screen and 10 px below it (ADR 0053): "Transactions" is
+// 75 px wide in 12 px semibold, which needs a tab of that width, so a narrower phone keeps the 10 px label.
+for (const [width, size] of [
+  [320, "10px"],
+  [375, "10px"],
+  [379, "10px"],
+  [380, "12px"],
+  [390, "12px"],
+  [412, "12px"],
+] as const) {
+  test(`the bottom bar's labels are ${size} at ${width} px, and none is clipped`, async ({
+    page,
+  }) => {
+    await open(page, width, "/transactions");
+    const links = page.locator(".ui-bottom a");
+    await expect(links).toHaveCount(5);
+    const found = await links.evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const range = document.createRange();
+        // The label is the element that holds the words (it sits beside the icon).
+        const word = Array.from(node.querySelectorAll("*")).find(
+          (element) =>
+            element.children.length === 0 && element.textContent?.trim(),
+        );
+        if (!word) throw new Error("no label found");
+        range.selectNodeContents(word);
+        return {
+          label: node.textContent?.trim(),
+          size: getComputedStyle(node).fontSize,
+          text: Math.ceil(range.getBoundingClientRect().width),
+          // The room for the label: the tab less its own side padding.
+          tab: Math.floor(
+            node.getBoundingClientRect().width -
+              Number.parseFloat(getComputedStyle(node).paddingLeft) -
+              Number.parseFloat(getComputedStyle(node).paddingRight),
+          ),
+        };
+      }),
+    );
+    for (const link of found) {
+      expect({ label: link.label, size: link.size }).toEqual({
+        label: link.label,
+        size,
+      });
+      expect(link.text, link.label).toBeLessThanOrEqual(link.tab);
+    }
+  });
+}

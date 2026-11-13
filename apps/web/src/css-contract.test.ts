@@ -36,6 +36,10 @@ const files = [
   "features/profile/profile.css",
   "features/users/users.css",
 ];
+// The one place a width is not a layout switch: a type size that needs a minimum width (ADR 0053).
+const typeSteps: Record<string, string[]> = {
+  "features/shell/shell.css": ["379.98", "380"],
+};
 const css = (file: string) =>
   readFileSync(resolve(__dirname, file), "utf8").replace(
     /\/\*[\s\S]*?\*\//g,
@@ -84,7 +88,13 @@ describe.each(files)("%s", (file) => {
       (match) => [...match[0].matchAll(/([\d.]+)px/g)].map((m) => m[1]),
     );
     for (const width of widths)
-      expect(["699.98", "700", "1099.98", "1100"]).toContain(width);
+      expect([
+        "699.98",
+        "700",
+        "1099.98",
+        "1100",
+        ...(typeSteps[file] ?? []),
+      ]).toContain(width);
   });
 
   it("uses only the type scale", () => {

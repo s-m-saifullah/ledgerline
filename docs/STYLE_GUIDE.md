@@ -16,7 +16,7 @@ How the web app looks and how to build it so it stays one app. Read it before yo
 
 **Shapes** (`pieces.css`): `--shape-field` 12 (inputs, selects, buttons, tiles, search boxes), `--shape-card` 16 (cards, toasts, floating notices), `--shape-hero` 20 (hero cards), `--shape-sheet` 24 (sheets and dialogs). Pills and chips are `999px`, dots `50%`; inside a rounded group use `calc(var(--shape-field) - 3px)`. No other number.
 
-**Type scale** (px): 10 (floor), 12 (hints, labels), 14 (the page, body, rows, buttons), 19 (card and sheet titles, `h2`), 27 (page titles, `h1`), 31 (amounts), 35 (hero figure). The page itself is 14 px, so unstyled text is 14. The text inside a form field is `var(--field-text)` (16 px, so iOS does not zoom; ADR 0052): that is the only other size, and only for fields. Never write a `font:` shorthand with a size. Amounts use tabular figures.
+**Type scale** (px): 10 (floor), 12 (hints, labels), 14 (the page, body, rows, buttons), 19 (card and sheet titles, `h2`), 27 (page titles, `h1`), 31 (amounts), 35 (hero figure). The page itself is 14 px, so unstyled text is 14. The text inside a form field is `var(--field-text)` (16 px, so iOS does not zoom; ADR 0052): that is the only other size, and only for fields. Never write a `font:` shorthand with a size. The bottom bar's labels are 10 px, and 12 px from a 380 px wide screen (ADR 0053): the only width other than 700 and 1100, allowed for that type step and nothing else. Amounts use tabular figures.
 
 **Borders, never shadows.** Depth comes from a 1 px `--border` and the scrim behind an overlay.
 
@@ -90,5 +90,6 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 Newest first; one line per approved UI change, with the pull request.
 
 - 2026-11-13: dead styles and the old `Amount` component removed; the guard `css-hygiene.test.ts` added (#284).
+- 2026-11-13: the bottom bar's labels are 12 px from a 380 px wide screen and 10 px below it, and its tabs have no side padding (ADR 0053; #PR).
 - 2026-11-13: the page is 14 px and every `h1` is 27 px from one rule (thirteen per-feature copies removed); the remaining off-scale sizes (13, 18, 20, 24, 26, 28, 32 px) moved onto the scale; form fields keep 16 px as `--field-text` (ADR 0052); the contract refuses off-scale sizes and `font:` shorthands in `styles.css` too (#PR).
 - 2026-11-13: no shadows and radii from the shape scale in `styles.css`; `--radius-input` removed; `styles.css` joins the contract for shadows and shapes (#286).
