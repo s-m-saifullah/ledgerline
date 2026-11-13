@@ -26,7 +26,7 @@ A reverse proxy on the host owns ports 80/443 and routes your domain to `127.0.0
      --domain ledgerline.example.com --owner-email you@example.com
    ```
 
-   It creates a dedicated restricted SSH key, stores the GitHub secrets `VPS_HOST`, `VPS_KNOWN_HOSTS` and `VPS_SSH_KEY`, and writes a private `.env` with generated passwords on the server. Nothing secret is printed.
+   It creates a dedicated restricted SSH key, stores the GitHub secrets `VPS_HOST`, `VPS_KNOWN_HOSTS` and `VPS_SSH_KEY` in the GitHub environment `production` (create the environment first, add yourself as its required reviewer and limit it to `v*` tags: see "Protect the releases"; `--github-environment ''` stores them as repository secrets instead, which any workflow could read), and writes a private `.env` with generated passwords on the server. Nothing secret is printed.
 4. **Set repository variables** (Settings, Secrets and variables, Actions, Variables): `PUBLIC_URL` (for example `https://ledgerline.example.com`, used for the final health check), and optionally `DEPLOY_DIR` and `DEPLOY_USER` if you changed the defaults.
 5. **Release:** push a version tag such as `v0.1.0` from a commit whose checks passed. The workflow runs the full checks, builds and pushes `ghcr.io/<owner>/<repo>-api` and `-web`, uploads the deployment files, deploys over SSH and checks `/api/health`. If you protect the `production` environment (recommended), a reviewer must approve the deploy job.
 6. **Sign in:** read the generated owner password in your own terminal, never in chat or logs:
@@ -104,6 +104,17 @@ bash infra/scripts/offsite-restore.sh --config restore.env --identity ledgerline
 ```
 
 It downloads the newest archive, decrypts it, checks the checksum and runs the restore drill in a throwaway container, then deletes the decrypted files (they hold real data). It never touches a running database. Restoring into the running database still means a manual `pg_restore` that only you should authorise.
+
+## Protect the releases
+
+Four repository settings keep a release in your hands (Settings on GitHub; the code cannot set them):
+
+1. **Environments, `production`:** add yourself under "Required reviewers" and, under "Deployment branches and tags", allow only the tag pattern `v*`. The deploy secrets live here, so a workflow on another branch cannot read them. (Allowing yourself to approve your own deploy is fine for one owner.)
+2. **Rules, Rulesets, New tag ruleset:** target the tag patterns `v*` and `android-v*`, enforcement Active, and tick "Restrict deletions" and "Block force pushes" (and "Restrict updates"), so a release tag cannot be deleted or moved. Leave "Restrict creations" off, or you could not make the next release.
+3. **Actions, General:** tick "Require actions to be pinned to a full-length commit SHA". Every workflow here already is (see [CI.md](CI.md)).
+4. **Code security:** keep Dependabot security updates, secret scanning with push protection, and private vulnerability reporting on.
+
+The release workflow also refuses a tag whose commit is not on `main`.
 
 ## Health watch
 
