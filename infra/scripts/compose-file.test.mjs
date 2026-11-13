@@ -79,3 +79,72 @@ test("Dependabot watches the compose file as well as the Dockerfiles", () => {
     /package-ecosystem: docker\n\s+directory: \/infra\/docker\n/,
   );
 });
+
+// Container hardening: what a compromised web or API process could do is limited to what it needs.
+const lines = (name) => service(name).split("\n");
+const has = (name, pattern) => pattern.test(service(name));
+
+test("the web container keeps only the capability to bind its port", () => {
+  assert.match(service("web"), /cap_drop: \[ALL\]/);
+  assert.match(service("web"), /cap_add: \[NET_BIND_SERVICE\]/);
+  assert.doesNotMatch(
+    service("web").replace(/cap_add: \[NET_BIND_SERVICE\]/, ""),
+    /cap_add/,
+  );
+});
+
+test("the api container still drops every capability", () => {
+  assert.match(service("api"), /cap_drop: \[ALL\]/);
+  assert.doesNotMatch(service("api"), /cap_add/);
+});
+
+test("both application containers have a read-only filesystem and no new privileges", () => {
+  for (const name of ["api", "web"]) {
+    assert.match(service(name), /^ {4}read_only: true$/m, name);
+    assert.match(service(name), /no-new-privileges:true/, name);
+  }
+});
+
+test("the only writable places are small memory-backed folders", () => {
+  assert.match(service("api"), /tmpfs:\n {6}- \/tmp(:[\w=,]+)?\n/);
+  for (const folder of ["/tmp", "/data", "/config"])
+    assert.match(
+      service("web"),
+      new RegExp(
+        `tmpfs:[\\s\\S]*- ${folder.replace("/", "\\/")}(:[\\w=,]+)?\\n`,
+      ),
+      `web ${folder}`,
+    );
+});
+
+test("the database container's filesystem is left writable (it is the database)", () => {
+  assert.doesNotMatch(service("db"), /read_only/);
+});
+
+test("the web container cannot reach the database: two networks", () => {
+  const networks = (name) => {
+    const text = lines(name).join("\n");
+    const block = text.match(/^ {4}networks:\n((?: {6}- \w+\n?)+)/m)?.[1] ?? "";
+    return [...block.matchAll(/- (\w+)/g)].map((m) => m[1]).sort();
+  };
+  assert.deepEqual(networks("web"), ["front"]);
+  assert.deepEqual(networks("api"), ["back", "front"]);
+  assert.deepEqual(networks("db"), ["back"]);
+  assert.match(compose, /^networks:\n {2}front:\n {2}back:\n/m);
+});
+
+test("the database network has no way out to the host's network", () => {
+  assert.match(compose, /^ {2}back:\n {4}internal: true$/m);
+});
+
+test("only the web container publishes a port, on the loopback address", () => {
+  const ports = compose.match(/^ {4}ports:\n {6}- "[^"]+"/gm) ?? [];
+  assert.equal(ports.length, 1);
+  assert.match(service("web"), /- "127\.0\.0\.1:8080:80"/);
+});
+
+test("no capabilities are added anywhere but the web container's one", () => {
+  const adds = compose.match(/cap_add:.*/g) ?? [];
+  assert.deepEqual(adds, ["cap_add: [NET_BIND_SERVICE]"]);
+  void has;
+});
