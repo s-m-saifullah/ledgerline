@@ -23,7 +23,6 @@
   --danger-foreground: #ffffff;
   --positive: #166534;
   --warning: #854d0e;
-  --radius-input: 8px;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;

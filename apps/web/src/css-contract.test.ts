@@ -3,8 +3,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 // The rules of the web redesign (ADR 0047) that a stylesheet can break without any test noticing:
-// the two layout widths, the type scale, the shapes, no shadows. They apply to the new files only; the old
-// `styles.css` loses its own rules as each screen moves.
+// the two layout widths, the type scale, the shapes, no shadows. They apply to the new files; the old
+// `styles.css` is brought in one rule at a time (below).
 const files = [
   "../../../packages/ui/src/pieces.css",
   "layout.css",
@@ -42,6 +42,18 @@ const css = (file: string) =>
     "",
   );
 
+const expectNoShadows = (source: string) =>
+  expect(source).not.toMatch(/box-shadow|drop-shadow|text-shadow/);
+const expectShapeRadii = (source: string) => {
+  const radii = [...source.matchAll(/border-radius:\s*([^;]+);/g)].map(
+    (match) => (match[1] ?? "").trim(),
+  );
+  for (const radius of radii)
+    expect(radius).toMatch(
+      /^((var\(--shape-(field|card|hero|sheet)\)|0)(\s+|$)){1,4}$|^(calc\(var\(--shape-field\) - 3px\)|999px|999px 0 0 999px|0 999px 999px 0|50%|0)$/,
+    );
+};
+
 describe.each(files)("%s", (file) => {
   const source = css(file);
 
@@ -62,16 +74,24 @@ describe.each(files)("%s", (file) => {
   });
 
   it("draws borders, never shadows", () => {
-    expect(source).not.toMatch(/box-shadow|drop-shadow|text-shadow/);
+    expectNoShadows(source);
   });
 
   it("takes its corner radii from the shape tokens", () => {
-    const radii = [...source.matchAll(/border-radius:\s*([^;]+);/g)].map(
-      (match) => (match[1] ?? "").trim(),
-    );
-    for (const radius of radii)
-      expect(radius).toMatch(
-        /^((var\(--shape-(field|card|hero|sheet)\)|0)(\s+|$)){1,4}$|^(calc\(var\(--shape-field\) - 3px\)|999px|50%|0)$/,
-      );
+    expectShapeRadii(source);
+  });
+});
+
+// The old `styles.css` is brought under the contract one rule at a time, as its screens move: shadows and
+// corner radii now; the type scale and the two widths follow with the page frame.
+describe("styles.css", () => {
+  const source = css("styles.css");
+
+  it("draws borders, never shadows", () => {
+    expectNoShadows(source);
+  });
+
+  it("takes its corner radii from the shape tokens", () => {
+    expectShapeRadii(source);
   });
 });
