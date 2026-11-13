@@ -1,6 +1,13 @@
 {
   auto_https off
   admin off
+  # The host proxy in front of this container reaches it from a private Docker address and writes the real
+  # client into X-Forwarded-For. Trust private peers only, and read the chain from the right, so a client cannot
+  # name itself by sending a header of its own.
+  servers {
+    trusted_proxies static private_ranges
+    trusted_proxies_strict
+  }
 }
 :80 {
   root * /srv
@@ -12,8 +19,12 @@
     Permissions-Policy "camera=(), microphone=(), geolocation=()"
     -Server
   }
+  # The API limits sign-ins per client, and reads the address from a single-address X-Forwarded-For, so the
+  # header is replaced by the one client address worked out above. Without it every client looks like the host proxy.
   handle /api/* {
-    reverse_proxy api:3001
+    reverse_proxy api:3001 {
+      header_up X-Forwarded-For {client_ip}
+    }
   }
   # The worker is never cached, and a missing one is a real 404 (not the app page), so a bad release cannot pin it.
   handle /sw.js {
