@@ -19,11 +19,17 @@ jobs:
     permissions:
       contents: read
     steps:
+      # The workflow's own commit (it has the script, which older tags do not, so a manual redeploy of an older
+      # release still works) with the whole history; the tag's commit is looked up by name.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.version || github.ref }}
           fetch-depth: 0
-      - run: infra/scripts/tag-on-main.sh "$(git rev-parse HEAD)"
+      - name: The tag must be on main
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: |
+          git fetch --no-tags origin "refs/tags/$VERSION:refs/tags/$VERSION"
+          infra/scripts/tag-on-main.sh "$(git rev-parse "refs/tags/$VERSION^{commit}")"
   checks:
     needs: tag-on-main
     permissions:
