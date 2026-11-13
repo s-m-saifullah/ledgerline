@@ -62,7 +62,7 @@ input,
 textarea {
   background: var(--surface);
   border: 1px solid var(--field-border);
-  border-radius: var(--radius-input);
+  border-radius: var(--shape-field);
   min-height: 48px;
   padding: 12px;
   color: var(--text);
@@ -76,7 +76,7 @@ select {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--field-border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   min-height: 44px;
   padding: 0 12px;
   font-size: 12px;
@@ -112,7 +112,7 @@ select {
   justify-content: center;
   position: relative;
   background: var(--accent);
-  border-radius: 10px;
+  border-radius: var(--shape-field);
   color: var(--accent-foreground);
   font-size: 24px;
   font-weight: 500;
@@ -127,7 +127,7 @@ select {
   background: var(--accent);
   color: var(--accent-foreground);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -148,7 +148,7 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--shape-field);
 }
 .icon-button:hover {
   background: var(--accent-soft);
@@ -163,7 +163,7 @@ select {
   min-height: 44px;
   padding: 0 6px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   background: transparent;
   color: var(--accent);
   font-size: 14px;
@@ -190,7 +190,7 @@ select {
   height: 48px;
   color: var(--accent);
   background: var(--accent-soft);
-  border-radius: 14px;
+  border-radius: var(--shape-card);
   margin-bottom: 24px;
 }
 .app-version {
@@ -230,7 +230,7 @@ select {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--shape-card);
   padding: 44px 28px;
   text-align: center;
   margin-bottom: 24px;
@@ -319,7 +319,7 @@ select {
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   background: var(--surface);
   color: var(--text);
   font-size: 13px;
@@ -340,7 +340,7 @@ select {
   width: 100%;
   min-height: 48px;
   border: 1px solid var(--field-border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   padding: 12px;
   background: var(--surface);
   color: var(--text);
@@ -364,7 +364,7 @@ select {
   flex-shrink: 0;
   position: relative;
   background: var(--background);
-  border-radius: 10px;
+  border-radius: var(--shape-field);
   color: var(--text);
 }
 .category-swatch {
@@ -440,9 +440,8 @@ select {
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--shape-card);
   background: var(--surface);
-  box-shadow: 0 8px 32px #0002;
   font-size: 13px;
 }
 .transaction-toast p:first-child {
@@ -463,7 +462,7 @@ select {
   padding: 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--shape-card);
 }
 @media (max-width: 700px) {
   .transaction-toast {
@@ -479,7 +478,7 @@ select {
   width: 100%;
   min-height: 48px;
   border: 1px solid var(--field-border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   padding: 12px 40px 12px 12px;
   background: var(--surface);
   color: var(--text);
@@ -505,9 +504,8 @@ select {
   overflow-y: auto;
   list-style: none;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   background: var(--surface);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
 }
 .combobox-list [role="option"],
 .combobox-list .combobox-empty {
@@ -515,7 +513,7 @@ select {
   align-items: center;
   min-height: 44px;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: calc(var(--shape-field) - 3px);
   cursor: pointer;
   overflow-wrap: anywhere;
 }
@@ -554,7 +552,7 @@ select {
 .split-line {
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   min-width: 0;
 }
 
@@ -596,7 +594,7 @@ select {
   height: 44px;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   background: transparent;
   color: var(--muted);
 }
@@ -619,10 +617,9 @@ select {
   overflow-y: auto;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--shape-sheet);
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 12px 40px #0002;
 }
 .date-time-heading {
   display: flex;
@@ -678,7 +675,7 @@ select {
   min-height: 44px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   background: transparent;
   color: var(--text);
   font-size: 14px;
@@ -847,7 +844,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
-  box-shadow: 0 4px 16px #0002;
   font-size: 13px;
 }
 .undo-pill-action {
@@ -922,7 +918,7 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   overflow-y: auto;
   padding: 12px 16px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--shape-card);
   background: var(--surface);
   color: var(--text);
   font-size: 12px;
@@ -1057,7 +1053,7 @@ details > summary {
   min-height: 44px;
   padding: 0 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--shape-field);
   background: var(--surface);
   color: var(--text);
   font-size: 14px;
