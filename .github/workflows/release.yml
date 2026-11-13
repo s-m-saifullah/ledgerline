@@ -13,7 +13,19 @@ concurrency:
   group: production-release
   cancel-in-progress: false
 jobs:
+  # Before anything is tested, built or deployed: the tag's commit must be on main (the Android release does the same).
+  tag-on-main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.version || github.ref }}
+          fetch-depth: 0
+      - run: infra/scripts/tag-on-main.sh "$(git rev-parse HEAD)"
   checks:
+    needs: tag-on-main
     permissions:
       contents: read
       pull-requests: read
@@ -22,7 +34,7 @@ jobs:
     with:
       checkout_ref: ${{ inputs.version || github.ref }}
   images:
-    needs: checks
+    needs: [tag-on-main, checks]
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -31,7 +43,7 @@ jobs:
       version: ${{ steps.version.outputs.value }}
       image: ${{ steps.version.outputs.image }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.version || github.ref }}
       - id: version
@@ -44,13 +56,13 @@ jobs:
           echo "value=$version" >> "$GITHUB_OUTPUT"
           # GHCR needs lowercase names: ghcr.io/<owner>/<repo>-api and -web.
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/login-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: infra/docker/api.Dockerfile
@@ -58,7 +70,7 @@ jobs:
           push: true
           tags: ${{ steps.version.outputs.image }}-api:${{ steps.version.outputs.value }}
           build-args: IMAGE_SOURCE=${{ github.server_url }}/${{ github.repository }}
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: infra/docker/web.Dockerfile
@@ -71,7 +83,7 @@ jobs:
   deploy:
     needs: images
     runs-on: ubuntu-latest
-    # A protected environment (required reviewer) can gate the deploy; an unprotected one changes nothing.
+    # The production environment holds the deploy secrets and waits for the owner's approval (docs/SELF_HOSTING.md).
     environment: production
     # Deployment settings are repository variables (Settings > Secrets and variables > Actions > Variables).
     env:
@@ -82,7 +94,7 @@ jobs:
       contents: read
       packages: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.version || github.ref }}
       - name: Configure SSH

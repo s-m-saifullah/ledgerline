@@ -23,7 +23,11 @@ parser.add_argument("--owner-name", default="Owner", help="display name of the o
 parser.add_argument("--deploy-user", default="ledgerline", help="Linux user that runs the stack")
 parser.add_argument("--deploy-dir", default="/opt/ledgerline", help="install directory on the server")
 parser.add_argument("--image-repository", help="image repository without -api/-web, default ghcr.io/<repo in lowercase>")
-parser.add_argument("--github-environment", help="store the secrets in this GitHub environment instead of the repository")
+parser.add_argument(
+    "--github-environment",
+    default="production",
+    help="GitHub environment that holds the secrets (default production; give it a required reviewer and limit it to v* tags); pass an empty value to use repository secrets instead",
+)
 args = parser.parse_args()
 image_repository = args.image_repository or f"ghcr.io/{args.repo.lower()}"
 

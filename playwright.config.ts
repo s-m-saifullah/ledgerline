@@ -8,7 +8,10 @@ export default defineConfig({
   // Matches CI. More local workers overlap tests that need a blank ledger with ones that create accounts.
   workers: 2,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? "github" : "list",
+  // CI also writes a JSON report so infra/scripts/flaky-report.mjs can list the tests that passed only on a retry.
+  reporter: process.env.CI
+    ? [["github"], ["json", { outputFile: "playwright-report/results.json" }]]
+    : "list",
   use: {
     baseURL: "http://localhost:5173",
     trace: "off",
