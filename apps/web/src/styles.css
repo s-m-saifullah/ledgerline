@@ -139,14 +139,11 @@ select {
 .button:hover:not(:disabled) {
   opacity: 0.9;
 }
-.quiet-button,
 .icon-button {
   background: transparent;
   color: var(--muted);
   border: 0;
   min-height: 44px;
-}
-.icon-button {
   min-width: 44px;
   display: inline-flex;
   align-items: center;
@@ -228,34 +225,6 @@ select {
 .page-heading h1 {
   margin-bottom: 12px;
 }
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.stat-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-}
-.stat-card p {
-  color: var(--muted);
-  font-size: 12px;
-}
-.amount {
-  font-variant-numeric: tabular-nums;
-  font-size: 32px;
-  margin: 12px 0 8px;
-}
-[data-privacy="true"] .amount {
-  filter: blur(8px);
-  user-select: none;
-}
-.stat-card .muted {
-  font-size: 11px;
-}
 .welcome-card {
   overflow: hidden;
   position: relative;
@@ -276,19 +245,6 @@ select {
   color: var(--muted);
   max-width: 440px;
   margin: 0 auto;
-}
-.settings-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-}
-.settings-card p {
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.8;
-  margin-top: 12px;
 }
 .loading {
   min-height: 100dvh;
@@ -331,9 +287,6 @@ select {
   .main-content {
     padding: 32px;
   }
-  .stat-card {
-    padding: 20px;
-  }
 }
 @media (max-width: 700px) {
   .main-content {
@@ -341,22 +294,6 @@ select {
   }
   .page-heading {
     margin-bottom: 28px;
-  }
-  .overview-grid {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-  .stat-card {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 4px;
-    padding: 18px 20px;
-  }
-  .stat-card .amount {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    margin: 0;
   }
   .welcome-card {
     padding: 36px 20px;
@@ -426,7 +363,7 @@ select {
   height: 40px;
   flex-shrink: 0;
   position: relative;
-  background: var(--surface-raised, var(--background));
+  background: var(--background);
   border-radius: 10px;
   color: var(--text);
 }
@@ -824,19 +761,6 @@ select {
   }
 }
 
-.form-actions {
-  position: sticky;
-  bottom: -24px;
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 16px 0;
-  background: var(--surface);
-}
-.form-actions button {
-  min-height: 44px;
-}
-
 /* Any toast (Undo, a save to confirm, a merge to resume) leaves room under the page to scroll past it. */
 body:has(.transaction-toast) .main-content {
   padding-bottom: 280px;
@@ -867,39 +791,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     padding-bottom: calc(540px + env(safe-area-inset-bottom));
   }
 }
-/* Phones: secondary actions become 44 px icon buttons; primary actions keep their text. */
-@media (max-width: 700px) {
-  .action-icon {
-    width: 44px;
-    min-width: 44px;
-    padding: 0;
-  }
-  .action-icon .action-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-.action-primary {
-  flex: 1 1 auto;
-}
-.action-square {
-  flex: 0 0 44px;
-  width: 44px;
-  padding: 0;
-}
-@media (max-width: 700px) {
-  .action-primary {
-    flex: 1 1 0;
-    min-width: 0;
-    overflow-wrap: anywhere;
-    text-align: start;
-  }
-}
-
 /* Delete is destructive: red everywhere (ADR 0014). */
 .danger-action {
   color: var(--danger);
@@ -1088,10 +979,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   display: grid;
   gap: 8px;
 }
-
-.amount-figure {
-  font-variant-numeric: tabular-nums;
-}
 /* Exports */
 .export-inline {
   display: grid;
@@ -1219,9 +1106,4 @@ details[open] > summary {
 }
 .load-error-message {
   margin: 0;
-}
-
-/* Chart figures (ADR 0039): space between a chart or its legend and the "Show the figures" row. */
-.flow-details {
-  margin-top: 16px;
 }

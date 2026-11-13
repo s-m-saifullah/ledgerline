@@ -13,7 +13,7 @@ body {
   container: app / inline-size;
 }
 
-/* A page: up to 1160 px wide, with room for the bottom bar on a phone. Simple lists use `ui-narrow` (760 px). */
+/* A page: up to 1160 px wide, with room for the bottom bar on a phone. */
 .ui-page {
   display: grid;
   gap: 12px;
@@ -22,12 +22,6 @@ body {
   max-width: 1160px;
   margin: 0 auto;
   padding: 16px 16px 84px;
-}
-.ui-narrow {
-  display: grid;
-  gap: 12px;
-  width: 100%;
-  max-width: 760px;
 }
 .ui-stack {
   display: grid;
@@ -53,22 +47,11 @@ body {
   display: none;
 }
 
-.ui-wide-only {
-  display: none;
-}
-
-@container app (max-width: 699.98px) {
-  .ui-wide-only-below {
-    display: none;
-  }
-}
-
 @container app (min-width: 700px) {
   .ui-page {
     gap: 16px;
     padding: 8px 32px 48px;
   }
-  .ui-narrow,
   .ui-stack {
     gap: 16px;
   }
@@ -78,9 +61,6 @@ body {
   .ui-cols-2,
   .ui-cols-21 {
     grid-template-columns: 1fr 1fr;
-  }
-  .ui-wide-only {
-    display: revert;
   }
 }
 
@@ -97,15 +77,6 @@ body {
   }
   .ui-cols-21 {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  }
-  .ui-cols-12 {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
-  }
-  .ui-cols-57 {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  }
-  .ui-cols-3 {
-    grid-template-columns: repeat(3, 1fr);
   }
   .ui-split {
     grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);

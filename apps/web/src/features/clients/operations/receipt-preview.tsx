@@ -1,6 +1,6 @@
 import type { ReceiptPreview as ReceiptPreviewData } from "@ledgerline/shared";
 import { ListCard, ListRow, SectionLabel } from "@ledgerline/ui";
-import { Amount } from "../../../components/amount";
+import { Amount } from "../../../components/amount-text";
 import { formatMoney } from "../../../lib/money";
 
 /** What a new receipt pays, oldest first (`OV.receive`): one row a service with how much is left, and a line for the whole. */
@@ -65,7 +65,7 @@ export function ReceiptPreview({
                 ? "Paid in full"
                 : `${money(a.remainingAfter.amount)} left`
             }
-            value={<Amount value={a.applied.amount} currency={currency} />}
+            value={<Amount cents={a.applied.amount} currency={currency} />}
           />
         ))}
       </ListCard>

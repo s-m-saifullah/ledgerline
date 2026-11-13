@@ -18,18 +18,7 @@
   --neutral-chart: color-mix(in oklab, var(--muted) 55%, var(--surface));
 }
 
-/* The money component carries the old `.amount` class (32 px with a margin). Inside the pieces an amount takes
-   the size of the text around it, and `ui-figure` is the 31 px amount of a card. Delete this when the old
-   rule goes with the last old screen. */
-.ui-card .amount,
-.ui-row .amount,
-.ui-hero .amount,
-.ui-list-head .amount {
-  margin: 0;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-}
+/* `ui-figure` is the 31 px amount of a card. */
 .ui-figure {
   font-size: 31px;
   line-height: 1.15;

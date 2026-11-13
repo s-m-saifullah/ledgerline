@@ -63,9 +63,6 @@
   text-overflow: clip;
   overflow-wrap: anywhere;
 }
-.rc-attention {
-  color: var(--danger);
-}
 
 /* What goes inside the shared sheet: a field has its label above, cards are bordered. */
 .rc-form,

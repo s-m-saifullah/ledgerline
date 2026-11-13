@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { Amount } from "../components/amount";
+import { Amount } from "../components/amount-text";
 import { MonthControl } from "../components/month-control";
 import { Overlay } from "../components/overlay";
 import { TopBar } from "../components/top-bar";
@@ -74,7 +74,7 @@ function Gallery() {
   const [seg, setSeg] = useState("all");
   const [chip, setChip] = useState(true);
   const [pending, setPending] = useState(false);
-  const money = (value: number) => <Amount value={value} />;
+  const money = (value: number) => <Amount cents={value} />;
   return (
     <PrivacyContext.Provider value={prefs.privateMode}>
       <header>
