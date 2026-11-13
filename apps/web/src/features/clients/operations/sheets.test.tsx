@@ -501,6 +501,8 @@ describe("Record payment from a client, and edit a receipt (OV.receive, OV['rece
     expect(rows[0]?.textContent).toContain("Paid in full");
     expect(rows[1]?.textContent).toContain("$200.00 left");
     expect(rows[1]?.textContent).toContain("$100.00");
+    // The amount is the shared money component, not the old one with its own size and margin.
+    expect(container.querySelector(".receipt-preview .amount")).toBeNull();
     expect(
       screen.getByText("Pays 1 service in full and part of one more."),
     ).toBeTruthy();

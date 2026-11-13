@@ -265,12 +265,6 @@
 .ac-card > .ac-field {
   padding: 16px;
 }
-.ac-value {
-  flex: 0 1 160px;
-  font-size: 14px;
-  font-weight: 500;
-  text-align: end;
-}
 .ac-err {
   margin: 0;
   padding: 0 16px 12px;

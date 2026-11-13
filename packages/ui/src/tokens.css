@@ -24,9 +24,6 @@
   --positive: #166534;
   --warning: #854d0e;
   --radius-input: 8px;
-  --radius-card: 12px;
-  --radius-dialog: 16px;
-  --space-unit: 4px;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;

@@ -70,12 +70,6 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
-.ins-fig .amount {
-  margin: 0;
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: inherit;
-}
 .ins-pos {
   color: var(--accent);
 }

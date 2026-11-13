@@ -285,7 +285,7 @@ test.describe("the pieces", () => {
     expect(small).toEqual([]);
   });
 
-  test("an amount takes the size of the text around it, not the old 32 px figure", async ({
+  test("an amount takes the size of the text around it and has no margin of its own", async ({
     page,
   }) => {
     await open(page, 390);
@@ -297,15 +297,15 @@ test.describe("the pieces", () => {
           size: getComputedStyle(node).fontSize,
           margin: getComputedStyle(node).marginTop,
         }));
-    expect(await size(".ui-row-end .amount")).toEqual({
+    expect(await size(".ui-row-end > span")).toEqual({
       size: "14px",
       margin: "0px",
     });
-    expect(await size(".ui-hero-fig-value .amount")).toEqual({
+    expect(await size(".ui-hero-fig-value > span")).toEqual({
       size: "14px",
       margin: "0px",
     });
-    expect(await size(".ui-hero-figure .amount")).toEqual({
+    expect(await size(".ui-hero-figure > span")).toEqual({
       size: "35px",
       margin: "0px",
     });
