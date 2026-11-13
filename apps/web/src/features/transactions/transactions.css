@@ -25,13 +25,6 @@
   gap: 12px;
   margin-bottom: 0;
 }
-.tx-head h1 {
-  margin-bottom: 0;
-  font-size: 27px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
 /* On a phone the heading is only for screen readers, so the actions keep to the right on their own. Clear filters
    shares this row with Export CSV, so it appearing never adds a line to the page. */
 .tx-actions {

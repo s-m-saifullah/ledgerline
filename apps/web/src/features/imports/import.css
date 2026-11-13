@@ -20,13 +20,6 @@
 .imp-page > .page-heading {
   margin-bottom: 0;
 }
-.imp-page > .page-heading h1 {
-  margin-bottom: 0;
-  font-size: 27px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
 .imp-cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

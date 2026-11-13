@@ -22,13 +22,6 @@
   gap: 12px;
   margin-bottom: 0;
 }
-.us-head h1 {
-  margin-bottom: 0;
-  font-size: 27px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
 /* Under 700 px the top bar and the one Add button do this. */
 .us-add {
   display: none;

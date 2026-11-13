@@ -48,7 +48,7 @@ export function PickRow({
         id={id}
         className="ui-pick-select"
         // Never drawn, so not part of the type scale; 16 px keeps iOS from zooming the page when the list opens.
-        style={{ fontSize: 16 }}
+        style={{ fontSize: "var(--field-text)" }}
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
