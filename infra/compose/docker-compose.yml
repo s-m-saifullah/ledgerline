@@ -1,7 +1,7 @@
 name: ledgerline
 services:
   db:
-    image: postgres:18
+    image: postgres:18.7
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?required}
@@ -15,6 +15,11 @@ services:
       timeout: 5s
       retries: 30
     mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
   api:
     image: ${API_IMAGE:?required}
     restart: unless-stopped
@@ -39,6 +44,11 @@ services:
     mem_limit: 512m
     security_opt: [no-new-privileges:true]
     cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
   web:
     image: ${WEB_IMAGE:?required}
     restart: unless-stopped
@@ -49,5 +59,10 @@ services:
         condition: service_healthy
     mem_limit: 128m
     security_opt: [no-new-privileges:true]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 volumes:
   db:

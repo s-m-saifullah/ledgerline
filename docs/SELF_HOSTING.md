@@ -11,7 +11,7 @@ This guide installs Ledgerline on one Linux server with Docker. Replace the exam
 
 ## Layout on the server
 
-Ledgerline lives in one directory (default `/opt/ledgerline`) owned by its own Linux user (default `ledgerline`) with mode 0700. It holds `.env` (mode 0600), `docker-compose.yml`, the deploy and backup scripts and `backups/`. Containers: `web` (Caddy, serves the static build and proxies `/api`, bound to `127.0.0.1:8080`), `api`, and `db` (PostgreSQL 18). The API and database have no host ports. Memory limits are 512 MB, 1 GB and 128 MB.
+Ledgerline lives in one directory (default `/opt/ledgerline`) owned by its own Linux user (default `ledgerline`) with mode 0700. It holds `.env` (mode 0600), `docker-compose.yml`, the deploy and backup scripts and `backups/`. Containers: `web` (Caddy, serves the static build and proxies `/api`, bound to `127.0.0.1:8080`), `api`, and `db` (PostgreSQL 18). The API and database have no host ports. Memory limits are 512 MB, 1 GB and 128 MB. Each container's log is rotated (three files of 10 MB), the health check is left out of the API's request log, and every API answer carries `Cache-Control: no-store`. The PostgreSQL and Caddy images are pinned to a version (Dependabot proposes patch updates); the restore drill starts the same PostgreSQL image, so change both together (a script test fails until they match).
 
 A reverse proxy on the host owns ports 80/443 and routes your domain to `127.0.0.1:8080`. A sample site block is in `infra/examples/shared-proxy-site.caddy.example`.
 

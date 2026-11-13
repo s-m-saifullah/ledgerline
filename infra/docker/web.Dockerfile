@@ -7,7 +7,7 @@ ARG APP_VERSION=""
 ENV APP_VERSION=${APP_VERSION}
 RUN pnpm --filter @ledgerline/web build
 
-FROM caddy:2-alpine AS runtime
+FROM caddy:2.11.9-alpine AS runtime
 ARG IMAGE_SOURCE=""
 LABEL org.opencontainers.image.source="${IMAGE_SOURCE}"
 COPY infra/docker/Caddyfile /etc/caddy/Caddyfile
