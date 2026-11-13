@@ -11,6 +11,8 @@ const assetSuffix =
   /\.(png|jpe?g|gif|webp|svg|ico|avif|woff2?|ttf|css|js|mjs|json|map)$/i;
 const lineRules = [
   ["private-key", /-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----/],
+  // The identity file of an age-encrypted backup (`age-keygen`): 58 characters after the version digit.
+  ["private-key", /\bAGE-SECRET-KEY-1[A-Z0-9]{58}\b/],
   [
     "github-token",
     /\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})\b/,
@@ -19,7 +21,12 @@ const lineRules = [
   ["slack-token", /\bxox[abprs]-[A-Za-z0-9-]{10,}\b/],
   [
     "private-ip",
-    /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})\b/,
+    /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3})\b/,
+  ],
+  // Unique local (fc00::/7) and link-local (fe80::/10) IPv6 addresses. A bare prefix such as `fe80::/10` is not an address.
+  [
+    "private-ip",
+    /\b(?:f[cd][0-9a-f]{2}|fe[89ab][0-9a-f]):[0-9a-f:]*[0-9a-f]\b/i,
   ],
 ];
 const emailPattern = /[A-Za-z0-9._%+-]+@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+)/g;
@@ -27,7 +34,7 @@ const pathRules = [
   ["env-file", /(^|\/)\.env(\.(?!example$)[^/]*)?$/],
   [
     "key-file",
-    /(^|\/)(id_(rsa|ed25519|ecdsa)(\.pub)?|[^/]*\.(pem|key|p12|pfx|dump))$/,
+    /(^|\/)(id_(rsa|ed25519|ecdsa)(\.pub)?|[^/]*\.(pem|key|p12|pfx|dump|jks|keystore))$/i,
   ],
   ["private-folder", /(^|\/)\.private(\/|$)/],
 ];
@@ -40,9 +47,12 @@ const looksLikeDomain = (domain) =>
 export function auditText(path, text) {
   const findings = [];
   text.split("\n").forEach((line, index) => {
+    const hit = new Set();
     for (const [rule, pattern] of lineRules)
-      if (pattern.test(line))
+      if (pattern.test(line) && !hit.has(rule)) {
+        hit.add(rule);
         findings.push({ file: path, line: index + 1, rule });
+      }
     if (skipsEmails(path)) return;
     for (const match of line.matchAll(emailPattern)) {
       const domain = match[1];
@@ -80,6 +90,11 @@ export function listFiles(root) {
   return files.sort();
 }
 
+// Binary types the repository legitimately holds (images, fonts, the Gradle wrapper). Any other binary file cannot be
+// read by this audit, so it is reported instead of passing unseen.
+const knownBinary = /\.(png|jpe?g|gif|webp|ico|avif|woff2?|ttf|jar)$/i;
+const sizeLimit = 5_000_000;
+
 export function isBinary(buffer) {
   return buffer.subarray(0, 8000).includes(0);
 }
@@ -93,10 +108,15 @@ export function auditTree(root) {
       findings.push({ file: path, line: 0, rule: "symbolic-link" });
       continue;
     }
-    if (statSync(full).size > 5_000_000) continue;
+    if (statSync(full).size > sizeLimit) {
+      findings.push({ file: path, line: 0, rule: "large-file" });
+      continue;
+    }
     const buffer = readFileSync(full);
-    if (!isBinary(buffer))
-      findings.push(...auditText(path, buffer.toString("utf8")));
+    if (isBinary(buffer)) {
+      if (!knownBinary.test(path))
+        findings.push({ file: path, line: 0, rule: "unscanned-binary" });
+    } else findings.push(...auditText(path, buffer.toString("utf8")));
   }
   return findings;
 }

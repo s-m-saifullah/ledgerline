@@ -1,5 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  symlinkSync,
+  truncateSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -69,7 +75,7 @@ test("audits a directory tree and skips binary files", () => {
     join(dir, "docs", "a.md"),
     `clean\nreach me at real@${"company"}.org\n`,
   );
-  writeFileSync(join(dir, "logo.bin"), Buffer.from([0, 1, 2, 64, 99]));
+  writeFileSync(join(dir, "logo.png"), Buffer.from([0, 1, 2, 64, 99]));
   const found = auditTree(dir);
   assert.deepEqual(found, [
     { file: "docs/a.md", line: 2, rule: "email-address" },
@@ -84,4 +90,88 @@ test("skips node_modules and reports symbolic links without following them", () 
   assert.deepEqual(auditTree(dir), [
     { file: "link", line: 0, rule: "symbolic-link" },
   ]);
+});
+
+test("flags shared-address-space (CGNAT, VPN) addresses but not their neighbours", () => {
+  const at = (...parts) => `host ${parts.join(".")}`;
+  for (const text of [
+    at(100, 64, 0, 1),
+    at(100, 100, 10, 20),
+    at(100, 127, 255, 254),
+  ])
+    assert.deepEqual(rules("a.txt", text), ["private-ip"], text);
+  for (const text of [
+    at(100, 63, 255, 255),
+    at(100, 128, 0, 1),
+    at(100, 6, 4, 1),
+  ])
+    assert.deepEqual(rules("a.txt", text), [], text);
+});
+
+test("flags private and link-local IPv6 addresses but not public, documentation or loopback ones", () => {
+  const v6 = (first, rest) => `host ${first}:${rest}`;
+  for (const text of [
+    v6("fd12", "3456:789a::1"),
+    v6("fc00", ":1"),
+    v6("fe80", ":1:2:3:4"),
+    v6("FEB0", ":ab::5"),
+  ])
+    assert.deepEqual(rules("a.txt", text), ["private-ip"], text);
+  for (const text of [
+    "host 2001:db8::1",
+    "host ::1",
+    "time 12:30:45",
+    "a fd12 word and fe80 alone",
+    "colour fc:80:00:11:22:33",
+  ])
+    assert.deepEqual(rules("a.txt", text), [], text);
+});
+
+test("flags age secret keys without echoing them", () => {
+  const key = `${"AGE-SECRET"}-KEY-1${"Q".repeat(58)}`;
+  assert.deepEqual(rules("a.txt", `identity ${key}`), ["private-key"]);
+  assert.deepEqual(
+    rules("a.txt", "AGE-SECRET-KEY-1 is described in the docs"),
+    [],
+  );
+});
+
+test("flags keystore files by name only", () => {
+  for (const path of [
+    "release.jks",
+    "apps/android/signing.keystore",
+    "a/B.JKS",
+  ])
+    assert.equal(auditPath(path).length, 1, path);
+  for (const path of [
+    "docs/keystore-setup.md",
+    "apps/android/keystore-notes.txt",
+  ])
+    assert.equal(auditPath(path).length, 0, path);
+});
+
+test("reports files it cannot read: unknown binaries and files over 5 MB", () => {
+  const dir = mkdtempSync(join(tmpdir(), "audit-"));
+  writeFileSync(join(dir, "app.apk"), Buffer.from([0, 1, 2, 3]));
+  writeFileSync(join(dir, "data.sqlite"), Buffer.from([0, 9, 9, 9]));
+  for (const allowed of [
+    "a.png",
+    "b.ttf",
+    "c.woff2",
+    "d.ico",
+    "gradle-wrapper.jar",
+  ])
+    writeFileSync(join(dir, allowed), Buffer.from([0, 1, 2, 3]));
+  writeFileSync(join(dir, "big.txt"), "");
+  truncateSync(join(dir, "big.txt"), 5_000_001);
+  assert.deepEqual(auditTree(dir), [
+    { file: "app.apk", line: 0, rule: "unscanned-binary" },
+    { file: "big.txt", line: 0, rule: "large-file" },
+    { file: "data.sqlite", line: 0, rule: "unscanned-binary" },
+  ]);
+});
+
+test("reports one finding per rule on a line, however many addresses it holds", () => {
+  const line = `${["192", "168", "1", "2"].join(".")} then ${["fe80", "1"].join("::")}`;
+  assert.deepEqual(rules("a.txt", line), ["private-ip"]);
 });
