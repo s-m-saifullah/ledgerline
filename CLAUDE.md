@@ -3,6 +3,7 @@
 Self-hosted personal finance web app, deployed with Docker. A native Android app (Phase 5, in progress, `apps/android`) uses the same API.
 
 - Scope, data model and design: `docs/PLAN.md`; first-phase rules: `docs/PHASE_1_PLAN.md`
+- **UI work: read `docs/STYLE_GUIDE.md` first** (tokens, shapes, type scale, the shared pieces to reuse, the legacy classes not to copy). Update it in the same pull request as any UI change the owner approves
 - Progress and next steps: `docs/PROGRESS.md`: read it at the start of every session and update it when a piece of work lands. It keeps the current status and the last six session entries; when a new entry makes it seven, move the oldest, unchanged, to `docs/progress-archive.md` (newest first). Read the archive only to look something up
 - Decisions: `docs/adr/NNNN-title.md` (one short file per decision that changes the plan)
 - Contribution rules: `CONTRIBUTING.md`; CI rules: `docs/CI.md`; self-hosting: `docs/SELF_HOSTING.md`
@@ -63,6 +64,7 @@ Code is grouped by feature:
 
 ## Design rules (UI)
 
+- Before writing any UI, read `docs/STYLE_GUIDE.md` and reuse what it lists (`packages/ui`, `apps/web/src/components`) instead of writing a new class or copying a feature's CSS. When an approved change adds, retires or changes a shared piece or rule, update the guide (including its change log) in that pull request. `css-contract.test.ts` and `css-hygiene.test.ts` guard the mechanical rules.
 - Calm, clutter-free, mobile-first. One primary action per screen. Amounts in large tabular figures.
 - Neutral (zinc) surfaces; one accent, teal by default, every shade derived from one seed color (OKLCH).
 - Red only for overspending, errors and Delete actions.
