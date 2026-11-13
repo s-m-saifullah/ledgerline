@@ -210,18 +210,21 @@ describe("the web container tells the API who the client is", {
   });
 
   test("a proxy chain is read from the right and gives one address", async () => {
-    // A host proxy that appends its own peer, and the private hops after the client.
-    assert.equal(await seen("203.0.113.50, 172.18.0.1"), "203.0.113.50");
+    // With no header the stub sees the address Docker connects from: a private one, like the host proxy's.
+    const proxy = await seen();
+    assert.ok(proxy, "no peer address");
+    assert.equal(await seen(`203.0.113.50, ${proxy}`), "203.0.113.50");
     assert.equal(
-      await seen("203.0.113.50, 10.0.0.4, 172.18.0.1"),
+      await seen(`203.0.113.50, ${proxy}, ${proxy}`),
       "203.0.113.50",
     );
   });
 
   test("an address the client made up in front of the chain is ignored", async () => {
+    const proxy = await seen();
     assert.equal(await seen("198.51.100.7, 203.0.113.50"), "203.0.113.50");
     assert.equal(
-      await seen("198.51.100.7, 203.0.113.50, 172.18.0.1"),
+      await seen(`198.51.100.7, 203.0.113.50, ${proxy}`),
       "203.0.113.50",
     );
   });

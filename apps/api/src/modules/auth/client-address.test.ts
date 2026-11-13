@@ -65,8 +65,10 @@ describe("the sign-in limit follows the client address", () => {
 
   it("puts a header that is not one address into a single shared limit (why Caddy must write one address)", async () => {
     for (let attempt = 0; attempt < 3; attempt += 1)
-      await badSignIn("203.0.113.20, 172.18.0.1");
+      await badSignIn("203.0.113.20, 198.51.100.1");
     // A different client, with a different chain, is stopped by the first one's attempts.
-    expect((await badSignIn("203.0.113.21, 172.18.0.1")).statusCode).toBe(429);
+    expect((await badSignIn("203.0.113.21, 198.51.100.1")).statusCode).toBe(
+      429,
+    );
   });
 });
