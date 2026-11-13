@@ -164,9 +164,7 @@ for (const width of [390, 1280]) {
       ).toBe(routes.length);
 
       await page.goto("/transactions");
-      await expect(
-        page.getByPlaceholder("Search payee, payer or note"),
-      ).toBeVisible();
+      await expect(page.getByPlaceholder("Payee or note")).toBeVisible();
       const contrast = await fieldBorderContrast(page);
       expect(contrast, "a text field to measure").not.toBeNull();
       expect(

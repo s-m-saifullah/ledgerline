@@ -190,7 +190,7 @@ export function DateTimeInput({
               <Dialog.Close asChild>
                 <button
                   type="button"
-                  className="icon-button"
+                  className="ui-icon-btn"
                   aria-label="Close picker"
                 >
                   <X size={19} />
@@ -207,7 +207,7 @@ export function DateTimeInput({
                 <div className="calendar-heading">
                   <button
                     type="button"
-                    className="icon-button"
+                    className="ui-icon-btn"
                     aria-label="Previous month"
                     disabled={year === 1 && month === 0}
                     onClick={() => moveMonth(-1)}
@@ -250,7 +250,7 @@ export function DateTimeInput({
                   </NativeSelect>
                   <button
                     type="button"
-                    className="icon-button"
+                    className="ui-icon-btn"
                     aria-label="Next month"
                     disabled={year === 9999 && month === 11}
                     onClick={() => moveMonth(1)}
@@ -324,7 +324,7 @@ export function DateTimeInput({
                   {!props.required && (
                     <button
                       type="button"
-                      className="secondary-button"
+                      className="ui-btn ui-btn-secondary"
                       onClick={() => choose("")}
                     >
                       Clear
@@ -332,7 +332,7 @@ export function DateTimeInput({
                   )}
                   <button
                     type="button"
-                    className="button"
+                    className="ui-btn ui-btn-primary"
                     disabled={today < minimum || today > maximum}
                     onClick={() => choose(today)}
                   >
@@ -371,7 +371,7 @@ export function DateTimeInput({
                   {(["AM", "PM"] as const).map((value) => (
                     <button
                       type="button"
-                      className="secondary-button time-period-button"
+                      className="ui-btn ui-btn-secondary time-period-button"
                       key={value}
                       aria-pressed={period === value}
                       onClick={() => setPeriod(value)}
@@ -387,7 +387,7 @@ export function DateTimeInput({
                   {["00", "15", "30", "45"].map((value) => (
                     <button
                       type="button"
-                      className="secondary-button"
+                      className="ui-btn ui-btn-secondary"
                       key={value}
                       aria-pressed={minute === value}
                       onClick={() => setMinute(value)}
@@ -400,7 +400,7 @@ export function DateTimeInput({
                   {!props.required && (
                     <button
                       type="button"
-                      className="secondary-button"
+                      className="ui-btn ui-btn-secondary"
                       onClick={() => choose("")}
                     >
                       Clear
@@ -408,7 +408,7 @@ export function DateTimeInput({
                   )}
                   <button
                     type="button"
-                    className="secondary-button"
+                    className="ui-btn ui-btn-secondary"
                     onClick={() => {
                       const now = new Date();
                       setHour(String(now.getHours() % 12 || 12));
@@ -420,7 +420,7 @@ export function DateTimeInput({
                   </button>
                   <button
                     type="button"
-                    className="button"
+                    className="ui-btn ui-btn-primary"
                     disabled={!chosenTime}
                     onClick={() => chosenTime && choose(chosenTime)}
                   >

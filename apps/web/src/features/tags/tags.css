@@ -31,24 +31,6 @@
     display: inline-flex;
   }
 }
-.tg-search {
-  position: relative;
-  min-width: 0;
-}
-.tg-search svg {
-  position: absolute;
-  top: 13px;
-  left: 12px;
-  color: var(--muted);
-  pointer-events: none;
-}
-.tg-search input {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px 0 38px;
-  border-radius: var(--shape-field);
-  background: var(--tint);
-}
 .tg-row {
   width: 100%;
   text-align: start;

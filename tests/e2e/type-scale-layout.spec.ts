@@ -215,3 +215,32 @@ for (const [width, size] of [
     }
   });
 }
+
+// The search box shows its whole placeholder beside the Filters button on the narrowest phone: the magnifier takes
+// 38 px of the field, so a longer hint would be cut off ("Search payee, payer or no").
+for (const width of [320, 390]) {
+  test(`the Transactions search shows its whole placeholder at ${width} px`, async ({
+    page,
+  }) => {
+    await open(page, width, "/transactions");
+    const box = page.getByRole("searchbox", {
+      name: "Search payer, payee or note",
+    });
+    await expect(box).toBeVisible();
+    const fit = await box.evaluate((input: HTMLInputElement) => {
+      const style = getComputedStyle(input);
+      const context = document.createElement("canvas").getContext("2d");
+      if (!context) throw new Error("no canvas");
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      return {
+        text: Math.ceil(context.measureText(input.placeholder).width),
+        room: Math.floor(
+          input.clientWidth -
+            Number.parseFloat(style.paddingLeft) -
+            Number.parseFloat(style.paddingRight),
+        ),
+      };
+    });
+    expect(fit.text).toBeLessThanOrEqual(fit.room);
+  });
+}

@@ -94,7 +94,7 @@ export function SplitFields({
               />
               <button
                 type="button"
-                className="text-button danger-action"
+                className="ui-btn ui-btn-text ui-btn-danger split-remove"
                 disabled={fields.length <= 2}
                 aria-label={`Remove split ${index + 1}`}
                 onClick={() => remove(index)}
@@ -113,7 +113,7 @@ export function SplitFields({
           )}
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             disabled={fields.length >= 50}
             onClick={() => append({ categoryId: "", amount: "", note: "" })}
           >

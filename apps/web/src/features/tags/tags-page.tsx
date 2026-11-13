@@ -2,10 +2,11 @@ import type { Tag } from "@ledgerline/shared";
 import { EmptyState, IconTile, ListCard, RowBody } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Plus, Search, TagIcon } from "lucide-react";
+import { Plus, TagIcon } from "lucide-react";
 import { useState } from "react";
 import { Fold } from "../../components/fold";
 import { LoadError } from "../../components/load-error";
+import { SearchField } from "../../components/search-field";
 import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { usePageAdd } from "../shell/page-add";
@@ -124,20 +125,13 @@ function LedgerTags({
           </button>
         )}
       </div>
-      <search className="tg-search">
-        <label htmlFor="tag-search" className="sr-only">
-          Search tags
-        </label>
-        <Search size={18} aria-hidden="true" />
-        <input
-          id="tag-search"
-          type="search"
-          maxLength={40}
-          value={query}
-          placeholder="Search tags"
-          onChange={(event) => setQuery(event.target.value)}
-        />
-      </search>
+      <SearchField
+        id="tag-search"
+        label="Search tags"
+        maxLength={40}
+        value={query}
+        onChange={setQuery}
+      />
       {tags.isPending && (
         <p className="muted" role="status">
           Loading tags…

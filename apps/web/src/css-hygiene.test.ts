@@ -133,3 +133,65 @@ describe("the old money component is gone", () => {
     expect(rules.map(name)).toEqual([]);
   });
 });
+
+describe("the old button family is gone", () => {
+  const legacy = [
+    "button",
+    "secondary-button",
+    "text-button",
+    "icon-button",
+    "danger-action",
+  ];
+  it("is defined by no stylesheet", () => {
+    const found = cssFiles.flatMap((file) =>
+      [...classesOf(read(file))]
+        .filter((cls) => legacy.includes(cls))
+        .map((cls) => `${name(file)} .${cls}`),
+    );
+    expect(found).toEqual([]);
+  });
+
+  it("is used by no component (use `ui-btn`, `ui-btn-secondary`, `ui-btn-text`, `ui-icon-btn`)", () => {
+    // The class names in every `className="..."` and `className={...}`: one token per word of each string.
+    const tokens = (text: string) =>
+      [...text.matchAll(/className=(?:"([^"]*)"|\{([^}\n]*)\})/g)].flatMap(
+        (attribute) =>
+          [
+            ...(attribute[1] ?? attribute[2] ?? "").matchAll(
+              /["'`]([^"'`]*)["'`]/g,
+            ),
+          ]
+            .map((literal) => literal[1] ?? "")
+            .concat(attribute[1] ?? [])
+            .flatMap((words) => words.split(/\s+/)),
+      );
+    const used = sourceFiles
+      .filter((file) =>
+        tokens(readFileSync(file, "utf8")).some((word) =>
+          legacy.includes(word),
+        ),
+      )
+      .map(name);
+    expect(used).toEqual([]);
+  });
+});
+
+describe("there is one search field", () => {
+  it('has the only `type="search"` input of a page (the command palette has its own)', () => {
+    const found = sourceFiles
+      .filter((file) => /type="search"/.test(readFileSync(file, "utf8")))
+      .map(name)
+      .sort();
+    expect(found).toEqual([
+      "apps/web/src/components/search-field.tsx",
+      "apps/web/src/features/shell/palette.tsx",
+    ]);
+  });
+
+  it("has the only stylesheet rules for a search box", () => {
+    const own = cssFiles
+      .filter((file) => /-search\s+(?:input|svg)|\.ui-search/.test(read(file)))
+      .map(name);
+    expect(own).toEqual(["apps/web/src/components/search-field.css"]);
+  });
+});

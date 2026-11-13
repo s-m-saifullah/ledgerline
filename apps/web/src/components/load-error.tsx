@@ -15,7 +15,11 @@ export function LoadError({
   return (
     <div role="alert" className={cn("load-error", className)}>
       <p className="load-error-message">{message}</p>
-      <button type="button" className="secondary-button" onClick={onRetry}>
+      <button
+        type="button"
+        className="ui-btn ui-btn-secondary"
+        onClick={onRetry}
+      >
         {retryLabel}
       </button>
     </div>

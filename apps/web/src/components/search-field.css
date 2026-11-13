@@ -1,0 +1,20 @@
+/* The one search box: see `search-field.tsx`. In a flex row (Transactions, beside Filters) it takes the room left. */
+.ui-search {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ui-search svg {
+  position: absolute;
+  top: 13px;
+  left: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.ui-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px 0 38px;
+  border-radius: var(--shape-field);
+  background: var(--tint);
+}
