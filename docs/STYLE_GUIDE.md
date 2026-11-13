@@ -16,7 +16,7 @@ How the web app looks and how to build it so it stays one app. Read it before yo
 
 **Shapes** (`pieces.css`): `--shape-field` 12 (inputs, selects, buttons, tiles, search boxes), `--shape-card` 16 (cards, toasts, floating notices), `--shape-hero` 20 (hero cards), `--shape-sheet` 24 (sheets and dialogs). Pills and chips are `999px`, dots `50%`; inside a rounded group use `calc(var(--shape-field) - 3px)`. No other number.
 
-**Type scale** (px): 10 (floor), 12 (hints, labels), 14 (body, rows, buttons), 19 (card and sheet titles), 27 (page titles), 31 (amounts), 35 (hero figure). Amounts use tabular figures. Hand-written CSS in the old `styles.css` still has off-scale sizes (see "Do not copy"); new CSS never does.
+**Type scale** (px): 10 (floor), 12 (hints, labels), 14 (the page, body, rows, buttons), 19 (card and sheet titles, `h2`), 27 (page titles, `h1`), 31 (amounts), 35 (hero figure). The page itself is 14 px, so unstyled text is 14. The text inside a form field is `var(--field-text)` (16 px, so iOS does not zoom; ADR 0052): that is the only other size, and only for fields. Never write a `font:` shorthand with a size. Amounts use tabular figures.
 
 **Borders, never shadows.** Depth comes from a 1 px `--border` and the scrim behind an overlay.
 
@@ -78,7 +78,7 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 | Legacy | Use instead |
 | --- | --- |
 | `.button`, `.secondary-button`, `.text-button`, `.icon-button` | `ui-btn` family and `ui-icon-btn` |
-| `.main-content` and a bare `.page-heading` (its `h1` takes the global size) | the page frame in `layout.css` and a 27 px page title |
+| `.main-content` and a bare `.page-heading` | the page frame in `layout.css`; the title is a plain `h1` (27 px from one global rule: never set an `h1` size in a feature) |
 | `.eyebrow`, a page subtitle | nothing (few words) |
 | A search box written per feature (`.cl-search`, `.tg-search` and similar) | one shared search field, once it exists; until then copy none, ask |
 | `.combobox`, `.date-time-picker` and friends (old-style overlays) | `Overlay` and `PickRow` where possible |
@@ -90,4 +90,5 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 Newest first; one line per approved UI change, with the pull request.
 
 - 2026-11-13: dead styles and the old `Amount` component removed; the guard `css-hygiene.test.ts` added (#284).
+- 2026-11-13: the page is 14 px and every `h1` is 27 px from one rule (thirteen per-feature copies removed); the remaining off-scale sizes (13, 18, 20, 24, 26, 28, 32 px) moved onto the scale; form fields keep 16 px as `--field-text` (ADR 0052); the contract refuses off-scale sizes and `font:` shorthands in `styles.css` too (#PR).
 - 2026-11-13: no shadows and radii from the shape scale in `styles.css`; `--radius-input` removed; `styles.css` joins the contract for shadows and shapes (#286).

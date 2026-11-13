@@ -21,13 +21,6 @@
 .home-heading {
   margin-bottom: 8px;
 }
-.home-heading h1 {
-  margin-bottom: 0;
-  font-size: 27px;
-  line-height: 1.2;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
 
 /* One height for every label row, so the cards under two columns start on the same line. */
 .home-label-row {

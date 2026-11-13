@@ -42,6 +42,28 @@ const css = (file: string) =>
     "",
   );
 
+const typeScale = [10, 12, 14, 19, 27, 31, 35];
+// Every font size is a step of the scale. The one other value is the size of a form field, `--field-text`
+// (16 px, ADR 0052). `inherit` takes the size from outside, so it adds none.
+const expectTypeScale = (source: string) => {
+  const sizes = [...source.matchAll(/font-size:\s*([^;}]+)[;}]/g)].map(
+    (match) => (match[1] ?? "").trim(),
+  );
+  for (const size of sizes) {
+    if (size === "inherit" || size === "var(--field-text)") continue;
+    expect(size).toMatch(/^[\d.]+px$/);
+    expect(typeScale).toContain(Number.parseFloat(size));
+  }
+  // The `font:` shorthand hides a size from the check above.
+  const shorthands = [
+    ...source.matchAll(/(?:^|[;{\s])font:\s*([^;}]+)[;}]/g),
+  ].map((match) => (match[1] ?? "").replace(/\s+/g, " ").trim());
+  for (const value of shorthands) expect(value).toBe("inherit");
+};
+// A page title has one rule (the global `h1` in `styles.css`): a feature does not set its own size.
+const expectNoTitleSize = (source: string) =>
+  expect(source).not.toMatch(/h1[^{}]*\{[^}]*font-size/);
+
 const expectNoShadows = (source: string) =>
   expect(source).not.toMatch(/box-shadow|drop-shadow|text-shadow/);
 const expectShapeRadii = (source: string) => {
@@ -66,11 +88,11 @@ describe.each(files)("%s", (file) => {
   });
 
   it("uses only the type scale", () => {
-    const sizes = [...source.matchAll(/font-size:\s*([\d.]+)px/g)].map(
-      (match) => Number(match[1]),
-    );
-    for (const size of sizes)
-      expect([10, 12, 14, 19, 27, 31, 35]).toContain(size);
+    expectTypeScale(source);
+  });
+
+  it("sets no page-title size of its own", () => {
+    expectNoTitleSize(source);
   });
 
   it("draws borders, never shadows", () => {
@@ -82,10 +104,14 @@ describe.each(files)("%s", (file) => {
   });
 });
 
-// The old `styles.css` is brought under the contract one rule at a time, as its screens move: shadows and
-// corner radii now; the type scale and the two widths follow with the page frame.
+// The old `styles.css` is brought under the contract one rule at a time, as its screens move: shadows,
+// corner radii and the type scale now; the two widths follow with the page frame.
 describe("styles.css", () => {
   const source = css("styles.css");
+
+  it("uses only the type scale", () => {
+    expectTypeScale(source);
+  });
 
   it("draws borders, never shadows", () => {
     expectNoShadows(source);

@@ -23,6 +23,8 @@
   --danger-foreground: #ffffff;
   --positive: #166534;
   --warning: #854d0e;
+  /* Text in a form field. Not a step of the type scale: under 16 px iOS zooms the page when a field is focused (ADR 0052). */
+  --field-text: 16px;
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
