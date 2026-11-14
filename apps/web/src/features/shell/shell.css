@@ -267,7 +267,7 @@
 /* A page that has not moved to the new design shows its title in the top bar on a phone, so its own heading
    stays for screen readers and for focus only. Delete this with the last old page heading. */
 @container app (max-width: 699.98px) {
-  .main-content .page-heading h1 {
+  .ui-page .page-heading h1 {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -278,7 +278,7 @@
     white-space: nowrap;
     border: 0;
   }
-  .main-content .page-heading .eyebrow {
+  .ui-page .page-heading .eyebrow {
     display: none;
   }
 }

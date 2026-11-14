@@ -161,11 +161,6 @@ select {
   transform: translateY(-50%);
   pointer-events: none;
 }
-.main-content {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 48px;
-}
 .page-heading {
   margin-bottom: 36px;
 }
@@ -227,15 +222,7 @@ select {
 .skip-link:focus {
   top: 16px;
 }
-@container app (max-width: 1099.98px) {
-  .main-content {
-    padding: 32px;
-  }
-}
 @container app (max-width: 699.98px) {
-  .main-content {
-    padding: 28px 20px;
-  }
   .page-heading {
     margin-bottom: 28px;
   }
@@ -686,19 +673,19 @@ select {
 }
 
 /* Any toast (Undo, a save to confirm, a merge to resume) leaves room under the page to scroll past it. */
-body:has(.transaction-toast) .main-content {
+body:has(.transaction-toast) .ui-page {
   padding-bottom: 280px;
 }
 @container app (max-width: 699.98px) {
-  body:has(.transaction-toast) .main-content {
+  body:has(.transaction-toast) .ui-page {
     padding-bottom: calc(300px + env(safe-area-inset-bottom));
   }
 }
-body:has(.client-toast) .main-content {
+body:has(.client-toast) .ui-page {
   padding-bottom: 280px;
 }
 @container app (max-width: 699.98px) {
-  body:has(.client-toast) .main-content {
+  body:has(.client-toast) .ui-page {
     padding-bottom: calc(360px + env(safe-area-inset-bottom));
   }
 }
@@ -710,8 +697,7 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   body:has(.transaction-toast:not(.client-toast)) .client-toast {
     bottom: calc(320px + env(safe-area-inset-bottom));
   }
-  body:has(.client-toast):has(.transaction-toast:not(.client-toast))
-    .main-content {
+  body:has(.client-toast):has(.transaction-toast:not(.client-toast)) .ui-page {
     padding-bottom: calc(540px + env(safe-area-inset-bottom));
   }
 }

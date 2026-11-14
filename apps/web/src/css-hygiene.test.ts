@@ -195,3 +195,12 @@ describe("there is one search field", () => {
     expect(own).toEqual(["apps/web/src/components/search-field.css"]);
   });
 });
+
+describe("the old page frame is gone", () => {
+  it("has no `.main-content` rule (the page frame is `ui-page`)", () => {
+    const found = cssFiles
+      .filter((file) => classesOf(read(file)).has("main-content"))
+      .map(name);
+    expect(found).toEqual([]);
+  });
+});
