@@ -335,7 +335,9 @@ it("opens the time picker as a sheet with Clear, Now and Set time in the footer 
     "ui-btn-primary",
   );
   // The hour box has the focus and its text selected, so typing replaces it.
-  expect(screen.getByLabelText("Hour")).toHaveFocus();
+  const hour = screen.getByLabelText("Hour") as HTMLInputElement;
+  expect(hour).toHaveFocus();
+  expect([hour.selectionStart, hour.selectionEnd]).toEqual([0, 1]);
 });
 
 it("Cancel closes the picker without changing the value and hands focus back to the calendar button", async () => {
