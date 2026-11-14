@@ -171,6 +171,11 @@ html:has(body[data-scroll-locked]) {
   .ui-sheet-wide {
     width: 560px;
   }
+  /* A drawer is as tall as the screen, so its body takes the room a short form leaves and the primary button stays at
+     the bottom (a bottom sheet is only as tall as its content, so it never has spare room). */
+  .ui-sheet-body {
+    flex: 1 1 auto;
+  }
   .ui-grab {
     display: none;
   }

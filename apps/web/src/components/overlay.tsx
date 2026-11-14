@@ -7,6 +7,9 @@ import { useSheetDrag } from "./sheet-drag";
 const focusable =
   'input:not([type="hidden"]), select, textarea, button, [href], [tabindex]:not([tabindex="-1"])';
 
+/** The Escape press that Radix is closing some overlay with (a key it dismisses for is never handled again by `onKeyDown`). */
+let dismissingKey: Event | null = null;
+
 /** The longest a leaving overlay's animation can last (overlay.css says 0.2 s), so a missing `animationend` never leaves a copy behind. */
 const LEAVE_MS = 400;
 
@@ -232,6 +235,26 @@ export function Overlay({
             );
             target?.focus();
           }}
+          // Radix keeps its own order of open layers, and after an editor re-renders it can name the editor, not the
+          // picker opened over it, as the top one: the picker was never offered the key and would stay open (the
+          // old picker had a handler of its own for this). A key aimed at this very dialog that Radix did not offer
+          // to it is handled here; one it did offer (and closed, or held back for a list or a save) is left alone.
+          onKeyDown={(event) => {
+            const target = event.target;
+            if (
+              event.key !== "Escape" ||
+              dismissingKey === event.nativeEvent ||
+              busy ||
+              !dismissible ||
+              !(target instanceof Element) ||
+              target.closest('[role="dialog"]') !== content.current ||
+              target.matches('[role="combobox"][aria-expanded="true"]')
+            )
+              return;
+            event.preventDefault();
+            event.stopPropagation();
+            onDismiss();
+          }}
           onEscapeKeyDown={(event) => {
             // Escape closes an open category list first, not the dialog.
             const target = event.target;
@@ -241,13 +264,25 @@ export function Overlay({
                 target.matches('[role="combobox"][aria-expanded="true"]'))
             )
               event.preventDefault();
-            // A nested dialog (such as a date picker) owns its own Escape; it must never
-            // also close this one, even if both layers see the same key press.
+            // A dialog opened from inside this one (such as a date picker) owns its own Escape; it must never
+            // also close this one, even if both layers see the same key press. Only a dialog ABOVE this one
+            // counts (later in the page, as portals are added in order): a key aimed at the editor beneath
+            // a picker that has only just opened must still close the picker.
             const nested =
               target instanceof Element
                 ? target.closest('[role="dialog"]')
                 : null;
-            if (nested && nested !== content.current) event.preventDefault();
+            const mine = content.current;
+            if (
+              nested &&
+              mine &&
+              nested !== mine &&
+              mine.compareDocumentPosition(nested) &
+                Node.DOCUMENT_POSITION_FOLLOWING
+            )
+              event.preventDefault();
+            // Not held back: Radix closes this overlay with the key, and no other overlay's `onKeyDown` may act on it.
+            if (!event.defaultPrevented) dismissingKey = event;
           }}
           onInteractOutside={(event) => {
             if (busy) event.preventDefault();

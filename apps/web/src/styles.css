@@ -519,37 +519,19 @@ select {
   color: var(--accent);
   background: var(--accent-soft);
 }
-/* The picker's overlay is the shared dark overlay (overlay.css), above the sheet it was opened from. */
-.ui-scrim.date-time-overlay {
-  z-index: 35;
+/* The picker is the shared sheet (`Overlay`): its parts are the sheet's own. These two wrappers only hold the
+   calendar and the clock, whose rows keep their own spacing. */
+.calendar-picker,
+.time-picker {
+  min-width: 0;
 }
-.date-time-picker {
-  position: fixed;
-  z-index: 36;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(360px, 100vw);
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
-  /* 6 px (4 px on a 316 px screen) so the month select has room for "September": the seven 44 px day columns take
-     308 px of the 360 px dialog, and a spec measures the longest month name. */
-  padding: clamp(4px, calc((100vw - 308px) / 2), 6px);
-  border: 1px solid var(--border);
-  border-radius: var(--shape-sheet);
-  background: var(--surface);
-  color: var(--text);
-}
-.date-time-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-inline: 8px;
-  margin-bottom: 12px;
-}
-.date-time-heading h2 {
-  margin: 0;
-  font-size: 19px;
+/* On a phone the sheet's 16 px side padding leaves the seven day columns under 44 px at 320 px and the month select
+   too narrow for "September". The calendar reaches out to a 6 px inset (the old picker's), so a day is 44 px wide at
+   320 px; the drawer is wide enough as it is. */
+@container app (max-width: 699.98px) {
+  .calendar-picker {
+    margin-inline: -10px;
+  }
 }
 .calendar-heading {
   display: grid;
@@ -614,14 +596,7 @@ select {
   background: var(--accent);
   color: var(--accent-foreground);
 }
-.date-time-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding: 12px 8px 4px;
-}
 .time-format-hint {
-  padding-inline: 8px;
   color: var(--muted);
   font-size: 12px;
 }
@@ -630,7 +605,7 @@ select {
   grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
   align-items: end;
   gap: 8px;
-  padding: 16px 8px;
+  padding-block: 16px;
 }
 .time-columns label {
   display: grid;
@@ -656,8 +631,7 @@ select {
 .time-presets {
   display: flex;
   gap: 8px;
-  padding-inline: 8px;
-  /* The three button rows (AM and PM, these, and the actions) are one 12 px apart. */
+  /* The button rows (AM and PM, and these) are one 12 px apart. */
   margin: 12px 0 0;
   border: 0;
   min-width: 0;

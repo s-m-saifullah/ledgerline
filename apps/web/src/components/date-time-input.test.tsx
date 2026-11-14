@@ -1,4 +1,10 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -249,4 +255,139 @@ it("lists newest years first and includes a saved year outside the usual range",
   expect(screen.getByRole("combobox", { name: "Calendar year" })).toHaveValue(
     "42",
   );
+});
+
+it("opens the calendar as the shared sheet: Cancel in its head, its actions pinned in the footer", async () => {
+  render(
+    <>
+      <label htmlFor="date">Date</label>
+      <DateTimeInput
+        label="Date"
+        id="date"
+        type="date"
+        defaultValue="2026-10-08"
+      />
+    </>,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Choose date" }));
+  const picker = screen.getByRole("dialog", { name: "Date" });
+  expect(picker).toHaveClass("ui-sheet");
+  // The head says Cancel like every sheet; there is no X.
+  const head = picker.querySelector(".ui-sheet-head") as HTMLElement;
+  expect(within(head).getByRole("button", { name: "Cancel" })).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Close picker" }),
+  ).not.toBeInTheDocument();
+  // Clear (the field is optional) is secondary beside the one primary, Today, both in the footer.
+  const foot = picker.querySelector(".ui-sheet-foot") as HTMLElement;
+  expect(within(foot).getByRole("button", { name: "Clear" })).toHaveClass(
+    "ui-btn-secondary",
+  );
+  expect(within(foot).getByRole("button", { name: "Today" })).toHaveClass(
+    "ui-btn-primary",
+  );
+  // The calendar itself is the sheet's body, not the footer.
+  const body = picker.querySelector(".ui-sheet-body") as HTMLElement;
+  expect(
+    within(body).getByRole("button", { name: "2026-10-08" }),
+  ).toBeVisible();
+});
+
+it("a required date has no Clear in the footer", async () => {
+  render(
+    <>
+      <label htmlFor="date">Date</label>
+      <DateTimeInput
+        label="Date"
+        id="date"
+        type="date"
+        required
+        defaultValue="2026-10-08"
+      />
+    </>,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Choose date" }));
+  const foot = screen
+    .getByRole("dialog", { name: "Date" })
+    .querySelector(".ui-sheet-foot") as HTMLElement;
+  expect(
+    within(foot).queryByRole("button", { name: "Clear" }),
+  ).not.toBeInTheDocument();
+  expect(within(foot).getByRole("button", { name: "Today" })).toBeVisible();
+});
+
+it("opens the time picker as a sheet with Clear, Now and Set time in the footer and the hour ready to type", async () => {
+  render(
+    <>
+      <label htmlFor="time">Time</label>
+      <DateTimeInput label="Time" id="time" type="time" defaultValue="09:30" />
+    </>,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Choose time" }));
+  const picker = screen.getByRole("dialog", { name: "Time" });
+  expect(picker).toHaveClass("ui-sheet");
+  const foot = picker.querySelector(".ui-sheet-foot") as HTMLElement;
+  for (const name of ["Clear", "Now"])
+    expect(within(foot).getByRole("button", { name })).toHaveClass(
+      "ui-btn-secondary",
+    );
+  expect(within(foot).getByRole("button", { name: "Set time" })).toHaveClass(
+    "ui-btn-primary",
+  );
+  // The hour box has the focus and its text selected, so typing replaces it.
+  expect(screen.getByLabelText("Hour")).toHaveFocus();
+});
+
+it("Cancel closes the picker without changing the value and hands focus back to the calendar button", async () => {
+  render(
+    <>
+      <label htmlFor="date">Date</label>
+      <DateTimeInput
+        label="Date"
+        id="date"
+        type="date"
+        defaultValue="2026-10-08"
+      />
+    </>,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Choose date" }));
+  await userEvent.click(screen.getByRole("button", { name: "Next month" }));
+  await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  expect(
+    screen.queryByRole("dialog", { name: "Date" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByLabelText("Date")).toHaveValue("2026-10-08");
+  expect(screen.getByRole("button", { name: "Choose date" })).toHaveFocus();
+});
+
+it("Escape closes the picker even when the key comes from the editor beneath it, before focus has moved in", async () => {
+  const dismissed = vi.fn();
+  render(
+    <Overlay
+      open
+      title="Edit entry"
+      description="Example"
+      busy={false}
+      onDismiss={dismissed}
+      returnFocusId="date"
+      fallbackFocusId="date"
+    >
+      <label htmlFor="date">Date</label>
+      <DateTimeInput
+        label="Date"
+        id="date"
+        type="date"
+        defaultValue="2024-02-29"
+      />
+    </Overlay>,
+  );
+  const trigger = screen.getByRole("button", { name: "Choose date" });
+  await userEvent.click(trigger);
+  expect(screen.getByRole("dialog", { name: "Date" })).toBeInTheDocument();
+  // The same key press, aimed at the button in the editor under the picker (a person who presses Escape the instant it opens).
+  fireEvent.keyDown(trigger, { key: "Escape" });
+  expect(
+    screen.queryByRole("dialog", { name: "Date" }),
+  ).not.toBeInTheDocument();
+  expect(dismissed).not.toHaveBeenCalled();
 });

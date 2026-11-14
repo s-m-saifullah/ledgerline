@@ -459,10 +459,16 @@ for (const width of [320, 390, 1280])
     await editor.getByRole("button", { name: "Choose starts" }).click();
     const picker = page.getByRole("dialog", { name: "Starts" });
     await expect(picker).toBeVisible();
-    const found = await settled(page.locator(".date-time-picker"));
+    const found = await settled(picker);
     expect(found.x).toBeGreaterThanOrEqual(0);
     expect(found.x + found.width).toBeLessThanOrEqual(width + 0.5);
     expect(found.y + found.height).toBeLessThanOrEqual(900.5);
+    // It is the shared sheet: Cancel in its head, Today pinned in its footer.
+    await expect(picker).toHaveClass(/ui-sheet/);
+    await expect(picker.getByRole("button", { name: "Cancel" })).toBeVisible();
+    await expect(
+      picker.locator(".ui-sheet-foot").getByRole("button", { name: "Today" }),
+    ).toBeVisible();
     await picker.locator('[data-date="2026-11-15"]').click();
     await expect(start).toHaveValue("2026-11-15");
     await editor.getByRole("button", { name: "Choose starts" }).click();
