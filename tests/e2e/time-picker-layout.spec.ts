@@ -187,15 +187,19 @@ test("the picker's dark overlay is the shared one: above the sheet it was opened
   // Two dark overlays are up: the editor's and the picker's, the picker's later in the page and so on top.
   const scrims = page.locator(".ui-scrim");
   await expect(scrims).toHaveCount(2);
-  const onTop = await picker.evaluate((node) => {
-    const found = node.getBoundingClientRect();
-    const hit = document.elementFromPoint(
-      found.x + found.width / 2,
-      found.y + 20,
-    );
-    return Boolean(hit && node.contains(hit));
-  });
-  expect(onTop).toBe(true);
+  // Read once the sheet has finished sliding in (the animation is on here), so a slow machine does not catch it mid-way.
+  await expect
+    .poll(() =>
+      picker.evaluate((node) => {
+        const found = node.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          found.x + found.width / 2,
+          found.y + 20,
+        );
+        return Boolean(hit && node.contains(hit));
+      }),
+    )
+    .toBe(true);
   await page.waitForTimeout(400);
   await page.evaluate(() => {
     const w = window as unknown as { __opacity: number[] };
