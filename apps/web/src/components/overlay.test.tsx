@@ -869,4 +869,34 @@ describe("The copy of a stacked overlay that slides away", () => {
     expect(copy).not.toBeNull();
     expect(Number(copy.style.zIndex)).toBe(layer);
   });
+  it("keeps the layer of its dark layer too, when its parent stops drawing it while it is open", async () => {
+    function Stack() {
+      const [shown, setShown] = useState(true);
+      return (
+        <Overlay {...base} title="Edit transaction">
+          <button type="button" onClick={() => setShown(false)}>
+            Stop drawing it
+          </button>
+          {shown && (
+            <Overlay {...base} kind="question" title="Delete this transaction?">
+              text
+            </Overlay>
+          )}
+        </Overlay>
+      );
+    }
+    render(<Stack />);
+    const scrims = document.querySelectorAll<HTMLElement>(".ui-scrim");
+    const layer = Number(scrims[1]?.style.zIndex);
+    expect(layer).toBeGreaterThan(30);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Stop drawing it", hidden: true }),
+    );
+    await Promise.resolve();
+    const ghost = document.querySelector<HTMLElement>(
+      '.ui-scrim[data-state="closed"]',
+    );
+    expect(ghost).not.toBeNull();
+    expect(Number(ghost?.style.zIndex)).toBe(layer);
+  });
 });
