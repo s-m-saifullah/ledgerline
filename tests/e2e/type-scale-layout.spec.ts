@@ -270,8 +270,8 @@ for (const width of [320, 390]) {
   });
 }
 
-// The date picker's month shows in full ("November", not "Novemb"): the picker's padding leaves its month select
-// room for the longest month name. Below 360 px the seven 44 px day columns leave no more room than this.
+// The date picker's month shows in full ("November", not "Novemb"): the sheet leaves its month select room for the
+// longest month name. Below 360 px the picker's rows leave no more room than this.
 for (const width of [360, 390, 412, 700, 1280]) {
   test(`the date picker shows the whole month name at ${width} px`, async ({
     page,

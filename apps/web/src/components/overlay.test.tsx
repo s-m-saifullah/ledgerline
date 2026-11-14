@@ -170,6 +170,50 @@ describe("Overlay dismissing", () => {
     await userEvent.keyboard("{Escape}");
     expect(onDismiss).not.toHaveBeenCalled();
   });
+
+  // Radix keeps its own order of open layers, and it can put the outer one on top (here both open in the same
+  // render, so the inner one registers first). The key is still aimed at the inner dialog, so that one must close.
+  it("Escape in an overlay opened from inside another closes the inner one, whichever layer Radix thinks is on top", async () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    render(
+      <Overlay {...base} title="Edit entry" onDismiss={outer}>
+        <Overlay
+          {...base}
+          title="Pick a date"
+          onDismiss={inner}
+          initialFocusId="inner-field"
+        >
+          <input id="inner-field" aria-label="Day" />
+        </Overlay>
+      </Overlay>,
+    );
+    expect(screen.getByLabelText("Day")).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(inner).toHaveBeenCalledTimes(1);
+    expect(outer).not.toHaveBeenCalled();
+  });
+
+  it("while busy, Escape in an inner overlay dismisses neither", async () => {
+    const outer = vi.fn();
+    const inner = vi.fn();
+    render(
+      <Overlay {...base} title="Edit entry" onDismiss={outer}>
+        <Overlay
+          {...base}
+          busy
+          title="Pick a date"
+          onDismiss={inner}
+          initialFocusId="inner-field"
+        >
+          <input id="inner-field" aria-label="Day" />
+        </Overlay>
+      </Overlay>,
+    );
+    await userEvent.keyboard("{Escape}");
+    expect(inner).not.toHaveBeenCalled();
+    expect(outer).not.toHaveBeenCalled();
+  });
 });
 
 function Harness({ initialFocusId }: { initialFocusId?: string }) {

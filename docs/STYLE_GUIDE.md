@@ -7,7 +7,7 @@ How the web app looks and how to build it so it stays one app. Read it before yo
 1. Look here and in the gallery (`/gallery.html` while `pnpm dev` runs) for a piece that already does it. Reuse it.
 2. If nothing fits, extend the shared piece (in `packages/ui` or `apps/web/src/components`), do not copy its CSS into a feature file. The four search boxes and the ten page-title rules that had to be merged later were all copies.
 3. A new class in a feature stylesheet is for that screen's own layout only (prefix it with the feature's short name, like `tg-` for tags). Colours, radii, type sizes and shadows are never new decisions: use the tokens below.
-4. Two tests guard this: `apps/web/src/css-contract.test.ts` (layout widths, type scale, shapes, no shadows) and `apps/web/src/css-hygiene.test.ts` (no class that nothing uses, no token that is undefined or unused). If a class is built at run time (`` `ui-pill-${tone}` ``), add its start and the names it can make to `runtimeNames` in the hygiene test.
+4. Three tests guard this: `apps/web/src/css-contract.test.ts` (layout widths, type scale, shapes, no shadows), `apps/web/src/css-hygiene.test.ts` (no class that nothing uses, no token that is undefined or unused) and `apps/web/src/overlay-contract.test.ts` (only `Overlay` and the command palette import the Radix dialog: every sheet, drawer, picker and question is an `Overlay`). If a class is built at run time (`` `ui-pill-${tone}` ``), add its start and the names it can make to `runtimeNames` in the hygiene test.
 5. Look at the screen at 320, 390 and desktop, in light and dark, before asking for the owner's browser check.
 
 ## Foundations
@@ -54,7 +54,7 @@ From `apps/web/src/components`:
 
 | Need | Use |
 | --- | --- |
-| A sheet, drawer or dialog | `Overlay` (a bottom sheet under 700 px, a right-hand drawer from 700, a centred dialog for `kind="question"`); give it a title, a pinned `footer` button and `returnFocusId` |
+| A sheet, drawer or dialog | `Overlay` (a bottom sheet under 700 px, a right-hand drawer from 700, a centred dialog for `kind="question"`); give it a title, a pinned `footer` button (secondary buttons may sit beside the one primary) and `returnFocusId`. A drawer is as tall as the screen and its footer stays at the bottom however short the form. One opened from inside another (a picker over an editor) stacks above it and takes its own Escape |
 | A question before something that cannot be undone | `Question` (Cancel beside one confirming button), `TypedConfirm` when the person must type a name |
 | A confirmation that goes away | `Toast` (a progress bar; `durationMs` null while an action runs or failed so Retry is never lost); `UndoPill` for Undo |
 | Collapsible detail | `Fold` |
@@ -62,7 +62,7 @@ From `apps/web/src/components`:
 | Choosing from a short list | `PickRow` (opens a sheet); `NativeSelect` for a plain select; `ComboField` for a list that can create |
 | Typing money | `EntryAmount`, `AmountInput`; parse with the helpers in `amount-entry.ts` (a leading dot and a trailing dot are valid) |
 | Showing money | `Amount` (privacy mode), `BaseNote` ("About $12.00" under a foreign amount); `formatMoney` in `lib/money.ts` |
-| Dates and times | `DateTimeInput`; `lib/time.ts` for formatting |
+| Dates and times | `DateTimeInput` (its calendar and clock open as an `Overlay` sheet: Cancel in the head, Today or Set time as the one primary in the footer, Clear and Now secondary beside it); `lib/time.ts` for formatting |
 | A month | `MonthHead`, `MonthControl` |
 | A failed load | `LoadError` (message and a Retry button) |
 | A delete control in an editor | `DeleteTrigger` (a trash icon on a phone) |
@@ -80,12 +80,14 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 | --- | --- |
 | a bare `.page-heading` (Loans, Clients and Settings still use it) | a plain `h1` inside the page (27 px from one global rule: never set an `h1` size in a feature) |
 | `.eyebrow`, a page subtitle | nothing (few words) |
-| `.combobox`, `.date-time-picker` and friends (old-style overlays) | `Overlay` and `PickRow` where possible |
+| `.combobox` and friends (the old category list) | `Overlay` and `PickRow` where possible |
 | A pixel radius, a shadow, a hex colour, an off-scale font size | tokens above |
 
 ## Change log
 
 Newest first; one line per approved UI change, with the pull request.
+
+- 2026-11-14: the date and time picker is an `Overlay` sheet (a bottom sheet on a phone, a drawer from 700 px) instead of its own centred dialog: Cancel replaces the X, Today and Set time are the footer's one primary with Clear and Now beside them as secondary buttons, the 19 px title and the shared dark overlay come with it, and its own classes are gone. A drawer's footer now stays at the bottom when the form is short, and an overlay opened from inside another handles its own Escape. On a phone the calendar keeps its 6 px inset so a day stays 44 px wide at 320 px. The prototype has no custom picker (it uses native inputs), so the shared overlay is the design (#296).
 
 - 2026-11-13: dead styles and the old `Amount` component removed; the guard `css-hygiene.test.ts` added (#284).
 - 2026-11-13: the page frame is `ui-page` (the shell's `main`), with the numbers the app always used, and the old `.main-content` is gone; the 404 page has one root (#294).

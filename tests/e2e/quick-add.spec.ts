@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
 import { categoryOptionLabels, chooseCategory } from "./category-picker";
 import {
@@ -113,6 +113,24 @@ async function records() {
       [ledgerId],
     )
   ).rows;
+}
+
+/** Waits until a sheet that slides in has stopped moving, so two measurements of it agree. */
+async function settle(locator: Locator) {
+  let last = await locator.boundingBox();
+  for (let tries = 0; tries < 40; tries++) {
+    await locator.page().waitForTimeout(60);
+    const next = await locator.boundingBox();
+    if (
+      last &&
+      next &&
+      Math.abs(next.x - last.x) < 0.5 &&
+      Math.abs(next.y - last.y) < 0.5
+    )
+      return;
+    last = next;
+  }
+  throw new Error("never settled");
 }
 
 test("records exact expenses quickly, reuses the last account and undoes with focus/privacy", async ({
@@ -404,6 +422,7 @@ test("payer labels and themed date/time pickers save exact local values with nes
   for (const theme of ["light", "dark"] as const) {
     await page.emulateMedia({ colorScheme: theme });
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await settle(picker);
     const bounds = await picker.boundingBox();
     expect(bounds?.x).toBeGreaterThanOrEqual(0);
     expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(
@@ -516,6 +535,7 @@ test("date picker keeps month and year apart, and focus never overlaps the neigh
       const picker = page.getByRole("dialog", { name: "Date", exact: true });
       const month = picker.getByLabel("Calendar month");
       const year = picker.getByLabel("Calendar year");
+      await settle(picker);
       await month.focus();
       const monthBox = await month.boundingBox();
       const yearBox = await year.boundingBox();
