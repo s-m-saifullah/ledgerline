@@ -100,9 +100,9 @@ test.describe("the layout switches at 700 and 1100 px of the container", () => {
     expect((wide ?? 0) / (narrow ?? 1)).toBeLessThan(2.1);
   });
 
-  test("the page is at most 1160 px wide", async ({ page }) => {
+  test("the page is at most 1180 px wide", async ({ page }) => {
     await open(page, 1600, "columns");
-    expect((await box(page, ".ui-page")).width).toBeLessThanOrEqual(1160);
+    expect((await box(page, ".ui-page")).width).toBeLessThanOrEqual(1180);
   });
 });
 

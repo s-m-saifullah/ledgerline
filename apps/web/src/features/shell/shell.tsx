@@ -317,7 +317,7 @@ export function Shell({
         <p className="sr-only" aria-live="polite">
           {pageAnnouncement}
         </p>
-        <main id="main-content" className="main-content" tabIndex={-1}>
+        <main id="main-content" className="ui-page" tabIndex={-1}>
           <SignOutContext value={() => void signOut()}>
             <PageAddProvider value={setPageAdd}>
               <Outlet />
@@ -405,8 +405,9 @@ export function EmptyPage({
   description: string;
   icon: typeof Home;
 }) {
+  // One root, like every page: the frame is a grid, and two roots would be spaced by its gap.
   return (
-    <>
+    <div>
       <div className="page-heading">
         <p className="eyebrow">YOUR PERSONAL LEDGER</p>
         <h1>{title}</h1>
@@ -419,7 +420,7 @@ export function EmptyPage({
         <h2>A little more clarity is on its way.</h2>
         <p>This part of your ledger is coming soon.</p>
       </section>
-    </>
+    </div>
   );
 }
 /** The deployed release tag, small and quiet. */
