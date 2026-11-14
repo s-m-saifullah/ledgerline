@@ -42,6 +42,18 @@ describe("toasts", () => {
       [],
     );
   });
+  it("each carry the Dismiss control, unless they are a notice that must be resumed (no length)", () => {
+    const missing: string[] = [];
+    for (const file of files) {
+      const source = text(file);
+      for (const match of source.matchAll(/<Toast\b[\s\S]*?<\/Toast>/g)) {
+        const block = match[0];
+        if (!/onDismiss=/.test(block) && !/durationMs=\{null\}/.test(block))
+          missing.push(`${rel(file)}: ${block.slice(0, 60)}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
   it("call their Undo just Undo, and write client in lower case", () => {
     expect(
       offenders(/Undo (deletion|Client action)|Retry deletion Undo/),
