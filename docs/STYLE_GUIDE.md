@@ -88,7 +88,7 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 Newest first; one line per approved UI change, with the pull request.
 
 - 2026-11-13: dead styles and the old `Amount` component removed; the guard `css-hygiene.test.ts` added (#284).
-- 2026-11-13: the page frame is `ui-page` (the shell's `main`), with the numbers the app always used, and the old `.main-content` is gone; the 404 page has one root (#PR).
+- 2026-11-13: the page frame is `ui-page` (the shell's `main`), with the numbers the app always used, and the old `.main-content` is gone; the 404 page has one root (#294).
 - 2026-11-13: every width query in `styles.css` is a container query at 700 or 1100 px (the frame's 1000 px step moved to 1100 px; the date picker's 400 px rule became a 6 px `clamp()` padding, which also stops it cutting "November" to "Novemb" at 401 px and wider), and the contract refuses any viewport `@media` width anywhere (#292).
 - 2026-11-13: the old button family (`button`, `secondary-button`, `text-button`, `icon-button`, `danger-action`) is gone in favour of `ui-btn` and `ui-icon-btn`, and the five search boxes are one `SearchField`; Transactions' search gets the icon and tinted fill, and its placeholder is "Payee or note" (#290).
 - 2026-11-13: the bottom bar's labels are 12 px from a 380 px wide screen and 10 px below it, and its tabs have no side padding (ADR 0053; #288).
