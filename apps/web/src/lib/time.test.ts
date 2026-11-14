@@ -93,7 +93,14 @@ describe("formatDay", () => {
     );
   });
   it("returns anything that is not a date unchanged", () => {
-    for (const value of ["", "soon", "2026-13-01", "2026-11-32", "11/01/2026"])
+    for (const value of [
+      "",
+      "soon",
+      "2026-13-01",
+      "2026-11-32",
+      "11/01/2026",
+      "2026-13-45T10:00:00Z",
+    ])
       expect(formatDay(value, today)).toBe(value);
   });
 });
@@ -139,7 +146,7 @@ describe("formatDayTime", () => {
     ).toBe("Dec 31, 2:00 PM");
   });
   it("returns anything that is not a timestamp unchanged", () => {
-    for (const value of ["", "yesterday", "2026-11-01"])
+    for (const value of ["", "yesterday", "2026-11-01", "2026-13-45T10:00:00Z"])
       expect(formatDayTime(value, now, "UTC")).toBe(value);
   });
 });
