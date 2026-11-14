@@ -16,5 +16,7 @@
   min-height: 44px;
   padding: 0 12px 0 38px;
   border-radius: var(--shape-field);
-  background: var(--tint);
+  /* A 3% tint, not the 5% `--tint`: the field's outline must stay 3:1 against its own fill (WCAG 1.4.11, ADR 0040;
+     `a11y.spec.ts` measures it). */
+  background: color-mix(in oklab, var(--text) 3%, transparent);
 }

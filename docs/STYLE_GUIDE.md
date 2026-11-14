@@ -58,7 +58,7 @@ From `apps/web/src/components`:
 | A question before something that cannot be undone | `Question` (Cancel beside one confirming button), `TypedConfirm` when the person must type a name |
 | A confirmation that goes away | `Toast` (a progress bar; `durationMs` null while an action runs or failed so Retry is never lost); `UndoPill` for Undo |
 | Collapsible detail | `Fold` |
-| A search box | `SearchField` (icon, tinted field, hidden label, the same words as its placeholder; beside a button, put it in a form with a `ui-btn`, as Transactions does with Filters). Keep a placeholder short enough for 320 px beside the button |
+| A search box | `SearchField` (icon, tinted field, hidden label, the same words as its placeholder; beside a button, put it in a form with a `ui-btn`, as Transactions does with Filters). Keep a placeholder short enough for 320 px beside the button. Its tint is 3%, not the 5% `--tint`, so the outline stays 3:1 against its fill (`a11y.spec.ts` measures it) |
 | Choosing from a short list | `PickRow` (opens a sheet); `NativeSelect` for a plain select; `ComboField` for a list that can create |
 | Typing money | `EntryAmount`, `AmountInput`; parse with the helpers in `amount-entry.ts` (a leading dot and a trailing dot are valid) |
 | Showing money | `Amount` (privacy mode), `BaseNote` ("About $12.00" under a foreign amount); `formatMoney` in `lib/money.ts` |
