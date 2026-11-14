@@ -1,5 +1,6 @@
 import type { Account, RecurringRule } from "@ledgerline/shared";
-import { everySentence, formatDate } from "./schedule";
+import { formatDay } from "../../lib/time";
+import { everySentence } from "./schedule";
 
 export const kindLabel = {
   expense: "Expense",
@@ -13,7 +14,7 @@ export function ruleStatus(rule: RecurringRule): string {
     return rule.pausedReason === "access"
       ? "Paused, the person it runs as can no longer write"
       : "Paused";
-  return rule.nextDate ? `Next ${formatDate(rule.nextDate)}` : "Ended";
+  return rule.nextDate ? `Next ${formatDay(rule.nextDate)}` : "Ended";
 }
 
 /** The one hint of a row: "Expense · Every month · Next 1 Nov 2026". */

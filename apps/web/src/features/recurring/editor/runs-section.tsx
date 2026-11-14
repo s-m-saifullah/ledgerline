@@ -1,7 +1,7 @@
 import type { RecurringRun } from "@ledgerline/shared";
 import { ChevronDown } from "lucide-react";
 import { Loading } from "../../../components/loading";
-import { formatDate } from "../schedule";
+import { formatDay } from "../../../lib/time";
 
 /** What a rule has done so far, with a way to skip an occurrence that needs attention. */
 export function RunsSection({
@@ -31,7 +31,7 @@ export function RunsSection({
             {runs.data.map((item, index) => (
               <li key={item.id}>
                 <span className="rc-run-text">
-                  <strong>{formatDate(item.date)}</strong>{" "}
+                  <strong>{formatDay(item.date)}</strong>{" "}
                   {item.status === "created"
                     ? "Created"
                     : item.status === "skipped"

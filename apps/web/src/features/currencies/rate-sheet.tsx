@@ -9,6 +9,7 @@ import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { currencyName, today } from "../../lib/rate-format";
+import { formatDay } from "../../lib/time";
 import { prepareCurrencyRemove, prepareRateSet } from "./api";
 import { sourceLabel } from "./model";
 
@@ -136,7 +137,9 @@ export function RateSheet({
                 <div className="ui-row ui-row-static">
                   <span className="ui-row-main">
                     <span className="ui-row-title">Source</span>
-                    <span className="ui-row-hint">{latest.date}</span>
+                    <span className="ui-row-hint">
+                      {formatDay(latest.date)}
+                    </span>
                   </span>
                   <span className="ui-row-end">
                     <StatusPill

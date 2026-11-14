@@ -14,13 +14,14 @@ import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { SearchField } from "../../components/search-field";
 import { ApiError, getLedgers } from "../../lib/api";
+import { formatDayHead } from "../../lib/time";
 import { getCategories, prepareCategorySave } from "../categories/api";
 import { ExportButton } from "../exports/export-button";
 import { prepareTagCreate } from "../tags/api";
 import { useTags } from "../tags/use-tags";
 import { getAllAccounts, getTransactions } from "./api";
 import { EntryRow } from "./entry-row";
-import { dayLabel, type TransactionFilters } from "./filters";
+import type { TransactionFilters } from "./filters";
 import { FiltersSheet } from "./filters-sheet";
 import {
   countFilters,
@@ -341,11 +342,13 @@ export function TransactionsPage() {
             <section
               className="tx-day"
               key={day.date}
-              aria-label={dayLabel(day.date)}
+              aria-label={formatDayHead(day.date)}
             >
               <ListCard>
                 <ListHead
-                  left={<h2 className="tx-day-title">{dayLabel(day.date)}</h2>}
+                  left={
+                    <h2 className="tx-day-title">{formatDayHead(day.date)}</h2>
+                  }
                   right={
                     day.net.length > 0 ? (
                       <span className="tx-net">

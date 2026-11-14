@@ -3,6 +3,7 @@ import { EmptyState, ListCard, ListRow, SectionLabel } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Amount } from "../../components/amount-text";
+import { formatDay } from "../../lib/time";
 import { getTransactions } from "../transactions/api";
 import { getLoans } from "./loans-api";
 import { activityWord } from "./model";
@@ -177,7 +178,7 @@ export function PersonLoans({
               <ListRow
                 key={entry.id}
                 title={activityWord(entry)}
-                hint={entry.date}
+                hint={formatDay(entry.date)}
                 value={
                   <Amount
                     cents={Math.abs(entry.amount.amount)}

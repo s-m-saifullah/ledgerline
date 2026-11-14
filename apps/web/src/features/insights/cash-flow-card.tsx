@@ -1,13 +1,6 @@
 import type { CashFlowReport } from "@ledgerline/shared";
+import { formatMonthShort } from "../../lib/time";
 import { barHeight } from "./model";
-
-export const shortMonth = (month: string) => {
-  const [year, index] = month.split("-").map(Number);
-  const local = new Date(0);
-  local.setFullYear(year ?? 1, (index ?? 1) - 1, 1);
-  local.setHours(12, 0, 0, 0);
-  return new Intl.DateTimeFormat("en-US", { month: "short" }).format(local);
-};
 
 /**
  * Money in and out from the month the ledger started to be used, up to twelve months: two bars a month, drawn with
@@ -52,7 +45,9 @@ export function CashFlowCard({
                   style={{ height: `${barHeight(row.spending.amount, peak)}%` }}
                 />
               </span>
-              <span className="ins-month-label">{shortMonth(row.month)}</span>
+              <span className="ins-month-label">
+                {formatMonthShort(row.month)}
+              </span>
             </li>
           ))}
         </ol>

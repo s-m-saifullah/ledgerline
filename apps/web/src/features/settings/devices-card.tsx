@@ -12,6 +12,7 @@ import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { formatDay } from "../../lib/time";
 import { ActionRow } from "./action-row";
 import {
   devicesKey,
@@ -22,18 +23,6 @@ import {
 
 /** The most recently used devices shown at once; the rest sit behind a disclosure. */
 const shownDevices = 10;
-
-/** A short date, with the year only when it is not this year, so the hint stays on one line beside the button. */
-const when = (iso: string) => {
-  const date = new Date(iso);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    ...(date.getFullYear() === new Date().getFullYear()
-      ? {}
-      : { year: "numeric" }),
-  }).format(date);
-};
 
 /** Settings, Signed-in devices: where you are signed in, with a way to sign other devices out (ADR 0042). */
 export function DevicesCard({
@@ -82,7 +71,7 @@ export function DevicesCard({
         </IconTile>
       }
       title={item.device}
-      hint={`Last used ${when(item.lastUsedAt)}`}
+      hint={`Last used ${formatDay(item.lastUsedAt)}`}
       value={
         item.current ? (
           <StatusPill>Current device</StatusPill>

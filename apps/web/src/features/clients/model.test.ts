@@ -10,7 +10,6 @@ import {
   paidInLabel,
   resolveFilter,
   serviceState,
-  shortDate,
   sortClients,
   visibleClients,
 } from "./model";
@@ -154,10 +153,6 @@ describe("a client's one hint", () => {
         "2026-10-28",
       ),
     ).toBe("Archived");
-  });
-  it("writes a short date, adding the year only when it is not this year", () => {
-    expect(shortDate("2026-01-09", 2026)).toBe("Jan 9");
-    expect(shortDate("2025-01-09", 2026)).toBe("Jan 9, 2025");
   });
 });
 

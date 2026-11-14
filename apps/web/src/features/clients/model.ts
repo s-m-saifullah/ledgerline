@@ -1,4 +1,5 @@
 import type { Contact, Receivable } from "@ledgerline/shared";
+import { formatDay, formatMonthShort } from "../../lib/time";
 
 /** The chips above the list (ADR 0047): who owes, who does not, everyone, and the archived ones. */
 export type ClientFilter = "open" | "settled" | "all" | "archived";
@@ -60,27 +61,6 @@ export function resolveFilter(
   return chosen;
 }
 
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-/** "Oct 16", with the year ("Dec 3, 2025") when it is not this year. */
-export function shortDate(date: string, thisYear: number) {
-  const [year, month, day] = date.split("-").map(Number);
-  const text = `${MONTHS[(month ?? 1) - 1]} ${day}`;
-  return year === thisYear ? text : `${text}, ${year}`;
-}
-
 /** Whole days from one YYYY-MM-DD date to another, by calendar date (no clock, no time zone). */
 const daysBetween = (from: string, to: string) =>
   Math.round(
@@ -94,7 +74,7 @@ export function clientHint(client: Contact, today: string) {
   if (!oldest) return client.archivedAt ? "Archived" : undefined;
   const days = daysBetween(oldest, today);
   const ago = days <= 0 ? "today" : `${days}d ago`;
-  return `Oldest unpaid ${ago} · ${shortDate(oldest, Number(today.slice(0, 4)))}`;
+  return `Oldest unpaid ${ago} · ${formatDay(oldest, today)}`;
 }
 
 export type ServiceState = "overdue" | "unpaid" | "partly" | "paid" | "written";
@@ -114,5 +94,5 @@ export const overdueCount = (services: readonly Receivable[], today: string) =>
 
 /** "Paid in Oct": the month of the figure beside it. */
 export function paidInLabel(month: string) {
-  return `Paid in ${MONTHS[Number(month.slice(5, 7)) - 1]}`;
+  return `Paid in ${formatMonthShort(month.slice(0, 7))}`;
 }

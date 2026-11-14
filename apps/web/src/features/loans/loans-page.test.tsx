@@ -208,11 +208,14 @@ const wideBody = (width: number) =>
   });
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:00"));
   pageAdd = null;
   delete params.personId;
   navigate.mockClear();
 });
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   queryClient?.clear();
   vi.unstubAllGlobals();
@@ -569,7 +572,7 @@ describe("Balance, Before Ledgerline and Activity", () => {
       "You paid out",
       "They waived",
     ]);
-    expect(within(region).getByText("2026-10-09")).toBeTruthy();
+    expect(within(region).getByText("Oct 9")).toBeTruthy();
     expect(within(region).getByText("$10.00")).toBeTruthy();
     expect(
       within(region)
@@ -750,7 +753,7 @@ describe("what the list knows is shown while the rest loads", () => {
     await waitFor(() =>
       expect(within(region).getAllByText(/^You paid out$/)).toHaveLength(8),
     );
-    expect(within(region).getByText("2026-10-19")).toBeTruthy();
-    expect(within(region).queryByText("2026-10-11")).toBeNull();
+    expect(within(region).getByText("Oct 19")).toBeTruthy();
+    expect(within(region).queryByText("Oct 11")).toBeNull();
   });
 });

@@ -24,15 +24,3 @@ export const transactionSearchSchema = z.object({
   status: transactionStatusSchema.optional().catch(undefined),
 });
 export type TransactionFilters = z.infer<typeof transactionSearchSchema>;
-export function dayLabel(date: string) {
-  const [year, month, day] = date.split("-").map(Number);
-  const local = new Date(0);
-  local.setFullYear(year ?? 1, (month ?? 1) - 1, day ?? 1);
-  local.setHours(12, 0, 0, 0);
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(local);
-}

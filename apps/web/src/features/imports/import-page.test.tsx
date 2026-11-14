@@ -193,6 +193,7 @@ beforeEach(() => {
   stub();
 });
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   client?.clear();
   vi.unstubAllGlobals();
@@ -386,6 +387,28 @@ describe("ImportPage", () => {
     expect(saved).toContain("2026-01-15,,expense,12.50,Food,Groceries");
   });
 
+  it("writes a row's date as Nov 1, with the year only when it is not this year", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+    mount();
+    const user = userEvent.setup();
+    await screen.findByLabelText("Import into");
+    await upload(
+      "Date,Description,Amount,Category\n" +
+        "2025-12-31,Corner shop,-4.50,Food\n" +
+        "2026-10-03,Cinema,-12.00,Fun\n",
+    );
+    await columnsShown();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    // Every category matches, so the Categories step is skipped.
+    expect(await screen.findByText("Possible duplicates")).toBeTruthy();
+    expect(current()).toBe("4Review");
+    expect(
+      screen.getByText(/Dec 31, 2025 · Looks like an entry you already have/),
+    ).toBeTruthy();
+    expect(screen.getByText("Oct 3 · Fun")).toBeTruthy();
+  });
+
   it("offers a retry when the rows cannot be checked and imports nothing", async () => {
     previewFails = true;
     mount();
@@ -400,6 +423,19 @@ describe("ImportPage", () => {
     expect(
       calls.some((c) => c.method === "POST" && c.url.endsWith("/imports")),
     ).toBe(false);
+  });
+
+  it("writes a recent import's date with the year when it is not this year", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+    recent = [
+      { ...batch, createdAt: "2026-10-05T10:00:00.000Z" },
+      { ...batch, id: newId(), createdAt: "2025-12-30T10:00:00.000Z" },
+    ];
+    mount();
+    expect(await screen.findByText("Recent imports")).toBeTruthy();
+    expect(screen.getByText(/^Oct 5 · 3 of 3 entries/)).toBeTruthy();
+    expect(screen.getByText(/^Dec 30, 2025 · 3 of 3 entries/)).toBeTruthy();
   });
 
   it("lists recent imports and keeps the undo message after the list refreshes", async () => {

@@ -158,6 +158,8 @@ type World = {
   historyNext?: boolean;
   /** Payments by service id. */
   payments?: Record<string, unknown[]>;
+  /** The client's history rows, newest first. */
+  history?: unknown[];
 };
 let queryClient: QueryClient;
 /** What the page last told the shell its one Add button does. */
@@ -195,7 +197,7 @@ function mount(world: World, privacy = false) {
       }
       if (/\/contacts\/[^/]+\/history/.test(url))
         return json({
-          items: [],
+          items: world.history ?? [],
           nextCursor: world.historyNext ? newId() : null,
         });
       const list = /\/receivables\?.*contactId=([^&]+)/.exec(url);
@@ -247,6 +249,7 @@ beforeEach(() => {
   navigate.mockClear();
 });
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   queryClient?.clear();
   vi.unstubAllGlobals();
@@ -761,6 +764,56 @@ describe("a client's services", () => {
     fireEvent.click(screen.getByRole("radio", { name: /^History/ }));
     expect(
       await screen.findByRole("region", { name: "Client history" }),
+    ).toBeTruthy();
+  });
+
+  it("writes each history time as Oct 5, 2:05 PM, with the year when it is not this year", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+    const service = serviceOf(sam, "Website work");
+    const row = (createdAt: string) => ({
+      id: newId(),
+      ledgerId,
+      contactId: sam.id,
+      receivableId: service.id,
+      paymentId: null,
+      transactionId: null,
+      actorId: newId(),
+      action: "created",
+      receivableVersion: 1,
+      before: null,
+      after: {
+        service: { ...service, serviceTime: null, deletedAt: null },
+        payment: null,
+        tip: null,
+      },
+      createdAt,
+      updatedAt: createdAt,
+      deletedAt: null,
+    });
+    params.clientId = sam.id;
+    mount({
+      clients: [sam],
+      services: { [sam.id]: [unpaid, paid, written] },
+      history: [
+        row("2026-10-05T12:05:00.000Z"),
+        row("2025-12-30T12:05:00.000Z"),
+      ],
+    });
+    await screen.findByText("Website work");
+    fireEvent.click(await screen.findByRole("radio", { name: /^History/ }));
+    const region = await screen.findByRole("region", {
+      name: "Client history",
+    });
+    expect(
+      await within(region).findByText(
+        /^Oct 5, \d{1,2}:\d{2} [AP]M · Website work/,
+      ),
+    ).toBeTruthy();
+    expect(
+      within(region).getByText(
+        /^Dec 30, 2025, \d{1,2}:\d{2} [AP]M · Website work/,
+      ),
     ).toBeTruthy();
   });
 

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { formatDay } from "../../lib/time";
 import { getTransactions } from "../transactions/api";
 import { prepareRemoveLoan } from "./loans-api";
 import "./loans.css";
@@ -105,7 +106,7 @@ export function RemoveLoanDialog({
           </p>
           <ul className="ln-dates" aria-label="Entries using this loan">
             {items.slice(0, shown).map((entry) => (
-              <li key={entry.id}>{entry.date}</li>
+              <li key={entry.id}>{formatDay(entry.date)}</li>
             ))}
           </ul>
           {(items.length > shown || entries.data?.nextCursor) && (

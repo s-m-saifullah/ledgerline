@@ -22,7 +22,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { RecurringPage } from "./recurring-page";
 import { ledgerToday } from "./schedule";
@@ -92,7 +92,12 @@ function rule(extra: Partial<RecurringRule> = {}): RecurringRule {
   };
 }
 let client: QueryClient;
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+});
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   client?.clear();
   vi.unstubAllGlobals();
@@ -192,9 +197,7 @@ describe("RecurringPage", () => {
       ],
     });
     const rent = await screen.findByRole("button", { name: /Rent/ });
-    expect(rent.textContent).toContain(
-      "Expense · Every month · Next 1 Nov 2026",
-    );
+    expect(rent.textContent).toContain("Expense · Every month · Next Nov 1");
     expect(rent.textContent).toContain("Bank");
     const gym = screen.getByRole("button", { name: /Gym/ });
     expect(gym.textContent).toContain("Paused");
@@ -212,7 +215,7 @@ describe("RecurringPage", () => {
 
   it("is read-only for viewers", async () => {
     mount({ role: "viewer", rules: [rule()] });
-    expect(await screen.findByText(/Next 1 Nov 2026/)).toBeTruthy();
+    expect(await screen.findByText(/Next Nov 1/)).toBeTruthy();
     expect(screen.queryByRole("button")).toBeNull();
     expect(document.querySelector(".ui-row-chevron")).toBeNull();
   });
@@ -1003,7 +1006,7 @@ describe("RecurringPage", () => {
     cleanup();
     seen.length = 0;
     mount({ rules: [rule()], role: "viewer", wrap });
-    await screen.findByText(/Next 1 Nov 2026/);
+    await screen.findByText(/Next Nov 1/);
     expect(seen[seen.length - 1] ?? null).toBeNull();
     cleanup();
     seen.length = 0;

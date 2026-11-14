@@ -1,14 +1,10 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
-import { to24Hour } from "../lib/time";
+import { formatMonthLong, to24Hour } from "../lib/time";
 import { NativeSelect } from "./native-select";
 import { Overlay } from "./overlay";
 
-const months = Array.from({ length: 12 }, (_, month) =>
-  new Intl.DateTimeFormat("en-US", { month: "long" }).format(
-    new Date(2026, month, 1),
-  ),
-);
+const months = Array.from({ length: 12 }, (_, month) => formatMonthLong(month));
 // Calendar arithmetic is independent of timezone offsets and skipped civil days.
 /** Newest first: the last 100 years and the next 10, plus a few years around the one shown when it lies outside that range. */
 function yearChoices(shown: number) {

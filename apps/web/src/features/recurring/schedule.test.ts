@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  dueNow,
-  everySentence,
-  formatDate,
-  ledgerToday,
-  upcomingDates,
-} from "./schedule";
+import { dueNow, everySentence, ledgerToday, upcomingDates } from "./schedule";
 
 const monthly = (startDate: string, endDate: string | null = null) => ({
   frequency: "month" as const,
@@ -18,8 +12,6 @@ describe("recurring schedule text", () => {
   it("words the repeat and formats dates without a time zone shift", () => {
     expect(everySentence("month", 1)).toBe("Every month");
     expect(everySentence("week", 2)).toBe("Every 2 weeks");
-    expect(formatDate("2026-11-01")).toBe("1 Nov 2026");
-    expect(formatDate("0099-02-03")).toBe("3 Feb 99");
   });
 
   it("knows the ledger's today", () => {

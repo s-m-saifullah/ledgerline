@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { dayText } from "./day-text";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -361,6 +362,25 @@ test("a recent import's row opens a centred Undo question with real targets, and
   await question.getByRole("button", { name: "Keep them" }).click();
   await expect(question).toBeHidden();
   await expect(row).toBeFocused();
+});
+
+test("the review writes each row's date like the rest of the app: no year this year, the year otherwise", async ({
+  page,
+}) => {
+  await open(page, 390);
+  await upload(
+    page,
+    "Date,Description,Amount,Category\n" +
+      "2025-12-31,Corner shop,-4.50,Food\n" +
+      "2026-10-04,Pay,2500.00,Salary\n",
+  );
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(
+    page.getByRole("button", { name: /^Import \d+ entr/ }),
+  ).toBeVisible();
+  const review = page.locator(".imp-page");
+  await expect(review).toContainText(`${dayText("2025-12-31")} · `);
+  await expect(review).toContainText(`${dayText("2026-10-04")} · `);
 });
 
 for (const theme of ["light", "dark"] as const)

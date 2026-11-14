@@ -8,7 +8,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RemoveLoanDialog } from "./remove-loan-dialog";
 
 const ledgerId = newId();
@@ -45,7 +45,12 @@ const entry = (date: string) => ({
   updatedAt: stamp,
 });
 let queryClient: QueryClient;
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+});
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   queryClient?.clear();
   vi.unstubAllGlobals();
@@ -105,8 +110,9 @@ describe("RemoveLoanDialog", () => {
     const list = await screen.findByRole("list", {
       name: "Entries using this loan",
     });
-    expect(list).toHaveTextContent("2026-10-07");
-    expect(list).toHaveTextContent("2026-10-09");
+    expect(list).toHaveTextContent("Oct 7");
+    expect(list).toHaveTextContent("Oct 9");
+    expect(list).not.toHaveTextContent("2026-");
     expect(list).not.toHaveTextContent("$");
     expect(screen.queryByRole("button", { name: "Remove loan" })).toBeNull();
     expect(writes).toHaveLength(0);

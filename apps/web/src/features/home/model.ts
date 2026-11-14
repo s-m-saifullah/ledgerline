@@ -101,16 +101,3 @@ export function currenciesOf(accounts: readonly Listed[]): string[] {
 /** Overdrawn is about money to hand: a card or loan below zero is just what is owed. */
 export const isOverdrawn = (account: Listed) =>
   !isDebt(account.type) && account.balance.amount < 0;
-
-/** "Oct 28" in the current year, "Dec 31, 2025" in another (the date of a row in a narrow list). */
-export function shortDay(date: string, today = new Date()) {
-  const [year, month, day] = date.split("-").map(Number);
-  const local = new Date(0);
-  local.setFullYear(year ?? 1, (month ?? 1) - 1, day ?? 1);
-  local.setHours(12, 0, 0, 0);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    ...(year === today.getFullYear() ? {} : { year: "numeric" }),
-  }).format(local);
-}
