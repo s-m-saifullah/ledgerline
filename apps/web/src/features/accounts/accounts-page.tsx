@@ -24,7 +24,9 @@ import { useState } from "react";
 import type { z } from "zod";
 import { Amount, BaseNote } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
-import { Toast } from "../../components/toast";
+import { Loading } from "../../components/loading";
+import { ReadOnlyNote } from "../../components/read-only-note";
+import { Toast, toastDuration } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
 import { getCategories } from "../categories/api";
@@ -56,7 +58,7 @@ type DialogState = {
 export function AccountsPage() {
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
-  if (ledgers.isPending) return <p role="status">Opening your accounts…</p>;
+  if (ledgers.isPending) return <Loading what="accounts" />;
   if (ledgers.isError || !ledger)
     return (
       <div className="ac-page">
@@ -231,17 +233,8 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
           </button>
         </section>
       )}
-      {!writable && (
-        <p className="ac-note">
-          You can view accounts in this ledger. Editing is available to owners
-          and editors.
-        </p>
-      )}
-      {accounts.isPending && (
-        <p className="muted" role="status">
-          Loading accounts…
-        </p>
-      )}
+      {!writable && <ReadOnlyNote />}
+      {accounts.isPending && <Loading what="accounts" />}
       {accounts.isError && (
         <LoadError
           message="Couldn't load your accounts."
@@ -304,8 +297,9 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
       {notice && (
         <Toast
           label="Account notification"
-          durationMs={3000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice("")}
+          onDismiss={() => setNotice("")}
         >
           <p role="status">{notice}</p>
         </Toast>

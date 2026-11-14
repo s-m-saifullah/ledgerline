@@ -269,9 +269,7 @@ test("linked history edit, deletion and Undo preserve identities and correct inc
     .click();
   await confirm(page, "Delete");
   expect(await balance(page)).toBe(1000);
-  await page
-    .getByRole("button", { name: "Undo Client action", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await confirm(page, "Restore");
   expect(await balance(page)).toBe(4000);
   const restored = (
@@ -298,9 +296,7 @@ test("write-off and reopen retain received income and immutable correction histo
   await clickAction(page, "Reopen service");
   await confirm(page, "Reopen");
   await expect(page.locator(".cl-card")).toContainText("$60.00");
-  await page
-    .getByRole("button", { name: "Undo Client action", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await confirm(page, "Write off");
   await expect(page.locator(".cl-card")).toContainText("$0.00");
   await page.getByRole("radio", { name: /^History/ }).click();
@@ -337,7 +333,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
     .getByRole("button", { name: "Confirm delete", exact: true })
     .click();
   await expect(
-    page.getByRole("button", { name: "Undo deletion", exact: true }),
+    page.getByRole("button", { name: "Undo", exact: true }),
   ).toBeEnabled();
   await openMorePage(page, "Clients");
   await clientLink(page, "Sam").click();
@@ -372,7 +368,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
     .click();
   await navigate(page, "Transactions");
   await expect(
-    page.getByRole("button", { name: "Undo deletion", exact: true }),
+    page.getByRole("button", { name: "Undo", exact: true }),
   ).toBeDisabled();
   const clientNotice = await page.locator(".client-toast").boundingBox();
   const historyNotice = await page
@@ -394,7 +390,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   ).toBeDisabled();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page
-    .getByRole("button", { name: "Resume Client action", exact: true })
+    .getByRole("button", { name: "Resume client action", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Retry same action", exact: true })
@@ -441,7 +437,7 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
       .click();
     await navigate(page, "Transactions");
     await page
-      .getByRole("button", { name: "Resume Client action", exact: true })
+      .getByRole("button", { name: "Resume client action", exact: true })
       .click();
     await page
       .getByRole("button", { name: "Retry same action", exact: true })
@@ -463,9 +459,7 @@ test("interrupted edit/delete/Undo/write-off replay original actions", async ({
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await retry();
   expect(await balance(page)).toBe(1000);
-  await page
-    .getByRole("button", { name: "Undo Client action", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await page.getByRole("button", { name: "Restore", exact: true }).click();
   await retry();
   expect(await balance(page)).toBe(4000);
@@ -743,7 +737,7 @@ test("the Undo left in the corner can be dismissed with its cross", async ({
   await dismiss.click();
   await expect(dismiss).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Undo Client action", exact: true }),
+    page.getByRole("button", { name: "Undo", exact: true }),
   ).toHaveCount(0);
 });
 test("service deletion Undo and client archive preserve open history; removed account blocks payment Undo", async ({
@@ -753,9 +747,7 @@ test("service deletion Undo and client archive preserve open history; removed ac
   await clickAction(page, "Delete service");
   await confirm(page, "Delete");
   await expect(serviceRow(page)).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Undo Client action", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await confirm(page, "Restore");
   await expect(serviceRow(page)).toHaveCount(1);
   await record(page);
@@ -774,9 +766,7 @@ test("service deletion Undo and client archive preserve open history; removed ac
       })
     ).status(),
   ).toBe(204);
-  await page
-    .getByRole("button", { name: "Undo Client action", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await page.getByRole("button", { name: "Restore", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("not found");
   const count = (
@@ -872,9 +862,7 @@ test("paying more than is owed saves the extra as a separate tip, and Undo remov
   await expect(sheet).toContainText("Tip $20.00");
   await closeSheet(sheet);
   await expect(page.locator(".cl-card")).toContainText("$0.00");
-  await page
-    .getByRole("button", { name: "Undo Client action", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await confirm(page, "Delete");
   expect((await incomeRows()).every((r) => r.deleted_at !== null)).toBe(true);
 });

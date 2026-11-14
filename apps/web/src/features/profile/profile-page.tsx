@@ -11,7 +11,7 @@ import { Link } from "@tanstack/react-router";
 import { KeyRound, ShieldCheck, Smartphone } from "lucide-react";
 import { type ReactElement, type ReactNode, useState } from "react";
 import { LoadError } from "../../components/load-error";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { devicesKey, getDevices } from "../settings/devices-api";
 import { getMe, meKey } from "./api";
 import { NameSheet } from "./name-sheet";
@@ -164,8 +164,9 @@ export function ProfilePage() {
         <Toast
           key={notice.id}
           label="Profile notification"
-          durationMs={4000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice(null)}
+          onDismiss={() => setNotice(null)}
         >
           <p role="status">{notice.text}</p>
         </Toast>

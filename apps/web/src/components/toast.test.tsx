@@ -6,7 +6,7 @@ import {
   screen,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { Toast } from "./toast";
+import { Toast, toastDuration } from "./toast";
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => {
@@ -89,4 +89,52 @@ it("always calls the latest onExpire without restarting the countdown", () => {
   advance(1500);
   expect(first).not.toHaveBeenCalled();
   expect(second).toHaveBeenCalledOnce();
+});
+
+it("has one Dismiss control, drawn as a cross on a phone and as the word from 700 px, that calls onDismiss", () => {
+  const dismiss = vi.fn();
+  const { container } = render(
+    <Toast label="Saved" durationMs={4000} onDismiss={dismiss}>
+      <p role="status">Saved.</p>
+    </Toast>,
+  );
+  const button = screen.getByRole("button", { name: "Dismiss" });
+  expect(button).toHaveClass("ui-btn", "ui-btn-secondary", "toast-dismiss");
+  // One control holding both: the cross (hidden from assistive technology) and the word (what names it).
+  expect(button.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  expect(button.querySelector(".toast-dismiss-word")).toHaveTextContent(
+    "Dismiss",
+  );
+  expect(container.querySelectorAll(".toast-dismiss")).toHaveLength(1);
+  fireEvent.click(button);
+  expect(dismiss).toHaveBeenCalledOnce();
+});
+it("has no Dismiss control without onDismiss, and a disabled one while an action is running", () => {
+  const { rerender } = render(
+    <Toast label="Needs confirmation" durationMs={null}>
+      <p role="status">A client action needs confirmation.</p>
+    </Toast>,
+  );
+  expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
+  rerender(
+    <Toast label="Saved" durationMs={null} onDismiss={() => {}} dismissDisabled>
+      <p role="status">Saved.</p>
+    </Toast>,
+  );
+  expect(screen.getByRole("button", { name: "Dismiss" })).toBeDisabled();
+});
+it("never expires when it has no onExpire (a notice that must be resumed)", () => {
+  render(
+    <Toast label="Needs confirmation" durationMs={null}>
+      <p role="status">Waiting.</p>
+    </Toast>,
+  );
+  advance(120_000);
+  expect(
+    screen.getByRole("group", { name: "Needs confirmation" }),
+  ).toBeTruthy();
+});
+it("has two lengths: 4 seconds, and 6 seconds when it holds an Undo", () => {
+  expect(toastDuration(false)).toBe(4000);
+  expect(toastDuration(true)).toBe(6000);
 });

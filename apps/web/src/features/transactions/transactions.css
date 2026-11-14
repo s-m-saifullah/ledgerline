@@ -57,21 +57,6 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-.tx-error {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.tx-error p,
-.tx-empty p {
-  margin: 0;
-}
-.tx-empty {
-  display: grid;
-  gap: 4px;
-}
 
 .tx-day-title {
   margin: 0;

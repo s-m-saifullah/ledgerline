@@ -17,6 +17,7 @@ import {
 import type { ReactNode } from "react";
 import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { formatTime12 } from "../../lib/time";
 import { getPayments } from "./api";
@@ -159,9 +160,7 @@ export function ServiceSheet({
           )}
         </ListCard>
         {payments.isPending ? (
-          <p className="muted" role="status">
-            Loading payments…
-          </p>
+          <Loading what="payments" />
         ) : payments.isError ? (
           <LoadError
             message="Couldn't load payments."

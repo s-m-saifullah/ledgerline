@@ -1,6 +1,7 @@
 import type { LoanBalance } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
+import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { getTransactions } from "../transactions/api";
@@ -84,7 +85,7 @@ export function RemoveLoanDialog({
         )
       }
     >
-      {entries.isPending && <p role="status">Checking this loan…</p>}
+      {entries.isPending && <Loading what="this loan" />}
       {entries.isError && (
         <p role="alert" className="field-error">
           We couldn't check this loan. Close this and try again.

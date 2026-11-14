@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
 import { localToday } from "../../lib/time";
@@ -97,18 +98,14 @@ export function ClientsPage() {
           onRetry={() => void ledgers.refetch()}
         />
       ) : !ledger ? (
-        <p className="muted" role="status">
-          Loading your ledger…
-        </p>
+        <Loading what="your ledger" />
       ) : clients.isError ? (
         <LoadError
           message="Couldn't load clients."
           onRetry={() => void clients.refetch()}
         />
       ) : !clients.data ? (
-        <p className="muted" role="status">
-          Loading clients…
-        </p>
+        <Loading what="clients" />
       ) : (
         <div className="cl-split" data-open={!!clientId}>
           <div className="cl-list">

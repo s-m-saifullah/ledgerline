@@ -126,7 +126,7 @@ describe("RemoveLoanDialog", () => {
   });
   it("waits for the check before it allows the removal", async () => {
     mount([]);
-    expect(await screen.findByText("Checking this loan…")).toBeTruthy();
+    expect(await screen.findByText("Loading this loan…")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Remove loan" })).toBeDisabled();
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Remove loan" })).toBeEnabled(),

@@ -290,7 +290,7 @@ describe("the Loans list", () => {
     expect(rowNames()).toEqual(["Pat 3"]);
     expect(screen.getByRole("searchbox")).toBe(box);
     fireEvent.change(box, { target: { value: "nobody" } });
-    expect(screen.getByText("No one here.")).toBeTruthy();
+    expect(screen.getByText("No matching people.")).toBeTruthy();
     expect(screen.getByRole("searchbox")).toBe(box);
   });
   it("has Active, Archived and All only while someone is archived", async () => {

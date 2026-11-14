@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { ReactElement, ReactNode } from "react";
 import { Amount, BaseNote } from "../../components/amount-text";
+import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
 import { morePages } from "../shell/nav";
 import { useTransactionWorkspace } from "../transactions/workspace";
@@ -296,23 +297,14 @@ export function AccountsColumn({
         )}
       </div>
       {failed ? (
-        <div className="ui-card home-error">
-          <p role="alert">Couldn't load your accounts.</p>
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={retry}
-          >
-            Try again
-          </button>
-        </div>
+        <LoadError message="Couldn't load your accounts." onRetry={retry} />
       ) : loading ? (
         <div className="home-skeleton" aria-hidden="true">
           <span />
           <span />
         </div>
       ) : groups.length === 0 ? (
-        <EmptyState text="No accounts yet" />
+        <EmptyState text="No accounts yet." />
       ) : (
         <ListCard>
           {groups.map((group) => (

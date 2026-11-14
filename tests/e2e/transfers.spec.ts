@@ -193,9 +193,7 @@ test("moves exact cents, edits both legs, deletes and restores with historical i
   ).toBeVisible();
   expect(await posted(page)).toBe(10000);
   expect(await posted(page, cashId)).toBe(5000);
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(
     page.getByText("Deletion undone.", { exact: true }),
   ).toBeVisible();
@@ -349,14 +347,10 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
     page.getByText("Transfer deleted.", { exact: true }),
   ).toBeVisible();
   expect(seen.DELETE?.[1]).toEqual(seen.DELETE?.[0]);
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
-  await expect(
-    page.getByRole("button", { name: "Retry deletion Undo" }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Retry Undo" })).toBeVisible();
   await leaveForAnotherPage(page);
-  await page.getByRole("button", { name: "Retry deletion Undo" }).click();
+  await page.getByRole("button", { name: "Retry Undo" }).click();
   await expect(
     page.getByText("Deletion undone.", { exact: true }),
   ).toBeVisible();

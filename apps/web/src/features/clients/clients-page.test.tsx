@@ -340,7 +340,7 @@ describe("the Clients list", () => {
         target: { value: "zzz" },
       },
     );
-    expect(screen.getByText("No clients here.")).toBeTruthy();
+    expect(screen.getByText("No matching clients.")).toBeTruthy();
   });
 
   it("starts an empty ledger with the one Add client of the page head", async () => {

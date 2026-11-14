@@ -178,9 +178,7 @@ test("allocates exact cents, edits stable lines, deletes/Undo and converts to or
     page.getByText("Transaction deleted.", { exact: true }),
   ).toBeVisible();
   expect(await balance(page)).toBe(10000);
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(
     page.getByText("Deletion undone.", { exact: true }),
   ).toBeVisible();
@@ -295,16 +293,12 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
     page.getByText("Transaction deleted.", { exact: true }),
   ).toBeVisible();
   expect(seen.DELETE?.[1]).toEqual(seen.DELETE?.[0]);
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "Retry deletion Undo", exact: true }),
+    page.getByRole("button", { name: "Retry Undo", exact: true }),
   ).toBeVisible();
   await leaveForAnotherPage(page);
-  await page
-    .getByRole("button", { name: "Retry deletion Undo", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Retry Undo", exact: true }).click();
   await expect(
     page.getByText("Deletion undone.", { exact: true }),
   ).toBeVisible();

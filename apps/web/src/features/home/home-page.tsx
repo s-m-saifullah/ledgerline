@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { getLedgers } from "../../lib/api";
 import { monthLabel, useCurrentMonth } from "../../lib/month";
 import { useBaseValues } from "../currencies/base-value";
@@ -15,19 +17,6 @@ import {
   MonthCard,
   Notes,
 } from "./sections";
-
-function Loading() {
-  return (
-    <div role="status" aria-live="polite">
-      <p className="muted">Loading your overview…</p>
-      <div className="home-skeleton" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-    </div>
-  );
-}
 
 function FirstAccount({ writable }: { writable: boolean }) {
   return (
@@ -89,25 +78,27 @@ export function HomePage() {
         <h1>Home</h1>
       </div>
       {failed && (
-        <div className="ui-card home-error">
-          <p role="alert">
-            {data
+        <LoadError
+          message={
+            data
               ? "Couldn't refresh. Showing the last numbers we loaded."
-              : "Couldn't load your overview."}
-          </p>
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={() => {
-              void ledgers.refetch();
-              if (ledger) void summary.refetch();
-            }}
-          >
-            Try again
-          </button>
-        </div>
+              : "Couldn't load your overview."
+          }
+          onRetry={() => {
+            void ledgers.refetch();
+            if (ledger) void summary.refetch();
+          }}
+        />
       )}
-      {!data && !failed && <Loading />}
+      {!data && !failed && (
+        <Loading what="your overview">
+          <div className="home-skeleton" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+        </Loading>
+      )}
       {ledgers.data && !ledger && (
         <p className="account-error">No ledger is available.</p>
       )}

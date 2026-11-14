@@ -124,7 +124,7 @@ it("searches by part of a name and says when nothing matches", async () => {
   expect(screen.getByText("Gift")).toBeInTheDocument();
   await userEvent.clear(box);
   await userEvent.type(box, "zzz");
-  expect(screen.getByText("No tag matches.")).toBeInTheDocument();
+  expect(screen.getByText("No matching tags.")).toBeInTheDocument();
 });
 it("shows the search even when there are no tags, with the empty sentence", async () => {
   mount([]);
@@ -132,7 +132,7 @@ it("shows the search even when there are no tags, with the empty sentence", asyn
   expect(
     screen.getByRole("searchbox", { name: "Search tags" }),
   ).toBeInTheDocument();
-  expect(screen.queryByText("No tag matches.")).toBeNull();
+  expect(screen.queryByText("No matching tags.")).toBeNull();
 });
 it("says it could not load the tags and offers to try again", async () => {
   mount([], { failTags: true });

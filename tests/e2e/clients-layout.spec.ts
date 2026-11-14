@@ -439,7 +439,7 @@ test("the chips, the search and the empty answers", async ({ page }) => {
   await page.getByRole("searchbox", { name: "Search clients" }).fill("fjord");
   await expect(links(page)).toHaveCount(1);
   await page.getByRole("searchbox", { name: "Search clients" }).fill("zzz");
-  await expect(page.getByText("No clients here.")).toBeVisible();
+  await expect(page.getByText("No matching clients.")).toBeVisible();
   expect(await noSideways(page)).toBe(true);
 });
 

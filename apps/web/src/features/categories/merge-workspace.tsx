@@ -8,8 +8,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { ApiError } from "../../lib/api";
 import {
   getCategories,
@@ -211,7 +212,7 @@ export function CategoryMergeWorkspace({
     >
       {children}
       {source && !open && uncertain && (
-        <div className="transaction-toast">
+        <Toast label="Category merge notification" durationMs={null}>
           <p role="status">A category merge needs confirmation.</p>
           <button
             type="button"
@@ -220,7 +221,7 @@ export function CategoryMergeWorkspace({
           >
             Resume category merge
           </button>
-        </div>
+        </Toast>
       )}
       {source && (
         <Overlay
@@ -276,9 +277,7 @@ export function CategoryMergeWorkspace({
         >
           <div className="cg-form">
             <fieldset disabled={frozen} className="cg-fields">
-              {choices.isPending && (
-                <p role="status">Loading destination categories…</p>
-              )}
+              {choices.isPending && <Loading what="destination categories" />}
               {choices.isError && (
                 <p role="alert">
                   Couldn't load destination categories. Reload the preview to
@@ -305,9 +304,7 @@ export function CategoryMergeWorkspace({
                 />
               )}
             </fieldset>
-            {loading && !uncertain && (
-              <p role="status">Loading merge preview…</p>
-            )}
+            {loading && !uncertain && <Loading what="merge preview" />}
             {preview && (
               <section
                 aria-label="Merge preview"
@@ -384,17 +381,11 @@ export function CategoryMergeWorkspace({
       {notice && (
         <Toast
           label="Category notification"
-          durationMs={3000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice("")}
+          onDismiss={() => setNotice("")}
         >
           <p role="status">{notice}</p>
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={() => setNotice("")}
-          >
-            Dismiss category notification
-          </button>
         </Toast>
       )}
     </Context>

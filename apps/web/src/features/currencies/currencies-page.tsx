@@ -10,7 +10,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { LoadError } from "../../components/load-error";
-import { Toast } from "../../components/toast";
+import { Loading } from "../../components/loading";
+import { Toast, toastDuration } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { currencyName } from "../../lib/rate-format";
 import { usePageAdd } from "../shell/page-add";
@@ -144,9 +145,7 @@ export function CurrenciesPage() {
         />
       )}
       {!data && !list.isError && !ledgers.isError && (
-        <p className="muted" role="status">
-          Loading your currencies…
-        </p>
+        <Loading what="your currencies" />
       )}
       {data && (
         <>
@@ -176,8 +175,9 @@ export function CurrenciesPage() {
       {notice && (
         <Toast
           label="Currency notification"
-          durationMs={6000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice("")}
+          onDismiss={() => setNotice("")}
         >
           <p role="status">{notice}</p>
         </Toast>

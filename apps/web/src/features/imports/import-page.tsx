@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Loading } from "../../components/loading";
 import { ExportCard } from "../exports/export-card";
 import { CategoriesStep } from "./categories-step";
 import { ColumnsStep } from "./columns-step";
@@ -56,9 +57,7 @@ export function ImportPage() {
               Couldn't load your accounts and categories. Please try again.
             </p>
           ) : w.loading ? (
-            <p className="imp-note" role="status">
-              Loading…
-            </p>
+            <Loading what="import" />
           ) : w.accounts.length === 0 ? (
             <p className="imp-note">
               Add an account first, then import into it.

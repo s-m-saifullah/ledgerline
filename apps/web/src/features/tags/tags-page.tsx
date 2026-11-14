@@ -6,8 +6,9 @@ import { Plus, TagIcon } from "lucide-react";
 import { useState } from "react";
 import { Fold } from "../../components/fold";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { SearchField } from "../../components/search-field";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { usePageAdd } from "../shell/page-add";
 import { splitTags, tagHint } from "./model";
@@ -18,7 +19,7 @@ import "./tags.css";
 export function TagsPage() {
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
-  if (ledgers.isPending) return <p role="status">Opening your tags…</p>;
+  if (ledgers.isPending) return <Loading what="tags" />;
   if (ledgers.isError || !ledger)
     return (
       <div className="tg-page">
@@ -132,11 +133,7 @@ function LedgerTags({
         value={query}
         onChange={setQuery}
       />
-      {tags.isPending && (
-        <p className="muted" role="status">
-          Loading tags…
-        </p>
-      )}
+      {tags.isPending && <Loading what="tags" />}
       {tags.isError && (
         <LoadError
           message="Couldn't load your tags."
@@ -150,7 +147,7 @@ function LedgerTags({
       )}
       {tags.data && !none && active.length + archived.length === 0 && (
         <div className="ui-card">
-          <EmptyState text="No tag matches." />
+          <EmptyState text="No matching tags." />
         </div>
       )}
       {active.length > 0 && <ListCard>{active.map(row)}</ListCard>}
@@ -160,8 +157,9 @@ function LedgerTags({
       {notice && (
         <Toast
           label="Tag notification"
-          durationMs={3000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice("")}
+          onDismiss={() => setNotice("")}
         >
           <p role="status">{notice}</p>
         </Toast>

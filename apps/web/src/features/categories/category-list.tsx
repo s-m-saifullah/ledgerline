@@ -26,7 +26,7 @@ export function CategoryCard({
   if (groups.length === 0)
     return (
       <div className="ui-card">
-        <EmptyState text="Nothing here." />
+        <EmptyState text="No matching categories." />
       </div>
     );
   return (

@@ -363,6 +363,27 @@ select {
 .transaction-toast .field-error {
   flex-basis: 100%;
 }
+/* The one Dismiss control of a toast: a cross on a phone, the word from 700 px. It is one button holding both, so
+   its name is always "Dismiss" and the layout never swaps controls. */
+@container app (max-width: 699.98px) {
+  .toast-dismiss {
+    min-width: 44px;
+    padding: 0;
+  }
+  .toast-dismiss-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@container app (min-width: 700px) {
+  .toast-dismiss svg {
+    display: none;
+  }
+}
 .shell-ledger-error {
   position: fixed;
   left: 50%;
@@ -977,4 +998,9 @@ details[open] > summary {
 }
 .load-error-message {
   margin: 0;
+}
+.read-only-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
 }

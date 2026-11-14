@@ -10,8 +10,9 @@ import {
 } from "react";
 import { DeleteTrigger } from "../../components/delete-trigger";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
 import { PrivacyContext } from "../../lib/preferences";
@@ -513,16 +514,20 @@ export function ClientsWorkspace({
     >
       {children}
       {op && !open && uncertain && (
-        <div className="transaction-toast client-toast">
-          <p role="status">A Client action needs confirmation.</p>
+        <Toast
+          label="Client confirmation"
+          className="client-toast"
+          durationMs={null}
+        >
+          <p role="status">A client action needs confirmation.</p>
           <button
             className="ui-btn ui-btn-secondary"
             type="button"
             onClick={() => setOpen(true)}
           >
-            Resume Client action
+            Resume client action
           </button>
-        </div>
+        </Toast>
       )}
       {(op || loading || error) && (
         <Overlay
@@ -538,7 +543,7 @@ export function ClientsWorkspace({
           footer={footer}
         >
           {loading ? (
-            <p role="status">Loading latest details…</p>
+            <Loading what="latest details" />
           ) : (
             <form
               id="client-form"
@@ -603,7 +608,7 @@ export function ClientsWorkspace({
       )}
       {notice && !open && toastDone && undo && writable && (
         <UndoPill
-          label="Undo Client action"
+          label="Undo"
           disabled={blocked || frozen}
           onUndo={() => {
             const next = undo;
@@ -621,10 +626,14 @@ export function ClientsWorkspace({
         <Toast
           label="Client notification"
           className="client-toast"
-          durationMs={blocked || frozen ? null : undo ? 5000 : 3000}
+          durationMs={blocked || frozen ? null : toastDuration(!!undo)}
           onExpire={() => {
             if (undo && writable) setToastDone(true);
             else setNotice("");
+          }}
+          onDismiss={() => {
+            setNotice("");
+            setUndo(null);
           }}
         >
           <p role="status">{notice}</p>
@@ -639,19 +648,9 @@ export function ClientsWorkspace({
                 void begin(next, "main-content", false);
               }}
             >
-              Undo Client action
+              Undo
             </button>
           )}
-          <button
-            className="ui-btn ui-btn-secondary"
-            type="button"
-            onClick={() => {
-              setNotice("");
-              setUndo(null);
-            }}
-          >
-            Dismiss
-          </button>
         </Toast>
       )}
     </Context>

@@ -12,7 +12,8 @@ import { Plus } from "lucide-react";
 import { type ReactElement, type ReactNode, useState } from "react";
 import { Fold } from "../../components/fold";
 import { LoadError } from "../../components/load-error";
-import { Toast } from "../../components/toast";
+import { Loading } from "../../components/loading";
+import { Toast, toastDuration } from "../../components/toast";
 import { daysLeft, daysLeftText, isUrgent } from "../../lib/days-left";
 import { getMe, meKey } from "../profile/api";
 import { usePageAdd } from "../shell/page-add";
@@ -163,11 +164,7 @@ export function UsersPage() {
           <EmptyState text="Only the admin can manage users." />
         </div>
       )}
-      {admin && users.isPending && (
-        <p className="muted" role="status">
-          Loading people…
-        </p>
-      )}
+      {admin && users.isPending && <Loading what="people" />}
       {users.isError && (
         <LoadError
           message="We couldn't load the list."
@@ -195,8 +192,9 @@ export function UsersPage() {
         <Toast
           key={notice.id}
           label="Users notification"
-          durationMs={4000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice(null)}
+          onDismiss={() => setNotice(null)}
         >
           <p role="status">{notice.text}</p>
         </Toast>

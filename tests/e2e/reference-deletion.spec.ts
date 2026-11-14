@@ -250,9 +250,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
   await expect(
     page.getByText("Category deleted.", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("Category not found");
   await openPage(page, "Accounts");
   await clickAccountAction(page, "delete", "Checking");

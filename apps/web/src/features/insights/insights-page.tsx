@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { Loading } from "../../components/loading";
 import { MonthHead } from "../../components/month-head";
 import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
@@ -92,11 +93,7 @@ export function InsightsPage() {
           </button>
         </div>
       )}
-      {!spending.data && !failed && (
-        <p className="muted" role="status">
-          Loading your insights…
-        </p>
-      )}
+      {!spending.data && !failed && <Loading what="your insights" />}
       {ledgers.data && !ledger && (
         <p className="account-error">No ledger is available.</p>
       )}

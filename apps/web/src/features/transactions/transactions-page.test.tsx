@@ -247,17 +247,12 @@ describe("the page", () => {
   it("explains an empty list differently with and without filters", async () => {
     pages([]);
     mount();
-    expect(
-      await screen.findByRole("heading", { name: "No matching entries" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("Use Add to record your first income or expense."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("No transactions yet.")).toBeInTheDocument();
     cleanup();
     pages([]);
     mount({ text: "zzz" });
     expect(
-      await screen.findByText("Try another search or clear the filters."),
+      await screen.findByText("No matching transactions."),
     ).toBeInTheDocument();
   });
 
@@ -281,9 +276,7 @@ describe("the page", () => {
       "Choose an end date on or after the start date.",
     );
     expect(getTransactions).not.toHaveBeenCalled();
-    expect(
-      screen.queryByRole("heading", { name: "No matching entries" }),
-    ).toBeNull();
+    expect(screen.queryByText("No transactions yet.")).toBeNull();
   });
 
   it("loads more, and does not show a row twice", async () => {

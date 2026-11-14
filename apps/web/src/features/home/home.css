@@ -53,16 +53,6 @@
 .home-welcome p {
   margin: 0;
 }
-.home-error {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.home-error p {
-  margin: 0;
-}
 
 /* This month: one card that opens Insights. */
 .home-month {
