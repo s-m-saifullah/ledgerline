@@ -1,11 +1,19 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { type ReactNode, useLayoutEffect, useRef } from "react";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import "./overlay.css";
 import { useSheetDrag } from "./sheet-drag";
 
 /** What a sheet may start on when no field is named: the first field, else the pinned button. Never Cancel. */
 const focusable =
   'input:not([type="hidden"]), select, textarea, button, [href], [tabindex]:not([tabindex="-1"])';
+
+/**
+ * How many overlays are open now. Each opens one level above those before it (10 layers apart, the dark layer under
+ * its panel), so a question or a picker opened from a sheet dims that sheet instead of sitting under it: the
+ * stylesheet puts every overlay at the same two layers, and the first level (none) keeps those.
+ */
+let openLevels = 0;
+const LAYER_STEP = 10;
 
 /** The Escape press that Radix is closing some overlay with (a key it dismisses for is never handled again by `onKeyDown`). */
 let dismissingKey: Event | null = null;
@@ -63,6 +71,8 @@ function leaveCopies({
     const copy = scrim.cloneNode(false) as HTMLElement;
     // Radix gives the overlay an inline `pointer-events: auto`, which would beat the CSS that lets taps through.
     copy.removeAttribute("style");
+    // Where the live one was (empty on the stylesheet's own layers), so the copy does not drop under the overlay beneath.
+    copy.style.zIndex = scrim.style.zIndex;
     copy.setAttribute("data-state", "closed");
     copy.setAttribute("aria-hidden", "true");
     leave(copy);
@@ -77,6 +87,7 @@ function leaveCopies({
   for (const named of [copy, ...copy.querySelectorAll("[id]")])
     named.removeAttribute("id");
   copy.removeAttribute("style");
+  copy.style.zIndex = panel.style.zIndex;
   copy.removeAttribute("role");
   copy.classList.replace(
     question ? "ui-question" : "ui-sheet",
@@ -140,6 +151,18 @@ export function Overlay({
   // The newest `open`, to see it go from open to closed (and to know, at an unmount, whether it was still open).
   const wasOpen = useRef(open);
   const alive = useRef(false);
+  // The level this overlay opened at: 0 when nothing else was open, then one more for each overlay already up.
+  const [level, setLevel] = useState(0);
+  useLayoutEffect(() => {
+    if (!open) return;
+    setLevel(openLevels);
+    openLevels += 1;
+    return () => {
+      openLevels -= 1;
+    };
+  }, [open]);
+  const scrimStyle = level ? { zIndex: 30 + level * LAYER_STEP } : undefined;
+  const panelStyle = level ? { zIndex: 31 + level * LAYER_STEP } : undefined;
   // Closed in place, the sheet is gone at once (the page behind is usable at that moment); its copy slides away. The
   // dark overlay of a sheet that stays mounted is faded out by Radix itself (overlay.css), so no copy of that is needed.
   useLayoutEffect(() => {
@@ -196,9 +219,10 @@ export function Overlay({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay ref={scrim} className="ui-scrim" />
+        <Dialog.Overlay ref={scrim} className="ui-scrim" style={scrimStyle} />
         <Dialog.Content
           ref={content}
+          style={panelStyle}
           {...(description ? {} : { "aria-describedby": undefined })}
           className={
             question

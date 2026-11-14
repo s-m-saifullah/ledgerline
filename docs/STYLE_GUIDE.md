@@ -54,7 +54,7 @@ From `apps/web/src/components`:
 
 | Need | Use |
 | --- | --- |
-| A sheet, drawer or dialog | `Overlay` (a bottom sheet under 700 px, a right-hand drawer from 700, a centred dialog for `kind="question"`); give it a title, a pinned `footer` button (secondary buttons may sit beside the one primary) and `returnFocusId`. A drawer is as tall as the screen and its footer stays at the bottom however short the form. One opened from inside another (a picker over an editor) stacks above it and takes its own Escape |
+| A sheet, drawer or dialog | `Overlay` (a bottom sheet under 700 px, a right-hand drawer from 700, a centred dialog for `kind="question"`); give it a title, a pinned `footer` button (secondary buttons may sit beside the one primary) and `returnFocusId`. A drawer is as tall as the screen and its footer stays at the bottom however short the form. One opened from inside another (a question or a picker over an editor) opens one level above it, its dark layer over the sheet beneath, so that sheet is dimmed, and takes its own Escape. Never set a `z-index` on an overlay yourself |
 | A question before something that cannot be undone | `Question` (Cancel beside one confirming button), `TypedConfirm` when the person must type a name |
 | A confirmation that goes away | `Toast`: two lengths only, `toastDuration(withUndo)` (4 s, or 6 s with an Undo); `durationMs` null while an action runs or failed so Retry is never lost; its own Dismiss control from `onDismiss` (a cross on a phone, the word from 700 px, one button named Dismiss); a notice that must be resumed ("A client action needs confirmation.") has no length and no Dismiss. The Undo button says just Undo. `UndoPill` is the Undo that stays after the toast |
 | Collapsible detail | `Fold` |
@@ -88,6 +88,8 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 ## Change log
 
 Newest first; one line per approved UI change, with the pull request.
+
+- 2026-11-14: an overlay opened from another dims it (#299). Every overlay used to sit on the same two layers, so a delete question or the date picker opened from a sheet put its dark layer under that sheet: the sheet looked as bright as before and the question blended into it. Each overlay now opens one level above the ones already open, and the copy that slides away keeps its layer. The date picker had this since #296.
 
 - 2026-11-14: toasts and states are one piece each (WP-11a). Every toast is the shared `Toast` (the three hand-written copies in Clients, Transactions and Categories are gone) with its own Dismiss control (a cross on a phone, the word from 700 px) and two lengths, 4 s and 6 s with an Undo; the Undo says just Undo and "client" is lower case. Loading is the shared `Loading` (about 25 paragraphs saying Loading or Opening your), Home, Transactions and Budgets use `LoadError`, the Transactions and Budgets empty lists use `EmptyState`, empty wording is "No X yet." or "No matching X.", and the read-only sentence is one `ReadOnlyNote`. `toast-states-contract.test.ts` keeps all of it from drifting back (#298).
 

@@ -744,3 +744,159 @@ describe("Overlay's dark overlay when the overlay goes away", () => {
     });
   });
 });
+
+describe("Overlay opened over another overlay", () => {
+  // The CSS puts a lone overlay's dark layer at 30 and its panel at 31 (overlay.css); jsdom does not read the file.
+  const z = (node: Element, fallback: number) =>
+    Number((node as HTMLElement).style.zIndex || fallback);
+  function Stack({ kind = "question" }: { kind?: "question" | "sheet" }) {
+    const [asking, setAsking] = useState(false);
+    return (
+      <Overlay {...base} title="Edit transaction">
+        <button type="button" onClick={() => setAsking(true)}>
+          Delete
+        </button>
+        <Overlay
+          {...base}
+          open={asking}
+          kind={kind}
+          title="Delete this transaction?"
+          onDismiss={() => setAsking(false)}
+        >
+          text
+        </Overlay>
+      </Overlay>
+    );
+  }
+  afterEach(cleanup);
+
+  it("puts its dark layer and its panel above the one beneath, so that one is dimmed", async () => {
+    render(<Stack />);
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    const [lowerScrim, upperScrim] = document.querySelectorAll(".ui-scrim");
+    // While another is open Radix hides the rest from assistive technology, so find it by its class.
+    const lower = document.querySelector(".ui-sheet") as HTMLElement;
+    const upper = screen.getByRole("dialog", {
+      name: "Delete this transaction?",
+    });
+    expect(z(lowerScrim as Element, 30)).toBe(30);
+    expect(z(lower, 31)).toBe(31);
+    // The upper dark layer is over the lower panel; the upper panel is over its own dark layer.
+    expect(z(upperScrim as Element, 30)).toBeGreaterThan(z(lower, 31));
+    expect(z(upper, 31)).toBeGreaterThan(z(upperScrim as Element, 30));
+  });
+
+  it("does the same for a sheet opened over a sheet", async () => {
+    render(<Stack kind="sheet" />);
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    const [, upperScrim] = document.querySelectorAll(".ui-scrim");
+    const lower = document.querySelector(".ui-sheet") as HTMLElement;
+    expect(z(upperScrim as Element, 30)).toBeGreaterThan(z(lower, 31));
+  });
+
+  it("leaves a lone overlay on the layers of the stylesheet, also after a stack has come and gone", async () => {
+    render(<Stack />);
+    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.keyboard("{Escape}");
+    await userEvent.keyboard("{Escape}");
+    cleanup();
+    render(<Overlay {...base}>content</Overlay>);
+    expect(
+      (document.querySelector(".ui-scrim") as HTMLElement).style.zIndex,
+    ).toBe("");
+    expect(screen.getByRole("dialog").style.zIndex).toBe("");
+  });
+
+  it("gives the same layers each time it opens", async () => {
+    render(<Stack />);
+    const layers = async () => {
+      await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+      const found = z(
+        screen.getByRole("dialog", { name: "Delete this transaction?" }),
+        31,
+      );
+      await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+      return found;
+    };
+    const first = await layers();
+    expect(await layers()).toBe(first);
+  });
+});
+
+describe("The copy of a stacked overlay that slides away", () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: false })),
+    );
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    for (const left of document.querySelectorAll(
+      ".ui-scrim, .ui-sheet-out, .ui-question-out",
+    ))
+      left.remove();
+  });
+  it("keeps its layer, so it does not drop under the sheet beneath while it goes", async () => {
+    function Stack() {
+      const [asking, setAsking] = useState(true);
+      return (
+        <Overlay {...base} title="Edit transaction">
+          <button type="button" onClick={() => setAsking(false)}>
+            Close question
+          </button>
+          <Overlay
+            {...base}
+            open={asking}
+            kind="question"
+            title="Delete this transaction?"
+            onDismiss={() => setAsking(false)}
+          >
+            text
+          </Overlay>
+        </Overlay>
+      );
+    }
+    render(<Stack />);
+    const live = screen.getByRole("dialog", {
+      name: "Delete this transaction?",
+    });
+    const layer = Number(live.style.zIndex);
+    expect(layer).toBeGreaterThan(31);
+    await userEvent.keyboard("{Escape}");
+    const copy = document.querySelector(".ui-question-out") as HTMLElement;
+    expect(copy).not.toBeNull();
+    expect(Number(copy.style.zIndex)).toBe(layer);
+  });
+  it("keeps the layer of its dark layer too, when its parent stops drawing it while it is open", async () => {
+    function Stack() {
+      const [shown, setShown] = useState(true);
+      return (
+        <Overlay {...base} title="Edit transaction">
+          <button type="button" onClick={() => setShown(false)}>
+            Stop drawing it
+          </button>
+          {shown && (
+            <Overlay {...base} kind="question" title="Delete this transaction?">
+              text
+            </Overlay>
+          )}
+        </Overlay>
+      );
+    }
+    render(<Stack />);
+    const scrims = document.querySelectorAll<HTMLElement>(".ui-scrim");
+    const layer = Number(scrims[1]?.style.zIndex);
+    expect(layer).toBeGreaterThan(30);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Stop drawing it", hidden: true }),
+    );
+    await Promise.resolve();
+    const ghost = document.querySelector<HTMLElement>(
+      '.ui-scrim[data-state="closed"]',
+    );
+    expect(ghost).not.toBeNull();
+    expect(Number(ghost?.style.zIndex)).toBe(layer);
+  });
+});
