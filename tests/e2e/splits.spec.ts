@@ -11,6 +11,7 @@ import {
 } from "./ledger-setup";
 import { leaveForAnotherPage } from "./more-nav";
 import { signIn } from "./sign-in";
+import { deleteUndo } from "./undo";
 
 const { env, pool } = connectLocalDatabase("Split browser tests");
 let ledgerId = "",
@@ -178,7 +179,7 @@ test("allocates exact cents, edits stable lines, deletes/Undo and converts to or
     page.getByText("Transaction deleted.", { exact: true }),
   ).toBeVisible();
   expect(await balance(page)).toBe(10000);
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await deleteUndo(page).click();
   await expect(
     page.getByText("Deletion undone.", { exact: true }),
   ).toBeVisible();
@@ -293,7 +294,7 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
     page.getByText("Transaction deleted.", { exact: true }),
   ).toBeVisible();
   expect(seen.DELETE?.[1]).toEqual(seen.DELETE?.[0]);
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await deleteUndo(page).click();
   await expect(
     page.getByRole("button", { name: "Retry Undo", exact: true }),
   ).toBeVisible();

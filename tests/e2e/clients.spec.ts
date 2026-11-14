@@ -16,6 +16,7 @@ import {
 } from "./ledger-setup";
 import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
+import { deleteUndo } from "./undo";
 
 const { env, pool } = connectLocalDatabase("Clients browser tests");
 let ledgerId = "",
@@ -332,9 +333,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   await page
     .getByRole("button", { name: "Confirm delete", exact: true })
     .click();
-  await expect(
-    page.getByRole("button", { name: "Undo", exact: true }),
-  ).toBeEnabled();
+  await expect(deleteUndo(page)).toBeEnabled();
   await openMorePage(page, "Clients");
   await clientLink(page, "Sam").click();
   let interrupted = false;
@@ -367,9 +366,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
     .getByRole("button", { name: "Cancel", exact: true })
     .click();
   await navigate(page, "Transactions");
-  await expect(
-    page.getByRole("button", { name: "Undo", exact: true }),
-  ).toBeDisabled();
+  await expect(deleteUndo(page)).toBeDisabled();
   const clientNotice = await page.locator(".client-toast").boundingBox();
   const historyNotice = await page
     .getByRole("group", { name: "Transaction history notification" })

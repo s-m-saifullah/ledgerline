@@ -18,6 +18,7 @@ import {
 import { leaveForAnotherPage } from "./more-nav";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
+import { deleteUndo } from "./undo";
 
 const { env, pool } = connectLocalDatabase("Transaction list browser tests");
 let ledgerId = "",
@@ -384,7 +385,7 @@ test("replays interrupted edit/delete/restore across navigation and freezes conf
   ).toBeVisible();
   expect(seen.DELETE?.[1]).toEqual(seen.DELETE?.[0]);
   expect(await balance(page)).toBe(4500);
-  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await deleteUndo(page).click();
   await expect(page.getByRole("button", { name: "Retry Undo" })).toBeVisible();
   await page.getByRole("button", { name: "Retry Undo" }).click();
   await expect(
