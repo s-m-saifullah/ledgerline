@@ -236,12 +236,16 @@ for (const width of [320, 390]) {
         const filters = document.getElementById("open-filters");
         return {
           text: Math.ceil(context.measureText(input.placeholder).width),
+          // The drawn width less border and padding (`clientWidth` of a search input reads short on Linux).
           room: Math.floor(
-            input.clientWidth -
+            input.getBoundingClientRect().width -
+              Number.parseFloat(style.borderLeftWidth) -
+              Number.parseFloat(style.borderRightWidth) -
               Number.parseFloat(style.paddingLeft) -
               Number.parseFloat(style.paddingRight),
           ),
-          input: input.clientWidth,
+          input: Math.round(input.getBoundingClientRect().width),
+          client: input.clientWidth,
           filters: Math.round(filters?.getBoundingClientRect().width ?? 0),
           font: context.font,
         };
