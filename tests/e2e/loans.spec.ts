@@ -298,7 +298,8 @@ test("a loan can be removed while only its starting balance is left, and not whi
   });
   await expect(entries).toBeVisible();
   await expect(entries.getByRole("listitem")).toHaveCount(1);
-  await expect(entries).toContainText(/^\d{4}-\d{2}-\d{2}$/);
+  // A day written like the rest of the app ("Nov 14", or "Nov 14, 2025"), not as 2026-11-14.
+  await expect(entries).toContainText(/^[A-Z][a-z]{2} \d{1,2}(, \d{4})?$/);
   await expect(
     dialog(page).getByRole("button", { name: "Remove loan" }),
   ).toHaveCount(0);
