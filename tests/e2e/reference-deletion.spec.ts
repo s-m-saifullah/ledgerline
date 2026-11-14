@@ -11,6 +11,7 @@ import {
 } from "./ledger-setup";
 import { openMorePage } from "./more-nav";
 import { signIn } from "./sign-in";
+import { deleteUndo } from "./undo";
 
 const { env, pool } = connectLocalDatabase("Reference deletion browser tests");
 let ledgerId = "",
@@ -250,9 +251,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
   await expect(
     page.getByText("Category deleted.", { exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
+  await deleteUndo(page).click();
   await expect(page.getByRole("alert")).toContainText("Category not found");
   await openPage(page, "Accounts");
   await clickAccountAction(page, "delete", "Checking");

@@ -6,6 +6,7 @@ import { Plus, Repeat } from "lucide-react";
 import { useState } from "react";
 import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { getLedgers } from "../../lib/api";
 import { getCategories } from "../categories/api";
 import { usePageAdd } from "../shell/page-add";
@@ -127,11 +128,7 @@ export function RecurringPage() {
           }}
         />
       )}
-      {!rules.data && !failed && (
-        <p className="muted" role="status">
-          Loading your recurring entries…
-        </p>
-      )}
+      {!rules.data && !failed && <Loading what="your recurring entries" />}
       {ledger && !timeZone && (
         <section className="ui-card rc-alert">
           <p>Set your time zone first.</p>

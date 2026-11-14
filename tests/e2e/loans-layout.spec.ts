@@ -383,7 +383,7 @@ test("a long list has a search box that keeps its place while the list narrows",
   await expect(links(page)).toHaveCount(1);
   expect(await box(search)).toEqual(before);
   await search.fill("nobody");
-  await expect(page.getByText("No one here.")).toBeVisible();
+  await expect(page.getByText("No matching people.")).toBeVisible();
   expect(await box(search)).toEqual(before);
 });
 

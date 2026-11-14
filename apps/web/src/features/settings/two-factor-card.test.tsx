@@ -293,7 +293,7 @@ describe("TwoFactorCard", () => {
       vi.fn(async () => new Response("{}", { status: 500 })),
     );
     renderCard();
-    expect(screen.getByText("Checking your two-factor setting…")).toBeTruthy();
+    expect(screen.getByText("Loading two-factor setting…")).toBeTruthy();
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Couldn't check your two-factor setting. Please try again later.",
     );

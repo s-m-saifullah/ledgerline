@@ -12,8 +12,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { Amount } from "../../components/amount-text";
+import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { MonthHead } from "../../components/month-head";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { monthLabel, shiftMonth, useCurrentMonth } from "../../lib/month";
 import { getBudgetMonth, prepareBudgetCopy } from "./api";
@@ -188,38 +190,28 @@ export function BudgetsPage() {
         onChange={setChosen}
       />
       {(ledgers.isError || view.isError) && (
-        <div className="ui-card bud-error">
-          <p role="alert">
-            {data
+        <LoadError
+          message={
+            data
               ? "Couldn't refresh. Showing the last numbers we loaded."
-              : "Couldn't load your budgets."}
-          </p>
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={() => {
-              void ledgers.refetch();
-              if (ledger) void view.refetch();
-            }}
-          >
-            Try again
-          </button>
-        </div>
+              : "Couldn't load your budgets."
+          }
+          onRetry={() => {
+            void ledgers.refetch();
+            if (ledger) void view.refetch();
+          }}
+        />
       )}
-      {!data && !view.isError && !ledgers.isError && (
-        <p className="muted" role="status">
-          Loading your budgets…
-        </p>
-      )}
+      {!data && !view.isError && !ledgers.isError && <Loading what="budgets" />}
       {ledgers.data && !ledger && (
         <p className="account-error">No ledger is available.</p>
       )}
       {data &&
         totals &&
         (data.items.length === 0 ? (
-          <p className="muted">
-            Add an expense category first, then budget it here.
-          </p>
+          <div className="ui-card">
+            <EmptyState text="Add an expense category first, then budget it here." />
+          </div>
         ) : (
           <div className="bud-cols">
             <div className="bud-side">
@@ -327,8 +319,9 @@ export function BudgetsPage() {
         <Toast
           key={notice.id}
           label="Budgets notification"
-          durationMs={4000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice(null)}
+          onDismiss={() => setNotice(null)}
         >
           <p role="status">{notice.text}</p>
         </Toast>

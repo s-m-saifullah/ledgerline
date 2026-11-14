@@ -1,5 +1,5 @@
 import { createCategorySchema, tagNameSchema } from "@ledgerline/shared";
-import { FilterChip, ListCard, ListHead } from "@ledgerline/ui";
+import { EmptyState, FilterChip, ListCard, ListHead } from "@ledgerline/ui";
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -10,6 +10,8 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useEffect, useState } from "react";
 import { Amount } from "../../components/amount-text";
 import type { ComboCreate } from "../../components/combo-field";
+import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { SearchField } from "../../components/search-field";
 import { ApiError, getLedgers } from "../../lib/api";
 import { getCategories, prepareCategorySave } from "../categories/api";
@@ -305,25 +307,19 @@ export function TransactionsPage() {
         entries.isError ||
         accounts.isError ||
         categories.isError) && (
-        <div className="ui-card tx-error">
-          <p role="alert">Couldn't load all transaction details.</p>
-          <button
-            type="button"
-            className="ui-btn ui-btn-secondary"
-            onClick={() => {
-              void ledgers.refetch();
-              void entries.refetch();
-              void accounts.refetch();
-              void categories.refetch();
-            }}
-          >
-            Try again
-          </button>
-        </div>
+        <LoadError
+          message="Couldn't load all transaction details."
+          onRetry={() => {
+            void ledgers.refetch();
+            void entries.refetch();
+            void accounts.refetch();
+            void categories.refetch();
+          }}
+        />
       )}
       {(ledgers.isPending ||
         (!!ledger && entries.isPending && !rangeInvalid)) && (
-        <p role="status">Loading transactions…</p>
+        <Loading what="transactions" />
       )}
       {ledgers.data && !ledger && (
         <p className="account-error">No ledger is available.</p>
@@ -331,13 +327,14 @@ export function TransactionsPage() {
       {!rangeInvalid && entries.data && (
         <div className="tx-days" aria-busy={entries.isPlaceholderData}>
           {rows.length === 0 && (
-            <div className="ui-card tx-empty">
-              <h2 className="ui-title">No matching entries</h2>
-              <p className="muted">
-                {hasAnyFilter(filters)
-                  ? "Try another search or clear the filters."
-                  : "Use Add to record your first income or expense."}
-              </p>
+            <div className="ui-card">
+              <EmptyState
+                text={
+                  hasAnyFilter(filters)
+                    ? "No matching transactions."
+                    : "No transactions yet."
+                }
+              />
             </div>
           )}
           {days.map((day) => (

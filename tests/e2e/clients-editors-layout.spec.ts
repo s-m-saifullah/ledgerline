@@ -551,7 +551,7 @@ test("the trash beside Save asks first, Keep leaves the sheet, and Delete remove
   expect(await live()).toBe(0);
   // Undo is offered in the corner.
   await expect(
-    page.getByRole("button", { name: "Undo Client action", exact: true }),
+    page.getByRole("button", { name: "Undo", exact: true }),
   ).toBeVisible();
 });
 

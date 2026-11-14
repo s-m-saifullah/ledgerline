@@ -10,8 +10,10 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
+import { ReadOnlyNote } from "../../components/read-only-note";
 import { SearchField } from "../../components/search-field";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
 import { usePageAdd } from "../shell/page-add";
@@ -37,7 +39,7 @@ import "./categories.css";
 export function CategoriesPage() {
   const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
   const ledger = ledgers.data?.items[0];
-  if (ledgers.isPending) return <p role="status">Opening your categories…</p>;
+  if (ledgers.isPending) return <Loading what="categories" />;
   if (ledgers.isError || !ledger)
     return (
       <div className="cg-page">
@@ -219,17 +221,8 @@ function LedgerCategories({
           </button>
         </section>
       )}
-      {!writable && (
-        <p className="cg-note">
-          You can view categories in this ledger. Editing is available to owners
-          and editors.
-        </p>
-      )}
-      {query.isPending && (
-        <p className="muted" role="status">
-          Loading categories…
-        </p>
-      )}
+      {!writable && <ReadOnlyNote />}
+      {query.isPending && <Loading what="categories" />}
       {query.isError && (
         <LoadError
           message="Couldn't load your categories."
@@ -358,8 +351,12 @@ function LedgerCategories({
         <Toast
           label="Category notification"
           className="cg-toast"
-          durationMs={3000}
+          durationMs={toastDuration(false)}
           onExpire={() => {
+            setNotice("");
+            reorder.clearNotice();
+          }}
+          onDismiss={() => {
             setNotice("");
             reorder.clearNotice();
           }}

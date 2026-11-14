@@ -137,7 +137,9 @@ export function PersonList({
         <div className="ui-card">
           <EmptyState
             text={
-              people.length === 0 && !text ? "No loans yet." : "No one here."
+              people.length === 0 && !text
+                ? "No loans yet."
+                : "No matching people."
             }
           />
         </div>

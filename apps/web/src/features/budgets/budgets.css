@@ -33,12 +33,6 @@
 .bud-list {
   min-width: 0;
 }
-.bud-error {
-  display: grid;
-  gap: 12px;
-  justify-items: start;
-  padding: 16px;
-}
 
 /* A row: the name and what is left on one line, the bar, one hint. */
 .ui-row.bud-row {

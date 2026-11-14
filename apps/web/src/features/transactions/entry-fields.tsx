@@ -219,7 +219,7 @@ export function EntryFields({
         </div>
         <SwitchRow
           title="Pending"
-          hint="Does not change your balance yet."
+          hint="Does not change your balance yet"
           checked={watch("status") === "pending"}
           onChange={(on) => setValue("status", on ? "pending" : "cleared")}
           disabled={frozen}

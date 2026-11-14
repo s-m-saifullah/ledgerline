@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Smartphone } from "lucide-react";
 import { useState } from "react";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { ActionRow } from "./action-row";
@@ -115,7 +116,7 @@ export function DevicesCard({
       ) : devices.isPending ? (
         <ListCard>
           <div className="ui-row ui-row-static">
-            <span className="ui-row-hint">Loading your devices…</span>
+            <Loading what="devices" />
           </div>
         </ListCard>
       ) : (

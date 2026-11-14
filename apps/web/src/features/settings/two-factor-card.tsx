@@ -75,7 +75,7 @@ export function TwoFactorCard({
             title="Two-factor"
             hint={
               session.isPending
-                ? "Checking your two-factor setting…"
+                ? "Loading two-factor setting…"
                 : enabled
                   ? "Asks for a code after your password"
                   : "A code from an app on your phone"

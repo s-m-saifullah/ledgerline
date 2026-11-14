@@ -154,7 +154,9 @@ it("permits viewer reads without exposing mutation controls", async () => {
   mount([account], "viewer");
   expect(await screen.findByText("-$1,250.50")).toBeInTheDocument();
   expect(screen.queryByRole("button")).not.toBeInTheDocument();
-  expect(screen.getByText(/You can view accounts/)).toBeInTheDocument();
+  expect(
+    screen.getByText("You have read-only access to this ledger."),
+  ).toBeInTheDocument();
 });
 it("opens the account's sheet from its row", async () => {
   mount([bank]);

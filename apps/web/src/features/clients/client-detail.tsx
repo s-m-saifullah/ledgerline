@@ -20,6 +20,7 @@ import {
 import { useEffect, useState } from "react";
 import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { localToday } from "../../lib/time";
 import { getClient, getHistory, getServices } from "./api";
@@ -254,12 +255,7 @@ export function ClientDetail({
         onRetry={() => void client.refetch()}
       />
     );
-  if (!c)
-    return (
-      <p className="muted" role="status">
-        Loading client…
-      </p>
-    );
+  if (!c) return <Loading what="client" />;
   const owes = c.openBalances.length > 0;
   const contact = [c.email, c.phone].filter(Boolean).join(" · ");
   return (
@@ -336,9 +332,7 @@ export function ClientDetail({
         )}
       </section>
       {services.isPending ? (
-        <p className="muted" role="status">
-          Loading services…
-        </p>
+        <Loading what="services" />
       ) : services.isError ? (
         <LoadError
           message="Couldn't load services."
@@ -380,9 +374,7 @@ export function ClientDetail({
           ) : (
             <section aria-label="Client history">
               {history.isPending ? (
-                <p className="muted" role="status">
-                  Loading history…
-                </p>
+                <Loading what="history" />
               ) : history.isError ? (
                 <LoadError
                   message="Couldn't load history."

@@ -208,7 +208,7 @@ test("the search narrows the card and stays where it is while typing", async ({
   expect(Math.abs(after.y - before.y)).toBeLessThan(0.5);
   expect(Math.abs(after.height - before.height)).toBeLessThan(0.5);
   await search.fill("zzz");
-  await expect(page.getByText("No tag matches.")).toBeVisible();
+  await expect(page.getByText("No matching tags.")).toBeVisible();
   expect(Math.abs((await box(search)).y - before.y)).toBeLessThan(0.5);
 });
 

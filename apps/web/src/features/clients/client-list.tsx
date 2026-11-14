@@ -135,7 +135,7 @@ export function ClientList({
             text={
               clients.length === 0 && !text
                 ? "No clients yet."
-                : "No clients here."
+                : "No matching clients."
             }
           />
         </div>

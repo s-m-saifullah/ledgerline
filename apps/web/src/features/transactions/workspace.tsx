@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { LoadingSheet } from "../../components/loading-sheet";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
 import { getCategories } from "../categories/api";
@@ -192,7 +192,7 @@ export function TransactionWorkspace({
         >
           {children}
           {editorLocked && !open && (
-            <div className="transaction-toast">
+            <Toast label="Transaction action notification" durationMs={null}>
               <p role="status">A transaction action needs confirmation.</p>
               <button
                 type="button"
@@ -201,7 +201,7 @@ export function TransactionWorkspace({
               >
                 Resume transaction
               </button>
-            </div>
+            </Toast>
           )}
           {selected &&
             !selected.receivableId &&
@@ -294,7 +294,7 @@ export function TransactionWorkspace({
             ))}
           {deleted && dismissedId === toastId && (
             <UndoPill
-              label="Undo last deletion"
+              label="Undo"
               disabled={
                 undoBusy ||
                 quickAddLocked ||
@@ -319,13 +319,18 @@ export function TransactionWorkspace({
               durationMs={
                 undoBusy || undoUncertain || undoError
                   ? null
-                  : deleted
-                    ? 5000
-                    : 3000
+                  : toastDuration(!!deleted)
               }
               onExpire={() => {
                 if (deleted) setDismissedId(toastId);
                 else setNotice("");
+              }}
+              dismissDisabled={undoBusy || undoUncertain}
+              onDismiss={() => {
+                setDeleted(null);
+                setNotice("");
+                setUndoError("");
+                attempt.current = null;
               }}
             >
               <p role="status">
@@ -357,23 +362,10 @@ export function TransactionWorkspace({
                   {undoBusy
                     ? "Undoing…"
                     : undoUncertain
-                      ? "Retry deletion Undo"
-                      : "Undo deletion"}
+                      ? "Retry Undo"
+                      : "Undo"}
                 </button>
               )}
-              <button
-                type="button"
-                className="ui-btn ui-btn-secondary"
-                disabled={undoBusy || undoUncertain}
-                onClick={() => {
-                  setDeleted(null);
-                  setNotice("");
-                  setUndoError("");
-                  attempt.current = null;
-                }}
-              >
-                Dismiss
-              </button>
             </Toast>
           )}
         </TransactionContext>

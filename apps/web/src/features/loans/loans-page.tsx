@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { LoadError } from "../../components/load-error";
+import { Loading } from "../../components/loading";
 import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
 import { useAppWide } from "../../lib/use-app-width";
@@ -138,18 +139,14 @@ export function LoansPage() {
           onRetry={() => void ledgers.refetch()}
         />
       ) : !ledger ? (
-        <p className="muted" role="status">
-          Loading your ledger…
-        </p>
+        <Loading what="your ledger" />
       ) : people.isError ? (
         <LoadError
           message="Couldn't load people."
           onRetry={() => void people.refetch()}
         />
       ) : !people.data ? (
-        <p className="muted" role="status">
-          Loading people…
-        </p>
+        <Loading what="people" />
       ) : (
         <div className="ln-split" data-open={!!personId}>
           <div className="ln-list">
@@ -175,13 +172,9 @@ export function LoansPage() {
                   onRetry={() => void person.refetch()}
                 />
               ) : !fallback && !contact ? (
-                <p className="muted" role="status">
-                  Loading person…
-                </p>
+                <Loading what="person" />
               ) : !loans.data && !loans.isError ? (
-                <p className="muted" role="status">
-                  Loading balance…
-                </p>
+                <Loading what="balance" />
               ) : (
                 <PersonDetail
                   key={selectedId}

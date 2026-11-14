@@ -9,7 +9,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { FileUp, LogOut } from "lucide-react";
 import { useContext, useState } from "react";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import {
   AmountEntryContext,
   PrivacyControlContext,
@@ -123,8 +123,9 @@ export function SettingsPage() {
         <Toast
           key={notice.id}
           label="Settings notification"
-          durationMs={4000}
+          durationMs={toastDuration(false)}
           onExpire={() => setNotice(null)}
+          onDismiss={() => setNotice(null)}
         >
           <p role="status">{notice.text}</p>
         </Toast>

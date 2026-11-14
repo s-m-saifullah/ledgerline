@@ -1,5 +1,6 @@
 import type { RecurringRun } from "@ledgerline/shared";
 import { ChevronDown } from "lucide-react";
+import { Loading } from "../../../components/loading";
 import { formatDate } from "../schedule";
 
 /** What a rule has done so far, with a way to skip an occurrence that needs attention. */
@@ -22,7 +23,7 @@ export function RunsSection({
         {runs.isError ? (
           <p className="rc-quiet">Couldn't load the history.</p>
         ) : !runs.data ? (
-          <p className="rc-quiet">Loading…</p>
+          <Loading what="history" />
         ) : runs.data.length === 0 ? (
           <p className="rc-quiet">Nothing yet.</p>
         ) : (

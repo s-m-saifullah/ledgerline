@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Overlay } from "../../components/overlay";
+import { ReadOnlyNote } from "../../components/read-only-note";
 import { ApiError } from "../../lib/api";
 import { categoryOptions } from "../categories/tree";
 import { useCategoryCreate } from "../categories/use-category-create";
@@ -192,9 +193,7 @@ export function QuickAddForm({
           if (type !== "transfer") changeKind(form, type);
         }}
       />
-      {!writable && (
-        <p role="status">You have read-only access to this ledger.</p>
-      )}
+      {!writable && <ReadOnlyNote />}
       {blocked && (
         <p role="alert">
           Confirm the earlier transaction action before adding another entry.

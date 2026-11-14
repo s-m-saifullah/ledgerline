@@ -8,6 +8,7 @@ import {
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
 import { setTheme } from "./theme";
+import { deleteUndo } from "./undo";
 
 const { env, pool } = connectLocalDatabase("Home browser tests");
 let ledgerId = "";
@@ -144,9 +145,7 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
   await page.getByRole("button", { name: "Confirm delete" }).click();
   await expect(month(page, "Money out")).toHaveText("$0.00");
   await expect(hero(page)).toHaveText("$1,200.00");
-  await page
-    .getByRole("button", { name: "Undo deletion", exact: true })
-    .click();
+  await deleteUndo(page).click();
   await expect(month(page, "Money out")).toHaveText("$42.15");
   await expect(hero(page)).toHaveText("$1,157.85");
 

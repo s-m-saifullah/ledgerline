@@ -1,9 +1,8 @@
 import type { Category, Transaction } from "@ledgerline/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LoadingSheet } from "../../components/loading-sheet";
-import { Toast } from "../../components/toast";
+import { Toast, toastDuration } from "../../components/toast";
 import { ApiError } from "../../lib/api";
 import { getCategories } from "../categories/api";
 import { getActiveAccounts, prepareTransactionUndo } from "./api";
@@ -209,9 +208,17 @@ export function QuickAdd({
       {saved && (
         <Toast
           label="Transaction notification"
-          durationMs={undoBusy || undoUncertain || undoError ? null : 5000}
+          durationMs={
+            undoBusy || undoUncertain || undoError ? null : toastDuration(true)
+          }
           onExpire={() => {
             setSaved(null);
+            undoAttempt.current = null;
+          }}
+          dismissDisabled={undoBusy || undoUncertain}
+          onDismiss={() => {
+            setSaved(null);
+            setUndoError("");
             undoAttempt.current = null;
           }}
         >
@@ -231,19 +238,6 @@ export function QuickAdd({
             onClick={() => void undo()}
           >
             {undoBusy ? "Undoing…" : undoUncertain ? "Retry Undo" : "Undo"}
-          </button>
-          <button
-            type="button"
-            className="ui-icon-btn"
-            aria-label="Dismiss transaction notification"
-            disabled={undoBusy || undoUncertain}
-            onClick={() => {
-              setSaved(null);
-              setUndoError("");
-              undoAttempt.current = null;
-            }}
-          >
-            <X size={18} />
           </button>
         </Toast>
       )}

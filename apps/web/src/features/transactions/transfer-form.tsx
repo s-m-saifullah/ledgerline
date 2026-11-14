@@ -12,6 +12,7 @@ import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
+import { ReadOnlyNote } from "../../components/read-only-note";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
@@ -379,9 +380,7 @@ export function TransferForm({
             Confirm the earlier transaction action before adding a transfer.
           </p>
         )}
-        {!writable && (
-          <p role="status">You have read-only access to this ledger.</p>
-        )}
+        {!writable && <ReadOnlyNote />}
         {!baseline && accounts.filter((row) => !row.archivedAt).length < 2 && (
           <p role="status" className="form-help">
             Create two active accounts to record a transfer.

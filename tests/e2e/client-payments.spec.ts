@@ -190,12 +190,12 @@ test("one payment from a client pays older services first and can be undone as a
   await closeSheet(logo);
 
   // Undo the whole receipt, then undo the deletion.
-  await page.getByRole("button", { name: "Undo Client action" }).click();
+  await page.getByRole("button", { name: "Undo" }).click();
   await confirm(page, "Delete receipt", "Delete");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start);
   await expect(page.locator(".cl-card")).toContainText("$700.00");
-  await page.getByRole("button", { name: "Undo Client action" }).click();
+  await page.getByRole("button", { name: "Undo" }).click();
   await confirm(page, "Undo receipt deletion", "Restore");
   await expect(page.getByText("Action completed.")).toBeVisible();
   expect(await balance(page)).toBe(start + 50000);

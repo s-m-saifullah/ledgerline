@@ -515,7 +515,7 @@ it("opens every group while searching, and filters on the subcategory's name", a
     },
   );
   // Both kinds are in the page (the switch only shows one under 700 px), and both are empty now.
-  expect(screen.getAllByText("Nothing here.")).toHaveLength(2);
+  expect(screen.getAllByText("No matching categories.")).toHaveLength(2);
 });
 it("expands and collapses every group at once", async () => {
   mount(listMock([food, groceries, dining, rent]));
@@ -650,7 +650,7 @@ it("shows a viewer the list and a note, and opens nothing", async () => {
   mount(listMock([food, groceries], "viewer"));
   await screen.findByText("Food");
   expect(
-    screen.getByText(/You can view categories in this ledger/),
+    screen.getByText("You have read-only access to this ledger."),
   ).toBeTruthy();
   await userEvent.click(screen.getByRole("button", { name: /^Food/ }));
   expect(screen.getByText("Groceries")).toBeInTheDocument();
