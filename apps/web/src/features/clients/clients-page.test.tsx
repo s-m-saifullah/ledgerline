@@ -817,6 +817,24 @@ describe("a client's services", () => {
     ).toBeTruthy();
   });
 
+  it("writes a service row's day and due day like the rest of the app", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+    params.clientId = sam.id;
+    mount({
+      clients: [sam],
+      services: {
+        [sam.id]: [
+          serviceOf(sam, "Old job", {
+            serviceDate: "2025-12-30",
+            dueDate: "2026-01-15",
+          }),
+        ],
+      },
+    });
+    expect(await screen.findByText("Dec 30, 2025 · Due Jan 15")).toBeTruthy();
+  });
+
   it("opens a service in a sheet that names its actions", async () => {
     mountSam();
     fireEvent.click(await screen.findByText("Website work"));

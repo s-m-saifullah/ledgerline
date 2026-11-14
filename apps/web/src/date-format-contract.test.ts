@@ -46,7 +46,7 @@ describe("dates", () => {
   it("are never shown raw: no row hint, list item or span prints an entry's own YYYY-MM-DD", () => {
     expect(
       offenders(
-        /(hint=\{|<li[^>]*>\{|<span[^>]*>\{)\s*[A-Za-z]+\.(date|serviceDate|dueDate)\s*\}/,
+        /(hint=\{|<li[^>]*>\s*\{|<span[^>]*>\s*\{)\s*[A-Za-z]+\.(date|serviceDate|dueDate)\s*\}/,
       ),
     ).toEqual([]);
   });

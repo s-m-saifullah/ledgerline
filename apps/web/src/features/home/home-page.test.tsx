@@ -173,6 +173,7 @@ beforeEach(() => {
   workspace.current = null;
 });
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   client?.clear();
   vi.unstubAllGlobals();
@@ -661,6 +662,29 @@ describe("Home", () => {
       expect(
         await screen.findByRole("link", { name: /Corner Cafe/ }),
       ).toHaveAttribute("href", "/transactions");
+    });
+
+    it("writes a latest row's day like the rest of the app: the year only when it is not this year", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+      const row = (payee: string, date: string) => ({
+        transaction: entry({ payee, date }),
+        accountName: "Checking",
+        categoryLabel: "Food",
+        counterpartAccountName: null,
+      });
+      mount([
+        ok(
+          summary({
+            latest: [
+              row("Old Cafe", "2025-12-31"),
+              row("New Cafe", "2026-10-05"),
+            ] as HomeSummary["latest"],
+          }),
+        ),
+      ]);
+      expect(await screen.findByText(/^Dec 31, 2025 · Checking/)).toBeTruthy();
+      expect(screen.getByText(/^Oct 5 · Checking/)).toBeTruthy();
     });
 
     it("shows income with a plus sign and a transfer without one", async () => {

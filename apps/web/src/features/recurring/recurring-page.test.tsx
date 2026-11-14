@@ -245,6 +245,10 @@ describe("RecurringPage", () => {
     await user.click(screen.getByRole("combobox", { name: /Category/ }));
     await user.click(await screen.findByRole("option", { name: "Housing" }));
     expect(screen.getByText(/Every month\. Next:/)).toBeTruthy();
+    // The next dates read like every other date: no year this year, the year in the next one.
+    expect(
+      screen.getByText(/Next: Nov 14, Dec 14, Jan 14, 2027\./),
+    ).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]?.init.method).toBe("POST");
@@ -309,6 +313,8 @@ describe("RecurringPage", () => {
     await user.click(await screen.findByRole("button", { name: /Rent/ }));
     expect(await screen.findByText(/Choose an active account\./)).toBeTruthy();
     expect(screen.getByText("Created")).toBeTruthy();
+    expect(screen.getByText("Oct 1")).toBeTruthy();
+    expect(screen.getByText("Sep 1")).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Skip this one" }));
     await vi.waitFor(() => expect(writes).toHaveLength(1));
     expect(writes[0]?.url).toContain(`/recurring-runs/${attention.id}/skip`);
