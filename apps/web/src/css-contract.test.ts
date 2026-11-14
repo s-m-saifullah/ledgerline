@@ -69,6 +69,20 @@ const expectTypeScale = (source: string) => {
 const expectNoTitleSize = (source: string) =>
   expect(source).not.toMatch(/h1[^{}]*\{[^}]*font-size/);
 
+// Layout switches by the container's width at 700 and 1100 px only (a viewport `@media` width is not the container's:
+// the app's pages are laid out inside `app`, `layout.css`). A file may add a width for a type step only (ADR 0053).
+const layoutWidths = ["699.98", "700", "1099.98", "1100"];
+const expectContainerWidths = (source: string, extra: string[] = []) => {
+  const preludes = [...source.matchAll(/@(?:container|media)[^{]*\{/g)].map(
+    (match) => match[0],
+  );
+  for (const width of preludes.flatMap((prelude) =>
+    [...prelude.matchAll(/([\d.]+)px/g)].map((m) => m[1]),
+  ))
+    expect([...layoutWidths, ...extra]).toContain(width);
+  // `prefers-reduced-motion` and the like are `@media`; a width is only ever a container query.
+  expect(source).not.toMatch(/@media[^{]*width/);
+};
 const expectNoShadows = (source: string) =>
   expect(source).not.toMatch(/box-shadow|drop-shadow|text-shadow/);
 const expectShapeRadii = (source: string) => {
@@ -84,18 +98,8 @@ const expectShapeRadii = (source: string) => {
 describe.each(files)("%s", (file) => {
   const source = css(file);
 
-  it("switches layout at 700 and 1100 px only", () => {
-    const widths = [...source.matchAll(/@(?:container|media)[^{]*\{/g)].flatMap(
-      (match) => [...match[0].matchAll(/([\d.]+)px/g)].map((m) => m[1]),
-    );
-    for (const width of widths)
-      expect([
-        "699.98",
-        "700",
-        "1099.98",
-        "1100",
-        ...(typeSteps[file] ?? []),
-      ]).toContain(width);
+  it("switches layout at 700 and 1100 px only, by container width", () => {
+    expectContainerWidths(source, typeSteps[file]);
   });
 
   it("uses only the type scale", () => {
@@ -115,10 +119,13 @@ describe.each(files)("%s", (file) => {
   });
 });
 
-// The old `styles.css` is brought under the contract one rule at a time, as its screens move: shadows,
-// corner radii and the type scale now; the two widths follow with the page frame.
+// The old `styles.css` is under the same rules as the new files.
 describe("styles.css", () => {
   const source = css("styles.css");
+
+  it("switches layout at 700 and 1100 px only, by container width", () => {
+    expectContainerWidths(source);
+  });
 
   it("uses only the type scale", () => {
     expectTypeScale(source);

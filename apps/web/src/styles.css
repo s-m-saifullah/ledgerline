@@ -227,12 +227,12 @@ select {
 .skip-link:focus {
   top: 16px;
 }
-@media (max-width: 1000px) {
+@container app (max-width: 1099.98px) {
   .main-content {
     padding: 32px;
   }
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   .main-content {
     padding: 28px 20px;
   }
@@ -327,7 +327,7 @@ select {
   font-size: 12px;
   margin-top: 4px;
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   .category-picker select {
     font-size: var(--field-text);
   }
@@ -389,7 +389,7 @@ select {
   border: 1px solid var(--border);
   border-radius: var(--shape-card);
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   .transaction-toast {
     right: 16px;
     /* Above the bottom bar and the Add button, with a gap. */
@@ -452,7 +452,7 @@ select {
   cursor: default;
   color: var(--muted);
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   .combobox input {
     font-size: var(--field-text);
   }
@@ -545,7 +545,9 @@ select {
   width: min(360px, 100vw);
   max-height: calc(100dvh - 24px);
   overflow-y: auto;
-  padding: 16px;
+  /* 6 px (4 px on a 316 px screen) so the month select has room for "September": the seven 44 px day columns take
+     308 px of the 360 px dialog, and a spec measures the longest month name. */
+  padding: clamp(4px, calc((100vw - 308px) / 2), 6px);
   border: 1px solid var(--border);
   border-radius: var(--shape-sheet);
   background: var(--surface);
@@ -682,17 +684,12 @@ select {
   color: var(--accent);
   background: var(--accent-soft);
 }
-@media (max-width: 400px) {
-  .date-time-picker {
-    padding: 4px;
-  }
-}
 
 /* Any toast (Undo, a save to confirm, a merge to resume) leaves room under the page to scroll past it. */
 body:has(.transaction-toast) .main-content {
   padding-bottom: 280px;
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   body:has(.transaction-toast) .main-content {
     padding-bottom: calc(300px + env(safe-area-inset-bottom));
   }
@@ -700,7 +697,7 @@ body:has(.transaction-toast) .main-content {
 body:has(.client-toast) .main-content {
   padding-bottom: 280px;
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   body:has(.client-toast) .main-content {
     padding-bottom: calc(360px + env(safe-area-inset-bottom));
   }
@@ -709,7 +706,7 @@ body:has(.client-toast) .main-content {
 body:has(.transaction-toast:not(.client-toast)) .client-toast {
   bottom: 200px;
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   body:has(.transaction-toast:not(.client-toast)) .client-toast {
     bottom: calc(320px + env(safe-area-inset-bottom));
   }
@@ -791,7 +788,7 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
   cursor: default;
   opacity: 0.6;
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   .undo-pill {
     right: 16px;
     bottom: calc(128px + env(safe-area-inset-bottom));
@@ -848,7 +845,7 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
 .starter-hint[hidden] {
   display: none;
 }
-@media (max-width: 700px) {
+@container app (max-width: 699.98px) {
   /* Phones have no hover: a tap opens the confirmation dialog with the same list. */
   .starter-hint {
     display: none;

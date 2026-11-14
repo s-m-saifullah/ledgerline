@@ -113,11 +113,9 @@ test("the page is 14 px, and a form field's text is 16 px", async ({
   ).toBe("16px");
 });
 
-test("every text field in the Add sheet is 16 px on a phone", async ({
-  page,
-}) => {
-  await open(page, 390, "/more");
-  // The sheet shows its fields only when the ledger has an account and a category.
+/** Signs in at `width` and gives the synthetic ledger an account and a category: the Add sheet shows its fields only then. */
+async function withAccountAndCategory(page: Page, width: number) {
+  await open(page, width, "/more");
   const ledgerId = fixtures[fixtures.length - 1];
   const root = `/api/v1/ledgers/${ledgerId}`;
   const headers = () => ({
@@ -141,6 +139,12 @@ test("every text field in the Add sheet is 16 px on a phone", async ({
     });
     expect(made.status()).toBe(201);
   }
+}
+
+test("every text field in the Add sheet is 16 px on a phone", async ({
+  page,
+}) => {
+  await withAccountAndCategory(page, 390);
   await page.goto("/transactions");
   await page
     .getByRole("button", { name: "Add transaction", exact: true })
@@ -263,5 +267,52 @@ for (const width of [320, 390]) {
     } catch (error) {
       throw new Error(`${JSON.stringify(seen)}\n${error}`);
     }
+  });
+}
+
+// The date picker's month shows in full ("November", not "Novemb"): the picker's padding leaves its month select
+// room for the longest month name. Below 360 px the seven 44 px day columns leave no more room than this.
+for (const width of [360, 390, 412, 700, 1280]) {
+  test(`the date picker shows the whole month name at ${width} px`, async ({
+    page,
+  }) => {
+    await withAccountAndCategory(page, width);
+    await page.goto("/transactions");
+    await page
+      .getByRole("button", { name: "Add transaction", exact: true })
+      .filter({ visible: true })
+      .first()
+      .click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page
+      .locator(".date-time-trigger")
+      .first()
+      .evaluate((node) => {
+        node.scrollIntoView({ block: "center" });
+        (node as HTMLElement).click();
+      });
+    const month = page.locator(".calendar-heading select").first();
+    await expect(month).toBeVisible();
+    const fit = () =>
+      month.evaluate((select: HTMLSelectElement) => {
+        const style = getComputedStyle(select);
+        const context = document.createElement("canvas").getContext("2d");
+        if (!context) throw new Error("no canvas");
+        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        const longest = Math.max(
+          ...Array.from(select.options).map((option) =>
+            Math.ceil(context.measureText(option.text).width),
+          ),
+        );
+        const room = Math.floor(
+          select.getBoundingClientRect().width -
+            Number.parseFloat(style.paddingLeft) -
+            Number.parseFloat(style.paddingRight) -
+            Number.parseFloat(style.borderLeftWidth) -
+            Number.parseFloat(style.borderRightWidth),
+        );
+        return room - longest;
+      });
+    await expect.poll(fit).toBeGreaterThanOrEqual(0);
   });
 }
