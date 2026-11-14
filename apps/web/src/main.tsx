@@ -71,7 +71,7 @@ function Root() {
         <p>Please try again in a moment.</p>
         <button
           type="button"
-          className="button"
+          className="ui-btn ui-btn-primary"
           onClick={() => void session.refetch()}
         >
           Try again

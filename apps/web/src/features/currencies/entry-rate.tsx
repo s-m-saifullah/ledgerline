@@ -99,7 +99,7 @@ function ForeignEntryRate({
       {!disabled && !editing && (
         <button
           type="button"
-          className="text-button entry-rate-toggle"
+          className="ui-btn ui-btn-text entry-rate-toggle"
           onClick={() => {
             setEditing(true);
             setTyped(rate ? invertRate(rate) : "");
@@ -139,7 +139,7 @@ function ForeignEntryRate({
           {typedError && <p className="field-error">{typedError}</p>}
           <button
             type="button"
-            className="text-button entry-rate-toggle"
+            className="ui-btn ui-btn-text entry-rate-toggle"
             onClick={() => {
               setEditing(false);
               setTyped("");

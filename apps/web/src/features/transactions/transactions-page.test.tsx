@@ -318,7 +318,7 @@ describe("the search box", () => {
     pages([entry()]);
     mount();
     const box = await screen.findByLabelText("Search payer, payee or note");
-    expect(box).toHaveAttribute("placeholder", "Search payee, payer or note");
+    expect(box).toHaveAttribute("placeholder", "Payee or note");
   });
 });
 

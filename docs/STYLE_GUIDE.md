@@ -58,6 +58,7 @@ From `apps/web/src/components`:
 | A question before something that cannot be undone | `Question` (Cancel beside one confirming button), `TypedConfirm` when the person must type a name |
 | A confirmation that goes away | `Toast` (a progress bar; `durationMs` null while an action runs or failed so Retry is never lost); `UndoPill` for Undo |
 | Collapsible detail | `Fold` |
+| A search box | `SearchField` (icon, tinted field, hidden label, the same words as its placeholder; beside a button, put it in a form with a `ui-btn`, as Transactions does with Filters). Keep a placeholder short enough for 320 px beside the button. Its tint is 3%, not the 5% `--tint`, so the outline stays 3:1 against its fill (`a11y.spec.ts` measures it) |
 | Choosing from a short list | `PickRow` (opens a sheet); `NativeSelect` for a plain select; `ComboField` for a list that can create |
 | Typing money | `EntryAmount`, `AmountInput`; parse with the helpers in `amount-entry.ts` (a leading dot and a trailing dot are valid) |
 | Showing money | `Amount` (privacy mode), `BaseNote` ("About $12.00" under a foreign amount); `formatMoney` in `lib/money.ts` |
@@ -77,10 +78,8 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 
 | Legacy | Use instead |
 | --- | --- |
-| `.button`, `.secondary-button`, `.text-button`, `.icon-button` | `ui-btn` family and `ui-icon-btn` |
 | `.main-content` and a bare `.page-heading` | the page frame in `layout.css`; the title is a plain `h1` (27 px from one global rule: never set an `h1` size in a feature) |
 | `.eyebrow`, a page subtitle | nothing (few words) |
-| A search box written per feature (`.cl-search`, `.tg-search` and similar) | one shared search field, once it exists; until then copy none, ask |
 | `.combobox`, `.date-time-picker` and friends (old-style overlays) | `Overlay` and `PickRow` where possible |
 | `@media (max-width: ...)` | `@container app (max-width: 699.98px)` |
 | A pixel radius, a shadow, a hex colour, an off-scale font size | tokens above |
@@ -90,6 +89,7 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 Newest first; one line per approved UI change, with the pull request.
 
 - 2026-11-13: dead styles and the old `Amount` component removed; the guard `css-hygiene.test.ts` added (#284).
+- 2026-11-13: the old button family (`button`, `secondary-button`, `text-button`, `icon-button`, `danger-action`) is gone in favour of `ui-btn` and `ui-icon-btn`, and the five search boxes are one `SearchField`; Transactions' search gets the icon and tinted fill, and its placeholder is "Payee or note" (#290).
 - 2026-11-13: the bottom bar's labels are 12 px from a 380 px wide screen and 10 px below it, and its tabs have no side padding (ADR 0053; #288).
 - 2026-11-13: the page is 14 px and every `h1` is 27 px from one rule (thirteen per-feature copies removed); the remaining off-scale sizes (13, 18, 20, 24, 26, 28, 32 px) moved onto the scale; form fields keep 16 px as `--field-text` (ADR 0052); the contract refuses off-scale sizes and `font:` shorthands in `styles.css` too (#288).
 - 2026-11-13: no shadows and radii from the shape scale in `styles.css`; `--radius-input` removed; `styles.css` joins the contract for shadows and shapes (#286).

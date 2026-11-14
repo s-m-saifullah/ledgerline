@@ -215,3 +215,53 @@ for (const [width, size] of [
     }
   });
 }
+
+// The search box shows its whole placeholder beside the Filters button on the narrowest phone: the magnifier takes
+// 38 px of the field, so a longer hint would be cut off ("Search payee, payer or no").
+for (const width of [320, 390]) {
+  test(`the Transactions search shows its whole placeholder at ${width} px`, async ({
+    page,
+  }) => {
+    await open(page, width, "/transactions");
+    const box = page.getByRole("searchbox", {
+      name: "Search payer, payee or note",
+    });
+    await expect(box).toBeVisible();
+    const measure = () =>
+      box.evaluate((input: HTMLInputElement) => {
+        const style = getComputedStyle(input);
+        const context = document.createElement("canvas").getContext("2d");
+        if (!context) throw new Error("no canvas");
+        context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        const filters = document.getElementById("open-filters");
+        return {
+          text: Math.ceil(context.measureText(input.placeholder).width),
+          // The drawn width less border and padding (`clientWidth` of a search input reads short on Linux).
+          room: Math.floor(
+            input.getBoundingClientRect().width -
+              Number.parseFloat(style.borderLeftWidth) -
+              Number.parseFloat(style.borderRightWidth) -
+              Number.parseFloat(style.paddingLeft) -
+              Number.parseFloat(style.paddingRight),
+          ),
+          input: Math.round(input.getBoundingClientRect().width),
+          client: input.clientWidth,
+          filters: Math.round(filters?.getBoundingClientRect().width ?? 0),
+          font: context.font,
+        };
+      });
+    // Read it until the page has settled (fonts and the first load move the row), and say what was seen if it
+    // never fits.
+    let seen = await measure();
+    try {
+      await expect
+        .poll(async () => {
+          seen = await measure();
+          return seen.room - seen.text;
+        })
+        .toBeGreaterThanOrEqual(0);
+    } catch (error) {
+      throw new Error(`${JSON.stringify(seen)}\n${error}`);
+    }
+  });
+}

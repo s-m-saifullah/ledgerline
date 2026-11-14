@@ -124,62 +124,6 @@ select {
   font-size: 12px;
   margin: -10px 0 0 -1px;
 }
-.button {
-  min-height: 48px;
-  padding: 12px 20px;
-  background: var(--accent);
-  color: var(--accent-foreground);
-  border: 0;
-  border-radius: var(--shape-field);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: opacity 150ms ease-out;
-}
-.button:hover:not(:disabled) {
-  opacity: 0.9;
-}
-.icon-button {
-  background: transparent;
-  color: var(--muted);
-  border: 0;
-  min-height: 44px;
-  min-width: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--shape-field);
-}
-.icon-button:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-/* Text button (ADR 0039): the third step of the button ladder, after the filled and the bordered button.
-   Accent colour, underlined on hover and focus, an optional small icon. Delete variants stay red. */
-.text-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: var(--shape-field);
-  background: transparent;
-  color: var(--accent);
-  font-size: 14px;
-  font-weight: 500;
-  text-decoration: none;
-}
-.text-button:hover:not(:disabled),
-.text-button:focus-visible {
-  text-decoration: underline;
-}
-.text-button.danger-action {
-  color: var(--danger);
-}
 .field-error {
   color: var(--danger);
   font-size: 14px;
@@ -309,22 +253,6 @@ select {
 }
 
 /* Account management */
-.secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 10px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--shape-field);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 500;
-}
-.secondary-button:hover:not(:disabled) {
-  background: var(--accent-soft);
-}
 .form-help {
   font-size: 12px;
   line-height: 1.7;
@@ -545,6 +473,9 @@ select {
   display: grid;
   gap: 16px;
   min-width: 0;
+}
+.split-remove {
+  justify-self: start;
 }
 .split-line {
   padding: 12px;
@@ -787,18 +718,6 @@ body:has(.transaction-toast:not(.client-toast)) .client-toast {
     padding-bottom: calc(540px + env(safe-area-inset-bottom));
   }
 }
-/* Delete is destructive: red everywhere (ADR 0014). */
-.danger-action {
-  color: var(--danger);
-}
-.secondary-button.danger-action {
-  border-color: var(--danger);
-}
-.button.danger-action {
-  background: var(--danger);
-  color: var(--danger-foreground);
-}
-
 .transaction-toast {
   overflow: hidden;
 }

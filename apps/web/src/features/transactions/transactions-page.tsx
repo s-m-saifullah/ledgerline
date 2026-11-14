@@ -10,6 +10,7 @@ import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Fragment, useEffect, useState } from "react";
 import { Amount } from "../../components/amount-text";
 import type { ComboCreate } from "../../components/combo-field";
+import { SearchField } from "../../components/search-field";
 import { ApiError, getLedgers } from "../../lib/api";
 import { getCategories, prepareCategorySave } from "../categories/api";
 import { ExportButton } from "../exports/export-button";
@@ -231,37 +232,31 @@ export function TransactionsPage() {
           />
         </div>
       </div>
-      <search>
-        <form
-          className="tx-search"
-          onSubmit={(event) => {
-            event.preventDefault();
-            applySearch();
-          }}
+      <form
+        className="tx-search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          applySearch();
+        }}
+      >
+        <SearchField
+          id="transaction-search"
+          label="Search payer, payee or note"
+          placeholder="Payee or note"
+          value={searchText}
+          onChange={setSearchText}
+        />
+        <button
+          type="button"
+          id="open-filters"
+          className="ui-btn ui-btn-secondary"
+          aria-haspopup="dialog"
+          onClick={() => setSheetOpen(true)}
         >
-          <label htmlFor="transaction-search" className="sr-only">
-            Search payer, payee or note
-          </label>
-          <input
-            id="transaction-search"
-            type="search"
-            maxLength={200}
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search payee, payer or note"
-          />
-          <button
-            type="button"
-            id="open-filters"
-            className="ui-btn ui-btn-secondary"
-            aria-haspopup="dialog"
-            onClick={() => setSheetOpen(true)}
-          >
-            Filters
-            {count > 0 && <span className="ui-chip-count">{count}</span>}
-          </button>
-        </form>
-      </search>
+          Filters
+          {count > 0 && <span className="ui-chip-count">{count}</span>}
+        </button>
+      </form>
       <div className="tx-chips">
         <fieldset className="tx-kinds">
           <legend className="sr-only">Entry type</legend>

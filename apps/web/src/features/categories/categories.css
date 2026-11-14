@@ -77,24 +77,6 @@
     display: none;
   }
 }
-.cg-search {
-  position: relative;
-  min-width: 0;
-}
-.cg-search svg {
-  position: absolute;
-  top: 13px;
-  left: 12px;
-  color: var(--muted);
-  pointer-events: none;
-}
-.cg-search input {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px 0 38px;
-  border-radius: var(--shape-field);
-  background: var(--tint);
-}
 .cg-bar {
   display: flex;
   flex-wrap: wrap;

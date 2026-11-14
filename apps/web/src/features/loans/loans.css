@@ -104,24 +104,6 @@
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.ln-search {
-  position: relative;
-  min-width: 0;
-}
-.ln-search svg {
-  position: absolute;
-  top: 13px;
-  left: 12px;
-  color: var(--muted);
-  pointer-events: none;
-}
-.ln-search input {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px 0 38px;
-  border-radius: var(--shape-field);
-  background: var(--tint);
-}
 .ln-chips {
   display: flex;
   flex-wrap: wrap;

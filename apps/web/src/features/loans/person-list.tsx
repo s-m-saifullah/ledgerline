@@ -7,8 +7,8 @@ import {
   ListRow,
 } from "@ledgerline/ui";
 import { Link } from "@tanstack/react-router";
-import { Search } from "lucide-react";
 import { Amount } from "../../components/amount-text";
+import { SearchField } from "../../components/search-field";
 import { type PeopleFilter, personRow } from "./model";
 
 /** The card above the list: what people owe you and what you owe, each only when it is not zero. */
@@ -66,20 +66,12 @@ export function PersonList({
     <>
       <Totals lent={lent} borrowed={borrowed} />
       {search && (
-        <search className="ln-search">
-          <label htmlFor="loan-search" className="sr-only">
-            Search people
-          </label>
-          <Search size={18} aria-hidden="true" />
-          <input
-            id="loan-search"
-            type="search"
-            maxLength={200}
-            value={text}
-            placeholder="Search people"
-            onChange={(event) => onText(event.target.value)}
-          />
-        </search>
+        <SearchField
+          id="loan-search"
+          label="Search people"
+          value={text}
+          onChange={onText}
+        />
       )}
       {chips && (
         <fieldset className="ln-chips">

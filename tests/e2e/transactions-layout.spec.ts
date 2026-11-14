@@ -357,9 +357,7 @@ test("offers to create a category or a tag that does not exist, and applies the 
 
 test("the search says what it searches", async ({ page }) => {
   await openList(page, 390);
-  await expect(
-    page.getByPlaceholder("Search payee, payer or note"),
-  ).toBeVisible();
+  await expect(page.getByPlaceholder("Payee or note")).toBeVisible();
 });
 
 test("nothing moves when a search applies or Clear filters appears", async ({

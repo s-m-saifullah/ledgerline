@@ -226,7 +226,7 @@ export function QuickAdd({
           )}
           <button
             type="button"
-            className="secondary-button"
+            className="ui-btn ui-btn-secondary"
             disabled={undoBusy || formLocked || externalBlocked || !writable}
             onClick={() => void undo()}
           >
@@ -234,7 +234,7 @@ export function QuickAdd({
           </button>
           <button
             type="button"
-            className="icon-button"
+            className="ui-icon-btn"
             aria-label="Dismiss transaction notification"
             disabled={undoBusy || undoUncertain}
             onClick={() => {

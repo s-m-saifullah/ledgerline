@@ -10,7 +10,7 @@ it("shows the message as an alert with a bordered retry button", async () => {
   render(<LoadError message="Couldn't load clients." onRetry={retry} />);
   expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load clients.");
   const button = screen.getByRole("button", { name: "Try again" });
-  expect(button).toHaveClass("secondary-button");
+  expect(button).toHaveClass("ui-btn", "ui-btn-secondary");
   await userEvent.click(button);
   expect(retry).toHaveBeenCalledTimes(1);
 });

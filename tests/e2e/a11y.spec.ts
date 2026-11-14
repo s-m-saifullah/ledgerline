@@ -105,33 +105,44 @@ async function violations(page: Page, scene: string) {
 /** Contrast ratio of an input's outline against the input and the page behind it. */
 async function fieldBorderContrast(page: Page) {
   return page.evaluate(() => {
-    const channels = (color: string) =>
-      (color.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
-    const luminance = (color: string) => {
-      const [r, g, b] = channels(color).map((value) => {
+    // Any CSS colour (the search field's tint is a translucent `oklab()`) as the opaque rgb it shows, over `behind`.
+    const canvas = document.createElement("canvas");
+    canvas.width = 1;
+    canvas.height = 1;
+    const paint = canvas.getContext("2d", { willReadFrequently: true });
+    if (!paint) throw new Error("no canvas");
+    const resolve = (color: string, behind?: number[]) => {
+      paint.clearRect(0, 0, 1, 1);
+      if (behind) {
+        paint.fillStyle = `rgb(${behind.join(" ")})`;
+        paint.fillRect(0, 0, 1, 1);
+      }
+      paint.fillStyle = color;
+      paint.fillRect(0, 0, 1, 1);
+      return Array.from(paint.getImageData(0, 0, 1, 1).data).slice(0, 3);
+    };
+    const luminance = (channels: number[]) => {
+      const [r, g, b] = channels.map((value) => {
         const unit = value / 255;
         return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
       }) as [number, number, number];
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     };
-    const ratio = (a: string, b: string) => {
+    const ratio = (a: number[], b: number[]) => {
       const [high, low] = [luminance(a), luminance(b)].sort(
         (x, y) => y - x,
       ) as [number, number];
       return (high + 0.05) / (low + 0.05);
     };
-    const input = document.querySelector<HTMLInputElement>(
-      "input[placeholder^=Search]",
-    );
+    const input =
+      document.querySelector<HTMLInputElement>("input[type=search]");
     if (!input) return null;
     const style = getComputedStyle(input);
-    return {
-      surface: ratio(style.borderTopColor, style.backgroundColor),
-      page: ratio(
-        style.borderTopColor,
-        getComputedStyle(document.body).backgroundColor,
-      ),
-    };
+    const page = resolve(getComputedStyle(document.body).backgroundColor);
+    // The field is painted over what is behind it (the card or the page), so composite its fill.
+    const field = resolve(style.backgroundColor, page);
+    const border = resolve(style.borderTopColor, field);
+    return { surface: ratio(border, field), page: ratio(border, page) };
   });
 }
 
@@ -164,9 +175,7 @@ for (const width of [390, 1280]) {
       ).toBe(routes.length);
 
       await page.goto("/transactions");
-      await expect(
-        page.getByPlaceholder("Search payee, payer or note"),
-      ).toBeVisible();
+      await expect(page.getByPlaceholder("Payee or note")).toBeVisible();
       const contrast = await fieldBorderContrast(page);
       expect(contrast, "a text field to measure").not.toBeNull();
       expect(

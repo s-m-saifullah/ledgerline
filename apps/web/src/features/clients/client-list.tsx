@@ -7,8 +7,8 @@ import {
   ListRow,
 } from "@ledgerline/ui";
 import { Link } from "@tanstack/react-router";
-import { Search } from "lucide-react";
 import { Amount } from "../../components/amount-text";
+import { SearchField } from "../../components/search-field";
 import { Balances } from "./balances";
 import {
   type ClientFilter,
@@ -60,20 +60,12 @@ export function ClientList({
   return (
     <>
       {clients.length > 0 && <TotalCard clients={clients} />}
-      <search className="cl-search">
-        <label htmlFor="client-search" className="sr-only">
-          Search clients
-        </label>
-        <Search size={18} aria-hidden="true" />
-        <input
-          id="client-search"
-          type="search"
-          maxLength={200}
-          value={text}
-          placeholder="Search clients"
-          onChange={(event) => onText(event.target.value)}
-        />
-      </search>
+      <SearchField
+        id="client-search"
+        label="Search clients"
+        value={text}
+        onChange={onText}
+      />
       <fieldset className="cl-chips">
         <legend className="sr-only">Client status</legend>
         <FilterChip

@@ -6,10 +6,11 @@ import {
   SegmentedControl,
 } from "@ledgerline/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import type { z } from "zod";
 import { LoadError } from "../../components/load-error";
+import { SearchField } from "../../components/search-field";
 import { Toast } from "../../components/toast";
 import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
@@ -279,21 +280,12 @@ function LedgerCategories({
               ]}
             />
           </div>
-          <search className="cg-search">
-            <label htmlFor="category-search" className="sr-only">
-              Search categories
-            </label>
-            <Search size={18} aria-hidden="true" />
-            <input
-              id="category-search"
-              type="search"
-              value={search}
-              autoComplete="off"
-              maxLength={200}
-              placeholder="Search categories"
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </search>
+          <SearchField
+            id="category-search"
+            label="Search categories"
+            value={search}
+            onChange={setSearch}
+          />
           <div className="cg-bar">
             {anyArchived(items) ? (
               <fieldset className="cg-chips">

@@ -196,7 +196,7 @@ export function TransactionWorkspace({
               <p role="status">A transaction action needs confirmation.</p>
               <button
                 type="button"
-                className="secondary-button"
+                className="ui-btn ui-btn-secondary"
                 onClick={() => setOpen(true)}
               >
                 Resume transaction
@@ -343,7 +343,7 @@ export function TransactionWorkspace({
               {deleted && (
                 <button
                   type="button"
-                  className="secondary-button"
+                  className="ui-btn ui-btn-secondary"
                   disabled={
                     undoBusy ||
                     quickAddLocked ||
@@ -363,7 +363,7 @@ export function TransactionWorkspace({
               )}
               <button
                 type="button"
-                className="secondary-button"
+                className="ui-btn ui-btn-secondary"
                 disabled={undoBusy || undoUncertain}
                 onClick={() => {
                   setDeleted(null);
