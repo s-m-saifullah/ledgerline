@@ -30,7 +30,7 @@ How the web app looks and how to build it so it stays one app. Read it before yo
 
 ## Layout
 
-- Layout switches by **container width** at 700 px and 1100 px, in CSS (`@container app (...)`), never by another number and never with script that renders different controls. A phone differs from a desktop in layout, not in which controls exist.
+- Layout switches by **container width** at 700 px and 1100 px, in CSS (`@container app (...)`), never by another number, never with a viewport `@media` width (the contract refuses it; `prefers-*` media are fine) and never with script that renders different controls. A phone rule is `@container app (max-width: 699.98px)`. A phone differs from a desktop in layout, not in which controls exist.
 - `layout.css`: `ui-page` (page frame, 1160 px), `ui-stack` (vertical rhythm), `ui-cols` with `ui-cols-2` or `ui-cols-21` (columns: one on a phone, two from 700, lopsided from 1100; every column starts on one line), `ui-split` (a list beside what it opens, from 1100). Add a new layout class there, with the same two widths.
 - Lists of simple rows are 760 px wide at most.
 - Navigation: Home, Transactions, Budgets, Insights, More; on a phone one Add button bottom right (`ui-fab`) that follows the screen. `nav.ts` in `features/shell` is the one list of destinations.
@@ -81,7 +81,6 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 | `.main-content` and a bare `.page-heading` | the page frame in `layout.css`; the title is a plain `h1` (27 px from one global rule: never set an `h1` size in a feature) |
 | `.eyebrow`, a page subtitle | nothing (few words) |
 | `.combobox`, `.date-time-picker` and friends (old-style overlays) | `Overlay` and `PickRow` where possible |
-| `@media (max-width: ...)` | `@container app (max-width: 699.98px)` |
 | A pixel radius, a shadow, a hex colour, an off-scale font size | tokens above |
 
 ## Change log
@@ -89,6 +88,7 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 Newest first; one line per approved UI change, with the pull request.
 
 - 2026-11-13: dead styles and the old `Amount` component removed; the guard `css-hygiene.test.ts` added (#284).
+- 2026-11-13: every width query in `styles.css` is a container query at 700 or 1100 px (the frame's 1000 px step moved to 1100 px; the date picker's 400 px rule became a 6 px `clamp()` padding, which also stops it cutting "November" to "Novemb" at 401 px and wider), and the contract refuses any viewport `@media` width anywhere (#PR).
 - 2026-11-13: the old button family (`button`, `secondary-button`, `text-button`, `icon-button`, `danger-action`) is gone in favour of `ui-btn` and `ui-icon-btn`, and the five search boxes are one `SearchField`; Transactions' search gets the icon and tinted fill, and its placeholder is "Payee or note" (#290).
 - 2026-11-13: the bottom bar's labels are 12 px from a 380 px wide screen and 10 px below it, and its tabs have no side padding (ADR 0053; #288).
 - 2026-11-13: the page is 14 px and every `h1` is 27 px from one rule (thirteen per-feature copies removed); the remaining off-scale sizes (13, 18, 20, 24, 26, 28, 32 px) moved onto the scale; form fields keep 16 px as `--field-text` (ADR 0052); the contract refuses off-scale sizes and `font:` shorthands in `styles.css` too (#288).
