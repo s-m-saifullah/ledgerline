@@ -7,7 +7,7 @@ How the web app looks and how to build it so it stays one app. Read it before yo
 1. Look here and in the gallery (`/gallery.html` while `pnpm dev` runs) for a piece that already does it. Reuse it.
 2. If nothing fits, extend the shared piece (in `packages/ui` or `apps/web/src/components`), do not copy its CSS into a feature file. The four search boxes and the ten page-title rules that had to be merged later were all copies.
 3. A new class in a feature stylesheet is for that screen's own layout only (prefix it with the feature's short name, like `tg-` for tags). Colours, radii, type sizes and shadows are never new decisions: use the tokens below.
-4. Four tests guard this: `apps/web/src/css-contract.test.ts` (layout widths, type scale, shapes, no shadows), `apps/web/src/css-hygiene.test.ts` (no class that nothing uses, no token that is undefined or unused) and `apps/web/src/overlay-contract.test.ts` (only `Overlay` and the command palette import the Radix dialog: every sheet, drawer, picker and question is an `Overlay`) and `apps/web/src/toast-states-contract.test.ts` (every toast is the shared `Toast`, every loading line the shared `Loading`, and so on; see Shared pieces). If a class is built at run time (`` `ui-pill-${tone}` ``), add its start and the names it can make to `runtimeNames` in the hygiene test.
+4. Five tests guard this: `apps/web/src/css-contract.test.ts` (layout widths, type scale, shapes, no shadows), `apps/web/src/css-hygiene.test.ts` (no class that nothing uses, no token that is undefined or unused) and `apps/web/src/overlay-contract.test.ts` (only `Overlay` and the command palette import the Radix dialog: every sheet, drawer, picker and question is an `Overlay`) and `apps/web/src/toast-states-contract.test.ts` (every toast is the shared `Toast`, every loading line the shared `Loading`, and so on; see Shared pieces) and `apps/web/src/date-format-contract.test.ts` (every date is written by `lib/time.ts`: no `toLocaleDateString`, no `Intl.DateTimeFormat` or `en-GB` in a feature, no raw `2026-11-02` in a row). If a class is built at run time (`` `ui-pill-${tone}` ``), add its start and the names it can make to `runtimeNames` in the hygiene test.
 5. Look at the screen at 320, 390 and desktop, in light and dark, before asking for the owner's browser check.
 
 ## Foundations
@@ -62,7 +62,7 @@ From `apps/web/src/components`:
 | Choosing from a short list | `PickRow` (opens a sheet); `NativeSelect` for a plain select; `ComboField` for a list that can create |
 | Typing money | `EntryAmount`, `AmountInput`; parse with the helpers in `amount-entry.ts` (a leading dot and a trailing dot are valid) |
 | Showing money | `Amount` (privacy mode), `BaseNote` ("About $12.00" under a foreign amount); `formatMoney` in `lib/money.ts` |
-| Dates and times | `DateTimeInput` (its calendar and clock open as an `Overlay` sheet: Cancel in the head, Today or Set time as the one primary in the footer, Clear and Now secondary beside it); `lib/time.ts` for formatting |
+| Dates and times | `DateTimeInput` (its calendar and clock open as an `Overlay` sheet: Cancel in the head, Today or Set time as the one primary in the footer, Clear and Now secondary beside it). To show one, only `lib/time.ts`: `formatDay` ("Nov 1", and "Nov 1, 2025" when it is not this year; takes a `YYYY-MM-DD` date or an ISO timestamp), `formatDayTime` ("Nov 1, 2:05 PM", with the year when it is not this year), `formatDayHead` ("Mon, Nov 2, 2026", the weekday heads of Transactions, always with the year), `formatMonthShort` ("Nov", a chart label) and `formatMonthLong` ("November", the picker). A month with its year ("November 2026") is `monthLabel` in `lib/month.ts`. Never an inline `toLocale…` or `Intl.DateTimeFormat`, never another locale, never a raw `2026-11-02` |
 | A month | `MonthHead`, `MonthControl` |
 | A screen or part that is loading | `Loading what="tags"` ("Loading tags…", a polite status; a skeleton may follow as its children). Never "Opening your…", never a bare paragraph |
 | A failed load | `LoadError` (message and a Retry button) on every screen, Home, Transactions and Budgets included |
@@ -72,7 +72,7 @@ From `apps/web/src/components`:
 
 ## Words
 
-Few words (ADR 0046): a row has a title and at most one short hint, never a paragraph; no page subtitles, eyebrows or repeated labels. Generic copy: nothing about a personal situation. Sentence case. A destructive action says Delete. A sentence (a toast, an empty list, an error) ends with a full stop; a hint or a label does not. "Client" is lower case inside a sentence.
+Few words (ADR 0046): a row has a title and at most one short hint, never a paragraph; no page subtitles, eyebrows or repeated labels. Generic copy: nothing about a personal situation. Sentence case. A destructive action says Delete. A sentence (a toast, an empty list, an error) ends with a full stop; a hint or a label does not. "Client" is lower case inside a sentence. A date reads "Nov 1", with the year only when it is not this year ("Dec 31, 2025"), everywhere: use the `lib/time.ts` helpers.
 
 ## Do not copy (legacy, being replaced)
 
@@ -88,6 +88,8 @@ These still exist in `apps/web/src/styles.css` and in older screens. Do not use 
 ## Change log
 
 Newest first; one line per approved UI change, with the pull request.
+
+- 2026-11-14: a date is written one way (WP-11b). `formatDay`, `formatDayTime`, `formatDayHead`, `formatMonthShort` and `formatMonthLong` in `lib/time.ts` replace twelve inline formats in three locales. A day reads "Nov 1", with the year only when it is not this year. Loans activity, the Delete loan list and the rate sheet no longer show "2026-11-02"; Recurring reads "Next Nov 1" instead of "Next 1 Nov 2026"; Import and a client's history show the year when it is not this year (Import never did); Transactions keeps its weekday day heads. `date-format-contract.test.ts` keeps it from drifting back (#301).
 
 - 2026-11-14: an overlay opened from another dims it (#299). Every overlay used to sit on the same two layers, so a delete question or the date picker opened from a sheet put its dark layer under that sheet: the sheet looked as bright as before and the question blended into it. Each overlay now opens one level above the ones already open, and the copy that slides away keeps its layer. The date picker had this since #296.
 

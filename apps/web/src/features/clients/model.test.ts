@@ -1,5 +1,5 @@
 import type { Contact, Receivable } from "@ledgerline/shared";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   clientHint,
   clientMatches,
@@ -10,7 +10,6 @@ import {
   paidInLabel,
   resolveFilter,
   serviceState,
-  shortDate,
   sortClients,
   visibleClients,
 } from "./model";
@@ -134,6 +133,22 @@ describe("the chip in use", () => {
 });
 
 describe("a client's one hint", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+  it("judges the year by the day it is given, not by the clock", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2020-06-01T12:00:00"));
+    expect(clientHint(owing("A", 100), "2026-10-28")).toBe(
+      "Oldest unpaid 12d ago · Oct 16",
+    );
+    expect(
+      clientHint(
+        owing("A", 100, { oldestOpenServiceDate: "2026-12-30" }),
+        "2027-01-02",
+      ),
+    ).toBe("Oldest unpaid 3d ago · Dec 30, 2026");
+  });
   it("says how long the oldest unpaid service has waited, or that it is archived", () => {
     expect(clientHint(owing("A", 100), "2026-10-28")).toBe(
       "Oldest unpaid 12d ago · Oct 16",
@@ -154,10 +169,6 @@ describe("a client's one hint", () => {
         "2026-10-28",
       ),
     ).toBe("Archived");
-  });
-  it("writes a short date, adding the year only when it is not this year", () => {
-    expect(shortDate("2026-01-09", 2026)).toBe("Jan 9");
-    expect(shortDate("2025-01-09", 2026)).toBe("Jan 9, 2025");
   });
 });
 

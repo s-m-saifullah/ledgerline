@@ -1,7 +1,15 @@
 import type { RecurringRule } from "@ledgerline/shared";
-import { expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it, vi } from "vitest";
 import { ruleEndHint, ruleHint, ruleStatus } from "./model";
 
+// "Next Nov 1" has no year in the current year, so the clock is pinned (the year rule: lib/time.ts formatDay).
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 const rule = (extra: Partial<RecurringRule> = {}) =>
   ({
     title: "Rent",
@@ -17,7 +25,7 @@ const rule = (extra: Partial<RecurringRule> = {}) =>
   }) as RecurringRule;
 
 it("says what the rule does next, or why it does not", () => {
-  expect(ruleStatus(rule())).toBe("Next 1 Nov 2026");
+  expect(ruleStatus(rule())).toBe("Next Nov 1");
   expect(ruleStatus(rule({ nextDate: null }))).toBe("Ended");
   expect(ruleStatus(rule({ paused: true, pausedReason: "manual" }))).toBe(
     "Paused",
@@ -30,11 +38,19 @@ it("says what the rule does next, or why it does not", () => {
     "Paused",
   );
 });
+it("adds the year to the next date when it is not this year", () => {
+  expect(ruleStatus(rule({ nextDate: "2027-01-15" }))).toBe(
+    "Next Jan 15, 2027",
+  );
+  expect(ruleStatus(rule({ nextDate: "2025-12-31" }))).toBe(
+    "Next Dec 31, 2025",
+  );
+});
 it("makes one hint of the kind, the schedule and the status", () => {
-  expect(ruleHint(rule())).toBe("Expense · Every month · Next 1 Nov 2026");
+  expect(ruleHint(rule())).toBe("Expense · Every month · Next Nov 1");
   expect(
     ruleHint(rule({ kind: "transfer", frequency: "week", interval: 2 })),
-  ).toBe("Transfer · Every 2 weeks · Next 1 Nov 2026");
+  ).toBe("Transfer · Every 2 weeks · Next Nov 1");
   expect(ruleHint(rule({ kind: "income", paused: true }))).toBe(
     "Income · Every month · Paused",
   );

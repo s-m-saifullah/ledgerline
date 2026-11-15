@@ -1,9 +1,10 @@
 import type { CashFlowReport, NetWorthReport } from "@ledgerline/shared";
 import { ChevronDown } from "lucide-react";
 import { Amount } from "../../components/amount-text";
-import { shortMonth } from "./cash-flow-card";
+import { formatMonthShort } from "../../lib/time";
 
-const label = (month: string) => `${shortMonth(month)} ${month.slice(0, 4)}`;
+const label = (month: string) =>
+  `${formatMonthShort(month)} ${month.slice(0, 4)}`;
 
 /** The tables behind the charts, for screen readers and for copying; one disclosure at the foot of the page. */
 export function Figures({

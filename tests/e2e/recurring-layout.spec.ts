@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { dayText } from "./day-text";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -274,6 +275,17 @@ for (const theme of ["light", "dark"] as const)
       await expect(row(page, "Gym")).toContainText("Paused");
       expect(await noSideways(page)).toBe(true);
     });
+
+test("a rule's next date is written like every other date, not as 1 Nov 2026", async ({
+  page,
+}) => {
+  await open(page, 390);
+  const rent = page.locator(".rc-row").filter({ hasText: "Rent" });
+  await expect(rent).toContainText(`Next ${dayText("2026-11-01")}`);
+  await expect(page.locator(".rc-page")).not.toContainText(
+    /\d{1,2} [A-Z][a-z]{2} 20\d\d/,
+  );
+});
 
 test("a phone has the shell's one Add; from 700 px the page's own button leads", async ({
   page,

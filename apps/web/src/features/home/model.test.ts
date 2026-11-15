@@ -6,7 +6,6 @@ import {
   currenciesOf,
   heroFigures,
   isOverdrawn,
-  shortDay,
 } from "./model";
 
 const usd = (amount: number) => ({ amount, currency: "USD" });
@@ -146,16 +145,5 @@ describe("isOverdrawn", () => {
     expect(
       isOverdrawn(account({ type: "loan", balance: -1000 }) as Account),
     ).toBe(false);
-  });
-});
-
-describe("shortDay", () => {
-  const today = new Date(2026, 9, 29);
-  it("is the month and day, without the year, in the current year", () => {
-    expect(shortDay("2026-10-28", today)).toBe("Oct 28");
-    expect(shortDay("2026-01-05", today)).toBe("Jan 5");
-  });
-  it("adds the year for another year", () => {
-    expect(shortDay("2025-12-31", today)).toBe("Dec 31, 2025");
   });
 });

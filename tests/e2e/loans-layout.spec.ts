@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { dayText } from "./day-text";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -548,6 +549,10 @@ test("the person's menu, Rename, the Archive question and the Remove question", 
   page,
 }) => {
   await open(page, 390, `/loans/${SAM}`);
+  // Activity writes a day like the rest of the app, not as 2026-10-09.
+  const activity = page.getByRole("region", { name: "Balance and activity" });
+  await expect(activity).toContainText(dayText("2026-10-09"));
+  await expect(activity).not.toContainText("2026-10-09");
   await page.getByRole("button", { name: "More actions for Sam" }).click();
   const menu = page.getByRole("dialog", { name: "Sam", exact: true });
   await settled(sheet(page));
@@ -602,7 +607,8 @@ test("the person's menu, Rename, the Archive question and the Remove question", 
   const blocked = page.getByRole("dialog", {
     name: "The USD loan cannot be removed yet",
   });
-  await expect(blocked.getByRole("list")).toContainText("2026-10-03");
+  await expect(blocked.getByRole("list")).toContainText(dayText("2026-10-03"));
+  await expect(blocked.getByRole("list")).not.toContainText("2026-10-03");
   await expect(
     blocked.getByRole("button", { name: "Remove loan" }),
   ).toHaveCount(0);

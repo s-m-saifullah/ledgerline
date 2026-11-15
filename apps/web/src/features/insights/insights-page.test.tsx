@@ -599,6 +599,17 @@ describe("net worth over time", () => {
       '[aria-label^="Net worth at"] .ins-month',
     );
     expect(months).toHaveLength(2);
+    const abbreviated = (value: string) =>
+      new Date(
+        Number(value.slice(0, 4)),
+        Number(value.slice(5, 7)) - 1,
+        15,
+      ).toLocaleString("en-US", { month: "short" });
+    expect(months[0]?.textContent).toContain(
+      abbreviated(shiftMonth(month, -1)),
+    );
+    expect(months[1]?.textContent).toContain(abbreviated(month));
+    expect(months[1]?.textContent).not.toContain(month);
     // The two months sit at the right of the twelve-column grid, lined up with the chart above.
     expect(months[0]?.style.gridColumnStart).toBe("11");
   });

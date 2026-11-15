@@ -11,7 +11,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { today } from "../../lib/rate-format";
 import { RateSheet } from "./rate-sheet";
 
@@ -41,7 +41,12 @@ const pinned = (latestRate: ExchangeRate | null): PinnedCurrency => ({
   createdAt: stamp,
   updatedAt: stamp,
 });
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-14T12:00:00"));
+});
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   vi.unstubAllGlobals();
 });
@@ -90,7 +95,8 @@ it("shows the stored rate base first, where it came from and its date", async ()
   expect(rateRow?.textContent).toContain("123.1527");
   const source = within(sheet).getByText("Source").closest(".ui-row");
   expect(source?.textContent).toContain("Set by you");
-  expect(source?.textContent).toContain("2026-10-09");
+  expect(source?.textContent).toContain("Oct 9");
+  expect(source?.textContent).not.toContain("2026-10-09");
   expect(within(sheet).getByLabelText("Set the rate yourself")).toHaveValue(
     "123.1527",
   );

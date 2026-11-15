@@ -5,11 +5,12 @@ import { AmountInput } from "../../../components/amount-input";
 import { DateTimeInput } from "../../../components/date-time-input";
 import { EntryAmount } from "../../../components/entry-amount";
 import { PickRow } from "../../../components/pick-row";
+import { formatDay } from "../../../lib/time";
 import { TagPicker } from "../../tags/tag-picker";
 import { CategoryCombo } from "../../transactions/category-combo";
 import { feeHint, feeMinor } from "../../transactions/fee";
 import { FeePreview } from "../../transactions/fee-preview";
-import { everySentence, formatDate } from "../schedule";
+import { everySentence } from "../schedule";
 import type { RuleFormContext } from "./form-context";
 
 const frequencies: { value: RecurringFrequency; label: string }[] = [
@@ -224,7 +225,7 @@ export function SchedulePreview({ form }: { form: RuleFormContext }) {
     <p className="rc-note" aria-live="polite">
       {everySentence(values.frequency, interval)}.{" "}
       {preview.next.length > 0
-        ? `Next: ${preview.next.map(formatDate).join(", ")}.`
+        ? `Next: ${preview.next.map((date) => formatDay(date)).join(", ")}.`
         : "Nothing is left to create."}
       {preview.due > 0 &&
         ` ${preview.due} ${preview.due === 1 ? "entry is" : "entries are"} already due and will be created as soon as you save.`}

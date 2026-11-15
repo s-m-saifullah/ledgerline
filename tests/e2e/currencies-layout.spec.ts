@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { dayText } from "./day-text";
 import {
   connectLocalDatabase,
   createOwnerLedger,
@@ -280,7 +281,7 @@ for (const width of [320, 390])
     await expect(rows.nth(0)).toContainText("0.769231");
     await expect(rows.nth(1)).toContainText("Source");
     await expect(rows.nth(1)).toContainText("Set by you");
-    await expect(rows.nth(1)).toContainText("2026-10-01");
+    await expect(rows.nth(1)).toContainText(dayText("2026-10-01"));
     const field = dialog.getByLabel("Set the rate yourself");
     expect((await box(field)).height).toBeGreaterThanOrEqual(43.9);
     const body = dialog.locator(".ui-sheet-body");

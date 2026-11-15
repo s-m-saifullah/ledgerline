@@ -1,6 +1,7 @@
 import { RowBody, SectionLabel } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { formatDay } from "../../lib/time";
 import { getImports } from "./api";
 import { UndoQuestion } from "./undo-import";
 
@@ -37,10 +38,7 @@ export function RecentImports({ ledgerId }: { ledgerId: string | undefined }) {
             >
               <RowBody
                 title={batch.sourceName ?? "Imported file"}
-                hint={`${new Date(batch.createdAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })} · ${batch.remaining} of ${batch.rowCount} ${
+                hint={`${formatDay(batch.createdAt)} · ${batch.remaining} of ${batch.rowCount} ${
                   batch.rowCount === 1 ? "entry" : "entries"
                 } still in your ledger`}
                 value={

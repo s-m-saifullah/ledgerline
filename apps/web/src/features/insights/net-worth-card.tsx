@@ -1,6 +1,6 @@
 import type { NetWorthReport } from "@ledgerline/shared";
 import { monthLabel } from "../../lib/month";
-import { shortMonth } from "./cash-flow-card";
+import { formatMonthShort } from "../../lib/time";
 import { worthBar, zeroAt } from "./model";
 
 /** Net worth at each month end, one bar a month, drawn with plain markup; a month missing a rate is hatched and listed. */
@@ -69,7 +69,7 @@ export function NetWorthCard({
                     />
                   </span>
                   <span className="ins-month-label">
-                    {shortMonth(row.month)}
+                    {formatMonthShort(row.month)}
                   </span>
                 </li>
               );

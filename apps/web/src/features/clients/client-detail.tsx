@@ -22,7 +22,7 @@ import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
-import { localToday } from "../../lib/time";
+import { formatDay, formatDayTime, localToday } from "../../lib/time";
 import { getClient, getHistory, getServices } from "./api";
 import { Balances } from "./balances";
 import {
@@ -30,7 +30,6 @@ import {
   paidInLabel,
   type ServiceState,
   serviceState,
-  shortDate,
 } from "./model";
 import { ServicePill, ServiceSheet } from "./service-sheet";
 import { useClientsWorkspace } from "./workspace";
@@ -47,13 +46,6 @@ const labels: Record<ReceivableEvent["action"], string> = {
   paymentDeleted: "Payment deleted",
   paymentRestored: "Payment restored",
 };
-const when = (stamp: string) =>
-  new Date(stamp).toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 const finished = (state: ServiceState) =>
   state === "paid" || state === "written";
 
@@ -140,17 +132,15 @@ function ClientMenu({
 function ServiceRow({
   service: s,
   state,
-  thisYear,
   onOpen,
 }: {
   service: Receivable;
   state: ServiceState;
-  thisYear: number;
   onOpen: () => void;
 }) {
   const shown = finished(state) ? s.amount : s.outstanding;
-  const hint = `${shortDate(s.serviceDate, thisYear)}${
-    s.dueDate ? ` · Due ${shortDate(s.dueDate, thisYear)}` : ""
+  const hint = `${formatDay(s.serviceDate)}${
+    s.dueDate ? ` · Due ${formatDay(s.dueDate)}` : ""
   }`;
   return (
     <ListRow
@@ -197,7 +187,6 @@ export function ClientDetail({
   const workspace = useClientsWorkspace();
   const blocked = workspace?.blocked ?? false;
   const today = localToday();
-  const thisYear = Number(today.slice(0, 4));
   const client = useQuery({
     queryKey: ["contacts", ledgerId, "detail", clientId, month],
     queryFn: ({ signal }) => getClient(ledgerId, clientId, month, signal),
@@ -244,7 +233,6 @@ export function ClientDetail({
       key={s.id}
       service={s}
       state={serviceState(s, today)}
-      thisYear={thisYear}
       onOpen={() => setSheetId(s.id)}
     />
   );
@@ -390,7 +378,7 @@ export function ClientDetail({
                           key={e.id}
                           title={labels[e.action]}
                           hint={[
-                            when(e.createdAt),
+                            formatDayTime(e.createdAt),
                             e.after.service.description,
                             e.after.service.writeOffReason,
                           ]
@@ -449,7 +437,6 @@ export function ClientDetail({
           ledgerId={ledgerId}
           writable={writable}
           today={today}
-          thisYear={thisYear}
           onClose={() => setSheetId(null)}
         />
       )}

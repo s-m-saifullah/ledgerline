@@ -1,6 +1,7 @@
 import { RowBody, SectionLabel } from "@ledgerline/ui";
 import { ChevronRight } from "lucide-react";
 import { Amount } from "../../components/amount-text";
+import { formatDay } from "../../lib/time";
 import type { Wizard } from "./wizard";
 
 export function ReviewStep({ w }: { w: Wizard }) {
@@ -33,13 +34,7 @@ export function ReviewStep({ w }: { w: Wizard }) {
   );
   const skipped = w.parsed?.skipped ?? [];
   const count = w.toImport.length;
-  const shortDate = (date: string | undefined) =>
-    date
-      ? new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        })
-      : "";
+  const shortDate = (date: string | undefined) => (date ? formatDay(date) : "");
   const title = (line: number) => {
     const entry = byLine.get(line);
     return entry?.payee || `Line ${line}`;

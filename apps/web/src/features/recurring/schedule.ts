@@ -1,4 +1,5 @@
 import {
+  localDate,
   occurrencesBetween,
   type RecurringFrequency,
   type Schedule,
@@ -10,22 +11,6 @@ const units: Record<RecurringFrequency, [string, string]> = {
   month: ["month", "months"],
   year: ["year", "years"],
 };
-/** A calendar date such as "1 Nov 2026", read from the text so no time zone can shift it. */
-export function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number) as [
-    number,
-    number,
-    number,
-  ];
-  const date = new Date(Date.UTC(2000, month - 1, day));
-  date.setUTCFullYear(year);
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
-}
 /** "Every month", "Every 2 weeks". */
 export function everySentence(
   frequency: RecurringFrequency,
@@ -35,17 +20,8 @@ export function everySentence(
   return interval === 1 ? `Every ${one}` : `Every ${interval} ${many}`;
 }
 /** Today in the ledger's time zone (the same rule the server uses to decide what is due). */
-export function ledgerToday(timeZone: string | null, now = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: timeZone ?? "UTC",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(now);
-  const part = (type: string) =>
-    parts.find((item) => item.type === type)?.value ?? "";
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
+export const ledgerToday = (timeZone: string | null, now = new Date()) =>
+  localDate(now, timeZone);
 type Window = Schedule & { endDate: string | null };
 /** The next few dates on or after `from`, honoring the end date. */
 export function upcomingDates(

@@ -222,6 +222,25 @@ it("picks the year from a dropdown, keeping far-away saved years selectable", as
     </>,
   );
   await userEvent.click(screen.getByRole("button", { name: "Choose date" }));
+  const month = screen.getByRole("combobox", { name: "Calendar month" });
+  expect(
+    within(month)
+      .getAllByRole("option")
+      .map((option) => option.textContent),
+  ).toEqual([
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ]);
   const year = screen.getByRole("combobox", { name: "Calendar year" });
   expect(year.tagName).toBe("SELECT");
   await userEvent.selectOptions(year, "2019");

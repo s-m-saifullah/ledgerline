@@ -19,9 +19,9 @@ import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
-import { formatTime12 } from "../../lib/time";
+import { formatDay, formatTime12 } from "../../lib/time";
 import { getPayments } from "./api";
-import { type ServiceState, serviceState, shortDate } from "./model";
+import { type ServiceState, serviceState } from "./model";
 import { useClientsWorkspace } from "./workspace";
 
 const PILLS: Record<
@@ -82,7 +82,6 @@ export function ServiceSheet({
   ledgerId,
   writable,
   today,
-  thisYear,
   onClose,
 }: {
   service: Receivable;
@@ -90,7 +89,6 @@ export function ServiceSheet({
   ledgerId: string;
   writable: boolean;
   today: string;
-  thisYear: number;
   onClose: () => void;
 }) {
   const workspace = useClientsWorkspace();
@@ -110,9 +108,9 @@ export function ServiceSheet({
     onClose();
     run();
   };
-  const hint = `${shortDate(s.serviceDate, thisYear)}${
+  const hint = `${formatDay(s.serviceDate)}${
     s.serviceTime ? ` · ${formatTime12(s.serviceTime)}` : ""
-  }${s.dueDate ? ` · Due ${shortDate(s.dueDate, thisYear)}` : ""}`;
+  }${s.dueDate ? ` · Due ${formatDay(s.dueDate)}` : ""}`;
   const rows = payments.data?.pages.flatMap((p) => p.items) ?? [];
   const canChange = writable && s.status !== "writtenOff";
   return (
@@ -177,7 +175,7 @@ export function ServiceSheet({
                   <article key={p.id} className="ui-row ui-row-static cl-pay">
                     <span className="ui-row-main">
                       <span className="ui-row-title">
-                        {shortDate(p.transaction.date, thisYear)}
+                        {formatDay(p.transaction.date)}
                         {p.transaction.time
                           ? ` · ${formatTime12(p.transaction.time)}`
                           : ""}{" "}

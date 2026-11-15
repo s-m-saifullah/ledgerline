@@ -25,15 +25,10 @@ import type { ReactElement, ReactNode } from "react";
 import { Amount, BaseNote } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
+import { formatDay } from "../../lib/time";
 import { morePages } from "../shell/nav";
 import { useTransactionWorkspace } from "../transactions/workspace";
-import {
-  accountGroups,
-  cashFlow,
-  heroFigures,
-  isOverdrawn,
-  shortDay,
-} from "./model";
+import { accountGroups, cashFlow, heroFigures, isOverdrawn } from "./model";
 
 const typeLabels = {
   bank: "Bank",
@@ -348,7 +343,7 @@ function latestTitle(row: HomeLatest) {
 }
 function latestHint(row: HomeLatest) {
   const entry = row.transaction;
-  const parts = [shortDay(entry.date)];
+  const parts = [formatDay(entry.date)];
   if (entry.transferId) parts.unshift("Transfer");
   else parts.push(row.accountName);
   if (entry.isSplit) parts.push(`Split · ${entry.splits.length} categories`);
