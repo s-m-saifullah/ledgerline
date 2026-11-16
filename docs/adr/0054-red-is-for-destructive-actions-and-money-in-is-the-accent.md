@@ -4,8 +4,9 @@ Date: 2026-11-16. Status: accepted by the owner in chat (decisions 4 and 7 of th
 
 ## Context
 
-A review of the web (2026-11-11) found two places where the screens and the written rules disagreed:
+A review of the web (2026-11-11) found places where the screens and the written rules disagreed:
 
+- A loan's Delete on the balance card was a teal word, while every other Delete was red.
 - Red appeared on actions that were destructive but not named Delete ("Clear ledger", "Turn off two-factor", "Undo import", "Remove currency"), so the rule and the screens did not match.
 - Money in was green on Home and Transactions and teal on Insights, so one figure ("Net") had two colors.
 
