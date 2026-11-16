@@ -283,7 +283,7 @@ test("a loan can be removed while only its starting balance is left, and not whi
   await addLoan(page, "A loan I already had", "50.00");
   await expect(balances(page)).toContainText("Sam owes you");
 
-  // A lend adds an entry, so the loan cannot be removed yet: the dialog lists its date only.
+  // A lend adds an entry, so the loan cannot be deleted yet: the dialog lists its date only.
   await loanAction(page, "Lend money");
   await dialog(page)
     .getByLabel(/^Amount/)

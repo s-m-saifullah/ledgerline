@@ -605,7 +605,7 @@ test("the person's menu, Rename, the Archive question and the Remove question", 
     .getByRole("button", { name: "Delete the USD loan" })
     .click();
   const blocked = page.getByRole("dialog", {
-    name: "The USD loan cannot be removed yet",
+    name: "The USD loan cannot be deleted yet",
   });
   await expect(blocked.getByRole("list")).toContainText(dayText("2026-10-03"));
   await expect(blocked.getByRole("list")).not.toContainText("2026-10-03");
