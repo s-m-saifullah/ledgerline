@@ -211,6 +211,22 @@ it("asks before deleting, keeps the sheet under the question and refuses a tag t
   });
   expect(onSaved).toHaveBeenCalledWith("Deleted the tag Spare.");
 });
+it("says Deleting… on the confirming button while the tag is being deleted", async () => {
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  mount(tag("Spare"), async () => {
+    await gate;
+    return new Response(null, { status: 204 });
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
+  expect(
+    await screen.findByRole("button", { name: "Deleting…" }),
+  ).toBeDisabled();
+  release();
+});
 it("cannot delete a tag that entries use: the question says why and Delete is off", async () => {
   const { writes } = mount(tag("Trip", { usageCount: 1 }));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));

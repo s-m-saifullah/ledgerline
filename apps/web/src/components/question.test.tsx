@@ -37,6 +37,12 @@ describe("Question", () => {
     expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
   });
 
+  it("keeps its confirming word until it is busy, even when it has a busy word", () => {
+    render(<Question {...base} busyLabel="Deleting…" />);
+    expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Deleting…" })).toBeNull();
+  });
+
   it("shows the server's refusal inside the question", () => {
     render(<Question {...base} error="This changed." />);
     expect(screen.getByRole("alert")).toHaveTextContent("This changed.");
