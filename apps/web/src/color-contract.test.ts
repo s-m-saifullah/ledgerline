@@ -28,7 +28,7 @@ describe("one color for money in", () => {
       .map((file) => relative(repo, file));
     expect(users).toEqual([]);
   });
-  it("money in is drawn in the accent on Home and Transactions", () => {
+  it("money in is drawn in the accent on Home, Transactions and Insights", () => {
     const rule = (file: string, selector: string) =>
       readFileSync(join(root, file), "utf8").match(
         new RegExp(`${selector.replace(".", "\\.")}\\s*\\{([^}]*)\\}`),
@@ -37,6 +37,9 @@ describe("one color for money in", () => {
       /color:\s*var\(--accent\)/,
     );
     expect(rule("features/transactions/transactions.css", ".tx-pos")).toMatch(
+      /color:\s*var\(--accent\)/,
+    );
+    expect(rule("features/insights/insights.css", ".ins-pos")).toMatch(
       /color:\s*var\(--accent\)/,
     );
   });
