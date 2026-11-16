@@ -559,6 +559,7 @@ describe("removing a loan", () => {
     const loan = (await loans())[0];
     const refused = await remove(client, loan?.accountId as string, 1);
     expect(refused.statusCode).toBe(409);
+    expect(refused.json().detail).toContain("still has transactions");
     expect(refused.json().detail).toContain("Delete them first");
     expect(await loans()).toHaveLength(1);
     expect(await balance()).toBe(700);
