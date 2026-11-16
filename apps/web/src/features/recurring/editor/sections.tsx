@@ -228,7 +228,7 @@ export function SchedulePreview({ form }: { form: RuleFormContext }) {
         ? `Next: ${preview.next.map((date) => formatDay(date)).join(", ")}.`
         : "Nothing is left to create."}
       {preview.due > 0 &&
-        ` ${preview.due} ${preview.due === 1 ? "entry is" : "entries are"} already due and will be created as soon as you save.`}
+        ` ${preview.due} ${preview.due === 1 ? "transaction is" : "transactions are"} already due and will be created as soon as you save.`}
     </p>
   );
 }

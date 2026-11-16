@@ -424,7 +424,7 @@ export async function removeContactAccount(
     ledgerId,
     "accountId",
     id,
-    "This loan still has entries. Delete them first.",
+    "This loan still has transactions. Delete them first.",
   );
   await requireNoActiveRules(db, ledgerId, "accountId", id);
   return accountRepository(db, ledgerId).remove(id, expectedVersion, version);

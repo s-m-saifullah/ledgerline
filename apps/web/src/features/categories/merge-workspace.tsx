@@ -322,7 +322,7 @@ export function CategoryMergeWorkspace({
                     </li>
                     <li>
                       {summary.splitLines} split lines across{" "}
-                      {summary.splitParents} entries
+                      {summary.splitParents} transactions
                     </li>
                     <li>
                       {summary.linkedPayments} linked payments across{" "}

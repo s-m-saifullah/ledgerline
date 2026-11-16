@@ -101,10 +101,10 @@ export function RemoveLoanDialog({
       {blocked && (
         <>
           <p>
-            Entries still use it. Delete them in Transactions first. They are
-            dated:
+            Transactions still use it. Delete them in Transactions first. They
+            are dated:
           </p>
-          <ul className="ln-dates" aria-label="Entries using this loan">
+          <ul className="ln-dates" aria-label="Transactions using this loan">
             {items.slice(0, shown).map((entry) => (
               <li key={entry.id}>{formatDay(entry.date)}</li>
             ))}

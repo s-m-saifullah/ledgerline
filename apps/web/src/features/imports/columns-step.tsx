@@ -222,7 +222,7 @@ export function ColumnsStep({ w }: { w: Wizard }) {
               We can read <strong>{count}</strong>{" "}
               {count === 1 ? "row" : "rows"}
               {skipped
-                ? `, and leave out ${skipped} (transfers and split entries can't be imported yet)`
+                ? `, and leave out ${skipped} (transfers and split transactions can't be imported yet)`
                 : ""}
               {problems.length ? `. ${problems.length} can't be read:` : "."}
             </p>

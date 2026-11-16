@@ -128,7 +128,7 @@ function requireTimeZone(timeZone: string | null): string {
   if (!timeZone)
     conflict(
       "timeZone",
-      "Set the ledger time zone in More before creating recurring entries.",
+      "Set the ledger time zone in More before creating recurring transactions.",
     );
   return timeZone;
 }

@@ -39,7 +39,7 @@ export function RecentImports({ ledgerId }: { ledgerId: string | undefined }) {
               <RowBody
                 title={batch.sourceName ?? "Imported file"}
                 hint={`${formatDay(batch.createdAt)} · ${batch.remaining} of ${batch.rowCount} ${
-                  batch.rowCount === 1 ? "entry" : "entries"
+                  batch.rowCount === 1 ? "transaction" : "transactions"
                 } still in your ledger`}
                 value={
                   batch.remaining === 0 ? undefined : (
@@ -56,7 +56,7 @@ export function RecentImports({ ledgerId }: { ledgerId: string | undefined }) {
               onClose={() => setAsking(null)}
               onUndone={(removed) =>
                 setNotice(
-                  `Deleted ${removed} ${removed === 1 ? "entry" : "entries"} from ${batch.sourceName ?? "the import"}.`,
+                  `Deleted ${removed} ${removed === 1 ? "transaction" : "transactions"} from ${batch.sourceName ?? "the import"}.`,
                 )
               }
             />

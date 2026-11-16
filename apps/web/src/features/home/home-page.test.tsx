@@ -393,7 +393,7 @@ describe("Home", () => {
     it("has no pending note when nothing is pending", async () => {
       mount([ok(summary({ pendingCount: 0 }))]);
       await screen.findByText("In hand");
-      expect(screen.queryByText(/pending entr(y|ies)/)).toBeNull();
+      expect(screen.queryByText(/pending transactions?/)).toBeNull();
     });
 
     it("shows only the notes that apply", async () => {
@@ -404,7 +404,7 @@ describe("Home", () => {
       cleanup();
       mount([ok(summary({ pendingCount: 0, unconvertedCurrencies: ["JPY"] }))]);
       await screen.findByRole("link", { name: /^No exchange rate for JPY/ });
-      expect(screen.queryByText(/pending entr/)).toBeNull();
+      expect(screen.queryByText(/pending transaction/)).toBeNull();
     });
 
     it("shows the categories note on its own, and no card at all when there is nothing to note", async () => {

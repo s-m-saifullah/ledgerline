@@ -27,9 +27,9 @@ export function dialogDescription(op: ClientOperation | null) {
   return op?.kind === "receipt"
     ? op.receipt
       ? "Correct the details of one payment you received. Amounts stay as recorded; to change them, delete the receipt and enter it again."
-      : "Record money received from this client. It pays their oldest services first, each with its own linked income entry."
+      : "Record money received from this client. It pays their oldest services first, each with its own linked income transaction."
     : op?.kind === "payment"
-      ? "Record only money actually received. This creates one linked income entry."
+      ? "Record only money actually received. This creates one linked income transaction."
       : op?.kind === "service"
         ? "Logging a service creates no income and changes no account balance."
         : op?.kind === "contact"
@@ -62,11 +62,12 @@ export const askText: Record<Action, string> = {
   restoreService: "Puts the service back with its payments.",
   writeOff: "Waives only what is unpaid. Money received stays.",
   reopen: "Puts the waived remainder back as owed.",
-  deletePayment: "Deletes the payment, its income entry and any tip together.",
-  restorePayment: "Puts the payment, its income entry and any tip back.",
+  deletePayment:
+    "Deletes the payment, its income transaction and any tip together.",
+  restorePayment: "Puts the payment, its income transaction and any tip back.",
   deleteReceipt:
-    "Deletes every payment it made, their income entries and any tip together.",
-  restoreReceipt: "Puts back every payment, income entry and tip.",
+    "Deletes every payment it made, their income transactions and any tip together.",
+  restoreReceipt: "Puts back every payment, income transaction and tip.",
 };
 /** The word on a question's one button. */
 export const askButton: Record<Action, string> = {

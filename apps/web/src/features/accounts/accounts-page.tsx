@@ -143,7 +143,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
         : dialog?.kind === "archive"
           ? "Account archived. Its balance and history are kept."
           : dialog?.kind === "unarchive"
-            ? "Account unarchived. It is available for new entries again."
+            ? "Account unarchived. It is available for new transactions again."
             : dialog?.account
               ? "Account updated."
               : "Account added.",

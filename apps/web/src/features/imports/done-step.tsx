@@ -13,20 +13,20 @@ export function DoneStep({ w }: { w: Wizard }) {
     <section className="ui-card ui-list" aria-labelledby="import-done-title">
       <div className="ui-row ui-row-static">
         <h2 id="import-done-title" className="ui-row-main imp-card-title">
-          Imported {count} {count === 1 ? "entry" : "entries"}
+          Imported {count} {count === 1 ? "transaction" : "transactions"}
         </h2>
       </div>
       <div className="imp-body imp-top">
         <p className="imp-note" role="status">
           They are in {w.account?.name ?? "your account"}.
           {result.duplicatesIncluded > 0 &&
-            ` ${result.duplicatesIncluded} of them looked like entries you already had, and you chose to include them.`}
+            ` ${result.duplicatesIncluded} of them looked like transactions you already had, and you chose to include them.`}
           {result.tagsCreated > 0 &&
             ` ${result.tagsCreated} new ${result.tagsCreated === 1 ? "tag was" : "tags were"} created.`}
         </p>
         {removed !== null && (
           <p className="imp-note" role="status">
-            Deleted {removed} {removed === 1 ? "entry" : "entries"}.
+            Deleted {removed} {removed === 1 ? "transaction" : "transactions"}.
           </p>
         )}
         <div className="imp-wrap">

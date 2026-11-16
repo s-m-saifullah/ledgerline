@@ -203,7 +203,7 @@ export function RateSheet({
           </button>
         }
       >
-        <p>Its stored rates and the entries in it are kept.</p>
+        <p>Its stored rates and the transactions in it are kept.</p>
         {error && (
           <p role="alert" className="field-error">
             {error}

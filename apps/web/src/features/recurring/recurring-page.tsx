@@ -121,19 +121,19 @@ export function RecurringPage() {
       </div>
       {failed && (
         <LoadError
-          message="Couldn't load your recurring entries."
+          message="Couldn't load your recurring transactions."
           onRetry={() => {
             void ledgers.refetch();
             if (ledger) void rules.refetch();
           }}
         />
       )}
-      {!rules.data && !failed && <Loading what="your recurring entries" />}
+      {!rules.data && !failed && <Loading what="your recurring transactions" />}
       {ledger && !timeZone && (
         <section className="ui-card rc-alert">
           <p>Set your time zone first.</p>
           <p className="rc-note">
-            Recurring entries need to know what today is for you.{" "}
+            Recurring transactions need to know what today is for you.{" "}
             <Link to="/more">Set the time zone in More</Link>.
           </p>
         </section>

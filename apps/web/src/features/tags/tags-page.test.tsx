@@ -91,7 +91,7 @@ it("lists the tags by name, each with how many transactions use it, and no page 
   expect(await screen.findByText("3 transactions")).toBeInTheDocument();
   expect(screen.getByText("1 transaction")).toBeInTheDocument();
   const names = screen
-    .getAllByRole("button", { name: /entr/ })
+    .getAllByRole("button", { name: /transaction/ })
     .map((button) => button.textContent);
   expect(names[0]).toContain("Gift");
   expect(names[1]).toContain("Trip");

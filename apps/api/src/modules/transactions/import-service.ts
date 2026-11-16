@@ -38,7 +38,7 @@ function rowTags(row: ImportRow): { names: string[]; problem: string | null } {
   return names.length > maxTagsPerEntry
     ? {
         names: [],
-        problem: `An entry can have at most ${maxTagsPerEntry} tags.`,
+        problem: `A transaction can have at most ${maxTagsPerEntry} tags.`,
       }
     : { names, problem: null };
 }
@@ -81,8 +81,8 @@ export async function findImportDuplicates(
       found.set(
         row.line,
         sameId
-          ? "Already in your ledger (same entry id)."
-          : "Same date and amount as an entry already in this account.",
+          ? "Already in your ledger (same transaction id)."
+          : "Same date and amount as a transaction already in this account.",
       );
     }
   }
