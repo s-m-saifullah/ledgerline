@@ -69,7 +69,7 @@
   font-variant-numeric: tabular-nums;
 }
 .tx-pos {
-  color: var(--positive);
+  color: var(--accent);
 }
 .tx-load-more {
   justify-self: center;

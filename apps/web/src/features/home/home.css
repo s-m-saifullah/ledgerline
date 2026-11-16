@@ -112,7 +112,7 @@
 }
 
 .home-pos {
-  color: var(--positive);
+  color: var(--accent);
 }
 .home-neg {
   color: var(--danger);
