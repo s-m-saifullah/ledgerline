@@ -103,7 +103,6 @@ export function palettes(css) {
     "muted",
     "danger",
     "danger-foreground",
-    "positive",
     "warning",
   ];
   const build = (tokens, fallback) =>

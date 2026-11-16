@@ -103,7 +103,7 @@ Calm and quiet: neutral surfaces, one accent color, and numbers as the loudest t
 5. **Show less, reveal on demand.**
 6. **Mobile first.**
 
-Tokens: zinc neutrals; a teal accent by default with every shade derived from one seed color (OKLCH) so an accent picker can be added later with automatic contrast; semantic positive, warning and danger colors; Inter with tabular figures; a 4 px spacing grid; radii 8/12/16; borders over shadows; 150 to 200 ms motion that respects reduced motion.
+Tokens: zinc neutrals; a teal accent by default with every shade derived from one seed color (OKLCH) so an accent picker can be added later with automatic contrast; semantic warning and danger colors (money in uses the accent, ADR 0054); Inter with tabular figures; a 4 px spacing grid; radii 8/12/16; borders over shadows; 150 to 200 ms motion that respects reduced motion.
 
 Access: light, dark and system themes; WCAG AA contrast; 44 px touch targets; full keyboard use with a Cmd/Ctrl+K command palette; a privacy mode that blurs amounts.
 

@@ -22,7 +22,6 @@ data class LedgerlinePalette(
     val muted: Color,
     val danger: Color,
     val dangerForeground: Color,
-    val positive: Color,
     val warning: Color,
 )
 
@@ -45,7 +44,6 @@ val LightPalette = LedgerlinePalette(
     muted = Color(0xFF52525B),
     danger = Color(0xFFB91C1C),
     dangerForeground = Color(0xFFFFFFFF),
-    positive = Color(0xFF166534),
     warning = Color(0xFF854D0E),
 )
 
@@ -68,6 +66,5 @@ val DarkPalette = LedgerlinePalette(
     muted = Color(0xFFA1A1AA),
     danger = Color(0xFFFCA5A5),
     dangerForeground = Color(0xFF450A0A),
-    positive = Color(0xFF86EFAC),
     warning = Color(0xFFFDE047),
 )

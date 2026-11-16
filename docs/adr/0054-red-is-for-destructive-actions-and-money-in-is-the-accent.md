@@ -20,4 +20,4 @@ A review of the web (2026-11-11) found places where the screens and the written 
 
 - `color-contract.test.ts` fails a pull request that brings `--positive` back, draws money in in another color, or makes the sync dot amber. Browser specs read the color the browser drew for money in on Home and Transactions at 320, 390 and 1280 px in light and dark.
 - The accent text pairs are 6.7 to 7.0:1 (light) and 9.3 to 10.5:1 (dark) on the surfaces, above AA; the old green was 7.1 and 12.6.
-- The phone app keeps its own colors until WP-22 carries the same rules over.
+- The phone app keeps its own colors until WP-22 carries the same rules over. Its palette is generated from the web tokens, and no phone screen used the green `positive` entry (only a contrast test did), so the generator no longer carries it and the Kotlin palette and that test lost the entry; nothing on the phone looks different.
