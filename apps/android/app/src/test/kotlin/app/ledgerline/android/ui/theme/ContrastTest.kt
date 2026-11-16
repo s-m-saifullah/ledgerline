@@ -35,7 +35,6 @@ class ContrastTest {
         text("danger on surface", p.danger, p.surface)
         text("danger on background", p.danger, p.background)
         text("danger foreground on danger", p.dangerForeground, p.danger)
-        text("positive on surface", p.positive, p.surface)
         text("warning on surface", p.warning, p.surface)
         graphic("field border on surface", p.fieldBorder, p.surface)
         graphic("field border on background", p.fieldBorder, p.background)

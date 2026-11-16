@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
 import { newId } from "../../packages/shared/src/index";
+import { accentColor } from "./color";
 import { openFilters } from "./filters";
 import {
   connectLocalDatabase,
@@ -413,3 +414,20 @@ for (const theme of ["light", "dark"] as const)
     await openFilters(page);
     expect(await violations(page)).toEqual([]);
   });
+
+// WP-11d: money in is the accent, not a second hue (green is gone).
+for (const theme of ["light", "dark"] as const)
+  for (const width of [320, 390, 1280])
+    test(`money in is the accent in ${theme} at ${width} px`, async ({
+      page,
+    }) => {
+      await openList(page, width);
+      await setTheme(page, theme);
+      const accent = await accentColor(page);
+      const incomes = page.locator(".tx-pos");
+      expect(await incomes.count()).toBeGreaterThan(0);
+      for (const node of await incomes.all())
+        expect(
+          await node.evaluate((element) => getComputedStyle(element).color),
+        ).toBe(accent);
+    });

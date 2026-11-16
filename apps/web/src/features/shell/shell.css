@@ -203,9 +203,6 @@
   border-radius: 50%;
   background: var(--accent);
 }
-.ui-sync[data-state="updating"] .ui-sync-dot {
-  background: var(--warning);
-}
 .ui-sync[data-state="offline"] .ui-sync-dot {
   background: var(--muted);
 }

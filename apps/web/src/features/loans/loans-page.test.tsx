@@ -515,6 +515,14 @@ describe("Balance, Before Ledgerline and Activity", () => {
       within(region).getByRole("button", { name: "Delete the GBP loan" }),
     ).toBeTruthy();
     expect(within(region).queryByText("Before Ledgerline")).toBeNull();
+    // Deleting a loan is destructive, so its word is red like every other Delete (ADR 0054). It stays a word.
+    for (const code of ["USD", "EUR", "GBP"]) {
+      const button = within(region).getByRole("button", {
+        name: `Delete the ${code} loan`,
+      });
+      expect(button).toHaveClass("ui-btn-danger");
+      expect(button).not.toHaveClass("ui-btn-secondary");
+    }
   });
   it("shows Before Ledgerline only for a balance that is not zero, with Change", async () => {
     const before = { ...loan(100), openingBalance: usd(-2500) };
