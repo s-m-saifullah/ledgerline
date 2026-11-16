@@ -24,3 +24,19 @@ export function textOutside(locator: Locator): Promise<string[]> {
     return outside;
   });
 }
+
+/** How many lines the text inside an element is drawn on (a hint or a title is meant to stay on one). */
+export function lineCount(locator: Locator): Promise<number> {
+  return locator.evaluate((root) => {
+    const tops = new Set<number>();
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (!(node.textContent ?? "").trim()) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      for (const rect of Array.from(range.getClientRects()))
+        if (rect.width > 0) tops.add(Math.round(rect.top / 4));
+    }
+    return tops.size;
+  });
+}

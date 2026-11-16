@@ -7,7 +7,7 @@ import {
   prepareBrowser,
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
-import { textOutside } from "./text-fit";
+import { lineCount, textOutside } from "./text-fit";
 import { setTheme } from "./theme";
 
 // Tags in a real browser (ADR 0047, PR 13c), against the approved prototype: jsdom cannot run container queries,
@@ -207,6 +207,8 @@ for (const width of [320, 390])
     ] as const) {
       await expect(row(page, name)).toContainText(count);
       expect(await textOutside(row(page, name))).toEqual([]);
+      // A row's hint stays one line.
+      expect(await lineCount(row(page, name).locator(".ui-row-hint"))).toBe(1);
     }
   });
 
