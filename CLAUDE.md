@@ -67,7 +67,7 @@ Code is grouped by feature:
 - Before writing any UI, read `docs/STYLE_GUIDE.md` and reuse what it lists (`packages/ui`, `apps/web/src/components`) instead of writing a new class or copying a feature's CSS. When an approved change adds, retires or changes a shared piece or rule, update the guide (including its change log) in that pull request. `css-contract.test.ts` and `css-hygiene.test.ts` guard the mechanical rules.
 - Calm, clutter-free, mobile-first. One primary action per screen. Amounts in large tabular figures.
 - Neutral (zinc) surfaces; one accent, teal by default, every shade derived from one seed color (OKLCH).
-- Red only for overspending, errors and Delete actions.
+- Red only for overspending, overdue, errors and destructive actions (ADR 0054); money in is the accent, never green.
 - Light, dark and system themes. WCAG AA contrast, 44 px touch targets, full keyboard use, a Cmd/Ctrl+K command palette, a privacy mode that blurs amounts.
 - Navigation: Home, Transactions, Budgets, Insights, More and Add. Android: Add at the bottom right, above its bar (ADR 0043), hidden on More and the screens opened from it (ADR 0046). Web (ADR 0047): on a phone one Add button, bottom right, that follows the screen (it adds what the screen lists; none on More, Settings and Import and export); on a tablet an icon rail and on a desktop a sidebar that also lists More's pages, each with one Add for a transaction. Adding a transaction should take under five seconds.
 - Few words: a row has a title and at most one short hint (one line, never a paragraph); no page subtitles, eyebrows or repeated labels (ADR 0046). This applies to every screen, web included.
