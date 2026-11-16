@@ -326,8 +326,8 @@ export function AccountEditor({
             </div>
           </div>
           <span id="opening-balance-help" className="sr-only">
-            Use the balance before the entries you will record here. If you add
-            older history later, start with the balance from before that
+            Use the balance before the transactions you will record here. If you
+            add older history later, start with the balance from before that
             history.
             {liability
               ? " Money owed records debt as a negative balance. Credit records a positive balance."

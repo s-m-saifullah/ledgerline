@@ -132,7 +132,7 @@ async function openHistory(page: Page) {
     page.getByRole("dialog", { name: "Edit transaction", exact: true }),
   ).toBeVisible();
 }
-test("allocates exact cents, edits stable lines, deletes/Undo and converts to ordinary entries", async ({
+test("allocates exact cents, edits stable lines, deletes/Undo and converts to ordinary transactions", async ({
   page,
 }) => {
   await signIn(page);

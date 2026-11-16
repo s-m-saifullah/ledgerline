@@ -131,6 +131,31 @@ it("validates exact split sums at safe integer boundaries without intermediate f
     }).success,
   ).toBe(false);
 });
+it("says transaction, never entry, in the messages a person can read about a split", () => {
+  const messages = (body: unknown) => {
+    const result = createTransactionSchema.safeParse(body);
+    return result.success ? [] : result.error.issues.map((i) => i.message);
+  };
+  const line = (amount: number, currency = "USD") => ({
+    categoryId: newId(),
+    amount: { amount, currency },
+  });
+  expect(
+    messages({ ...input, categoryId: newId(), splits: [line(-10), line(-19)] }),
+  ).toContain("Split transactions have no parent category.");
+  expect(
+    messages({ ...input, categoryId: null, splits: [line(10), line(-39)] }),
+  ).toContain(
+    "Every line must have the transaction's direction and a nonzero amount.",
+  );
+  expect(
+    messages({
+      ...input,
+      categoryId: null,
+      splits: [line(-10), line(-19, "EUR")],
+    }),
+  ).toContain("Every line must use the transaction's currency.");
+});
 it("rejects invalid split directions, duplicate IDs and invalid category allocation shapes", () => {
   const id = newId();
   const lines = [

@@ -105,7 +105,7 @@ export function ClearLedger({
       <Question
         open={asking === "clear"}
         title="Clear your ledger?"
-        text={`Your accounts, entries and budgets leave the app so you can start fresh. You can undo this for ${undoDays} days.`}
+        text={`Your accounts, transactions and budgets leave the app so you can start fresh. You can undo this for ${undoDays} days.`}
         confirm="Clear"
         danger
         busy={busy}

@@ -81,7 +81,12 @@ export async function priceEntry(
         409,
         "Conflict",
         `${base} is the base currency; its rate is always 1.`,
-        [{ field: "fxRate", message: `A ${base} entry has a rate of 1.` }],
+        [
+          {
+            field: "fxRate",
+            message: `A ${base} transaction has a rate of 1.`,
+          },
+        ],
       );
     return { fxRate: "1", baseAmount: input.amount.amount };
   }

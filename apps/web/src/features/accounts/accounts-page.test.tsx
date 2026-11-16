@@ -418,7 +418,7 @@ it("says the account is unarchived after Unarchive", async () => {
   );
   expect(
     await screen.findByText(
-      "Account unarchived. It is available for new entries again.",
+      "Account unarchived. It is available for new transactions again.",
     ),
   ).toBeInTheDocument();
 });

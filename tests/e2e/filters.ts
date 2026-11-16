@@ -30,7 +30,7 @@ export async function closeFilters(dialog: Locator) {
 /** Choose one of the entry-type chips (All, Expenses, Income, Transfers). */
 export async function chooseKind(page: Page, name: string) {
   await page
-    .getByRole("group", { name: "Entry type" })
+    .getByRole("group", { name: "Transaction type" })
     .getByRole("button", { name, exact: true })
     .click();
 }

@@ -87,8 +87,8 @@ export function Notes({
           }
           title={
             summary.pendingCount === 1
-              ? "1 pending entry"
-              : `${summary.pendingCount} pending entries`
+              ? "1 pending transaction"
+              : `${summary.pendingCount} pending transactions`
           }
           hint="Not counted yet"
           chevron
@@ -104,7 +104,7 @@ export function Notes({
               </IconTile>
             }
             title="Set up categories"
-            hint="So every entry can be sorted"
+            hint="So every transaction can be sorted"
             chevron
             render={linkTo("/categories")}
           />
@@ -421,8 +421,8 @@ export function LatestColumn({
         <EmptyState
           text={
             writable
-              ? "Use Add to record your first entry"
-              : "No entries have been recorded yet"
+              ? "Use Add to record your first transaction"
+              : "No transactions have been recorded yet"
           }
         />
       ) : (

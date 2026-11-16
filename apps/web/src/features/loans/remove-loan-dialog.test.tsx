@@ -106,10 +106,10 @@ describe("RemoveLoanDialog", () => {
     );
     expect(writes[0]?.body).toEqual({ expectedVersion: 4 });
   });
-  it("lists only the dates of entries still using the loan and offers no removal", async () => {
+  it("lists only the dates of transactions still using the loan and offers no removal", async () => {
     const { writes } = mount(["2026-10-07", "2026-10-09"]);
     const list = await screen.findByRole("list", {
-      name: "Entries using this loan",
+      name: "Transactions using this loan",
     });
     expect(list).toHaveTextContent("Oct 7");
     expect(list).toHaveTextContent("Oct 9");
@@ -164,7 +164,7 @@ describe("RemoveLoanDialog", () => {
     ).toBeTruthy();
     expect(
       screen.getByText(
-        "Entries still use it. Delete them in Transactions first. They are dated:",
+        "Transactions still use it. Delete them in Transactions first. They are dated:",
       ),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
@@ -178,7 +178,7 @@ describe("RemoveLoanDialog", () => {
       ),
     );
     const list = await screen.findByRole("list", {
-      name: "Entries using this loan",
+      name: "Transactions using this loan",
     });
     expect(within(list).getAllByRole("listitem")).toHaveLength(50);
     expect(screen.getByText("and more.")).toBeTruthy();

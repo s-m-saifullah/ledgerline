@@ -171,7 +171,7 @@ test("merges ordinary and split references and children, refreshes choices, and 
   await categories(page);
   const dialog = await begin(page, source, destination);
   await expect(dialog).toContainText("1 cleared and 0 pending");
-  await expect(dialog).toContainText("1 split lines across 1 entries");
+  await expect(dialog).toContainText("1 split lines across 1 transactions");
   await expect(dialog).toContainText("1 child categories to move");
   await dialog.getByRole("button", { name: "Confirm merge" }).click();
   await expect(dialog).toHaveCount(0);

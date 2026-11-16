@@ -27,7 +27,7 @@ const category = (
     createdAt: "2026-10-07T00:00:00.000Z",
     updatedAt: "2026-10-07T00:00:00.000Z",
   });
-describe("payment entry choices", () => {
+describe("payment transaction choices", () => {
   it("preserves exact decimal cents at maximum without rounding", () => {
     expect(positiveCents("90071992547409.91").amount).toBe(
       Number.MAX_SAFE_INTEGER,

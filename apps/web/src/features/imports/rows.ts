@@ -74,7 +74,10 @@ export function readRows(
       continue;
     }
     if (mapping.splitLine !== null && cell(mapping.splitLine) !== "") {
-      skipped.push({ line, reason: "Split entries can't be imported yet." });
+      skipped.push({
+        line,
+        reason: "Split transactions can't be imported yet.",
+      });
       continue;
     }
     const date = parseDate(cell(mapping.date), mapping.dateFormat);
@@ -173,7 +176,7 @@ export function readRows(
         tags.push(name);
     }
     if (tags.length > 10) {
-      fail("An entry can have at most 10 tags.");
+      fail("A transaction can have at most 10 tags.");
       continue;
     }
     const sourceId = cell(mapping.id);

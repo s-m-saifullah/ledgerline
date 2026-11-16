@@ -202,7 +202,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
         categoryId: expenseId,
         amount: { amount: -123, currency: "USD" },
         date: "2026-10-07",
-        payee: "Synthetic entry",
+        payee: "Synthetic transaction",
         status: "pending",
       },
     },
@@ -232,7 +232,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
     .click();
   await page
     .getByRole("button", {
-      name: "Open transaction: Synthetic entry",
+      name: "Open transaction: Synthetic transaction",
       exact: true,
     })
     .click();

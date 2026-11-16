@@ -271,8 +271,10 @@ describe("preview", () => {
       "duplicate",
       "ready",
     ]);
-    expect(result.rows[1]?.reason).toContain("Same date and amount");
-    expect(result.rows[6]?.reason).toContain("same entry id");
+    expect(result.rows[1]?.reason).toBe(
+      "Same date and amount as a transaction already in this account.",
+    );
+    expect(result.rows[6]?.reason).toContain("same transaction id");
     expect(result.rows[3]?.reason).toBeTruthy();
     expect(result.counts).toEqual({ ready: 3, duplicate: 2, problem: 3 });
     expect((await entries(s.checking)).length).toBe(1);
@@ -755,6 +757,9 @@ describe("tags in a file", () => {
       "problem",
       "problem",
     ]);
+    expect(result.rows[3]?.reason).toBe(
+      "A transaction can have at most 10 tags.",
+    );
     const refused = await post("/imports", {
       accountId: s.checking,
       sourceName: null,

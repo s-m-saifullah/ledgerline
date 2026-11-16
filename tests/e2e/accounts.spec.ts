@@ -207,7 +207,7 @@ test("creates, retries, edits and archives real accounts with privacy and confli
     .click();
   await expect(
     page.getByText(
-      "Account unarchived. It is available for new entries again.",
+      "Account unarchived. It is available for new transactions again.",
     ),
   ).toBeVisible();
   await expect(fold.getByText(debtName)).toHaveCount(0);

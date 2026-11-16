@@ -75,7 +75,7 @@ const balance = async (page: Page) => {
   return rows[0]?.balance.amount;
 };
 
-test("tags an entry in Add, finds it by tag, edits the tags and keeps the balance", async ({
+test("tags a transaction in Add, finds it by tag, edits the tags and keeps the balance", async ({
   page,
 }) => {
   await addEntry(page).click();
@@ -112,7 +112,7 @@ const addTag = (page: Page) =>
     visible: true,
   });
 const tagRow = (page: Page, name: string) =>
-  page.getByRole("button", { name: new RegExp(`^${name} \\d+ entr`) });
+  page.getByRole("button", { name: new RegExp(`^${name} \\d+ transaction`) });
 
 test("the Tags page adds, renames, archives and deletes tags, each from the tag's sheet", async ({
   page,

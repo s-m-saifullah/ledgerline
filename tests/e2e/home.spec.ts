@@ -119,7 +119,7 @@ test("shows real totals, refreshes after every kind of change and hides amounts"
   await expect(page.getByRole("link", { name: /Clients owe/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /People owe/ })).toHaveCount(0);
   await expect(
-    page.getByText("Use Add to record your first entry"),
+    page.getByText("Use Add to record your first transaction"),
   ).toBeVisible();
   await expect(page.getByText("Archived accounts")).toBeVisible();
 

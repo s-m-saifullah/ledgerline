@@ -84,10 +84,9 @@ it("opens an existing tag on its actions: view, rename, archive and delete in re
   mount(tag("Trip", { usageCount: 2 }));
   const sheet = await screen.findByRole("dialog", { name: "Trip" });
   expect(sheet).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "View entries" })).toHaveAttribute(
-    "href",
-    expect.stringContaining("/transactions?tagId="),
-  );
+  expect(
+    screen.getByRole("link", { name: "View transactions" }),
+  ).toHaveAttribute("href", expect.stringContaining("/transactions?tagId="));
   for (const name of ["Rename", "Archive", "Delete"])
     expect(screen.getByRole("button", { name })).toBeInTheDocument();
   expect(screen.getByText("Delete")).toHaveClass("tg-danger");
@@ -100,7 +99,7 @@ it("offers Unarchive for an archived tag", async () => {
   ).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Archive" })).toBeNull();
 });
-it("archives with the tag's version and says it stays on its entries", async () => {
+it("archives with the tag's version and says it stays on its transactions", async () => {
   const { writes, onSaved } = mount(tag("Trip"));
   await userEvent.click(await screen.findByRole("button", { name: "Archive" }));
   expect(writes[0]).toMatchObject({
@@ -109,7 +108,7 @@ it("archives with the tag's version and says it stays on its entries", async () 
   });
   expect(writes[0]?.url).toContain("/archive");
   expect(onSaved).toHaveBeenCalledWith(
-    "Archived Trip. It stays on its entries.",
+    "Archived Trip. It stays on its transactions.",
   );
 });
 it("unarchives and says so", async () => {
@@ -189,7 +188,7 @@ it("repeats a save with the same key when the answer was lost, and takes a new o
   expect(writes[1]?.key).toBe(writes[0]?.key);
   expect(writes[0]?.key).not.toBe("");
 });
-it("asks before deleting, keeps the sheet under the question and refuses a tag that entries use", async () => {
+it("asks before deleting, keeps the sheet under the question and refuses a tag that transactions use", async () => {
   const { writes, onSaved } = mount(
     tag("Spare"),
     () => new Response(null, { status: 204 }),
@@ -197,7 +196,7 @@ it("asks before deleting, keeps the sheet under the question and refuses a tag t
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   const question = await screen.findByRole("dialog", { name: "Delete Spare?" });
   expect(question).toHaveTextContent(
-    "No entry has it. This can't be undone, but you can add the tag again any time.",
+    "No transaction has it. This can't be undone, but you can add the tag again any time.",
   );
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   expect(screen.queryByRole("dialog", { name: "Delete Spare?" })).toBeNull();
@@ -227,22 +226,22 @@ it("says Deleting… on the confirming button while the tag is being deleted", a
   ).toBeDisabled();
   release();
 });
-it("cannot delete a tag that entries use: the question says why and Delete is off", async () => {
+it("cannot delete a tag that transactions use: the question says why and Delete is off", async () => {
   const { writes } = mount(tag("Trip", { usageCount: 1 }));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   const question = await screen.findByRole("dialog", { name: "Delete Trip?" });
   expect(question).toHaveTextContent(
-    "1 entry has this tag, so it can't be deleted. Archive it to hide it instead.",
+    "1 transaction has this tag, so it can't be deleted. Archive it to hide it instead.",
   );
   expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
   expect(writes).toHaveLength(0);
 });
-it("says how many entries when several use the tag", async () => {
+it("says how many transactions when several use the tag", async () => {
   mount(tag("Trip", { usageCount: 4 }));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   expect(
     await screen.findByRole("dialog", { name: "Delete Trip?" }),
-  ).toHaveTextContent("4 entries have this tag, so it can't be deleted.");
+  ).toHaveTextContent("4 transactions have this tag, so it can't be deleted.");
 });
 it("shows a failed delete inside the question", async () => {
   mount(tag("Spare"), () =>

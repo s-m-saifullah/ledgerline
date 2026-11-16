@@ -324,15 +324,15 @@ describe("pricing entries", () => {
     const wrong = await send("POST", "/transactions", entry(eur, -100, "USD"));
     expect(wrong.statusCode).toBe(409);
     expect(wrong.json().errors[0].field).toBe("amount.currency");
-    expect(
-      (
-        await send(
-          "POST",
-          "/transactions",
-          entry(usd, -100, "USD", { fxRate: "2" }),
-        )
-      ).statusCode,
-    ).toBe(409);
+    const rated = await send(
+      "POST",
+      "/transactions",
+      entry(usd, -100, "USD", { fxRate: "2" }),
+    );
+    expect(rated.statusCode).toBe(409);
+    expect(rated.json().errors[0].message).toBe(
+      "A USD transaction has a rate of 1.",
+    );
     const base = await createEntry(usd, -100, "USD", { fxRate: "1" });
     expect(base.fxRate).toBe("1");
     expect(base.baseAmount.amount).toBe(-100);

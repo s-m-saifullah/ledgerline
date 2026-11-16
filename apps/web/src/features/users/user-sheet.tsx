@@ -263,7 +263,7 @@ export function UserSheet({
       <Question
         open={asking === "clear"}
         title={`Clear ${first}'s ledger?`}
-        text={`Their accounts, entries and budgets leave the app so they can start fresh. You can undo this for ${undoDays} days.`}
+        text={`Their accounts, transactions and budgets leave the app so they can start fresh. You can undo this for ${undoDays} days.`}
         confirm="Clear"
         danger
         busy={busy}

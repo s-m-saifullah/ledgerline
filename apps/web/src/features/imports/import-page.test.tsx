@@ -120,7 +120,7 @@ function stub() {
             state: row.amount === 450 ? "duplicate" : "ready",
             reason:
               row.amount === 450
-                ? "Same date and amount as an entry already in this account."
+                ? "Same date and amount as a transaction already in this account."
                 : null,
           })),
           counts: { ready: 0, duplicate: 0, problem: 0 },
@@ -148,7 +148,7 @@ function stub() {
               type: "about:blank",
               title: "Conflict",
               status: 409,
-              detail: "These entries changed. Reload and try again.",
+              detail: "These transactions changed. Reload and try again.",
               errors: [],
             },
             409,
@@ -228,11 +228,13 @@ describe("ImportPage", () => {
     // Review: the coffee looks like a duplicate and is left out until ticked.
     expect(await screen.findByText("Possible duplicates")).toBeTruthy();
     const importButton = await screen.findByRole("button", {
-      name: "Import 2 entries",
+      name: "Import 2 transactions",
     });
     await user.click(screen.getByRole("checkbox", { name: /Corner shop/ }));
-    await user.click(screen.getByRole("button", { name: "Import 3 entries" }));
-    expect(await screen.findByText("Imported 3 entries")).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: "Import 3 transactions" }),
+    );
+    expect(await screen.findByText("Imported 3 transactions")).toBeTruthy();
     expect(importButton).toBeTruthy();
     const create = calls.find(
       (c) => c.method === "POST" && c.url.endsWith("/imports"),
@@ -263,7 +265,7 @@ describe("ImportPage", () => {
       [4, "income", 250000, salary.id, "Pay"],
     ]);
     expect(
-      screen.getByText(/looked like entries you already had/),
+      screen.getByText(/looked like transactions you already had/),
     ).toBeTruthy();
     expect(
       screen
@@ -275,9 +277,11 @@ describe("ImportPage", () => {
     // Undo asks first, then deletes.
     await user.click(screen.getByRole("button", { name: "Undo this import" }));
     const question = screen.getByRole("dialog", { name: "Undo this import?" });
-    expect(within(question).getByText(/deletes the 3 entries/)).toBeTruthy();
+    expect(
+      within(question).getByText(/deletes the 3 transactions/),
+    ).toBeTruthy();
     await user.click(within(question).getByRole("button", { name: "Delete" }));
-    expect(await screen.findByText("Deleted 3 entries.")).toBeTruthy();
+    expect(await screen.findByText("Deleted 3 transactions.")).toBeTruthy();
     const undo = calls.find((c) => c.url.endsWith("/undo"));
     expect(undo?.body).toEqual({ expectedVersion: 1 });
   });
@@ -295,7 +299,7 @@ describe("ImportPage", () => {
     ).toBeTruthy();
     expect(current()).toBe("4Review");
     expect(
-      await screen.findByRole("button", { name: "Import 2 entries" }),
+      await screen.findByRole("button", { name: "Import 2 transactions" }),
     ).toBeTruthy();
   });
 
@@ -318,7 +322,7 @@ describe("ImportPage", () => {
     );
     await user.click(screen.getByRole("button", { name: "Continue" }));
     expect(
-      await screen.findByRole("button", { name: "Import 2 entries" }),
+      await screen.findByRole("button", { name: "Import 2 transactions" }),
     ).toBeTruthy();
   });
 
@@ -405,7 +409,9 @@ describe("ImportPage", () => {
     expect(await screen.findByText("Possible duplicates")).toBeTruthy();
     expect(current()).toBe("4Review");
     expect(
-      screen.getByText(/Dec 31, 2025 · Looks like an entry you already have/),
+      screen.getByText(
+        /Dec 31, 2025 · Looks like a transaction you already have/,
+      ),
     ).toBeTruthy();
     expect(screen.getByText("Oct 3 · Fun")).toBeTruthy();
   });
@@ -435,8 +441,10 @@ describe("ImportPage", () => {
     ];
     mount();
     expect(await screen.findByText("Recent imports")).toBeTruthy();
-    expect(screen.getByText(/^Oct 5 · 3 of 3 entries/)).toBeTruthy();
-    expect(screen.getByText(/^Dec 30, 2025 · 3 of 3 entries/)).toBeTruthy();
+    expect(screen.getByText(/^Oct 5 · 3 of 3 transactions/)).toBeTruthy();
+    expect(
+      screen.getByText(/^Dec 30, 2025 · 3 of 3 transactions/),
+    ).toBeTruthy();
   });
 
   it("lists recent imports and keeps the undo message after the list refreshes", async () => {
@@ -445,13 +453,13 @@ describe("ImportPage", () => {
     const user = userEvent.setup();
     expect(await screen.findByText("Recent imports")).toBeTruthy();
     expect(
-      screen.getByText(/3 of 3 entries still in your ledger/),
+      screen.getByText(/3 of 3 transactions still in your ledger/),
     ).toBeTruthy();
     recent = [];
     await user.click(recentRow());
     await user.click(screen.getByRole("button", { name: "Delete" }));
     expect(
-      await screen.findByText("Deleted 3 entries from statement.csv."),
+      await screen.findByText("Deleted 3 transactions from statement.csv."),
     ).toBeTruthy();
     await waitFor(() =>
       expect(
@@ -465,7 +473,9 @@ describe("ImportPage", () => {
     await screen.findByLabelText("Import into");
     const h1 = screen.getAllByRole("heading", { level: 1 });
     expect(h1.map((node) => node.textContent)).toEqual(["Import and export"]);
-    expect(screen.queryByText(/Add entries from a bank statement/)).toBeNull();
+    expect(
+      screen.queryByText(/Add transactions from a bank statement/),
+    ).toBeNull();
     expect(screen.queryByText("BRING IN YOUR HISTORY")).toBeNull();
   });
 
@@ -531,7 +541,7 @@ describe("ImportPage", () => {
     expect(steps()[1]?.getAttribute("aria-current")).toBe("step");
   });
 
-  it("asks before undoing in a centred question and does nothing when the owner keeps the entries", async () => {
+  it("asks before undoing in a centred question and does nothing when the owner keeps the transactions", async () => {
     recent = [batch];
     mount();
     const user = userEvent.setup();
@@ -686,9 +696,9 @@ describe("ImportPage", () => {
     });
     await user.click(within(question).getByRole("button", { name: "Delete" }));
     expect(
-      await within(question).findByText(/These entries changed/),
+      await within(question).findByText(/These transactions changed/),
     ).toBeTruthy();
-    expect(screen.queryByText(/Deleted 3 entries/)).toBeNull();
+    expect(screen.queryByText(/Deleted 3 transactions/)).toBeNull();
     await user.click(within(question).getByRole("button", { name: "Cancel" }));
     await waitFor(() =>
       expect(
@@ -699,26 +709,26 @@ describe("ImportPage", () => {
     const again = await screen.findByRole("dialog", {
       name: "Undo this import?",
     });
-    expect(within(again).queryByText(/These entries changed/)).toBeNull();
+    expect(within(again).queryByText(/These transactions changed/)).toBeNull();
   });
 
-  it("says how many of an import's entries are still in the ledger", async () => {
+  it("says how many of an import's transactions are still in the ledger", async () => {
     recent = [{ ...batch, rowCount: 3, remaining: 1 }];
     mount();
     expect(
-      await screen.findByText(/1 of 3 entries still in your ledger/),
+      await screen.findByText(/1 of 3 transactions still in your ledger/),
     ).toBeTruthy();
   });
 
-  it("says one entry in the singular on a recent import", async () => {
+  it("says one transaction in the singular on a recent import", async () => {
     recent = [{ ...batch, rowCount: 1, remaining: 1 }];
     mount();
     expect(
-      await screen.findByText(/1 of 1 entry still in your ledger/),
+      await screen.findByText(/1 of 1 transaction still in your ledger/),
     ).toBeTruthy();
   });
 
-  it("closes the question once the entries are removed, even while the list still shows the import", async () => {
+  it("closes the question once the transactions are removed, even while the list still shows the import", async () => {
     recent = [batch];
     mount();
     const user = userEvent.setup();
@@ -729,7 +739,7 @@ describe("ImportPage", () => {
     });
     await user.click(within(question).getByRole("button", { name: "Delete" }));
     expect(
-      await screen.findByText("Deleted 3 entries from statement.csv."),
+      await screen.findByText("Deleted 3 transactions from statement.csv."),
     ).toBeTruthy();
     await waitFor(() =>
       expect(

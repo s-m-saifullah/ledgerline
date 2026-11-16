@@ -262,7 +262,7 @@ export function TransactionsPage() {
       </form>
       <div className="tx-chips">
         <fieldset className="tx-kinds">
-          <legend className="sr-only">Entry type</legend>
+          <legend className="sr-only">Transaction type</legend>
           {kinds.map((option) => (
             <FilterChip
               key={option.label}

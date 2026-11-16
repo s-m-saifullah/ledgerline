@@ -119,7 +119,7 @@ export function TransactionEditor({
         setConflict(failure.status === 409 || failure.status === 404);
         setError(
           failure.status === 409
-            ? "This entry or its choices changed. Reload the latest details before trying again. Reloading replaces this form."
+            ? "This transaction or its choices changed. Reload the latest details before trying again. Reloading replaces this form."
             : failure.message,
         );
       }
@@ -146,8 +146,8 @@ export function TransactionEditor({
     } catch (failure) {
       setError(
         failure instanceof ApiError && failure.status === 404
-          ? "This entry is no longer available. Close this dialog and refresh the list."
-          : "Couldn't reload this entry. Try again.",
+          ? "This transaction is no longer available. Close this dialog and refresh the list."
+          : "Couldn't reload this transaction. Try again.",
       );
     } finally {
       setBusy(false);
@@ -159,7 +159,7 @@ export function TransactionEditor({
       <Overlay
         open={open}
         title={canWrite ? "Edit transaction" : "Transaction details"}
-        description="Correct the entry using its latest saved version."
+        description="Correct the transaction using its latest saved version."
         busy={busy}
         onDismiss={onDismiss}
         cancelLabel="Close"
@@ -220,13 +220,13 @@ export function TransactionEditor({
         />
         {baseline.transferId && (
           <p className="form-help">
-            Transfer entries must be changed together.
+            Transfer transactions must be changed together.
           </p>
         )}
         {baseline.tipPaymentId && (
           <p className="form-help">
             This is the tip that came with a payment. You can change its amount,
-            category and date, but it stays one income entry. Deleting the
+            category and date, but it stays one income transaction. Deleting the
             payment deletes it too.
           </p>
         )}

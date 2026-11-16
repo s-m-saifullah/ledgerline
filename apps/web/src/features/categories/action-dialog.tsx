@@ -163,7 +163,7 @@ export function CategoryActionDialog({
       )}
       {action.kind === "unarchive" && (
         <p>
-          It is available for new entries again. It moves to the end of its
+          It is available for new transactions again. It moves to the end of its
           group; subcategories stay archived.
         </p>
       )}

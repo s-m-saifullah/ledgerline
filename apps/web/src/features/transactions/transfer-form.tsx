@@ -442,7 +442,7 @@ export function TransferForm({
               checked={alsoDeleteBonus}
               onChange={(event) => setAlsoDeleteBonus(event.target.checked)}
             />{" "}
-            Also delete its bonus entry
+            Also delete its bonus transaction
           </label>
         )}
         {hasFee && (
@@ -452,7 +452,7 @@ export function TransferForm({
               checked={alsoDeleteFee}
               onChange={(event) => setAlsoDeleteFee(event.target.checked)}
             />{" "}
-            Also delete its fee entry
+            Also delete its fee transaction
           </label>
         )}
       </Overlay>

@@ -260,11 +260,11 @@ export function RuleSheet({
     <>
       <Overlay
         open
-        title={rule ? rule.title : "New recurring entry"}
+        title={rule ? rule.title : "New recurring transaction"}
         description={
           rule
-            ? "Changes apply to entries not created yet. Entries already made stay as they are."
-            : "Creates an entry or a transfer on a schedule, so you do not have to."
+            ? "Changes apply to transactions not created yet. Transactions already made stay as they are."
+            : "Creates a transaction or a transfer on a schedule, so you do not have to."
         }
         busy={busy}
         onDismiss={onDismiss}
@@ -356,7 +356,7 @@ export function RuleSheet({
             </button>
           }
         >
-          <p>Deleting the rule keeps the entries it already made.</p>
+          <p>Deleting the rule keeps the transactions it already made.</p>
         </Overlay>
       )}
     </>

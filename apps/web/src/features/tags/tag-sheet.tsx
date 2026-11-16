@@ -102,7 +102,7 @@ export function TagSheet({
       archiving ? "archive" : "unarchive",
       () => prepareTagArchive(ledgerId, tag, archiving),
       archiving
-        ? `Archived ${tag.name}. It stays on its entries.`
+        ? `Archived ${tag.name}. It stays on its transactions.`
         : `Unarchived ${tag.name}.`,
       "Couldn't change the tag.",
     );
@@ -125,7 +125,7 @@ export function TagSheet({
         title={renaming ? (tag ? "Rename tag" : "Add tag") : (tag?.name ?? "")}
         description={
           renaming
-            ? "Entries show the new name straight away."
+            ? "Transactions show the new name straight away."
             : "What you can do with this tag."
         }
         busy={busy}
@@ -181,7 +181,7 @@ export function TagSheet({
                 className="ui-row ui-row-press tg-row"
               >
                 <span className="ui-row-main">
-                  <span className="ui-row-title">View entries</span>
+                  <span className="ui-row-title">View transactions</span>
                 </span>
               </Link>
               <button
@@ -256,8 +256,8 @@ export function TagSheet({
         >
           <p>
             {used > 0
-              ? `${used === 1 ? "1 entry has" : `${used} entries have`} this tag, so it can't be deleted. Archive it to hide it instead.`
-              : "No entry has it. This can't be undone, but you can add the tag again any time."}
+              ? `${used === 1 ? "1 transaction has" : `${used} transactions have`} this tag, so it can't be deleted. Archive it to hide it instead.`
+              : "No transaction has it. This can't be undone, but you can add the tag again any time."}
           </p>
           {error && (
             <p role="alert" className="field-error">

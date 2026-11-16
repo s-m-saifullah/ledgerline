@@ -77,7 +77,7 @@ const rows = async () =>
     )
   ).rows.sort((a, b) => Number(a.amount) - Number(b.amount));
 
-test("currencies work end to end: a rate, an account, an entry, a transfer and Home", async ({
+test("currencies work end to end: a rate, an account, a transaction, a transfer and Home", async ({
   page,
 }) => {
   await signIn(page);

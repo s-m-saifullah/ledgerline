@@ -296,6 +296,9 @@ describe("creating rules", () => {
     const response = await send("POST", "/recurring-rules", rent());
     expect(response.statusCode).toBe(409);
     expect(response.json().errors[0].field).toBe("timeZone");
+    expect(response.json().errors[0].message).toBe(
+      "Set the ledger time zone in More before creating recurring transactions.",
+    );
   });
 
   it("a catch-up that fails after the save is logged by error class and code only, and the save still succeeds", async () => {

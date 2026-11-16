@@ -118,8 +118,8 @@ export function ReviewStep({ w }: { w: Wizard }) {
                       <span className="ui-row-title">{title(item.line)}</span>
                       <span className="ui-row-hint" title={item.reason ?? ""}>
                         Line {item.line} ·{" "}
-                        {shortDate(byLine.get(item.line)?.date)} · Looks like an
-                        entry you already have
+                        {shortDate(byLine.get(item.line)?.date)} · Looks like a
+                        transaction you already have
                       </span>
                     </span>
                     <span className="ui-row-end">
@@ -232,7 +232,7 @@ export function ReviewStep({ w }: { w: Wizard }) {
         >
           {w.confirming
             ? "Importing…"
-            : `Import ${count} ${count === 1 ? "entry" : "entries"}`}
+            : `Import ${count} ${count === 1 ? "transaction" : "transactions"}`}
         </button>
       </div>
     </>

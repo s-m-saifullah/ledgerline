@@ -7,6 +7,7 @@ import {
   prepareBrowser,
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
+import { lineCount, textOutside } from "./text-fit";
 import { setTheme } from "./theme";
 
 // Tags in a real browser (ADR 0047, PR 13c), against the approved prototype: jsdom cannot run container queries,
@@ -140,7 +141,7 @@ async function open(page: Page, width: number, theme?: "light" | "dark") {
   await expect(page.locator(".tg-row").first()).toBeVisible();
 }
 const row = (page: Page, name: string) =>
-  page.getByRole("button", { name: new RegExp(`^${name} \\d+ entr`) });
+  page.getByRole("button", { name: new RegExp(`^${name} \\d+ transaction`) });
 
 for (const theme of ["light", "dark"] as const)
   for (const width of [320, 390, 1280])
@@ -184,16 +185,32 @@ test("a phone has the shell's one Add; from 700 px the page's own button leads",
   await expect(page.locator("#mobile-add-page")).toBeHidden();
 });
 
-test("the rows say how many entries use a tag, with no page subtitle", async ({
+test("the rows say how many transactions use a tag, with no page subtitle", async ({
   page,
 }) => {
   await open(page, 390);
-  await expect(row(page, "Holiday trip")).toContainText("3 entries");
-  await expect(row(page, "Gift")).toContainText("1 entry");
-  await expect(row(page, "Spare")).toContainText("0 entries");
+  await expect(row(page, "Holiday trip")).toContainText("3 transactions");
+  await expect(row(page, "Gift")).toContainText("1 transaction");
+  await expect(row(page, "Spare")).toContainText("0 transactions");
   await expect(page.getByText("Free-form labels")).toHaveCount(0);
   await expect(page.getByText("YOUR LEDGER")).toHaveCount(0);
 });
+
+for (const width of [320, 390])
+  test(`at ${width} px the longer word still fits: each row's count is inside its row`, async ({
+    page,
+  }) => {
+    await open(page, width);
+    for (const [name, count] of [
+      ["Holiday trip", "3 transactions"],
+      ["Gift", "1 transaction"],
+    ] as const) {
+      await expect(row(page, name)).toContainText(count);
+      expect(await textOutside(row(page, name))).toEqual([]);
+      // A row's hint stays one line.
+      expect(await lineCount(row(page, name).locator(".ui-row-hint"))).toBe(1);
+    }
+  });
 
 test("the search narrows the card and stays where it is while typing", async ({
   page,
@@ -263,14 +280,14 @@ test("a tag's sheet is a bottom sheet on a phone and a drawer from 700 px", asyn
   expect(drawer.x + drawer.width).toBeGreaterThan(1279);
 });
 
-test("the actions sheet lists View entries, Rename, Archive and Delete in red, each a real target", async ({
+test("the actions sheet lists View transactions, Rename, Archive and Delete in red, each a real target", async ({
   page,
 }) => {
   await open(page, 390);
   await row(page, "Gift").click();
   const dialog = page.getByRole("dialog", { name: "Gift" });
   await settled(sheet(page));
-  const view = dialog.getByRole("link", { name: "View entries" });
+  const view = dialog.getByRole("link", { name: "View transactions" });
   const rename = dialog.getByRole("button", { name: "Rename", exact: true });
   const archive = dialog.getByRole("button", { name: "Archive", exact: true });
   const remove = dialog.getByRole("button", { name: "Delete", exact: true });
@@ -358,7 +375,7 @@ test("Delete asks in a centred question over the sheet; a tag in use cannot be d
   expect(Math.abs(q.x + q.width / 2 - 195)).toBeLessThan(2);
   expect(Math.abs(q.y + q.height / 2 - 450)).toBeLessThan(2);
   await expect(ask).toContainText(
-    "1 entry has this tag, so it can't be deleted.",
+    "1 transaction has this tag, so it can't be deleted.",
   );
   await expect(
     ask.getByRole("button", { name: "Delete", exact: true }),
@@ -413,7 +430,7 @@ test("an archive notice is a toast that does not cover the rows' targets or push
     .getByRole("button", { name: "Archive", exact: true })
     .click();
   await expect(
-    page.getByText("Archived Gift. It stays on its entries."),
+    page.getByText("Archived Gift. It stays on its transactions."),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(await noSideways(page)).toBe(true);

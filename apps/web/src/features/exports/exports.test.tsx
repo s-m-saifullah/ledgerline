@@ -196,7 +196,7 @@ describe("ExportButton", () => {
     stubDownloads();
     render(<ExportButton ledgerId={ledgerId} filters={{}} disabled={false} />);
     expect(screen.getByRole("button", { name: "Export CSV" })).toBeEnabled();
-    expect(screen.queryByText(/Saves the entries/)).toBeNull();
+    expect(screen.queryByText(/Saves the transactions/)).toBeNull();
   });
 
   it("is off while the ledger is loading or the range is invalid", () => {

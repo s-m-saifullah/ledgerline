@@ -335,7 +335,7 @@ test("the month control sits under the top bar on a phone and in the head from 7
   ).toBeLessThan(16);
 });
 
-test("a main category opens to its subcategories and its own entries", async ({
+test("a main category opens to its subcategories and its own transactions", async ({
   page,
 }) => {
   await open(page, 390);

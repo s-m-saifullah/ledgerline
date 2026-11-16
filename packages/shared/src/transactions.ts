@@ -79,7 +79,7 @@ export const createTransactionSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["categoryId"],
-          message: "Split entries have no parent category.",
+          message: "Split transactions have no parent category.",
         });
       if (
         body.splits.some(
@@ -90,7 +90,7 @@ export const createTransactionSchema = z
           code: "custom",
           path: ["splits"],
           message:
-            "Every line must have the entry's direction and a nonzero amount.",
+            "Every line must have the transaction's direction and a nonzero amount.",
         });
       if (
         body.splits.some(
@@ -100,7 +100,7 @@ export const createTransactionSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["splits"],
-          message: "Every line must use the entry's currency.",
+          message: "Every line must use the transaction's currency.",
         });
       if (
         body.splits.reduce(

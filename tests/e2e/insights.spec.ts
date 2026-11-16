@@ -109,7 +109,7 @@ test.afterAll(async () => {
   await pool.end();
 });
 
-test("insights shows spending by category and opens the entries", async ({
+test("insights shows spending by category and opens the transactions", async ({
   page,
 }) => {
   await page.goto("/insights");

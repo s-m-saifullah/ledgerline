@@ -27,7 +27,7 @@ export function TypePill({
 }) {
   return (
     <SegmentedControl<EntryType>
-      label="Entry type"
+      label="Transaction type"
       options={[...(withTransfer ? kindsAndTransfer : kinds)]}
       value={value}
       onChange={onChange}

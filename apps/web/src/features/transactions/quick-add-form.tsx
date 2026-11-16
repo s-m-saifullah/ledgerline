@@ -110,7 +110,7 @@ export function QuickAddForm({
         !choices.some((option) => option.category.id === values.categoryId)
       ) {
         fieldError("categoryId", {
-          message: "Choose an active category for this entry.",
+          message: "Choose an active category for this transaction.",
         });
         return;
       }
@@ -144,7 +144,7 @@ export function QuickAddForm({
         setError(
           failure instanceof ApiError
             ? failure.message
-            : "Couldn't save this entry.",
+            : "Couldn't save this transaction.",
         );
       }
     } finally {
@@ -196,12 +196,13 @@ export function QuickAddForm({
       {!writable && <ReadOnlyNote />}
       {blocked && (
         <p role="alert">
-          Confirm the earlier transaction action before adding another entry.
+          Confirm the earlier transaction action before adding another
+          transaction.
         </p>
       )}
       {setup ? (
         <div className="entry-setup">
-          <p>Create an active account before recording entries.</p>
+          <p>Create an active account before recording transactions.</p>
           <Link
             to="/accounts"
             className="ui-btn ui-btn-secondary"

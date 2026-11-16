@@ -11,7 +11,7 @@ export const parseTagName = (text: string) => {
 
 /** The one hint of a row: how many entries carry the tag. */
 export const tagHint = (tag: Pick<Tag, "usageCount">) =>
-  tag.usageCount === 1 ? "1 entry" : `${tag.usageCount} entries`;
+  tag.usageCount === 1 ? "1 transaction" : `${tag.usageCount} transactions`;
 
 /** The tags by name, the active ones and the archived ones apart, both narrowed by part of a name. */
 export function splitTags(items: readonly Tag[], query: string) {

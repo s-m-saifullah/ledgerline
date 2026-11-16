@@ -77,7 +77,7 @@ describe("groupDays: a day's net", () => {
       { amount: -300, currency: "EUR" },
     ]);
   });
-  it("leaves out pending entries and transfers", () => {
+  it("leaves out pending transactions and transfers", () => {
     const [day] = groupDays(
       [
         row({ amount: -1000 }),
@@ -111,7 +111,7 @@ describe("groupDays: a day's net", () => {
     );
     expect(day?.net).toEqual([{ amount: 0, currency: "USD" }]);
   });
-  it("waits for the last day while more entries may still come", () => {
+  it("waits for the last day while more transactions may still come", () => {
     const days = groupDays(
       [
         row({ date: "2026-10-06", amount: -100 }),

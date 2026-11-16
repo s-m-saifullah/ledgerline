@@ -8,6 +8,7 @@ import {
   prepareBrowser,
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
+import { textOutside } from "./text-fit";
 import { setTheme } from "./theme";
 
 // The Import and export page in a real browser (ADR 0047, PR 6a), against the approved prototype: jsdom cannot run
@@ -339,14 +340,14 @@ test("a wide file scrolls inside its card and never widens the page", async ({
   ).toBe(true);
 });
 
-test("a recent import's row opens a centred Undo question with real targets, and keeping the entries returns to the row", async ({
+test("a recent import's row opens a centred Undo question with real targets, and keeping the transactions returns to the row", async ({
   page,
 }) => {
   await open(page, 390);
   await upload(page, STATEMENT);
   await page.getByRole("button", { name: "Continue" }).click();
-  await page.getByRole("button", { name: /^Import \d+ entr/ }).click();
-  await expect(page.getByText(/^Imported 2 entries/)).toBeVisible();
+  await page.getByRole("button", { name: /^Import \d+ transaction/ }).click();
+  await expect(page.getByText(/^Imported 2 transactions/)).toBeVisible();
   await page.goto("/import");
   const row = page.getByRole("button", { name: /^statement\.csv/ });
   await expect(row.getByText("Undo", { exact: true })).toBeVisible();
@@ -376,12 +377,30 @@ test("the review writes each row's date like the rest of the app: no year this y
   );
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(
-    page.getByRole("button", { name: /^Import \d+ entr/ }),
+    page.getByRole("button", { name: /^Import \d+ transaction/ }),
   ).toBeVisible();
   const review = page.locator(".imp-page");
   await expect(review).toContainText(`${dayText("2025-12-31")} · `);
   await expect(review).toContainText(`${dayText("2026-10-04")} · `);
 });
+
+for (const width of [320, 390])
+  test(`at ${width} px the longer word still fits: Import N transactions is inside its button, beside Back`, async ({
+    page,
+  }) => {
+    await open(page, width);
+    await upload(page, STATEMENT);
+    await page.getByRole("button", { name: "Continue" }).click();
+    const importing = page.getByRole("button", {
+      name: "Import 2 transactions",
+    });
+    await expect(importing).toBeVisible();
+    expect(await textOutside(importing)).toEqual([]);
+    const back = await page.getByRole("button", { name: "Back" }).boundingBox();
+    const next = await importing.boundingBox();
+    expect(back && next && back.x + back.width <= next.x).toBe(true);
+    expect((next?.x ?? 0) + (next?.width ?? 0)).toBeLessThanOrEqual(width);
+  });
 
 for (const theme of ["light", "dark"] as const)
   test(`has no accessibility violations in ${theme} on the file, columns and review steps`, async ({
@@ -401,7 +420,7 @@ for (const theme of ["light", "dark"] as const)
     expect(await found()).toEqual([]);
     await page.getByRole("button", { name: "Continue" }).click();
     await expect(
-      page.getByRole("button", { name: /^Import \d+ entr/ }),
+      page.getByRole("button", { name: /^Import \d+ transaction/ }),
     ).toBeVisible();
     await expect(page.getByText("Ready", { exact: true })).toBeVisible();
     expect(await found()).toEqual([]);

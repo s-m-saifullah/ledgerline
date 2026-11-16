@@ -273,9 +273,9 @@ export function TransactionWorkspace({
               <LoadingSheet
                 open={open}
                 title="Transaction details"
-                description="Load the latest entry and its historical labels."
-                loadingText="Loading entry…"
-                failedText="Couldn't load this entry. It may no longer be available."
+                description="Load the latest transaction and its historical labels."
+                loadingText="Loading transaction…"
+                failedText="Couldn't load this transaction. It may no longer be available."
                 failed={
                   detail.isError ||
                   transfer.isError ||

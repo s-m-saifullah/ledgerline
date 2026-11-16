@@ -492,7 +492,7 @@ test("handles missing setup, archived preferences and read-only roles", async ({
   await signIn(page);
   await add(page).click();
   await expect(
-    page.getByText("Create an active account before recording entries."),
+    page.getByText("Create an active account before recording transactions."),
   ).toBeVisible();
   await page
     .getByRole("link", { name: "Set up accounts", exact: true })

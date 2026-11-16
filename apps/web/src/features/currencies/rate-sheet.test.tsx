@@ -199,7 +199,7 @@ it("asks before deleting: Cancel keeps the sheet, Delete sends the version", asy
   );
   const question = await screen.findByRole("dialog", { name: "Delete EUR?" });
   expect(question).toHaveTextContent(
-    "Its stored rates and the entries in it are kept.",
+    "Its stored rates and the transactions in it are kept.",
   );
   expect(writes).toHaveLength(0);
   await user.click(within(question).getByRole("button", { name: "Cancel" }));

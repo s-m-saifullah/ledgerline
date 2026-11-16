@@ -77,8 +77,8 @@ export function UndoQuestion({
     >
       <p>
         This deletes the {batch.remaining}{" "}
-        {batch.remaining === 1 ? "entry" : "entries"} from this import that{" "}
-        {batch.remaining === 1 ? "is" : "are"} still in your ledger.
+        {batch.remaining === 1 ? "transaction" : "transactions"} from this
+        import that {batch.remaining === 1 ? "is" : "are"} still in your ledger.
       </p>
       {error && (
         <p role="alert" className="field-error">

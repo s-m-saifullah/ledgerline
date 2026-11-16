@@ -10,7 +10,7 @@ import { signIn } from "./sign-in";
 // The Add and Edit entry sheet in a real browser (ADR 0047, PR 5b): jsdom cannot run container queries, so
 // the sheet against the drawer, the pinned Save, the date and time columns and the delete question are
 // measured here.
-const { env, pool } = connectLocalDatabase("Entry sheet browser tests");
+const { env, pool } = connectLocalDatabase("Transaction sheet browser tests");
 const fixtures: string[] = [];
 test.beforeEach(async ({ page }, testInfo) => {
   test.skip(
@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   fixtures.push(ledgerId);
   const checking = newId();
   const food = newId();
-  await createOwnerLedger(pool, env, ledgerId, "E2E entry sheet ledger");
+  await createOwnerLedger(pool, env, ledgerId, "E2E transaction sheet ledger");
   await pool.query(
     "INSERT INTO accounts (id,ledger_id,name,type,opening_balance) VALUES ($1,$3,'Checking','bank',100000),($2,$3,'Cash','cash',5000)",
     [checking, newId(), ledgerId],
@@ -36,7 +36,7 @@ test.beforeEach(async ({ page }, testInfo) => {
   );
   await prepareBrowser(page, testInfo, {
     ledgerId,
-    name: "Synthetic entry sheet ledger",
+    name: "Synthetic transaction sheet ledger",
     forwarded: [200, 20],
   });
 });
@@ -52,7 +52,7 @@ test.afterEach(async () => {
       [id],
     );
     await pool.query(
-      "UPDATE ledgers SET deleted_at=now(), updated_at=now() WHERE id=$1 AND name LIKE 'E2E entry sheet ledger%'",
+      "UPDATE ledgers SET deleted_at=now(), updated_at=now() WHERE id=$1 AND name LIKE 'E2E transaction sheet ledger%'",
       [id],
     );
   }
@@ -233,9 +233,10 @@ async function dialogsSeen(page: Page, what: "add" | "edit") {
         const title = document.getElementById(
           element.getAttribute("aria-labelledby") ?? "",
         )?.textContent;
-        const loading = /Loading entry|Opening transaction entry/.test(
-          element.textContent ?? "",
-        );
+        const loading =
+          /Loading transaction|Opening transaction transaction/.test(
+            element.textContent ?? "",
+          );
         seen.add(
           `${element.className.split(" ")[0]}: ${title}${loading ? " (loading)" : ""}`,
         );
@@ -270,7 +271,7 @@ test("opening Add shows only the sheet, never a dialog in the middle of the scre
   expect(await dialogsSeen(page, "add")).toEqual(["ui-sheet: Add transaction"]);
 });
 
-test("opening an existing entry shows only the sheet, never the old centred loading dialog", async ({
+test("opening an existing transaction shows only the sheet, never the old centred loading dialog", async ({
   page,
 }) => {
   expect(await dialogsSeen(page, "edit")).toEqual([
@@ -292,7 +293,7 @@ test("the Category field offers to create a missing category and uses it", async
   await sheet.getByRole("button", { name: "Save transaction" }).click();
   await expect(page.getByText("Transaction saved.")).toBeVisible();
   const saved = await pool.query(
-    "SELECT c.name FROM transactions t JOIN categories c ON c.id=t.category_id JOIN ledgers l ON l.id=t.ledger_id WHERE l.name LIKE 'E2E entry sheet ledger%' AND t.amount=-350 AND t.deleted_at IS NULL",
+    "SELECT c.name FROM transactions t JOIN categories c ON c.id=t.category_id JOIN ledgers l ON l.id=t.ledger_id WHERE l.name LIKE 'E2E transaction sheet ledger%' AND t.amount=-350 AND t.deleted_at IS NULL",
   );
   expect(saved.rows.map((row) => row.name)).toEqual(["Coffee"]);
 });

@@ -50,7 +50,7 @@ export function SplitFields({
         <div className="split-lines">
           <p className="form-help">
             Allocate the full amount across 2–50 lines. Every line has the
-            entry’s direction.
+            transaction’s direction.
           </p>
           {fields.map((field, index) => (
             <fieldset key={field.fieldKey} className="split-line">

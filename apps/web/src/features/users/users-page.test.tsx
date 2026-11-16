@@ -920,7 +920,7 @@ it("clears a ledger only after the person's email is typed, then says so and rea
   const question = await ask(user, /Clear their ledger/);
   expect(question).toHaveAccessibleName("Clear Jordan's ledger?");
   expect(question).toHaveTextContent(
-    "Their accounts, entries and budgets leave the app so they can start fresh. You can undo this for 30 days.",
+    "Their accounts, transactions and budgets leave the app so they can start fresh. You can undo this for 30 days.",
   );
   const confirm = within(question).getByRole("button", { name: "Clear" });
   expect(confirm).toHaveClass("ui-btn-danger-filled");

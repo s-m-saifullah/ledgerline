@@ -189,7 +189,7 @@ export function PersonLoans({
             ))}
           </ListCard>
           <Link to="/transactions" className="ui-btn ui-btn-text ln-all">
-            See every entry in Transactions
+            See every transaction
           </Link>
         </div>
       )}

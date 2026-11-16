@@ -546,7 +546,7 @@ describe("Balance, Before Ledgerline and Activity", () => {
       await screen.findByText("Nothing lent or borrowed yet."),
     ).toBeTruthy();
   });
-  it("lists the latest entries with what each was, newest first, and links to Transactions", async () => {
+  it("lists the latest transactions with what each was, newest first, and links to Transactions", async () => {
     const own = loan(5000);
     const sam = person("Sam", [own]);
     params.personId = sam.id;
@@ -576,11 +576,11 @@ describe("Balance, Before Ledgerline and Activity", () => {
     expect(within(region).getByText("$10.00")).toBeTruthy();
     expect(
       within(region)
-        .getByRole("link", { name: "See every entry in Transactions" })
+        .getByRole("link", { name: "See every transaction" })
         .getAttribute("href"),
     ).toBe("/transactions");
   });
-  it("has no Activity without entries", async () => {
+  it("has no Activity without transactions", async () => {
     const sam = person("Sam", [loan(5000)]);
     params.personId = sam.id;
     mount({ people: [sam] });
@@ -729,7 +729,7 @@ describe("what the list knows is shown while the rest loads", () => {
     mount({ people: [person("Sam")], loops: true });
     expect(await screen.findByText("Couldn't load people.")).toBeTruthy();
   });
-  it("shows only the latest eight entries", async () => {
+  it("shows only the latest eight transactions", async () => {
     const own = loan(5000);
     const sam = person("Sam", [own]);
     params.personId = sam.id;

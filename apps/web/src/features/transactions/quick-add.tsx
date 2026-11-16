@@ -103,10 +103,10 @@ export function QuickAdd({
         setUndoUncertain(false);
         setUndoError(
           failure instanceof ApiError && failure.status === 409
-            ? "This entry changed. Open its latest details before deleting it."
+            ? "This transaction changed. Open its latest details before deleting it."
             : failure instanceof ApiError
               ? failure.message
-              : "Couldn't undo this entry.",
+              : "Couldn't undo this transaction.",
         );
       }
     } finally {
@@ -197,7 +197,7 @@ export function QuickAdd({
           open={open}
           title="Add transaction"
           description="Record money coming in or going out."
-          loadingText="Opening transaction entry…"
+          loadingText="Opening transaction…"
           failedText="Couldn't load accounts and categories."
           failed={accounts.isError || categories.isError}
           onRetry={() => void refreshed()}

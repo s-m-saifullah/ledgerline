@@ -132,7 +132,7 @@ function LedgerCategories({
         ? dialog.action.kind === "archive"
           ? "Category archived. Its label and history are kept."
           : dialog.action.kind === "unarchive"
-            ? "Category unarchived. It's available for new entries again."
+            ? "Category unarchived. It's available for new transactions again."
             : dialog.action.kind === "delete"
               ? "Category deleted."
               : "Starter categories created."

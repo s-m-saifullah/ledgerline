@@ -8,6 +8,7 @@ import {
   prepareBrowser,
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
+import { lineCount, textOutside } from "./text-fit";
 import { setTheme } from "./theme";
 
 // Recurring in a real browser (ADR 0047, PR 13b), against the approved prototype: jsdom cannot run container
@@ -337,8 +338,13 @@ for (const width of [320, 390])
   }) => {
     await open(page, width);
     await page.locator("#mobile-add-page").click();
-    const editor = page.getByRole("dialog", { name: "New recurring entry" });
+    const editor = page.getByRole("dialog", {
+      name: "New recurring transaction",
+    });
     await settled(sheet(page));
+    // The longer word still fits the title: it is not cut off beside Cancel.
+    expect(await textOutside(editor.locator(".ui-sheet-title"))).toEqual([]);
+    expect(await lineCount(editor.locator(".ui-sheet-title"))).toBe(1);
     await expect(editor.getByLabel("Name")).toBeFocused();
     await expect(editor.getByRole("radio", { name: "Expense" })).toBeChecked();
     await expect(editor.getByLabel("Amount (USD)")).toBeVisible();
@@ -406,7 +412,9 @@ for (const width of [320, 390])
       });
     });
     await page.locator("#mobile-add-page").click();
-    const editor = page.getByRole("dialog", { name: "New recurring entry" });
+    const editor = page.getByRole("dialog", {
+      name: "New recurring transaction",
+    });
     await settled(sheet(page));
     const combo = editor.getByLabel("Category", { exact: true });
     await combo.click();
@@ -520,7 +528,7 @@ test("Delete asks in a centred question, and Cancel keeps the sheet and its work
   const q = await settled(page.locator(".ui-question"));
   expect(Math.abs(q.x + q.width / 2 - 195)).toBeLessThan(2);
   expect(Math.abs(q.y + q.height / 2 - 450)).toBeLessThan(2);
-  await expect(ask).toContainText("keeps the entries it already made");
+  await expect(ask).toContainText("keeps the transactions it already made");
   await expect(
     ask.getByRole("button", { name: "Delete", exact: true }),
   ).toBeVisible();
@@ -631,7 +639,9 @@ for (const theme of ["light", "dark"] as const)
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
     await page.locator("#mobile-add-page").click();
-    const editor = page.getByRole("dialog", { name: "New recurring entry" });
+    const editor = page.getByRole("dialog", {
+      name: "New recurring transaction",
+    });
     await settled(sheet(page));
     await editor.getByRole("radio", { name: "Transfer" }).click();
     await editor.getByLabel("To account").selectOption(SAVINGS);

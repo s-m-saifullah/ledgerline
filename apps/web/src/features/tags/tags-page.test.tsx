@@ -86,12 +86,12 @@ const mount = (
 const rowOf = (name: string) =>
   screen.getByRole("button", { name: new RegExp(`^${name}`) });
 
-it("lists the tags by name, each with how many entries use it, and no page subtitle", async () => {
+it("lists the tags by name, each with how many transactions use it, and no page subtitle", async () => {
   mount([tag("Trip", { usageCount: 3 }), tag("Gift", { usageCount: 1 })]);
-  expect(await screen.findByText("3 entries")).toBeInTheDocument();
-  expect(screen.getByText("1 entry")).toBeInTheDocument();
+  expect(await screen.findByText("3 transactions")).toBeInTheDocument();
+  expect(screen.getByText("1 transaction")).toBeInTheDocument();
   const names = screen
-    .getAllByRole("button", { name: /entr/ })
+    .getAllByRole("button", { name: /transaction/ })
     .map((button) => button.textContent);
   expect(names[0]).toContain("Gift");
   expect(names[1]).toContain("Trip");
@@ -168,7 +168,7 @@ it("renames a tag with its version and shows the notice", async () => {
     expectedVersion: 1,
   });
 });
-it("deletes an unused tag after the question, and refuses one that entries use", async () => {
+it("deletes an unused tag after the question, and refuses one that transactions use", async () => {
   const { writes } = mount([tag("Trip", { usageCount: 2 }), tag("Spare")]);
   await userEvent.click(await screen.findByRole("button", { name: /Trip/ }));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
@@ -192,7 +192,7 @@ it("gives a phone's one Add the label Add tag, and the head button does the same
     await screen.findByRole("dialog", { name: "Add tag" }),
   ).toBeInTheDocument();
 });
-it("lets a viewer only read: no Add, rows are links to the entries", async () => {
+it("lets a viewer only read: no Add, rows are links to the transactions", async () => {
   const { adds } = mount([tag("Trip", { usageCount: 2 })], { role: "viewer" });
   const link = await screen.findByRole("link", { name: /Trip/ });
   expect(link).toHaveAttribute("href", expect.stringContaining("tagId="));

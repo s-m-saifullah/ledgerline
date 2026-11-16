@@ -326,7 +326,7 @@ test("Delete currency asks in a centred question over the sheet; Cancel returns 
   expect(Math.abs(q.x + q.width / 2 - 195)).toBeLessThan(2);
   expect(Math.abs(q.y + q.height / 2 - 450)).toBeLessThan(2);
   await expect(ask).toContainText(
-    "Its stored rates and the entries in it are kept.",
+    "Its stored rates and the transactions in it are kept.",
   );
   await expect(
     ask.getByRole("button", { name: "Delete", exact: true }),

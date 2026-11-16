@@ -41,7 +41,7 @@ it("loads every active account page before picking a remembered account", async 
   expect(String(fetchMock.mock.calls[1]?.[0])).toContain(`cursor=${first}`);
   expect(fetchMock.mock.calls[1]?.[1]?.signal).toBe(controller.signal);
 });
-it("rejects a non-advancing account cursor instead of hanging entry setup", async () => {
+it("rejects a non-advancing account cursor instead of hanging transaction setup", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof fetch>(

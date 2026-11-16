@@ -184,7 +184,7 @@ describe("Overlay dismissing", () => {
     const outer = vi.fn();
     const inner = vi.fn();
     render(
-      <Overlay {...base} title="Edit entry" onDismiss={outer}>
+      <Overlay {...base} title="Edit transaction" onDismiss={outer}>
         <Overlay
           {...base}
           title="Pick a date"
@@ -205,7 +205,7 @@ describe("Overlay dismissing", () => {
     const outer = vi.fn();
     const inner = vi.fn();
     render(
-      <Overlay {...base} title="Edit entry" onDismiss={outer}>
+      <Overlay {...base} title="Edit transaction" onDismiss={outer}>
         <Overlay
           {...base}
           busy

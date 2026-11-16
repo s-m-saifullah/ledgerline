@@ -67,7 +67,7 @@ function ForeignEntryRate({
   const source = manualRate
     ? "set by you"
     : savedRate
-      ? "this entry's saved rate"
+      ? "this transaction's saved rate"
       : lookup.data?.rateDate && lookup.data.rateDate !== date
         ? `rate from ${lookup.data.rateDate}`
         : "";
@@ -90,7 +90,7 @@ function ForeignEntryRate({
           role={missing ? "alert" : undefined}
         >
           {missing
-            ? `No ${currency} rate is stored for this date yet. Set one to save this entry.`
+            ? `No ${currency} rate is stored for this date yet. Set one to save this transaction.`
             : lookup.isError
               ? "Couldn't look up the exchange rate."
               : "Looking up the exchange rate…"}
