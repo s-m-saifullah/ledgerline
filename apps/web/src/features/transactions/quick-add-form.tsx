@@ -160,7 +160,7 @@ export function QuickAddForm({
       description="Amount, category, save."
       busy={busy}
       onDismiss={onDismiss}
-      cancelLabel={uncertain || categoryUncertain ? "Close for now" : "Cancel"}
+      cancelLabel={uncertain || categoryUncertain ? "Close" : "Cancel"}
       initialFocusId={
         uncertain
           ? "retry-transaction-save"

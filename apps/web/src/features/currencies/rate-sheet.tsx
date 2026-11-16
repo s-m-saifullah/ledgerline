@@ -103,7 +103,7 @@ export function RateSheet({
           <>
             <DeleteTrigger
               id="remove-currency"
-              label="Remove currency"
+              label="Delete currency"
               disabled={busy}
               onClick={() => {
                 setError("");
@@ -178,7 +178,7 @@ export function RateSheet({
       <Overlay
         kind="question"
         open={asking}
-        title={`Remove ${currency.code}?`}
+        title={`Delete ${currency.code}?`}
         busy={busy}
         onDismiss={() => {
           setAsking(false);
@@ -195,11 +195,11 @@ export function RateSheet({
               void send(
                 "remove",
                 () => prepareCurrencyRemove(ledgerId, currency),
-                `Removed ${currency.code}.`,
+                `Deleted ${currency.code}.`,
               )
             }
           >
-            {busy ? "Removing…" : "Remove"}
+            {busy ? "Deleting…" : "Delete"}
           </button>
         }
       >

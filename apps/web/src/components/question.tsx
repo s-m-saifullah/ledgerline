@@ -8,6 +8,7 @@ export function Question({
   title,
   text,
   confirm,
+  busyLabel,
   danger,
   disabled,
   busy,
@@ -22,6 +23,8 @@ export function Question({
   title: string;
   text: string;
   confirm: string;
+  /** What the confirming button says while it works ("Deleting…"); without it the button keeps its word, disabled. */
+  busyLabel?: string;
   danger?: boolean;
   disabled?: boolean;
   busy: boolean;
@@ -49,7 +52,7 @@ export function Question({
           disabled={busy || disabled}
           onClick={onConfirm}
         >
-          {busy ? "Working…" : confirm}
+          {busy && busyLabel ? busyLabel : confirm}
         </button>
       }
     >

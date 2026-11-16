@@ -99,7 +99,8 @@ function mount({
   deleted = [] as unknown[],
   deletedFails = false,
   me = meOf(),
-  write = (_write: Write): Response | undefined => undefined,
+  write = (_write: Write): Response | Promise<Response> | undefined =>
+    undefined,
 } = {}) {
   const writes: Write[] = [];
   const reads: string[] = [];
@@ -688,6 +689,34 @@ it("writes nothing when a question is cancelled", async () => {
   expect(screen.getAllByRole("dialog", { hidden: true })).toHaveLength(1);
 });
 
+it("says Deleting… on the confirming button while a person is being deleted", async () => {
+  const user = userEvent.setup();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  mount({
+    write: async () => {
+      await gate;
+      return new Response(null, { status: 204 });
+    },
+  });
+  await openPerson(user, /Jordan Lee/);
+  await user.click(
+    within(sheet()).getByRole("button", { name: /Delete user/ }),
+  );
+  const question = screen.getAllByRole("dialog").at(-1) as HTMLElement;
+  await user.type(
+    within(question).getByLabelText("Type their email to confirm"),
+    "jordan@example.com",
+  );
+  await user.click(within(question).getByRole("button", { name: "Delete" }));
+  expect(
+    await within(question).findByRole("button", { name: "Deleting…" }),
+  ).toBeDisabled();
+  release();
+});
+
 it("deletes only after their email is typed, in any letter case", async () => {
   const user = userEvent.setup();
   const { writes } = mount();
@@ -1145,7 +1174,7 @@ it("deletes a waiting person for good only after their email is typed, naming th
   );
   expect(question).toHaveTextContent("7 days on the server");
   expect(question).toHaveTextContent("90 days off-site");
-  const confirm = within(question).getByRole("button", { name: "Delete now" });
+  const confirm = within(question).getByRole("button", { name: "Delete" });
   expect(confirm).toHaveClass("ui-btn-danger-filled");
   expect(confirm).toBeDisabled();
   const typed = within(question).getByLabelText("Type their email to confirm");
@@ -1163,6 +1192,32 @@ it("deletes a waiting person for good only after their email is typed, naming th
   expect(await screen.findByRole("status")).toHaveTextContent(
     "Deleted for good.",
   );
+});
+
+it("says Deleting… on the confirming button while a waiting person is being deleted for good", async () => {
+  const user = userEvent.setup();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  mount({
+    deleted: [taylor],
+    write: async () => {
+      await gate;
+      return new Response(null, { status: 204 });
+    },
+  });
+  await openDeleted(user, /Taylor Brooks/);
+  const question = await ask(user, /Delete now/);
+  await user.type(
+    within(question).getByLabelText("Type their email to confirm"),
+    "taylor@example.com",
+  );
+  await user.click(within(question).getByRole("button", { name: "Delete" }));
+  expect(
+    await within(question).findByRole("button", { name: "Deleting…" }),
+  ).toBeDisabled();
+  release();
 });
 
 it("does not delete now on Enter while the email is wrong, and writes nothing when cancelled", async () => {
@@ -1232,7 +1287,7 @@ it("shows a refusal of Delete now once, inside the question, and not also on the
     within(ask_).getByLabelText("Type their email to confirm"),
     "taylor@example.com",
   );
-  await user.click(within(ask_).getByRole("button", { name: "Delete now" }));
+  await user.click(within(ask_).getByRole("button", { name: "Delete" }));
   await within(ask_).findByRole("alert");
   expect(screen.getAllByRole("alert", { hidden: true })).toHaveLength(1);
 });

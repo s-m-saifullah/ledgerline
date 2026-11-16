@@ -400,7 +400,7 @@ describe("one person at /loans/{id}", () => {
     ).toBeNull();
     expect(screen.queryByRole("button", { name: /^More actions/ })).toBeNull();
     expect(
-      screen.queryByRole("button", { name: "Remove the USD loan" }),
+      screen.queryByRole("button", { name: "Delete the USD loan" }),
     ).toBeNull();
     expect(
       screen.queryByRole("button", { name: /^Change the balance/ }),
@@ -506,13 +506,13 @@ describe("Balance, Before Ledgerline and Activity", () => {
     expect(within(region).getByText("You owe Sam")).toBeTruthy();
     expect(within(region).getByText("Settled (GBP)")).toBeTruthy();
     expect(
-      within(region).getByRole("button", { name: "Remove the USD loan" }),
+      within(region).getByRole("button", { name: "Delete the USD loan" }),
     ).toBeTruthy();
     expect(
-      within(region).getByRole("button", { name: "Remove the EUR loan" }),
+      within(region).getByRole("button", { name: "Delete the EUR loan" }),
     ).toBeTruthy();
     expect(
-      within(region).getByRole("button", { name: "Remove the GBP loan" }),
+      within(region).getByRole("button", { name: "Delete the GBP loan" }),
     ).toBeTruthy();
     expect(within(region).queryByText("Before Ledgerline")).toBeNull();
   });
@@ -679,14 +679,14 @@ describe("the editors from the card", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.click(
-      screen.getByRole("button", { name: "Remove the USD loan" }),
+      screen.getByRole("button", { name: "Delete the USD loan" }),
     );
     expect(
       await screen.findByRole("dialog", {
-        name: /Remove the USD loan\?|cannot be removed yet/,
+        name: /Delete the USD loan\?|cannot be deleted yet/,
       }),
     ).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: /Keep loan|Close/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Cancel|Close/ }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.click(
       screen.getByRole("button", {

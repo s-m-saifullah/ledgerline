@@ -1080,7 +1080,7 @@ test("Delete now is a centred question that names the backups and needs the emai
   expect(at.width).toBeLessThan(390);
   await expect(ask.getByRole("heading")).toHaveText("Delete Taylor now?");
   await expect(ask).toContainText("7 days on the server and 90 days off-site");
-  const confirm = ask.getByRole("button", { name: "Delete now", exact: true });
+  const confirm = ask.getByRole("button", { name: "Delete", exact: true });
   await expect(confirm).toBeDisabled();
   const typed = ask.getByLabel("Type their email to confirm");
   await expect(typed).toHaveAttribute("placeholder", "taylor@example.com");

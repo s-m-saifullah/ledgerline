@@ -131,7 +131,7 @@ it("keeps one immutable key/body through an uncertain result, closing and naviga
   expect(
     screen.getByLabelText("Destination category", { exact: true }),
   ).toBeDisabled();
-  await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(
     screen.getByRole("button", { name: "Competing write" }),
   ).toBeDisabled();

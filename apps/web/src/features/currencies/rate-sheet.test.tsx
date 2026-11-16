@@ -58,7 +58,7 @@ const problem = (status: number, detail: string) =>
   );
 function mount(
   currency: PinnedCurrency,
-  reply: () => Response = () =>
+  reply: () => Response | Promise<Response> = () =>
     new Response(JSON.stringify(rate("0.8", "manual")), { status: 200 }),
 ) {
   const writes: Write[] = [];
@@ -188,39 +188,59 @@ it("repeats a save whose answer was lost with the same key", async () => {
   await waitFor(() => expect(onSaved).toHaveBeenCalled());
   expect(writes[1]?.key).toBe(writes[0]?.key);
 });
-it("asks before removing: Cancel keeps the sheet, Remove sends the version", async () => {
+it("asks before deleting: Cancel keeps the sheet, Delete sends the version", async () => {
   const user = userEvent.setup();
   const { writes, onSaved } = mount(
     pinned(rate("1.1")),
     () => new Response(null, { status: 204 }),
   );
   await user.click(
-    await screen.findByRole("button", { name: "Remove currency" }),
+    await screen.findByRole("button", { name: "Delete currency" }),
   );
-  const question = await screen.findByRole("dialog", { name: "Remove EUR?" });
+  const question = await screen.findByRole("dialog", { name: "Delete EUR?" });
   expect(question).toHaveTextContent(
     "Its stored rates and the entries in it are kept.",
   );
   expect(writes).toHaveLength(0);
   await user.click(within(question).getByRole("button", { name: "Cancel" }));
-  expect(screen.queryByRole("dialog", { name: "Remove EUR?" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Delete EUR?" })).toBeNull();
   expect(screen.getByRole("dialog", { name: "Euro" })).toBeTruthy();
-  await user.click(screen.getByRole("button", { name: "Remove currency" }));
-  await user.click(await screen.findByRole("button", { name: "Remove" }));
-  await waitFor(() => expect(onSaved).toHaveBeenCalledWith("Removed EUR."));
+  await user.click(screen.getByRole("button", { name: "Delete currency" }));
+  await user.click(await screen.findByRole("button", { name: "Delete" }));
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith("Deleted EUR."));
   expect(writes[0]).toMatchObject({
     method: "DELETE",
     body: { expectedVersion: 2 },
   });
 });
-it("shows a failed removal inside the question", async () => {
+it("says Deleting… on the confirming button while the deletion is on its way", async () => {
+  const user = userEvent.setup();
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  mount(pinned(rate("1.1")), async () => {
+    await gate;
+    return new Response(null, { status: 204 });
+  });
+  await user.click(
+    await screen.findByRole("button", { name: "Delete currency" }),
+  );
+  await user.click(await screen.findByRole("button", { name: "Delete" }));
+  expect(
+    await screen.findByRole("button", { name: "Deleting…" }),
+  ).toBeDisabled();
+  expect(screen.queryByText("Removing…")).toBeNull();
+  release();
+});
+it("shows a failed deletion inside the question", async () => {
   const user = userEvent.setup();
   mount(pinned(rate("1.1")), () => problem(409, "This currency changed."));
   await user.click(
-    await screen.findByRole("button", { name: "Remove currency" }),
+    await screen.findByRole("button", { name: "Delete currency" }),
   );
-  await user.click(await screen.findByRole("button", { name: "Remove" }));
-  const question = await screen.findByRole("dialog", { name: "Remove EUR?" });
+  await user.click(await screen.findByRole("button", { name: "Delete" }));
+  const question = await screen.findByRole("dialog", { name: "Delete EUR?" });
   expect(await within(question).findByRole("alert")).toHaveTextContent(
     "This currency changed.",
   );

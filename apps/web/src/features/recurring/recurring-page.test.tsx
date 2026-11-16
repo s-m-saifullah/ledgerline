@@ -111,7 +111,7 @@ function mount({
   categories = [rentCategory] as Category[],
   holdAccounts = false,
   wrap = (children: ReactNode): ReactNode => children,
-  write = (_url: string, _init: RequestInit) =>
+  write = (_url: string, _init: RequestInit): Response | Promise<Response> =>
     new Response("{}", { status: 500 }),
 } = {}) {
   const writes: { url: string; init: RequestInit }[] = [];
@@ -452,6 +452,34 @@ describe("RecurringPage", () => {
     expect(JSON.parse(String(writes[0]?.init.body))).toEqual({
       expectedVersion: 4,
     });
+  });
+
+  it("says Deleting… on the confirming button while the rule is being deleted", async () => {
+    const user = userEvent.setup();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mount({
+      rules: [rule()],
+      write: async () => {
+        await gate;
+        return new Response(null, { status: 204 });
+      },
+    });
+    await user.click(await screen.findByRole("button", { name: /Rent/ }));
+    await user.click(
+      await within(sheet()).findByRole("button", { name: "Delete rule" }),
+    );
+    await user.click(
+      within(
+        await screen.findByRole("dialog", { name: "Delete Rent?" }),
+      ).getByRole("button", { name: "Delete" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Deleting…" }),
+    ).toBeDisabled();
+    release();
   });
 
   it("shows a failed delete in the sheet, not behind the question", async () => {

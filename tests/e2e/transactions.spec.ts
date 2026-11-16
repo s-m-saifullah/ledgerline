@@ -345,7 +345,9 @@ test("replays interrupted edit/delete/restore across navigation and freezes conf
   await expect(
     editor(page).getByRole("button", { name: "Retry save" }),
   ).toBeVisible();
-  await editor(page).getByRole("button", { name: "Close for now" }).click();
+  await editor(page)
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await leaveForAnotherPage(page);
   await page
     .getByRole("button", { name: "Add transaction", exact: true })
@@ -373,11 +375,13 @@ test("replays interrupted edit/delete/restore across navigation and freezes conf
   await editor(page)
     .getByRole("button", { name: "Delete transaction" })
     .click();
-  await page.getByRole("button", { name: "Confirm delete" }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
     editor(page).getByRole("button", { name: "Retry delete" }),
   ).toBeVisible();
-  await editor(page).getByRole("button", { name: "Close for now" }).click();
+  await editor(page)
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await page.getByRole("button", { name: "Resume transaction" }).click();
   await editor(page).getByRole("button", { name: "Retry delete" }).click();
   await expect(

@@ -125,7 +125,7 @@ export function CategoryActionDialog({
       }
       busy={busy}
       onDismiss={onDismiss}
-      cancelLabel={uncertain ? "Close for now" : "Cancel"}
+      cancelLabel={uncertain ? "Close" : "Cancel"}
       returnFocusId={
         action.kind === "starter"
           ? "categories-title"

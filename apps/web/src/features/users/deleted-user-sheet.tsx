@@ -83,7 +83,8 @@ export function DeletedUserSheet({
         open={asking}
         title={`Delete ${first} now?`}
         text="They and everything of theirs are removed for good, and the email can be used again. Backups keep it 7 days on the server and 90 days off-site."
-        confirm="Delete now"
+        confirm="Delete"
+        busyLabel="Deleting…"
         danger
         busy={busy}
         error={error}

@@ -213,6 +213,6 @@ test("deleting a transfer offers to delete its fee, and the form fits a narrow p
     () => document.documentElement.scrollWidth <= window.innerWidth,
   );
   expect(fits).toBe(true);
-  await page.getByRole("button", { name: "Confirm delete" }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect.poll(async () => (await live()).length).toBe(0);
 });

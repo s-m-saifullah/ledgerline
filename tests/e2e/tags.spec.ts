@@ -146,7 +146,7 @@ test("the Tags page adds, renames, archives and deletes tags, each from the tag'
 
   await tagRow(page, "Holiday").click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
-  await page.getByRole("button", { name: "Delete tag" }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByText("Deleted the tag Holiday.")).toBeVisible();
   await expect(page.getByText("No tags yet.")).toBeVisible();
 });

@@ -76,6 +76,7 @@ let accountsList: Account[];
 let previewFails: boolean;
 let accountsFail: boolean;
 let undoFails: boolean;
+let undoHold: Promise<void> | null = null;
 let recent: (typeof batch)[];
 
 function stub() {
@@ -140,6 +141,7 @@ function stub() {
           201,
         );
       if (url.endsWith("/undo")) {
+        if (undoHold) await undoHold;
         if (undoFails)
           return json(
             {
@@ -189,6 +191,7 @@ beforeEach(() => {
   previewFails = false;
   accountsFail = false;
   undoFails = false;
+  undoHold = null;
   recent = [];
   stub();
 });
@@ -273,10 +276,8 @@ describe("ImportPage", () => {
     await user.click(screen.getByRole("button", { name: "Undo this import" }));
     const question = screen.getByRole("dialog", { name: "Undo this import?" });
     expect(within(question).getByText(/deletes the 3 entries/)).toBeTruthy();
-    await user.click(
-      within(question).getByRole("button", { name: "Delete these entries" }),
-    );
-    expect(await screen.findByText("Removed 3 entries.")).toBeTruthy();
+    await user.click(within(question).getByRole("button", { name: "Delete" }));
+    expect(await screen.findByText("Deleted 3 entries.")).toBeTruthy();
     const undo = calls.find((c) => c.url.endsWith("/undo"));
     expect(undo?.body).toEqual({ expectedVersion: 1 });
   });
@@ -448,11 +449,9 @@ describe("ImportPage", () => {
     ).toBeTruthy();
     recent = [];
     await user.click(recentRow());
-    await user.click(
-      screen.getByRole("button", { name: "Delete these entries" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Delete" }));
     expect(
-      await screen.findByText("Removed 3 entries from statement.csv."),
+      await screen.findByText("Deleted 3 entries from statement.csv."),
     ).toBeTruthy();
     await waitFor(() =>
       expect(
@@ -541,9 +540,7 @@ describe("ImportPage", () => {
     const question = await screen.findByRole("dialog", {
       name: "Undo this import?",
     });
-    await user.click(
-      within(question).getByRole("button", { name: "Keep them" }),
-    );
+    await user.click(within(question).getByRole("button", { name: "Cancel" }));
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "Undo this import?" })).toBe(
         null,
@@ -657,6 +654,26 @@ describe("ImportPage", () => {
     );
   });
 
+  it("says Deleting… on the confirming button while the undo is on its way", async () => {
+    recent = [batch];
+    let release = () => {};
+    undoHold = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    mount();
+    const user = userEvent.setup();
+    await screen.findByText("Recent imports");
+    await user.click(recentRow());
+    const question = await screen.findByRole("dialog", {
+      name: "Undo this import?",
+    });
+    await user.click(within(question).getByRole("button", { name: "Delete" }));
+    expect(
+      await within(question).findByRole("button", { name: "Deleting…" }),
+    ).toBeDisabled();
+    release();
+  });
+
   it("shows why an undo failed inside the question, and clears it when the question is closed", async () => {
     recent = [batch];
     undoFails = true;
@@ -667,16 +684,12 @@ describe("ImportPage", () => {
     const question = await screen.findByRole("dialog", {
       name: "Undo this import?",
     });
-    await user.click(
-      within(question).getByRole("button", { name: "Delete these entries" }),
-    );
+    await user.click(within(question).getByRole("button", { name: "Delete" }));
     expect(
       await within(question).findByText(/These entries changed/),
     ).toBeTruthy();
-    expect(screen.queryByText(/Removed 3 entries/)).toBeNull();
-    await user.click(
-      within(question).getByRole("button", { name: "Keep them" }),
-    );
+    expect(screen.queryByText(/Deleted 3 entries/)).toBeNull();
+    await user.click(within(question).getByRole("button", { name: "Cancel" }));
     await waitFor(() =>
       expect(
         screen.queryByRole("dialog", { name: "Undo this import?" }),
@@ -714,11 +727,9 @@ describe("ImportPage", () => {
     const question = await screen.findByRole("dialog", {
       name: "Undo this import?",
     });
-    await user.click(
-      within(question).getByRole("button", { name: "Delete these entries" }),
-    );
+    await user.click(within(question).getByRole("button", { name: "Delete" }));
     expect(
-      await screen.findByText("Removed 3 entries from statement.csv."),
+      await screen.findByText("Deleted 3 entries from statement.csv."),
     ).toBeTruthy();
     await waitFor(() =>
       expect(

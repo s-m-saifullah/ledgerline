@@ -32,7 +32,7 @@ const whole = new Intl.NumberFormat("en-US", {
 
 /**
  * Set limit (ADR 0047): the category and what it spent, the limit as a big amount with a few round amounts to
- * tap, the carry-over switch, and Remove limit and Save at the foot. A sheet on a phone, a drawer from 700 px.
+ * tap, the carry-over switch, and Delete limit and Save at the foot. A sheet on a phone, a drawer from 700 px.
  */
 export function LimitSheet({
   ledgerId,
@@ -147,7 +147,7 @@ export function LimitSheet({
                 disabled={busy}
                 onClick={remove}
               >
-                Remove limit
+                Delete limit
               </button>
             )}
             <button

@@ -110,7 +110,7 @@ it("retains the same prepared save when an interrupted form is closed and resume
     await screen.findByText(/couldn't confirm the save/),
   ).toBeInTheDocument();
   expect(screen.getByLabelText("Account name")).toBeDisabled();
-  await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Resume" }));
   expect(screen.getByLabelText("Account name")).toHaveValue("My bank");

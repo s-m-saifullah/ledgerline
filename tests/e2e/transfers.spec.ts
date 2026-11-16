@@ -187,7 +187,7 @@ test("moves exact cents, edits both legs, deletes and restores with historical i
     .click();
   await page
     .getByRole("dialog", { name: "Delete this transfer?", exact: true })
-    .getByRole("button", { name: "Confirm delete" })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(
     page.getByText("Transfer deleted.", { exact: true }),
@@ -242,7 +242,7 @@ test("replays interrupted create and Add Undo after close/resume and navigation"
   await page.getByRole("button", { name: "Save transfer" }).click();
   await expect(page.getByRole("button", { name: "Retry save" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Expense" })).toBeDisabled();
-  await page.getByRole("button", { name: "Close for now" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await leaveForAnotherPage(page);
   await openAdd(page);
   await page.getByRole("button", { name: "Retry save" }).click();
@@ -307,7 +307,7 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
     transferEditor(page).getByRole("button", { name: "Retry save" }),
   ).toBeVisible();
   await transferEditor(page)
-    .getByRole("button", { name: "Close for now" })
+    .getByRole("button", { name: "Close", exact: true })
     .click();
   await leaveForAnotherPage(page);
   await add(page).click();
@@ -332,13 +332,13 @@ test("retains uncertain edits/deletes/restore across navigation and freezes conf
     .click();
   await page
     .getByRole("dialog", { name: "Delete this transfer?", exact: true })
-    .getByRole("button", { name: "Confirm delete" })
+    .getByRole("button", { name: "Delete", exact: true })
     .click();
   await expect(
     transferEditor(page).getByRole("button", { name: "Retry delete" }),
   ).toBeVisible();
   await transferEditor(page)
-    .getByRole("button", { name: "Close for now" })
+    .getByRole("button", { name: "Close", exact: true })
     .click();
   await page.getByRole("button", { name: "Resume transaction" }).click();
   await transferEditor(page)

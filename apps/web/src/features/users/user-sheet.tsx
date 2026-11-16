@@ -304,6 +304,7 @@ export function UserSheet({
         title={`Delete ${first} and their ledger?`}
         text={`They cannot sign in. You can restore them for ${undoDays} days, then everything is removed for good.`}
         confirm="Delete"
+        busyLabel="Deleting…"
         danger
         busy={busy}
         error={error}

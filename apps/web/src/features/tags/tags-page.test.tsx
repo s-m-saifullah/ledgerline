@@ -172,16 +172,12 @@ it("deletes an unused tag after the question, and refuses one that entries use",
   const { writes } = mount([tag("Trip", { usageCount: 2 }), tag("Spare")]);
   await userEvent.click(await screen.findByRole("button", { name: /Trip/ }));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-  expect(
-    await screen.findByRole("button", { name: "Delete tag" }),
-  ).toBeDisabled();
+  expect(await screen.findByRole("button", { name: "Delete" })).toBeDisabled();
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await userEvent.click(rowOf("Spare"));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Delete tag" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   expect(await screen.findByText("Deleted the tag Spare.")).toBeInTheDocument();
   expect(writes).toHaveLength(1);
   expect(writes[0]).toMatchObject({ method: "DELETE" });

@@ -23,7 +23,7 @@ export async function chooseFilter(
 
 /** Close the sheet with Done; what was chosen has already been applied. */
 export async function closeFilters(dialog: Locator) {
-  await dialog.getByRole("button", { name: "Done", exact: true }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(dialog).toBeHidden();
 }
 

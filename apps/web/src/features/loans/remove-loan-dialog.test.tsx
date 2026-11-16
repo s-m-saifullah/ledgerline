@@ -55,12 +55,13 @@ afterEach(() => {
   queryClient?.clear();
   vi.unstubAllGlobals();
 });
-function mount(dates: string[]) {
+function mount(dates: string[], hold: Promise<void> = Promise.resolve()) {
   const writes: { url: string; method: string; body: unknown }[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (target: RequestInfo | URL, init?: RequestInit) => {
       if (init?.method === "DELETE") {
+        await hold;
         writes.push({
           url: String(target),
           method: init.method,
@@ -96,7 +97,7 @@ describe("RemoveLoanDialog", () => {
   it("removes a loan that only has its starting balance, with its version", async () => {
     const { writes, removed } = mount([]);
     await userEvent.click(
-      await screen.findByRole("button", { name: "Remove loan" }),
+      await screen.findByRole("button", { name: "Delete" }),
     );
     await waitFor(() => expect(removed).toHaveBeenCalled());
     expect(writes[0]?.method).toBe("DELETE");
@@ -114,35 +115,51 @@ describe("RemoveLoanDialog", () => {
     expect(list).toHaveTextContent("Oct 9");
     expect(list).not.toHaveTextContent("2026-");
     expect(list).not.toHaveTextContent("$");
-    expect(screen.queryByRole("button", { name: "Remove loan" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
     expect(writes).toHaveLength(0);
   });
-  it("asks in a question named for the currency, with Keep loan to cancel", async () => {
+  it("asks in a question named for the currency, with Cancel to keep it", async () => {
     mount([]);
     const question = await screen.findByRole("dialog", {
-      name: "Remove the USD loan?",
+      name: "Delete the USD loan?",
     });
     expect(question.className).toContain("ui-question");
     expect(
       await screen.findByText(
-        "Removes the balance with Sam, including the one from before Ledgerline. No account changes.",
+        "Deletes the balance with Sam, including the one from before Ledgerline. No account changes.",
       ),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Keep loan" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+  });
+  it("says Deleting… on the confirming button while the deletion is on its way", async () => {
+    let release = () => {};
+    mount(
+      [],
+      new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+    );
+    const confirm = await screen.findByRole("button", { name: "Delete" });
+    await waitFor(() => expect(confirm).toBeEnabled());
+    await userEvent.click(confirm);
+    expect(
+      await screen.findByRole("button", { name: "Deleting…" }),
+    ).toBeDisabled();
+    release();
   });
   it("waits for the check before it allows the removal", async () => {
     mount([]);
     expect(await screen.findByText("Loading this loan…")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Remove loan" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Remove loan" })).toBeEnabled(),
+      expect(screen.getByRole("button", { name: "Delete" })).toBeEnabled(),
     );
   });
-  it("says the loan cannot be removed yet, and Close is the only button", async () => {
+  it("says the loan cannot be deleted yet, and Close is the only button", async () => {
     mount(["2026-10-07"]);
     expect(
       await screen.findByRole("dialog", {
-        name: "The USD loan cannot be removed yet",
+        name: "The USD loan cannot be deleted yet",
       }),
     ).toBeTruthy();
     expect(
@@ -151,7 +168,7 @@ describe("RemoveLoanDialog", () => {
       ),
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Keep loan" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
   });
   it("shows fifty dates at most and says there are more", async () => {
     mount(
@@ -206,12 +223,11 @@ describe("RemoveLoanDialog", () => {
         />
       </QueryClientProvider>,
     );
-    const button = async () =>
-      screen.findByRole("button", { name: "Remove loan" });
+    const button = async () => screen.findByRole("button", { name: "Delete" });
     await waitFor(async () => expect(await button()).toBeEnabled());
     await userEvent.click(await button());
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "We couldn't remove that. Please try again.",
+      "We couldn't delete that. Please try again.",
     );
     await userEvent.click(await button());
     await screen.findByText("Changed.");

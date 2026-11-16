@@ -289,7 +289,7 @@ for (const width of [320, 390])
       true,
     );
     // The trash sits beside Save in the pinned foot, both real targets, on screen.
-    const trash = dialog.getByRole("button", { name: "Remove currency" });
+    const trash = dialog.getByRole("button", { name: "Delete currency" });
     const save = dialog.getByRole("button", { name: "Save", exact: true });
     expect(await is44(page, trash)).toBe(true);
     expect(await is44(page, save)).toBe(true);
@@ -314,14 +314,14 @@ for (const width of [320, 390])
     await expect(empty.getByText("None yet")).toBeVisible();
   });
 
-test("Remove currency asks in a centred question over the sheet; Cancel returns to it", async ({
+test("Delete currency asks in a centred question over the sheet; Cancel returns to it", async ({
   page,
 }) => {
   await open(page, 390);
   await row(page, "Euro").click();
   await settled(sheet(page));
-  await page.getByRole("button", { name: "Remove currency" }).click();
-  const ask = page.getByRole("dialog", { name: "Remove EUR?" });
+  await page.getByRole("button", { name: "Delete currency" }).click();
+  const ask = page.getByRole("dialog", { name: "Delete EUR?" });
   const q = await settled(page.locator(".ui-question"));
   expect(Math.abs(q.x + q.width / 2 - 195)).toBeLessThan(2);
   expect(Math.abs(q.y + q.height / 2 - 450)).toBeLessThan(2);
@@ -329,10 +329,10 @@ test("Remove currency asks in a centred question over the sheet; Cancel returns 
     "Its stored rates and the entries in it are kept.",
   );
   await expect(
-    ask.getByRole("button", { name: "Remove", exact: true }),
+    ask.getByRole("button", { name: "Delete", exact: true }),
   ).toBeVisible();
   await ask.getByRole("button", { name: "Cancel" }).click();
-  await expect(page.getByRole("dialog", { name: "Remove EUR?" })).toHaveCount(
+  await expect(page.getByRole("dialog", { name: "Delete EUR?" })).toHaveCount(
     0,
   );
   await expect(page.getByRole("dialog", { name: "Euro" })).toBeVisible();
@@ -419,7 +419,7 @@ for (const theme of ["light", "dark"] as const)
     await row(page, "Euro").click();
     await settled(sheet(page));
     await scan();
-    await page.getByRole("button", { name: "Remove currency" }).click();
+    await page.getByRole("button", { name: "Delete currency" }).click();
     await settled(page.locator(".ui-question"));
     await scan();
     await page.getByRole("button", { name: "Cancel" }).first().click();

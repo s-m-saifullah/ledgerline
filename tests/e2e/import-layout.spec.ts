@@ -357,9 +357,9 @@ test("a recent import's row opens a centred Undo question with real targets, and
   const frame = await box(question);
   expect(Math.abs(frame.x + frame.width / 2 - 195)).toBeLessThan(2);
   expect(frame.y).toBeGreaterThan(50);
-  for (const name of ["Keep them", "Delete these entries"])
+  for (const name of ["Cancel", "Delete"])
     expect(await is44(page, question.getByRole("button", { name }))).toBe(true);
-  await question.getByRole("button", { name: "Keep them" }).click();
+  await question.getByRole("button", { name: "Cancel" }).click();
   await expect(question).toBeHidden();
   await expect(row).toBeFocused();
 });

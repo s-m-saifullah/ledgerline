@@ -214,9 +214,9 @@ test("a saved transfer asks before deleting in a centred question with real targ
   const frame = await box(question);
   expect(Math.abs(frame.x + frame.width / 2 - 195)).toBeLessThan(2);
   expect(frame.y).toBeGreaterThan(50);
-  for (const name of ["Keep transfer", "Confirm delete"])
+  for (const name of ["Cancel", "Delete"])
     expect(await is44(page, question.getByRole("button", { name }))).toBe(true);
-  await question.getByRole("button", { name: "Keep transfer" }).click();
+  await question.getByRole("button", { name: "Cancel" }).click();
   await expect(question).toBeHidden();
   await expect(editor).toBeVisible();
   await expect(

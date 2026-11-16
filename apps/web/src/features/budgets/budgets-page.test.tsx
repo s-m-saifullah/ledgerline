@@ -575,12 +575,12 @@ describe("the Set limit sheet", () => {
     expect(writes(fetcher, "PUT")).toHaveLength(0);
   });
 
-  it("has no Remove limit for a category without one", async () => {
+  it("has no Delete limit for a category without one", async () => {
     const user = userEvent.setup();
     mount(view([line("Food", null, 0)]));
     await user.click(await screen.findByRole("button", { name: /Food/ }));
     await screen.findByRole("dialog", { name: "Set limit" });
-    expect(screen.queryByRole("button", { name: "Remove limit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete limit" })).toBeNull();
   });
 
   it("removes a limit in one tap, sending its version, and says so", async () => {
@@ -593,7 +593,7 @@ describe("the Set limit sheet", () => {
     );
     await user.click(await screen.findByRole("button", { name: /Food/ }));
     await user.click(
-      await screen.findByRole("button", { name: "Remove limit" }),
+      await screen.findByRole("button", { name: "Delete limit" }),
     );
     await waitFor(() => expect(writes(fetcher, "DELETE")).toHaveLength(1));
     expect(JSON.parse(String(writes(fetcher, "DELETE")[0]?.[1]?.body))).toEqual(
@@ -615,7 +615,7 @@ describe("the Set limit sheet", () => {
       "changed somewhere else",
     );
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Remove limit" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Delete limit" })).toBeNull();
   });
 
   it("retries an unconfirmed save with the same key", async () => {
@@ -666,7 +666,7 @@ describe("the Set limit sheet", () => {
     expect(keys[1]).not.toBe(keys[0]);
   });
 
-  it("removes the limit, not the unconfirmed save, when Remove limit is tapped after one", async () => {
+  it("removes the limit, not the unconfirmed save, when Delete limit is tapped after one", async () => {
     const user = userEvent.setup();
     let attempts = 0;
     const fetcher = mount(
@@ -680,7 +680,7 @@ describe("the Set limit sheet", () => {
     await user.click(await screen.findByRole("button", { name: /Food/ }));
     await user.click(await screen.findByRole("button", { name: "Save" }));
     await screen.findByRole("alert");
-    await user.click(screen.getByRole("button", { name: "Remove limit" }));
+    await user.click(screen.getByRole("button", { name: "Delete limit" }));
     await waitFor(() => expect(writes(fetcher, "DELETE")).toHaveLength(1));
     expect(writes(fetcher, "PUT")).toHaveLength(1);
   });

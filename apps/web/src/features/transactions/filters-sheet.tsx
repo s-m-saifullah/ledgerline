@@ -81,7 +81,7 @@ export function FiltersSheet({
     <Overlay
       open={open}
       title="Filters"
-      cancelLabel="Done"
+      cancelLabel="Close"
       busy={false}
       onDismiss={onDismiss}
       returnFocusId="open-filters"

@@ -250,7 +250,7 @@ export function TagSheet({
               disabled={busy || used > 0}
               onClick={remove}
             >
-              {busy ? "Deleting…" : "Delete tag"}
+              {busy ? "Deleting…" : "Delete"}
             </button>
           }
         >

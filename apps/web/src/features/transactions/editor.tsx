@@ -162,7 +162,7 @@ export function TransactionEditor({
         description="Correct the entry using its latest saved version."
         busy={busy}
         onDismiss={onDismiss}
-        cancelLabel={uncertain ? "Close for now" : "Close"}
+        cancelLabel="Close"
         returnFocusId={`transaction-${baseline.id}`}
         fallbackFocusId="main-content"
         initialFocusId={
@@ -272,10 +272,9 @@ export function TransactionEditor({
       <Overlay
         kind="question"
         open={confirmDelete}
-        title="Delete this entry?"
+        title="Delete this transaction?"
         busy={busy}
         onDismiss={() => setConfirmDelete(false)}
-        cancelLabel="Keep entry"
         returnFocusId="delete-transaction"
         fallbackFocusId="main-content"
         footer={
@@ -288,7 +287,7 @@ export function TransactionEditor({
               void execute("delete");
             }}
           >
-            Confirm delete
+            Delete
           </button>
         }
       >

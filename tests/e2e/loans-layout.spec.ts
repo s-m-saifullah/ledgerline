@@ -591,28 +591,84 @@ test("the person's menu, Rename, the Archive question and the Remove question", 
   await ask.getByRole("button", { name: "Cancel" }).click();
   await page
     .getByRole("region", { name: "Balance and activity" })
-    .getByRole("button", { name: "Remove the EUR loan" })
+    .getByRole("button", { name: "Delete the EUR loan" })
     .click();
-  const remove = page.getByRole("dialog", { name: "Remove the EUR loan?" });
+  const remove = page.getByRole("dialog", { name: "Delete the EUR loan?" });
   await expect(remove).toBeVisible();
   await expect(
-    remove.getByRole("button", { name: "Remove loan" }),
+    remove.getByRole("button", { name: "Delete", exact: true }),
   ).toBeVisible();
-  await expect(remove.getByRole("button", { name: "Keep loan" })).toBeVisible();
-  await remove.getByRole("button", { name: "Keep loan" }).click();
+  await expect(remove.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await remove.getByRole("button", { name: "Cancel" }).click();
   await page
     .getByRole("region", { name: "Balance and activity" })
-    .getByRole("button", { name: "Remove the USD loan" })
+    .getByRole("button", { name: "Delete the USD loan" })
     .click();
   const blocked = page.getByRole("dialog", {
-    name: "The USD loan cannot be removed yet",
+    name: "The USD loan cannot be deleted yet",
   });
   await expect(blocked.getByRole("list")).toContainText(dayText("2026-10-03"));
   await expect(blocked.getByRole("list")).not.toContainText("2026-10-03");
   await expect(
-    blocked.getByRole("button", { name: "Remove loan" }),
+    blocked.getByRole("button", { name: "Delete", exact: true }),
   ).toHaveCount(0);
 });
+
+for (const width of [320, 390])
+  test(`at ${width} px a question's Cancel is an outlined button 12 px from the confirming one, and a sheet's Cancel is a plain word`, async ({
+    page,
+  }) => {
+    await open(page, width, `/loans/${SAM}`);
+    const outline = (button: Locator) =>
+      button.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return {
+          width: Number.parseFloat(style.borderTopWidth),
+          color: style.borderTopColor,
+        };
+      });
+    // A sheet: its Cancel in the head is a plain word, with no outline.
+    await page.getByRole("button", { name: "More actions for Sam" }).click();
+    const menu = page.getByRole("dialog", { name: "Sam", exact: true });
+    await settled(sheet(page));
+    // It keeps a transparent border so it is as tall as a button, but draws no outline.
+    expect(
+      (await outline(menu.getByRole("button", { name: "Cancel" }))).color,
+    ).toBe("rgba(0, 0, 0, 0)");
+    await menu.getByRole("button", { name: "Archive" }).click();
+    // A question: Cancel is outlined and sits 12 px from the one confirming word.
+    for (const [title, confirm] of [
+      ["Archive Sam?", "Archive"],
+      ["Delete the EUR loan?", "Delete"],
+    ] as const) {
+      if (confirm === "Delete") {
+        await page
+          .getByRole("region", { name: "Balance and activity" })
+          .getByRole("button", { name: "Delete the EUR loan" })
+          .click();
+      }
+      const ask = page.getByRole("dialog", { name: title });
+      await settled(page.locator(".ui-question"));
+      const cancel = ask.getByRole("button", { name: "Cancel" });
+      const confirming = ask.getByRole("button", {
+        name: confirm,
+        exact: true,
+      });
+      const mark = await outline(cancel);
+      expect(mark.width).toBeGreaterThanOrEqual(1);
+      expect(mark.color).not.toBe("rgba(0, 0, 0, 0)");
+      const left = await box(cancel);
+      const right = await box(confirming);
+      expect(Math.abs(right.x - (left.x + left.width) - 12)).toBeLessThan(0.75);
+      expect(left.height).toBeGreaterThanOrEqual(44);
+      const dialog = await box(ask);
+      expect(right.x + right.width).toBeLessThanOrEqual(
+        dialog.x + dialog.width,
+      );
+      expect(left.x).toBeGreaterThanOrEqual(dialog.x);
+      await cancel.click();
+    }
+  });
 
 test("an archived person has only Rename and Unarchive, and no primary button", async ({
   page,

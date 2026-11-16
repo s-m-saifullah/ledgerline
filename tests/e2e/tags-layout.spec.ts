@@ -360,7 +360,9 @@ test("Delete asks in a centred question over the sheet; a tag in use cannot be d
   await expect(ask).toContainText(
     "1 entry has this tag, so it can't be deleted.",
   );
-  await expect(ask.getByRole("button", { name: "Delete tag" })).toBeDisabled();
+  await expect(
+    ask.getByRole("button", { name: "Delete", exact: true }),
+  ).toBeDisabled();
   await ask.getByRole("button", { name: "Cancel" }).click();
   await expect(page.getByRole("dialog", { name: "Delete Gift?" })).toHaveCount(
     0,
@@ -376,7 +378,9 @@ test("Delete asks in a centred question over the sheet; a tag in use cannot be d
     .getByRole("dialog", { name: "Spare" })
     .getByRole("button", { name: "Delete", exact: true })
     .click();
-  await expect(page.getByRole("button", { name: "Delete tag" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Delete", exact: true }),
+  ).toBeEnabled();
 });
 
 test("an archived tag's sheet says Unarchive, not Archive", async ({

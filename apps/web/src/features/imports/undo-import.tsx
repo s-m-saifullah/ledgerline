@@ -62,7 +62,6 @@ export function UndoQuestion({
         setError("");
         onClose();
       }}
-      cancelLabel="Keep them"
       returnFocusId={returnFocusId}
       fallbackFocusId="main-content"
       footer={
@@ -72,7 +71,7 @@ export function UndoQuestion({
           disabled={busy}
           onClick={run}
         >
-          {busy ? "Removing…" : "Delete these entries"}
+          {busy ? "Deleting…" : "Delete"}
         </button>
       }
     >

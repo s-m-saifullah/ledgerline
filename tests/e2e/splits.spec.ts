@@ -172,9 +172,7 @@ test("allocates exact cents, edits stable lines, deletes/Undo and converts to or
   await page
     .getByRole("button", { name: "Delete transaction", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Confirm delete", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
     page.getByText("Transaction deleted.", { exact: true }),
   ).toBeVisible();
@@ -245,9 +243,7 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
     page.getByRole("button", { name: "Retry save", exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("Split 1 amount (USD)")).toBeDisabled();
-  await page
-    .getByRole("button", { name: "Close for now", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await leaveForAnotherPage(page);
   await openAdd(page);
   await page.getByRole("button", { name: "Retry save", exact: true }).click();
@@ -261,9 +257,7 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
   await expect(
     page.getByRole("button", { name: "Retry save", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Close for now", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await leaveForAnotherPage(page);
   await page
     .getByRole("button", { name: "Resume transaction", exact: true })
@@ -277,15 +271,11 @@ test("retains immutable split create/edit/delete/restore across interrupted requ
   await page
     .getByRole("button", { name: "Delete transaction", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Confirm delete", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Retry delete", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Close for now", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page
     .getByRole("button", { name: "Resume transaction", exact: true })
     .click();

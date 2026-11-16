@@ -179,7 +179,7 @@ test("creates, retries, edits, reorders and archives categories with active-only
   await expect(dialog.getByRole("alert")).toContainText(
     "couldn't confirm the save",
   );
-  await dialog.getByRole("button", { name: "Close for now" }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Add your first category" }),
   ).toBeDisabled();
@@ -584,7 +584,7 @@ test("unarchives preserve category identity and icon actions align on narrow pho
   );
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Close for now" })
+    .getByRole("button", { name: "Close", exact: true })
     .click();
   await expect(
     page.getByRole("button", { name: "Add category", exact: true }),

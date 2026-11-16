@@ -101,7 +101,9 @@ test("creates, retries, edits and archives real accounts with privacy and confli
     "couldn't confirm the save",
   );
   await expect(createDialog.getByLabel("Account name")).toBeDisabled();
-  await createDialog.getByRole("button", { name: "Close for now" }).click();
+  await createDialog
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await page.getByRole("button", { name: "Resume action" }).click();
   const retriedResponse = page.waitForResponse(
     (response) =>

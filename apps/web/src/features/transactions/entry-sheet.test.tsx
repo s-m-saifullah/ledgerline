@@ -237,7 +237,7 @@ it("keeps the type of a transfer's fee fixed", () => {
     expect(radio).toBeDisabled();
 });
 
-it("asks before deleting in a centred question, and Keep entry leaves it be", async () => {
+it("asks before deleting in a centred question, and Cancel leaves it be", async () => {
   const fetchMock = vi.fn<typeof fetch>(
     async () => new Response(null, { status: 204 }),
   );
@@ -247,26 +247,24 @@ it("asks before deleting in a centred question, and Keep entry leaves it be", as
     screen.getByRole("button", { name: "Delete transaction" }),
   );
   const question = await screen.findByRole("dialog", {
-    name: "Delete this entry?",
+    name: "Delete this transaction?",
   });
   expect(
     within(question).getByText(/You can undo the deletion/),
   ).toBeInTheDocument();
   await userEvent.click(
-    within(question).getByRole("button", { name: "Keep entry" }),
+    within(question).getByRole("button", { name: "Cancel" }),
   );
   await waitFor(() =>
     expect(
-      screen.queryByRole("dialog", { name: "Delete this entry?" }),
+      screen.queryByRole("dialog", { name: "Delete this transaction?" }),
     ).not.toBeInTheDocument(),
   );
   expect(fetchMock).not.toHaveBeenCalled();
   await userEvent.click(
     screen.getByRole("button", { name: "Delete transaction" }),
   );
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Confirm delete" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   await waitFor(() => expect(editProps.onDeleted).toHaveBeenCalled());
 });
 
@@ -279,12 +277,10 @@ it("closes the delete question when deletion is confirmed", async () => {
   await userEvent.click(
     screen.getByRole("button", { name: "Delete transaction" }),
   );
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Confirm delete" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   await waitFor(() => expect(editProps.onDeleted).toHaveBeenCalled());
   expect(
-    screen.queryByRole("dialog", { name: "Delete this entry?" }),
+    screen.queryByRole("dialog", { name: "Delete this transaction?" }),
   ).not.toBeInTheDocument();
 });
 
