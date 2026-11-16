@@ -153,7 +153,7 @@ it("clears only after CLEAR is typed, in any letter case, then says so and makes
   await user.click(await screen.findByRole("button", { name: /Clear ledger/ }));
   expect(question()).toHaveAccessibleName("Clear your ledger?");
   expect(question()).toHaveTextContent(
-    "Your accounts, entries and budgets leave the app so you can start fresh. You can undo this for 30 days.",
+    "Your accounts, transactions and budgets leave the app so you can start fresh. You can undo this for 30 days.",
   );
   const confirm = within(question()).getByRole("button", { name: "Clear" });
   expect(confirm).toHaveClass("ui-btn-danger-filled");

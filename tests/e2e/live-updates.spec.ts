@@ -59,7 +59,7 @@ test.afterAll(async () => {
   await pool.end();
 });
 
-test("an entry made elsewhere appears on an open page without a reload, and so does its edit", async ({
+test("a transaction made elsewhere appears on an open page without a reload, and so does its edit", async ({
   page,
   baseURL,
 }) => {

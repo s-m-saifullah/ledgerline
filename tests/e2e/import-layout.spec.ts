@@ -339,14 +339,14 @@ test("a wide file scrolls inside its card and never widens the page", async ({
   ).toBe(true);
 });
 
-test("a recent import's row opens a centred Undo question with real targets, and keeping the entries returns to the row", async ({
+test("a recent import's row opens a centred Undo question with real targets, and keeping the transactions returns to the row", async ({
   page,
 }) => {
   await open(page, 390);
   await upload(page, STATEMENT);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("button", { name: /^Import \d+ entr/ }).click();
-  await expect(page.getByText(/^Imported 2 entries/)).toBeVisible();
+  await expect(page.getByText(/^Imported 2 transactions/)).toBeVisible();
   await page.goto("/import");
   const row = page.getByRole("button", { name: /^statement\.csv/ });
   await expect(row.getByText("Undo", { exact: true })).toBeVisible();

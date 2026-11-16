@@ -376,17 +376,17 @@ describe("Home", () => {
   });
 
   describe("the notes above the page", () => {
-    it("makes the pending note a link to the pending entries", async () => {
+    it("makes the pending note a link to the pending transactions", async () => {
       mount([ok(summary())]);
       expect(
-        await screen.findByRole("link", { name: /^1 pending entry/ }),
+        await screen.findByRole("link", { name: /^1 pending transaction/ }),
       ).toHaveAttribute("href", "/transactions?status=pending");
     });
 
-    it("counts several pending entries", async () => {
+    it("counts several pending transactions", async () => {
       mount([ok(summary({ pendingCount: 3 }))]);
       expect(
-        await screen.findByRole("link", { name: /^3 pending entries/ }),
+        await screen.findByRole("link", { name: /^3 pending transactions/ }),
       ).toHaveTextContent("Not counted yet");
     });
 
@@ -398,7 +398,7 @@ describe("Home", () => {
 
     it("shows only the notes that apply", async () => {
       mount([ok(summary({ pendingCount: 1, unconvertedCurrencies: [] }))]);
-      await screen.findByRole("link", { name: /^1 pending entry/ });
+      await screen.findByRole("link", { name: /^1 pending transaction/ });
       expect(screen.queryByText(/No exchange rate/)).toBeNull();
       expect(screen.queryByText("Set up categories")).toBeNull();
       cleanup();
@@ -630,7 +630,7 @@ describe("Home", () => {
   });
 
   describe("Latest transactions", () => {
-    it("shows one row per entry, with a transfer as one row from one account to the other", async () => {
+    it("shows one row per transaction, with a transfer as one row from one account to the other", async () => {
       mount([ok(summary())]);
       await screen.findByText("Corner Cafe");
       expect(
@@ -641,7 +641,7 @@ describe("Home", () => {
       expect(screen.getByText("Pending")).toBeInTheDocument();
     });
 
-    it("opens the entry in place and is disabled while the workspace is blocked", async () => {
+    it("opens the transaction in place and is disabled while the workspace is blocked", async () => {
       const openTransaction = vi.fn();
       workspace.current = { blocked: false, openTransaction };
       mount([ok(summary())]);
@@ -744,7 +744,7 @@ describe("Home", () => {
       expect(amount.parentElement).not.toHaveClass("home-pos");
     });
 
-    it("shows a foreign entry in its own currency with the base value", async () => {
+    it("shows a foreign transaction in its own currency with the base value", async () => {
       mount([
         ok(
           summary({
@@ -774,15 +774,15 @@ describe("Home", () => {
       ).toBeInTheDocument();
     });
 
-    it("invites the first entry, with different words for a viewer", async () => {
+    it("invites the first transaction, with different words for a viewer", async () => {
       mount([ok(summary({ latest: [] }))]);
       expect(
-        await screen.findByText("Use Add to record your first entry"),
+        await screen.findByText("Use Add to record your first transaction"),
       ).toBeInTheDocument();
       cleanup();
       mount([ok(summary({ latest: [] }))], { role: "viewer" });
       expect(
-        await screen.findByText("No entries have been recorded yet"),
+        await screen.findByText("No transactions have been recorded yet"),
       ).toBeInTheDocument();
     });
   });

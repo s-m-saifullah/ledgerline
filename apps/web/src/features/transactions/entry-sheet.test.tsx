@@ -119,7 +119,7 @@ afterEach(() => {
   localStorage.clear();
 });
 const typeNames = () =>
-  within(screen.getByRole("radiogroup", { name: "Entry type" }))
+  within(screen.getByRole("radiogroup", { name: "Transaction type" }))
     .getAllByRole("radio")
     .map((radio) => radio.textContent);
 
@@ -153,7 +153,7 @@ it("shows the currency code beside the amount", () => {
   ).toBeInTheDocument();
 });
 
-it("pins Save in the sheet's foot and saves a pending entry from the switch", async () => {
+it("pins Save in the sheet's foot and saves a pending transaction from the switch", async () => {
   const fetchMock = vi.fn<typeof fetch>(async () => json(row, 201));
   vi.stubGlobal("fetch", fetchMock);
   const saved = vi.fn();
@@ -179,7 +179,7 @@ it("reports the chosen type so the Add sheet can switch to a transfer", async ()
   expect(onType).toHaveBeenLastCalledWith("transfer");
 });
 
-it("moves between an entry and a transfer in the Add sheet without losing the pill", async () => {
+it("moves between a transaction and a transfer in the Add sheet without losing the pill", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn<typeof fetch>(async (path) =>
@@ -208,7 +208,7 @@ it("moves between an entry and a transfer in the Add sheet without losing the pi
   expect(screen.getByRole("radio", { name: "Income" })).toBeChecked();
 });
 
-it("edits with an Expense and Income pill and a Pending switch that follows the entry", () => {
+it("edits with an Expense and Income pill and a Pending switch that follows the transaction", () => {
   render(
     <TransactionEditor
       {...editProps}
@@ -306,7 +306,7 @@ it("does not offer to split a transfer's fee", () => {
   expect(screen.getByLabelText("Split across categories")).toBeInTheDocument();
 });
 
-it("keeps the account of an entry whose account is archived, and says so", () => {
+it("keeps the account of a transaction whose account is archived, and says so", () => {
   const old = { ...account("Old account"), archivedAt: bank.createdAt };
   render(
     <TransactionEditor
@@ -339,7 +339,7 @@ it("clears the categories of the split lines when the type changes", async () =>
   expect(screen.getByLabelText("Split 1 category")).toHaveValue("");
 });
 
-it("leaves the entry as it was when the pill only asks for a transfer", async () => {
+it("leaves the transaction as it was when the pill only asks for a transfer", async () => {
   render(<QuickAddForm {...addProps} open />);
   await chooseCategory("Category", food.name);
   await userEvent.click(screen.getByRole("radio", { name: "Transfer" }));

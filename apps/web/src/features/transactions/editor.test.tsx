@@ -233,11 +233,11 @@ const patched = (fetchMock: ReturnType<typeof mountEuro>) =>
     ),
   );
 
-it("shows a foreign entry in its own currency with its saved rate, and keeps that rate on an edit", async () => {
+it("shows a foreign transaction in its own currency with its saved rate, and keeps that rate on an edit", async () => {
   const fetchMock = mountEuro();
   expect(screen.getByLabelText("Amount (EUR)")).toHaveValue("100.00");
   expect(await screen.findByText(/About/)).toHaveTextContent(
-    "About $112.17 · 1 USD = 0.891504 EUR (this entry's saved rate)",
+    "About $112.17 · 1 USD = 0.891504 EUR (this transaction's saved rate)",
   );
   await userEvent.clear(screen.getByLabelText("Payee"));
   await userEvent.type(screen.getByLabelText("Payee"), "Cafe");

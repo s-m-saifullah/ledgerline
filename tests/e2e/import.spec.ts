@@ -101,8 +101,8 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
   await page.getByLabel(/“Travel”/).selectOption({ label: "Fun" });
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByText("Possible duplicates")).toBeVisible();
-  await page.getByRole("button", { name: "Import 2 entries" }).click();
-  await expect(page.getByText("Imported 2 entries")).toBeVisible();
+  await page.getByRole("button", { name: "Import 2 transactions" }).click();
+  await expect(page.getByText("Imported 2 transactions")).toBeVisible();
   await page.getByRole("link", { name: "View in Transactions" }).click();
   await expect(page.getByText("Cinema").first()).toBeVisible();
   await expect(page.getByText("Pay", { exact: true }).first()).toBeVisible();
@@ -123,7 +123,7 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
   await page.getByRole("button", { name: /^statement\.csv/ }).click();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
-    page.getByText("Deleted 2 entries from statement.csv."),
+    page.getByText("Deleted 2 transactions from statement.csv."),
   ).toBeVisible();
   expect(await count()).toBe(1);
 });

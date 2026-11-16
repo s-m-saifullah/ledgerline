@@ -434,7 +434,7 @@ describe("RecurringPage", () => {
       name: "Delete Rent?",
     });
     expect(question).toHaveTextContent(
-      "Deleting the rule keeps the entries it already made.",
+      "Deleting the rule keeps the transactions it already made.",
     );
     expect(writes).toHaveLength(0);
     await user.click(within(question).getByRole("button", { name: "Cancel" }));
@@ -631,17 +631,17 @@ describe("RecurringPage", () => {
     );
     expect(
       within(
-        screen.getByRole("dialog", { name: "New recurring entry" }),
+        screen.getByRole("dialog", { name: "New recurring transaction" }),
       ).getByRole("button", { name: "Choose ends" }),
     ).toBeTruthy();
     await user.click(
       within(
-        screen.getByRole("dialog", { name: "New recurring entry" }),
+        screen.getByRole("dialog", { name: "New recurring transaction" }),
       ).getByRole("button", { name: "Choose starts" }),
     );
     const picker = await screen.findByRole("dialog", { name: "Starts" });
     const start = within(
-      screen.getByRole("dialog", { name: "New recurring entry" }),
+      screen.getByRole("dialog", { name: "New recurring transaction" }),
     ).getByLabelText("Starts") as HTMLInputElement;
     const day = picker.querySelector<HTMLButtonElement>(
       `[data-date="${start.value.slice(0, 8)}15"]`,
@@ -651,7 +651,7 @@ describe("RecurringPage", () => {
     expect(start.value).toBe(`${start.value.slice(0, 8)}15`);
     // The sheet is still there under the picker.
     expect(
-      screen.getByRole("dialog", { name: "New recurring entry" }),
+      screen.getByRole("dialog", { name: "New recurring transaction" }),
     ).toBeTruthy();
   });
 

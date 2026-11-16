@@ -55,7 +55,7 @@ it("makes one hint of the kind, the schedule and the status", () => {
     "Income · Every month · Paused",
   );
 });
-it("puts entries that need a look before the account's name", () => {
+it("puts transactions that need a look before the account's name", () => {
   const accounts = [{ id: "a1", name: "Harbor Checking" }];
   expect(ruleEndHint(rule(), accounts)).toBe("Harbor Checking");
   expect(ruleEndHint(rule({ needsAttention: 1 }), accounts)).toBe(

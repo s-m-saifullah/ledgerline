@@ -252,7 +252,7 @@ it("offers to delete the fee with its transfer", async () => {
   await userEvent.click(
     screen.getByRole("button", { name: "Delete transfer" }),
   );
-  const box = screen.getByLabelText("Also delete its fee entry");
+  const box = screen.getByLabelText("Also delete its fee transaction");
   expect(box).toBeChecked();
   await userEvent.click(box);
   await userEvent.click(box);

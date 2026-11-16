@@ -249,9 +249,9 @@ test("keeps the first cards on one line with the currency control showing", asyn
   }
 });
 
-test("the pending note opens the pending entries", async ({ page }) => {
+test("the pending note opens the pending transactions", async ({ page }) => {
   await openHome(page, 1200);
-  await page.getByRole("link", { name: /^2 pending entries/ }).click();
+  await page.getByRole("link", { name: /^2 pending transactions/ }).click();
   await expect(page).toHaveURL(/\/transactions\?.*status=pending/);
   await expect(
     page.getByRole("heading", { name: "Transactions", exact: true }),

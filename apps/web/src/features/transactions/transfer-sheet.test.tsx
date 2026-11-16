@@ -249,10 +249,10 @@ it("asks before deleting in a centred question that holds the bonus and fee choi
   });
   expect(fetchMock).not.toHaveBeenCalled();
   expect(
-    within(question).getByLabelText("Also delete its bonus entry"),
+    within(question).getByLabelText("Also delete its bonus transaction"),
   ).toBeChecked();
   expect(
-    within(question).getByLabelText("Also delete its fee entry"),
+    within(question).getByLabelText("Also delete its fee transaction"),
   ).toBeChecked();
   await userEvent.click(
     within(question).getByRole("button", { name: "Cancel" }),
@@ -270,7 +270,7 @@ it("asks before deleting in a centred question that holds the bonus and fee choi
     name: "Delete this transfer?",
   });
   await userEvent.click(
-    within(again).getByLabelText("Also delete its bonus entry"),
+    within(again).getByLabelText("Also delete its bonus transaction"),
   );
   await userEvent.click(within(again).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(onDeleted).toHaveBeenCalled());
@@ -278,7 +278,7 @@ it("asks before deleting in a centred question that holds the bonus and fee choi
   expect(sent(fetchMock, "DELETE").deleteBonus).toBeFalsy();
 });
 
-it("asks only about the entries a transfer has", async () => {
+it("asks only about the transactions a transfer has", async () => {
   mount([bank, cash], { transfer: saved(bank, cash) });
   await userEvent.click(
     screen.getByRole("button", { name: "Delete transfer" }),

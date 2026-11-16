@@ -110,7 +110,9 @@ test("a recurring rule catches up, then can be paused and deleted", async ({
   await dialog.getByLabel("Amount (USD)").fill("100");
   await chooseCategory(page, "Category", "Housing");
   await dialog.getByLabel("Starts", { exact: true }).fill(start);
-  await expect(dialog.getByText(/2 entries are already due/)).toBeVisible();
+  await expect(
+    dialog.getByText(/2 transactions are already due/),
+  ).toBeVisible();
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
   const row = page.getByRole("button", { name: /Rent/ });

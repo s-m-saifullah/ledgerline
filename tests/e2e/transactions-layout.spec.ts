@@ -212,7 +212,7 @@ test("a transfer is one row with an arrow between its accounts and no sign", asy
   await expect(row.locator(".ui-row-end")).toHaveText("$50.00");
 });
 
-test("a day shows its net, and a pending entry is marked and left out of it", async ({
+test("a day shows its net, and a pending transaction is marked and left out of it", async ({
   page,
 }) => {
   await openList(page, 390);

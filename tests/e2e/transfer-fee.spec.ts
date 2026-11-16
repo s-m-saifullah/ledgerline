@@ -208,7 +208,9 @@ test("deleting a transfer offers to delete its fee, and the form fits a narrow p
     .getByRole("button", { name: /Open transaction: Transfer from Checking/ })
     .click();
   await page.getByRole("button", { name: "Delete transfer" }).click();
-  await expect(page.getByLabel("Also delete its fee entry")).toBeChecked();
+  await expect(
+    page.getByLabel("Also delete its fee transaction"),
+  ).toBeChecked();
   const fits = await page.evaluate(
     () => document.documentElement.scrollWidth <= window.innerWidth,
   );

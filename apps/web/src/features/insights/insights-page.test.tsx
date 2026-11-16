@@ -269,7 +269,7 @@ describe("InsightsPage", () => {
     expect(card.textContent).not.toContain("kept");
   });
 
-  it("lists categories with their share and a link to the entries", async () => {
+  it("lists categories with their share and a link to the transactions", async () => {
     mount();
     const link = await screen.findByRole("link", { name: /Fun/ });
     expect(link.textContent).toContain("$55.00");
@@ -315,7 +315,7 @@ describe("InsightsPage", () => {
     ]);
   });
 
-  it("expands a parent to its subcategories and its own entries", async () => {
+  it("expands a parent to its subcategories and its own transactions", async () => {
     mount();
     const user = userEvent.setup();
     const parent = await screen.findByRole("button", { name: /Food/ });
@@ -336,7 +336,7 @@ describe("InsightsPage", () => {
     expect(screen.queryByText("Groceries")).toBeNull();
   });
 
-  it("skips the row for a parent's own entries when there are none", async () => {
+  it("skips the row for a parent's own transactions when there are none", async () => {
     mount({
       report: spending({
         categories: [

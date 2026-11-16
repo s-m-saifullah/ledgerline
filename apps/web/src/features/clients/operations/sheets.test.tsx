@@ -295,7 +295,7 @@ describe("Record or edit one payment (OV['pay-service'], OV['payment-edit'])", (
     );
   });
 
-  it("takes the receiving account from a pick row and the category from the entry sheet's combo box", () => {
+  it("takes the receiving account from a pick row and the category from the transaction sheet's combo box", () => {
     show({ op: { kind: "payment", service: owed, client: sam } });
     const pick = screen.getByLabelText("Receiving account");
     expect(pick.tagName).toBe("SELECT");
@@ -745,11 +745,11 @@ describe("Questions (OV.confirm, CONFIRM)", () => {
     ["reopen", "Puts the waived remainder back as owed."],
     [
       "deletePayment",
-      "Deletes the payment, its income entry and any tip together.",
+      "Deletes the payment, its income transaction and any tip together.",
     ],
     [
       "deleteReceipt",
-      "Deletes every payment it made, their income entries and any tip together.",
+      "Deletes every payment it made, their income transactions and any tip together.",
     ],
   ] as const)("says %s in one sentence", (action, sentence) => {
     ask(action);
@@ -773,7 +773,7 @@ describe("Questions (OV.confirm, CONFIRM)", () => {
     cleanup();
     ask("restoreReceipt");
     expect(
-      screen.getByText("Puts back every payment, income entry and tip."),
+      screen.getByText("Puts back every payment, income transaction and tip."),
     ).toBeTruthy();
   });
 });

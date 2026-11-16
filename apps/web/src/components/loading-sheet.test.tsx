@@ -14,8 +14,8 @@ const sheet = (
   <LoadingSheet
     open
     title="Transaction details"
-    loadingText="Loading entry…"
-    failedText="Couldn't load this entry."
+    loadingText="Loading transaction…"
+    failedText="Couldn't load this transaction."
     failed={false}
     onRetry={() => {}}
     onDismiss={() => {}}
@@ -37,14 +37,14 @@ it("shows a sheet once the load is slow", () => {
   expect(
     screen.getByRole("dialog", { name: "Transaction details" }),
   ).toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent("Loading entry…");
+  expect(screen.getByRole("status")).toHaveTextContent("Loading transaction…");
 });
 
 it("shows a failure at once, with a way to try again and to close", async () => {
   const onRetry = vi.fn();
   render(sheet({ failed: true, onRetry }));
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Couldn't load this entry.",
+    "Couldn't load this transaction.",
   );
   await userEvent.click(screen.getByRole("button", { name: "Try again" }));
   expect(onRetry).toHaveBeenCalledOnce();

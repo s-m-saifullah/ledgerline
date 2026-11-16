@@ -451,7 +451,7 @@ test("the hours result and Use this total keep their own full border", async ({
   expect(borders).toEqual(["1px", "1px", "1px", "1px", "same"]);
 });
 
-test("the date and time stay rows on a phone, and the big amount is the entry sheet's field", async ({
+test("the date and time stay rows on a phone, and the big amount is the transaction sheet's field", async ({
   page,
 }) => {
   await open(page, 320, clientPath());
@@ -527,7 +527,7 @@ test("the trash beside Save asks first, Keep leaves the sheet, and Delete remove
   const question = page.getByRole("dialog", { name: "Delete payment" });
   await expect(question).toBeVisible();
   await expect(question).toContainText(
-    "Deletes the payment, its income entry and any tip together.",
+    "Deletes the payment, its income transaction and any tip together.",
   );
   await question.getByRole("button", { name: "Cancel" }).click();
   await expect(edit).toBeVisible();
@@ -593,7 +593,7 @@ test("the trash on a receipt asks too, and Delete removes every payment it made"
   await edit.getByRole("button", { name: "Delete receipt" }).click();
   const question = page.getByRole("dialog", { name: "Delete receipt" });
   await expect(question).toContainText(
-    "Deletes every payment it made, their income entries and any tip together.",
+    "Deletes every payment it made, their income transactions and any tip together.",
   );
   await question.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(

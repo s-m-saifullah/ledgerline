@@ -14,10 +14,10 @@ const tag = (name: string, over: Partial<Tag> = {}): Tag => ({
   ...over,
 });
 
-it("says how many entries use a tag, in the singular for one", () => {
-  expect(tagHint(tag("Trip", { usageCount: 0 }))).toBe("0 entries");
-  expect(tagHint(tag("Trip", { usageCount: 1 }))).toBe("1 entry");
-  expect(tagHint(tag("Trip", { usageCount: 12 }))).toBe("12 entries");
+it("says how many transactions use a tag, in the singular for one", () => {
+  expect(tagHint(tag("Trip", { usageCount: 0 }))).toBe("0 transactions");
+  expect(tagHint(tag("Trip", { usageCount: 1 }))).toBe("1 transaction");
+  expect(tagHint(tag("Trip", { usageCount: 12 }))).toBe("12 transactions");
 });
 it("sorts by name and keeps the archived tags apart", () => {
   const { active, archived } = splitTags(

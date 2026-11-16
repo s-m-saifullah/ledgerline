@@ -39,7 +39,7 @@ it("Escape closes only the nested picker and restores its trigger", async () => 
   render(
     <Overlay
       open
-      title="Edit entry"
+      title="Edit transaction"
       description="Example"
       busy={false}
       onDismiss={dismissed}
@@ -59,7 +59,7 @@ it("Escape closes only the nested picker and restores its trigger", async () => 
   await userEvent.keyboard("{Escape}");
   expect(dismissed).not.toHaveBeenCalled();
   expect(
-    screen.getByRole("dialog", { name: "Edit entry" }),
+    screen.getByRole("dialog", { name: "Edit transaction" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Choose date" })).toHaveFocus();
 });
@@ -386,7 +386,7 @@ it("Escape closes the picker even when the key comes from the editor beneath it,
   render(
     <Overlay
       open
-      title="Edit entry"
+      title="Edit transaction"
       description="Example"
       busy={false}
       onDismiss={dismissed}

@@ -272,7 +272,7 @@ describe("preview", () => {
       "ready",
     ]);
     expect(result.rows[1]?.reason).toContain("Same date and amount");
-    expect(result.rows[6]?.reason).toContain("same entry id");
+    expect(result.rows[6]?.reason).toContain("same transaction id");
     expect(result.rows[3]?.reason).toBeTruthy();
     expect(result.counts).toEqual({ ready: 3, duplicate: 2, problem: 3 });
     expect((await entries(s.checking)).length).toBe(1);

@@ -175,7 +175,7 @@ it("reads the amount in the account's currency and sends a rate only when set by
     }).success,
   ).toBe(false);
 });
-it("sends tags only when there are some, so a plain entry's payload is unchanged", () => {
+it("sends tags only when there are some, so a plain transaction's payload is unchanged", () => {
   const base = {
     ...transactionDefaults(actorId, ledgerId, [account("Bank")]),
     amount: "5",

@@ -275,7 +275,7 @@ test("borrowing makes a negative balance that you repay, and a person can be ren
   ).toHaveCount(0);
 });
 
-test("a loan can be removed while only its starting balance is left, and not while entries use it", async ({
+test("a loan can be removed while only its starting balance is left, and not while transactions use it", async ({
   page,
 }) => {
   await signIn(page);
@@ -294,7 +294,7 @@ test("a loan can be removed while only its starting balance is left, and not whi
     .getByRole("button", { name: "Delete the USD loan" })
     .click();
   const entries = dialog(page).getByRole("list", {
-    name: "Entries using this loan",
+    name: "Transactions using this loan",
   });
   await expect(entries).toBeVisible();
   await expect(entries.getByRole("listitem")).toHaveCount(1);

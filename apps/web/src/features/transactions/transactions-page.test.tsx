@@ -211,9 +211,11 @@ describe("the page", () => {
     ).toBeInTheDocument();
     await rowOf(/Corner Cafe/);
     expect(screen.queryByText("YOUR LEDGER")).toBeNull();
-    expect(screen.queryByText(/Find an entry, check its details/)).toBeNull();
+    expect(
+      screen.queryByText(/Find a transaction, check its details/),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "Apply filters" })).toBeNull();
-    expect(screen.queryByText("Filter entries")).toBeNull();
+    expect(screen.queryByText("Filter transactions")).toBeNull();
     expect(screen.queryByText("Import and export")).toBeNull();
     expect(document.querySelector("details")).toBeNull();
   });
@@ -270,7 +272,7 @@ describe("the page", () => {
     await rowOf(/Corner Cafe/);
   });
 
-  it("shows no list and an alert for a range that ends before it starts, and does not ask for entries", async () => {
+  it("shows no list and an alert for a range that ends before it starts, and does not ask for transactions", async () => {
     mount({ from: "2026-10-10", to: "2026-10-01" });
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Choose an end date on or after the start date.",
@@ -414,7 +416,7 @@ describe("rows", () => {
     expect(row).toHaveTextContent("Tip");
   });
 
-  it("shows income with a plus sign, a pending entry with a Pending marker, and a note and tags", async () => {
+  it("shows income with a plus sign, a pending transaction with a Pending marker, and a note and tags", async () => {
     pages([
       entry({ payee: "Acme", amount: 125000, kind: "income" }),
       entry({
@@ -434,7 +436,7 @@ describe("rows", () => {
     expect(within(pending).getByText("Holiday")).toHaveClass("tag-chip");
   });
 
-  it("shows a foreign entry in its own currency with the base value", async () => {
+  it("shows a foreign transaction in its own currency with the base value", async () => {
     pages([entry({ payee: "Paris", amount: -1250, currency: "EUR" })]);
     mount();
     const row = await rowOf("Open transaction: Paris");
@@ -442,7 +444,7 @@ describe("rows", () => {
     expect(row).toHaveTextContent("About -$12.50");
   });
 
-  it("opens the entry in place, and is off while the workspace is blocked or the accounts are still loading", async () => {
+  it("opens the transaction in place, and is off while the workspace is blocked or the accounts are still loading", async () => {
     const openTransaction = vi.fn();
     workspace.current = { blocked: false, openTransaction };
     const first = entry({ payee: "Corner Cafe" });
@@ -577,7 +579,7 @@ describe("days", () => {
     expect(within(second).getAllByText("-$40.00")).toHaveLength(2);
   });
 
-  it("waits to show the oldest day's net while more entries may come", async () => {
+  it("waits to show the oldest day's net while more transactions may come", async () => {
     pages(
       [
         entry({ date: "2026-10-06", amount: -100 }),
@@ -605,7 +607,7 @@ describe("kind chips", () => {
     pages([entry()]);
     mount({ kind: "income" });
     await screen.findByRole("button", { name: /Open transaction/ });
-    const group = screen.getByRole("group", { name: "Entry type" });
+    const group = screen.getByRole("group", { name: "Transaction type" });
     expect(
       within(group).getByRole("button", { name: "Income" }),
     ).toHaveAttribute("aria-pressed", "true");
