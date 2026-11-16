@@ -147,7 +147,7 @@ html:has(body[data-scroll-locked]) {
 .ui-question-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 12px;
   margin-top: 8px;
 }
 

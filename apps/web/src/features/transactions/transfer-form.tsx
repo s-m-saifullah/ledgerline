@@ -320,9 +320,7 @@ export function TransferForm({
         description="Move money between accounts. Both balances change together; this does not count as income or spending."
         busy={busy}
         onDismiss={onDismiss}
-        cancelLabel={
-          uncertain ? "Close for now" : baseline ? "Close" : "Cancel"
-        }
+        cancelLabel={uncertain || baseline ? "Close" : "Cancel"}
         returnFocusId={returnFocusId}
         fallbackFocusId="main-content"
         initialFocusId={uncertain ? "retry-transfer" : "transfer-amount"}
@@ -420,7 +418,6 @@ export function TransferForm({
         title="Delete this transfer?"
         busy={busy}
         onDismiss={() => setConfirmDelete(false)}
-        cancelLabel="Keep transfer"
         returnFocusId="delete-transfer"
         fallbackFocusId="main-content"
         footer={
@@ -433,7 +430,7 @@ export function TransferForm({
               void execute("delete");
             }}
           >
-            Confirm delete
+            Delete
           </button>
         }
       >

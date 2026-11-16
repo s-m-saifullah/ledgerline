@@ -753,7 +753,9 @@ describe("the Filters sheet", () => {
     const dialog = await open();
     expect(within(dialog).queryByRole("button", { name: "Apply" })).toBeNull();
     expect(within(dialog).queryByRole("button", { name: "Cancel" })).toBeNull();
-    await userEvent.click(within(dialog).getByRole("button", { name: "Done" }));
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Close" }),
+    );
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(router.navigate).not.toHaveBeenCalled();
   });

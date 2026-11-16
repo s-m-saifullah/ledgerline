@@ -330,9 +330,7 @@ test("interrupted payment preserves request across close/navigation and blocks Q
   await page
     .getByRole("button", { name: "Delete transaction", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Confirm delete", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(deleteUndo(page)).toBeEnabled();
   await openMorePage(page, "Clients");
   await clientLink(page, "Sam").click();

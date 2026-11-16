@@ -121,9 +121,9 @@ test("imports a statement, leaves out the duplicate, and undoes it", async ({
   await page.goto("/import");
   await expect(page.getByText("Recent imports")).toBeVisible();
   await page.getByRole("button", { name: /^statement\.csv/ }).click();
-  await page.getByRole("button", { name: "Delete these entries" }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
-    page.getByText("Removed 2 entries from statement.csv."),
+    page.getByText("Deleted 2 entries from statement.csv."),
   ).toBeVisible();
   expect(await count()).toBe(1);
 });

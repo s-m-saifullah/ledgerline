@@ -255,7 +255,7 @@ it("asks before deleting in a centred question that holds the bonus and fee choi
     within(question).getByLabelText("Also delete its fee entry"),
   ).toBeChecked();
   await userEvent.click(
-    within(question).getByRole("button", { name: "Keep transfer" }),
+    within(question).getByRole("button", { name: "Cancel" }),
   );
   await waitFor(() =>
     expect(
@@ -272,9 +272,7 @@ it("asks before deleting in a centred question that holds the bonus and fee choi
   await userEvent.click(
     within(again).getByLabelText("Also delete its bonus entry"),
   );
-  await userEvent.click(
-    within(again).getByRole("button", { name: "Confirm delete" }),
-  );
+  await userEvent.click(within(again).getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(onDeleted).toHaveBeenCalled());
   expect(sent(fetchMock, "DELETE")).toMatchObject({ deleteFee: true });
   expect(sent(fetchMock, "DELETE").deleteBonus).toBeFalsy();
@@ -297,10 +295,10 @@ it("asks only about the entries a transfer has", async () => {
 it("keeps the sheet's own foot to Save and Delete while the question is shut", async () => {
   mount([bank, cash], { transfer: saved(bank, cash) });
   expect(
-    screen.queryByRole("button", { name: "Confirm delete" }),
+    screen.queryByRole("button", { name: "Delete" }),
   ).not.toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "Keep transfer" }),
+    screen.queryByRole("button", { name: "Cancel" }),
   ).not.toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Save changes" }),

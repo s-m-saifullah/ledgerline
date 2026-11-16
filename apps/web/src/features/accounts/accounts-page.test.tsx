@@ -439,7 +439,7 @@ it("locks the rows, the Add buttons and the phone's Add while a save is unconfir
   await userEvent.type(screen.getByLabelText("Account name"), "Wallet");
   await userEvent.click(screen.getByRole("button", { name: "Save" }));
   await screen.findByText(/couldn't confirm the save/);
-  await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
   expect(
     screen.getByRole("button", { name: /Harbor Checking/ }),
   ).toBeDisabled();

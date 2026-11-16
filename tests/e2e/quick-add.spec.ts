@@ -269,7 +269,7 @@ test("confirms interrupted create and Undo with the same immutable request", asy
   );
   await page.getByRole("button", { name: "Save transaction" }).click();
   await expect(page.getByText(/couldn't confirm the save/)).toBeVisible();
-  await page.getByRole("button", { name: "Close for now" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await leaveForAnotherPage(page);
   await openAdd(page);
   await page.getByRole("button", { name: "Retry save" }).click();
@@ -344,7 +344,7 @@ test("creates a category from the Category field, records pending income and ope
   await page.getByLabel("Category", { exact: true }).fill("Gift");
   await suggestion.click();
   await expect(page.getByText(/couldn't confirm the category/)).toBeVisible();
-  await page.getByRole("button", { name: "Close for now" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await openAdd(page);
   await page.getByLabel("Category", { exact: true }).fill("Gift");
   await suggestion.click();

@@ -256,7 +256,7 @@ it("offers to delete the fee with its transfer", async () => {
   expect(box).toBeChecked();
   await userEvent.click(box);
   await userEvent.click(box);
-  await userEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
   await waitFor(() => expect(props.onDeleted).toHaveBeenCalled());
   expect(requestBody(fetchMock)).toMatchObject({ deleteFee: true });
 });

@@ -230,7 +230,7 @@ export function CategoryMergeWorkspace({
           description={`Merge ${source.name} into another category. Review the affected records before confirming.`}
           busy={busy}
           onDismiss={dismiss}
-          cancelLabel={uncertain ? "Close for now" : "Cancel"}
+          cancelLabel={uncertain ? "Close" : "Cancel"}
           returnFocusId={triggerId}
           fallbackFocusId="main-content"
           initialFocusId={uncertain ? "retry-category-merge" : undefined}

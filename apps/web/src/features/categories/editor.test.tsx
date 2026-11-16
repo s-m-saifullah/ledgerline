@@ -97,7 +97,7 @@ it("keeps the same key and payload across an interrupted save and close/resume",
     "couldn't confirm the save",
   );
   expect(screen.getByLabelText("Category name")).toBeDisabled();
-  await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
   await userEvent.click(screen.getByRole("button", { name: "Resume" }));
   await userEvent.click(screen.getByRole("button", { name: "Retry save" }));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());

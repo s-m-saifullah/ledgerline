@@ -146,7 +146,7 @@ test("replays account deletion after interruption and close/resume, removes open
   await expect(
     page.getByRole("button", { name: "Retry action" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close for now" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByRole("button", { name: "Resume action" }).click();
   await page.getByRole("button", { name: "Retry action" }).click();
   await expect(
@@ -239,9 +239,7 @@ test("blocks connected categories/accounts until transaction deletion, then reje
   await page
     .getByRole("button", { name: "Delete transaction", exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Confirm delete", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(
     page.getByText("Transaction deleted.", { exact: true }),
   ).toBeVisible();
@@ -361,7 +359,7 @@ test("requires child deletion and stale reload, replays category deletion and hi
   await expect(
     page.getByRole("button", { name: "Retry action" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close for now" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByRole("button", { name: "Resume action" }).click();
   await page.getByRole("button", { name: "Retry action" }).click();
   await expect(

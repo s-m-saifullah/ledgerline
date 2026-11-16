@@ -153,7 +153,7 @@ export function CategoryEditor({
       }
       busy={busy}
       onDismiss={onDismiss}
-      cancelLabel={uncertain ? "Close for now" : "Cancel"}
+      cancelLabel={uncertain ? "Close" : "Cancel"}
       returnFocusId={
         baseline ? `edit-category-${baseline.id}` : "categories-title"
       }

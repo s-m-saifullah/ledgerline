@@ -116,10 +116,10 @@ export function PersonLoans({
                             type="button"
                             id={`loan-remove-${loan.currency}`}
                             className="ui-btn ui-btn-text ln-small"
-                            aria-label={`Remove the ${loan.currency} loan`}
+                            aria-label={`Delete the ${loan.currency} loan`}
                             onClick={() => onRemove(loan)}
                           >
-                            Remove
+                            Delete
                           </button>
                         )
                       }

@@ -204,23 +204,21 @@ it("asks before deleting, keeps the sheet under the question and refuses a tag t
   expect(screen.getByRole("dialog", { name: "Spare" })).toBeInTheDocument();
   expect(writes).toHaveLength(0);
   await userEvent.click(screen.getByRole("button", { name: "Delete" }));
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Delete tag" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   expect(writes[0]).toMatchObject({
     method: "DELETE",
     body: { expectedVersion: 3 },
   });
   expect(onSaved).toHaveBeenCalledWith("Deleted the tag Spare.");
 });
-it("cannot delete a tag that entries use: the question says why and Delete tag is off", async () => {
+it("cannot delete a tag that entries use: the question says why and Delete is off", async () => {
   const { writes } = mount(tag("Trip", { usageCount: 1 }));
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   const question = await screen.findByRole("dialog", { name: "Delete Trip?" });
   expect(question).toHaveTextContent(
     "1 entry has this tag, so it can't be deleted. Archive it to hide it instead.",
   );
-  expect(screen.getByRole("button", { name: "Delete tag" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Delete" })).toBeDisabled();
   expect(writes).toHaveLength(0);
 });
 it("says how many entries when several use the tag", async () => {
@@ -235,9 +233,7 @@ it("shows a failed delete inside the question", async () => {
     problem(409, "This tag changed. Reload and try again."),
   );
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Delete tag" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   expect(
     await screen.findByText("This tag changed. Reload and try again."),
   ).toBeInTheDocument();
@@ -286,9 +282,7 @@ it("uses its own words for a failed archive, rename and delete when no answer ca
     "Couldn't change the tag.",
   );
   await userEvent.click(screen.getByRole("button", { name: "Delete" }));
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Delete tag" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   expect(
     await screen.findAllByText("Couldn't delete the tag."),
   ).not.toHaveLength(0);
@@ -313,9 +307,7 @@ it("forgets a failed delete's words when the question is closed and asked again"
     problem(409, "This tag changed. Reload and try again."),
   );
   await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Delete tag" }),
-  );
+  await userEvent.click(await screen.findByRole("button", { name: "Delete" }));
   await screen.findByText("This tag changed. Reload and try again.");
   await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
   // Back on the sheet, the question's failure is not left standing under it.

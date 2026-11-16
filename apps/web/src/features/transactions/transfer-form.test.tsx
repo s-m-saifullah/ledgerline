@@ -118,7 +118,7 @@ it("retries paired deletion with its original key/version", async () => {
     screen.getByRole("button", { name: "Delete transfer" }),
   );
   expect(fetchMock).not.toHaveBeenCalled();
-  await userEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
   await userEvent.click(
     await screen.findByRole("button", { name: "Retry delete" }),
   );

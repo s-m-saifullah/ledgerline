@@ -192,7 +192,7 @@ it("keeps the original save key and payload across close/resume and changing cho
     await screen.findByText(/couldn't confirm the save/),
   ).toBeInTheDocument();
   expect(screen.getByLabelText("Amount (USD)")).toBeDisabled();
-  await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
   await userEvent.click(screen.getByRole("button", { name: "Resume" }));
   await userEvent.click(screen.getByRole("button", { name: "Retry save" }));
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());

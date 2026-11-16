@@ -117,7 +117,7 @@ export function ArchiveAccountDialog({
       }
       busy={busy}
       onDismiss={onDismiss}
-      cancelLabel={uncertain ? "Close for now" : "Cancel"}
+      cancelLabel={uncertain ? "Close" : "Cancel"}
       returnFocusId={`edit-account-${baseline.id}`}
       fallbackFocusId="accounts-title"
       footer={

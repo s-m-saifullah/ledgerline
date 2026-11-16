@@ -269,7 +269,7 @@ test("replays an interrupted committed merge across navigation and blocks compet
   await expect(dialog.getByRole("alert")).toContainText(
     "Retry the same action",
   );
-  await dialog.getByRole("button", { name: "Close for now" }).click();
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expectCategoryAction(page, "edit", "Destination", "disabled");
   await page
     .getByRole("link", { name: "Transactions", exact: true })

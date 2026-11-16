@@ -70,6 +70,13 @@ describe("Overlay as a sheet", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  it("draws Cancel as a plain word, not an outlined button", () => {
+    render(<Overlay {...base} />);
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel).toHaveClass("ui-btn-text");
+    expect(cancel).not.toHaveClass("ui-btn-secondary");
+  });
+
   it("can name Cancel something else", () => {
     render(<Overlay {...base} cancelLabel="Close" />);
     expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
@@ -356,6 +363,26 @@ describe("Overlay as a question", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws its Cancel as an outlined button, so it reads as a button beside the confirming one", () => {
+    render(
+      <Overlay
+        {...base}
+        kind="question"
+        title="Delete this account?"
+        footer={
+          <button type="button" className="ui-btn ui-btn-danger-filled">
+            Delete
+          </button>
+        }
+      >
+        <p>It can be restored.</p>
+      </Overlay>,
+    );
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(cancel).toHaveClass("ui-btn", "ui-btn-secondary");
+    expect(cancel).not.toHaveClass("ui-btn-text");
   });
 
   it("closes when the handle is tapped, and only then", async () => {

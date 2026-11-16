@@ -70,9 +70,7 @@ it.each(actions)(
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "couldn't confirm this action",
     );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Close for now" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
     await userEvent.click(screen.getByRole("button", { name: "Resume" }));
     await userEvent.click(screen.getByRole("button", { name: "Retry action" }));
     await waitFor(() => expect(saved).toHaveBeenCalledOnce());

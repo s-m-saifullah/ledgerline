@@ -179,14 +179,16 @@ test("the Edit sheet asks before deleting in a centred question that has real ta
 }) => {
   const sheet = await open(page, 390, "edit");
   await sheet.getByRole("button", { name: "Delete transaction" }).click();
-  const question = page.getByRole("dialog", { name: "Delete this entry?" });
+  const question = page.getByRole("dialog", {
+    name: "Delete this transaction?",
+  });
   await expect(question).toBeVisible();
   const frame = await box(question);
   expect(Math.abs(frame.x + frame.width / 2 - 195)).toBeLessThan(2);
   expect(frame.y).toBeGreaterThan(50);
-  for (const name of ["Keep entry", "Confirm delete"])
+  for (const name of ["Cancel", "Delete"])
     expect(await is44(page, question.getByRole("button", { name }))).toBe(true);
-  await question.getByRole("button", { name: "Keep entry" }).click();
+  await question.getByRole("button", { name: "Cancel" }).click();
   await expect(question).toBeHidden();
   await expect(sheet).toBeVisible();
   await expect(

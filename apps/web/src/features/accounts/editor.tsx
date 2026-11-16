@@ -201,7 +201,7 @@ export function AccountEditor({
       }
       busy={busy}
       onDismiss={onDismiss}
-      cancelLabel={uncertain ? "Close for now" : "Cancel"}
+      cancelLabel={uncertain ? "Close" : "Cancel"}
       returnFocusId={
         baseline ? `edit-account-${baseline.id}` : "accounts-title"
       }

@@ -329,12 +329,12 @@ test("a folded category opens the sheet from the fold", async ({ page }) => {
   const sheet = page.getByRole("dialog", { name: "Set limit" });
   await expect(sheet).toBeVisible();
   await expect(sheet).toContainText("Health");
-  await expect(sheet.getByRole("button", { name: "Remove limit" })).toHaveCount(
+  await expect(sheet.getByRole("button", { name: "Delete limit" })).toHaveCount(
     0,
   );
 });
 
-test("on a phone Set limit is a sheet at the bottom with Remove limit and Save pinned in one row", async ({
+test("on a phone Set limit is a sheet at the bottom with Delete limit and Save pinned in one row", async ({
   page,
 }) => {
   await open(page, 390);
@@ -346,7 +346,7 @@ test("on a phone Set limit is a sheet at the bottom with Remove limit and Save p
   expect(Math.abs(found.width - 390)).toBeLessThan(1);
   expect(Math.abs(found.y + found.height - 900)).toBeLessThan(1);
   const save = sheet.getByRole("button", { name: "Save" });
-  const remove = sheet.getByRole("button", { name: "Remove limit" });
+  const remove = sheet.getByRole("button", { name: "Delete limit" });
   const [a, b] = [await box(save), await box(remove)];
   expect(a.y + a.height).toBeLessThanOrEqual(900);
   expect(Math.abs(a.y - b.y)).toBeLessThan(1);
@@ -386,13 +386,13 @@ test("a preset fills the big amount, Save says so and the sheet closes", async (
   await expect(sheet).toHaveCount(0);
 });
 
-test("Remove limit takes the limit away in one tap and says so", async ({
+test("Delete limit takes the limit away in one tap and says so", async ({
   page,
 }) => {
   await open(page, 390);
   await page.getByRole("button", { name: /^Fun/ }).click();
   const sheet = page.getByRole("dialog", { name: "Set limit" });
-  await sheet.getByRole("button", { name: "Remove limit" }).click();
+  await sheet.getByRole("button", { name: "Delete limit" }).click();
   await expect(page.getByText("Limit removed")).toBeVisible();
   await expect(sheet).toHaveCount(0);
 });

@@ -56,7 +56,7 @@ export function RecentImports({ ledgerId }: { ledgerId: string | undefined }) {
               onClose={() => setAsking(null)}
               onUndone={(removed) =>
                 setNotice(
-                  `Removed ${removed} ${removed === 1 ? "entry" : "entries"} from ${batch.sourceName ?? "the import"}.`,
+                  `Deleted ${removed} ${removed === 1 ? "entry" : "entries"} from ${batch.sourceName ?? "the import"}.`,
                 )
               }
             />

@@ -135,7 +135,7 @@ it("retains deletion intent across interrupted response and close/resume", async
   render(<Host />);
   await userEvent.click(screen.getByRole("button", { name: "Delete" }));
   await screen.findByRole("button", { name: "Retry action" });
-  await userEvent.click(screen.getByRole("button", { name: "Close for now" }));
+  await userEvent.click(screen.getByRole("button", { name: "Close" }));
   await userEvent.click(screen.getByRole("button", { name: "Resume" }));
   await userEvent.click(screen.getByRole("button", { name: "Retry action" }));
   await waitFor(() => expect(saved).toHaveBeenCalledWith(account));

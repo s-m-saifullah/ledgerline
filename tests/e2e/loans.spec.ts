@@ -291,7 +291,7 @@ test("a loan can be removed while only its starting balance is left, and not whi
   await dialog(page).getByRole("button", { name: "Lend", exact: true }).click();
   await expect(balances(page)).toContainText("$70.00");
   await balances(page)
-    .getByRole("button", { name: "Remove the USD loan" })
+    .getByRole("button", { name: "Delete the USD loan" })
     .click();
   const entries = dialog(page).getByRole("list", {
     name: "Entries using this loan",
@@ -301,7 +301,7 @@ test("a loan can be removed while only its starting balance is left, and not whi
   // A day written like the rest of the app ("Nov 14", or "Nov 14, 2025"), not as 2026-11-14.
   await expect(entries).toContainText(/^[A-Z][a-z]{2} \d{1,2}(, \d{4})?$/);
   await expect(
-    dialog(page).getByRole("button", { name: "Remove loan" }),
+    dialog(page).getByRole("button", { name: "Delete", exact: true }),
   ).toHaveCount(0);
   await dialog(page)
     .getByRole("button", { name: "Close", exact: true })
@@ -317,9 +317,11 @@ test("removing a loan with only a starting balance takes it away and moves no mo
   await addLoan(page, "A loan I already had", "50.00");
   await expect(balances(page)).toContainText("$50.00");
   await balances(page)
-    .getByRole("button", { name: "Remove the USD loan" })
+    .getByRole("button", { name: "Delete the USD loan" })
     .click();
-  await dialog(page).getByRole("button", { name: "Remove loan" }).click();
+  await dialog(page)
+    .getByRole("button", { name: "Delete", exact: true })
+    .click();
   await expect(balances(page)).toContainText("Nothing lent or borrowed yet");
   expect(await balance(page)).toBe(100000);
 });

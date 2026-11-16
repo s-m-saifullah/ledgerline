@@ -26,7 +26,7 @@ export function DoneStep({ w }: { w: Wizard }) {
         </p>
         {removed !== null && (
           <p className="imp-note" role="status">
-            Removed {removed} {removed === 1 ? "entry" : "entries"}.
+            Deleted {removed} {removed === 1 ? "entry" : "entries"}.
           </p>
         )}
         <div className="imp-wrap">

@@ -54,7 +54,7 @@ export function RemoveLoanDialog({
       if (failure instanceof ApiError && failure.status < 500) {
         attempt.current = null;
         setError(failure.message);
-      } else setError("We couldn't remove that. Please try again.");
+      } else setError("We couldn't delete that. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -65,12 +65,12 @@ export function RemoveLoanDialog({
       kind="question"
       title={
         blocked
-          ? `The ${loan.currency} loan cannot be removed yet`
-          : `Remove the ${loan.currency} loan?`
+          ? `The ${loan.currency} loan cannot be deleted yet`
+          : `Delete the ${loan.currency} loan?`
       }
       busy={busy}
       onDismiss={onClose}
-      cancelLabel={blocked ? "Close" : "Keep loan"}
+      cancelLabel={blocked ? "Close" : "Cancel"}
       returnFocusId={returnFocusId}
       fallbackFocusId="main-content"
       footer={
@@ -81,7 +81,7 @@ export function RemoveLoanDialog({
             disabled={busy || !entries.isSuccess}
             onClick={() => void submit()}
           >
-            {busy ? "Removing…" : "Remove loan"}
+            {busy ? "Deleting…" : "Delete"}
           </button>
         )
       }
@@ -94,7 +94,7 @@ export function RemoveLoanDialog({
       )}
       {!blocked && entries.isSuccess && (
         <p>
-          Removes the balance with {person.name}, including the one from before
+          Deletes the balance with {person.name}, including the one from before
           Ledgerline. No account changes.
         </p>
       )}

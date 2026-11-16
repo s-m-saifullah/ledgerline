@@ -1145,7 +1145,7 @@ it("deletes a waiting person for good only after their email is typed, naming th
   );
   expect(question).toHaveTextContent("7 days on the server");
   expect(question).toHaveTextContent("90 days off-site");
-  const confirm = within(question).getByRole("button", { name: "Delete now" });
+  const confirm = within(question).getByRole("button", { name: "Delete" });
   expect(confirm).toHaveClass("ui-btn-danger-filled");
   expect(confirm).toBeDisabled();
   const typed = within(question).getByLabelText("Type their email to confirm");
@@ -1232,7 +1232,7 @@ it("shows a refusal of Delete now once, inside the question, and not also on the
     within(ask_).getByLabelText("Type their email to confirm"),
     "taylor@example.com",
   );
-  await user.click(within(ask_).getByRole("button", { name: "Delete now" }));
+  await user.click(within(ask_).getByRole("button", { name: "Delete" }));
   await within(ask_).findByRole("alert");
   expect(screen.getAllByRole("alert", { hidden: true })).toHaveLength(1);
 });

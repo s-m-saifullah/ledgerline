@@ -140,7 +140,7 @@ it("confirms deletion and retries its original expected version and key", async 
     screen.getByRole("button", { name: "Delete transaction" }),
   );
   expect(fetchMock).not.toHaveBeenCalled();
-  await userEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+  await userEvent.click(screen.getByRole("button", { name: "Delete" }));
   await userEvent.click(
     await screen.findByRole("button", { name: "Retry delete" }),
   );

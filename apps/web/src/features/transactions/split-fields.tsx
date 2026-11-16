@@ -96,11 +96,11 @@ export function SplitFields({
                 type="button"
                 className="ui-btn ui-btn-text ui-btn-danger split-remove"
                 disabled={fields.length <= 2}
-                aria-label={`Remove split ${index + 1}`}
+                aria-label={`Delete split ${index + 1}`}
                 onClick={() => remove(index)}
               >
                 <Trash2 size={16} aria-hidden="true" />
-                Remove line
+                Delete line
               </button>
             </fieldset>
           ))}

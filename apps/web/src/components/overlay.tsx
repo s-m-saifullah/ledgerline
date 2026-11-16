@@ -103,8 +103,8 @@ function leaveCopies({
  * The one overlay of the web (ADR 0047). A **sheet** is a bottom sheet on a phone and a right-hand drawer from
  * 700 px (440 px, or 560 px for a wide form); the width decides in CSS, so the same markup serves both. Its
  * parts are always Cancel, a title, an optional action, the content, and one primary button pinned at the
- * bottom. A **question** (delete, archive, write off, sign out others) is a centred dialog with Cancel beside
- * its one confirming button. The focus rules are the editor dialog's, kept as they were: focus goes in, comes
+ * bottom; its Cancel is a plain word. A **question** (delete, archive, write off, sign out others) is a centred
+ * dialog with an outlined Cancel beside its one confirming button. The focus rules are the editor dialog's, kept as they were: focus goes in, comes
  * back to the opener (or a fallback), Escape closes an open list inside before the dialog, a dialog opened from
  * inside owns its own Escape, and nothing dismisses it while a save is in flight.
  */
@@ -204,7 +204,11 @@ export function Overlay({
   const cancel = (
     <button
       type="button"
-      className="ui-btn ui-btn-text ui-sheet-cancel"
+      className={
+        question
+          ? "ui-btn ui-btn-secondary"
+          : "ui-btn ui-btn-text ui-sheet-cancel"
+      }
       disabled={busy}
       onClick={onDismiss}
     >
