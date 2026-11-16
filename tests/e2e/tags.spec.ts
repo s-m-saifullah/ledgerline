@@ -112,7 +112,7 @@ const addTag = (page: Page) =>
     visible: true,
   });
 const tagRow = (page: Page, name: string) =>
-  page.getByRole("button", { name: new RegExp(`^${name} \\d+ entr`) });
+  page.getByRole("button", { name: new RegExp(`^${name} \\d+ transaction`) });
 
 test("the Tags page adds, renames, archives and deletes tags, each from the tag's sheet", async ({
   page,

@@ -7,6 +7,7 @@ import {
   prepareBrowser,
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
+import { textOutside } from "./text-fit";
 import { setTheme } from "./theme";
 
 // Home's layout (ADR 0047, PR 4), measured in a real browser: jsdom cannot run container queries. The money
@@ -248,6 +249,23 @@ test("keeps the first cards on one line with the currency control showing", asyn
     ).toBe(true);
   }
 });
+
+for (const width of [320, 390])
+  test(`at ${width} px the longer word still fits: the pending note is inside its row and the page`, async ({
+    page,
+  }) => {
+    await openHome(page, width);
+    const note = page.getByRole("link", { name: /^2 pending transactions/ });
+    await expect(note).toBeVisible();
+    expect(await textOutside(note)).toEqual([]);
+    const frame = await note.boundingBox();
+    expect((frame?.x ?? 0) + (frame?.width ?? 0)).toBeLessThanOrEqual(width);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  });
 
 test("the pending note opens the pending transactions", async ({ page }) => {
   await openHome(page, 1200);

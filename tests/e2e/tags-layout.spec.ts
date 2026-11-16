@@ -7,6 +7,7 @@ import {
   prepareBrowser,
 } from "./ledger-setup";
 import { signIn } from "./sign-in";
+import { textOutside } from "./text-fit";
 import { setTheme } from "./theme";
 
 // Tags in a real browser (ADR 0047, PR 13c), against the approved prototype: jsdom cannot run container queries,
@@ -140,7 +141,7 @@ async function open(page: Page, width: number, theme?: "light" | "dark") {
   await expect(page.locator(".tg-row").first()).toBeVisible();
 }
 const row = (page: Page, name: string) =>
-  page.getByRole("button", { name: new RegExp(`^${name} \\d+ entr`) });
+  page.getByRole("button", { name: new RegExp(`^${name} \\d+ transaction`) });
 
 for (const theme of ["light", "dark"] as const)
   for (const width of [320, 390, 1280])
@@ -194,6 +195,20 @@ test("the rows say how many transactions use a tag, with no page subtitle", asyn
   await expect(page.getByText("Free-form labels")).toHaveCount(0);
   await expect(page.getByText("YOUR LEDGER")).toHaveCount(0);
 });
+
+for (const width of [320, 390])
+  test(`at ${width} px the longer word still fits: each row's count is inside its row`, async ({
+    page,
+  }) => {
+    await open(page, width);
+    for (const [name, count] of [
+      ["Holiday trip", "3 transactions"],
+      ["Gift", "1 transaction"],
+    ] as const) {
+      await expect(row(page, name)).toContainText(count);
+      expect(await textOutside(row(page, name))).toEqual([]);
+    }
+  });
 
 test("the search narrows the card and stays where it is while typing", async ({
   page,

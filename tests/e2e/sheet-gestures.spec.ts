@@ -468,7 +468,7 @@ test("a question, a centred dialog, has no handle and does not move", async ({
 }) => {
   await open(page, 390);
   // Delete asks a question; tags in use cannot be deleted, so open the unused one ("Tag 00" has no entries).
-  await page.getByRole("button", { name: /^Tag 00 0 entr/ }).click();
+  await page.getByRole("button", { name: /^Tag 00 0 transaction/ }).click();
   await expect(sheet(page)).toBeVisible();
   await settled(sheet(page));
   await sheet(page)
