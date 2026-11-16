@@ -77,7 +77,8 @@ describe("the word for a money movement", () => {
     const probe = (code: string) =>
       visibleText("sample.tsx", code).filter((text) => word.test(text));
     expect(probe('const a = "No entries yet.";')).toHaveLength(1);
-    expect(probe("const a = `${n} entries`;")).toHaveLength(1);
+    const dollar = "$";
+    expect(probe(`const a = \`${dollar}{n} entries\`;`)).toHaveLength(1);
     expect(probe("const a = <p>Delete this\n  entry?</p>;")).toHaveLength(1);
     expect(probe('const a = "An entry\u2019s direction";')).toHaveLength(1);
     expect(
