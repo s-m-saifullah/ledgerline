@@ -6,18 +6,25 @@ import {
   type LoanPerson,
   parseMinorUnits,
 } from "@ledgerline/shared";
-import { SegmentedControl } from "@ledgerline/ui";
 import { useRef, useState } from "react";
-import { Amount } from "../../components/amount-text";
-import { CategoryCombo } from "../../components/category-combo";
-import { DateTimeInput } from "../../components/date-time-input";
-import { EntryAmount } from "../../components/entry-amount";
 import { Overlay } from "../../components/overlay";
-import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
 import { useBaseValues } from "../../lib/base-values";
 import { decimalFromCents } from "../../lib/money";
 import { localToday } from "../../lib/time";
+import { useActiveAccounts } from "../../lib/use-accounts";
+import { useCategories } from "../../lib/use-categories";
+import { accountLabelFor, hints, submitLabelFor, titles } from "./loan-copy";
+import { type LoanForm, NEW } from "./loan-form-context";
+import {
+  AmountField,
+  BalanceNotes,
+  CurrencyFold,
+  DetailsFold,
+  DirectionFold,
+  HintLine,
+  WhoSection,
+} from "./loan-sections";
 import {
   type LoanAction,
   prepareCreatePerson,
@@ -25,64 +32,6 @@ import {
 } from "./loans-api";
 
 import "./loans.css";
-import { useActiveAccounts } from "../../lib/use-accounts";
-import { useCategories } from "../../lib/use-categories";
-
-const NEW = "new";
-const hints = (
-  name: string,
-  owedToYou: boolean,
-): Record<LoanAction, string> => ({
-  lend: `The money leaves the account you choose and is recorded as owed by ${name}. It is a transfer, not spending.`,
-  borrow: `The money enters the account you choose and is recorded as owed to ${name}. It is a transfer, not income.`,
-  repay: owedToYou
-    ? `${name} pays you back into the account you choose.`
-    : `You pay ${name} back from the account you choose.`,
-  waive: owedToYou
-    ? `You give up what ${name} owes you. It is recorded as an expense in the category you choose.`
-    : `${name} gives up what you owe. It is recorded as income in the category you choose.`,
-  opening:
-    "Record money that was already lent or borrowed before you used Ledgerline. Nothing changes in any of your accounts.",
-});
-/** What the sheet draws; the full sentences above are read aloud under the title. */
-const shortHints: Partial<Record<LoanAction, string>> = {
-  lend: "A transfer, not spending.",
-  borrow: "A transfer, not income.",
-  opening: "Changes no account.",
-};
-const titles = (name: string): Record<LoanAction, string> => ({
-  lend: name ? `Lend money to ${name}` : "Lend money",
-  borrow: name ? `Borrow money from ${name}` : "Borrow money",
-  repay: "Record a repayment",
-  waive: "Waive what is left",
-  opening: "Add an existing loan",
-});
-
-/**
- * A part of the form that comes and goes with the choice above it. In "Add loan" the choice changes while the
- * sheet is open, so the part folds shut over a short moment instead of vanishing and dropping the sheet's height
- * at once; in a sheet opened for one action it is simply left out. A shut part cannot be focused or read.
- */
-function Fold({
-  shut,
-  animate,
-  children,
-}: {
-  shut: boolean;
-  animate: boolean;
-  children: React.ReactNode;
-}) {
-  if (!animate) return shut ? null : <>{children}</>;
-  return (
-    <div
-      className="ln-fold"
-      data-shut={shut ? "true" : "false"}
-      {...(shut ? { inert: true } : {})}
-    >
-      <div className="ln-fold-in">{children}</div>
-    </div>
-  );
-}
 
 /**
  * Lend, borrow, repay, waive or add an existing loan (ADR 0030): one form. Opened for one
@@ -269,24 +218,47 @@ export function LoanDialog({
     : adding
       ? "Record money you lent, money you borrowed, or a loan you already had."
       : hints(name, owedToYou)[kind];
-  const submitLabel =
-    kind === "lend"
-      ? "Lend"
-      : kind === "borrow"
-        ? "Borrow"
-        : kind === "repay"
-          ? "Record repayment"
-          : kind === "waive"
-            ? "Waive"
-            : "Save existing loan";
-  const accountLabel =
-    kind === "lend"
-      ? "Paid from"
-      : kind === "borrow"
-        ? "Received into"
-        : owedToYou
-          ? "Received into"
-          : "Paid from";
+  const form: LoanForm = {
+    adding,
+    kind,
+    setKind,
+    people,
+    chosen,
+    choosePerson: (value) => {
+      setChosen(value);
+      setCurrency(values.baseCurrency);
+    },
+    newName,
+    setNewName,
+    name,
+    loan,
+    balance,
+    owedToYou,
+    direction,
+    setDirection,
+    amount,
+    setAmount,
+    currency,
+    effectiveCurrency,
+    chooseCurrency: (code) => {
+      setCurrency(code);
+      setAccountId("");
+    },
+    currencyChoices,
+    moves,
+    usable,
+    account,
+    setAccountId,
+    accountLabel: accountLabelFor(kind, owedToYou),
+    categories,
+    categoryId,
+    setCategoryId,
+    date,
+    setDate,
+    note,
+    setNote,
+    error,
+  };
   return (
     <Overlay
       open
@@ -306,7 +278,7 @@ export function LoanDialog({
           className="ui-btn ui-btn-primary"
           disabled={busy}
         >
-          {busy ? "Saving…" : submitLabel}
+          {busy ? "Saving…" : submitLabelFor(kind)}
         </button>
       }
     >
@@ -320,194 +292,13 @@ export function LoanDialog({
         }}
       >
         <fieldset disabled={busy} className="ln-fields">
-          {adding && (
-            <>
-              <SegmentedControl
-                label="What happened"
-                value={kind}
-                onChange={setKind}
-                options={[
-                  { value: "lend", label: "I lent money" },
-                  { value: "borrow", label: "I borrowed money" },
-                  { value: "opening", label: "A loan I already had" },
-                ]}
-              />
-              <div className="ln-group">
-                <PickRow
-                  id="loan-person"
-                  label="Who"
-                  value={chosen}
-                  options={[
-                    ...(people.length > 0
-                      ? [
-                          {
-                            value: "",
-                            label: "Choose a person…",
-                            short: "Choose",
-                            disabled: true,
-                          },
-                        ]
-                      : []),
-                    ...people.map((row) => ({
-                      value: row.id,
-                      label: `${row.name}${row.archivedAt ? " (archived)" : ""}`,
-                    })),
-                    { value: NEW, label: "A new person…", short: "New person" },
-                  ]}
-                  onChange={(value) => {
-                    setChosen(value);
-                    setCurrency(values.baseCurrency);
-                  }}
-                />
-                {chosen === NEW && (
-                  <div className="ln-row">
-                    <label htmlFor="loan-name">Name</label>
-                    <input
-                      id="loan-name"
-                      value={newName}
-                      maxLength={100}
-                      placeholder="Name"
-                      onChange={(event) => setNewName(event.target.value)}
-                    />
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {kind === "waive" ? (
-            <p className="ln-note">
-              {owedToYou
-                ? "Recorded as an expense in the category you choose."
-                : "Recorded as income in the category you choose."}
-            </p>
-          ) : (
-            shortHints[kind] && <p className="ln-note">{shortHints[kind]}</p>
-          )}
-          <Fold shut={kind !== "opening"} animate={adding}>
-            <SegmentedControl
-              label="Who owes whom"
-              value={direction}
-              onChange={setDirection}
-              options={[
-                {
-                  value: "owedToMe",
-                  label: name ? `${name} owes me` : "They owe me",
-                },
-                { value: "owedByMe", label: `I owe ${name || "them"}` },
-              ]}
-            />
-          </Fold>
-          {(kind === "repay" || kind === "waive") && loan && (
-            <p className="ln-note" role="status">
-              {owedToYou ? `${name} owes you ` : `You owe ${name} `}
-              <Amount
-                cents={Math.abs(balance)}
-                currency={loan.balance.currency}
-              />
-            </p>
-          )}
-          {kind === "opening" && loan && (
-            <p className="ln-note">
-              This replaces the balance from before Ledgerline, currently{" "}
-              {loan.openingBalance.amount < 0 ? "you owed " : "owed to you "}
-              <Amount
-                cents={Math.abs(loan.openingBalance.amount)}
-                currency={loan.currency}
-              />
-              . Money you lend or repay later stays on top of it.
-            </p>
-          )}
-          {kind !== "waive" && (
-            <EntryAmount
-              id="loan-amount"
-              label={`Amount (${effectiveCurrency})`}
-              currency={effectiveCurrency}
-              invalid={!!error}
-              describedBy={error ? "loan-error" : undefined}
-              inputProps={{
-                value: amount,
-                maxLength: 30,
-                onChange: (event) => setAmount(event.target.value),
-              }}
-            />
-          )}
-          <Fold shut={currencyChoices.length < 2} animate={adding}>
-            <div className="ln-group">
-              <PickRow
-                id="loan-currency"
-                label="Currency"
-                value={currency}
-                options={currencyChoices.map((code) => ({
-                  value: code,
-                  label: code,
-                }))}
-                onChange={(code) => {
-                  setCurrency(code);
-                  setAccountId("");
-                }}
-              />
-            </div>
-          </Fold>
-          <Fold shut={kind === "opening"} animate={adding}>
-            <div className="ln-group">
-              {/* While folding shut it keeps its row, so the part does not shrink before it starts to fade. */}
-              {(moves || adding) && (
-                <PickRow
-                  id="loan-account"
-                  label={accountLabel}
-                  value={account?.id ?? ""}
-                  options={
-                    usable.length > 0
-                      ? usable.map((row) => ({
-                          value: row.id,
-                          label: `${row.name} (${row.currency})`,
-                          short: row.name,
-                        }))
-                      : [{ value: "", label: "Choose", disabled: true }]
-                  }
-                  onChange={setAccountId}
-                />
-              )}
-              {kind === "waive" && (
-                <div className="ln-field">
-                  {categories.isError ? (
-                    <p role="alert">Couldn't load categories.</p>
-                  ) : (
-                    <CategoryCombo
-                      categories={categories.data ?? []}
-                      kind={owedToYou ? "expense" : "income"}
-                      value={categoryId}
-                      onChange={setCategoryId}
-                      label={owedToYou ? "Expense category" : "Income category"}
-                    />
-                  )}
-                </div>
-              )}
-              <div className="ln-row">
-                <label htmlFor="loan-date">Date</label>
-                <DateTimeInput
-                  label="Date"
-                  id="loan-date"
-                  type="date"
-                  value={date}
-                  required
-                  min="0001-01-01"
-                  max="9999-12-31"
-                  onChange={(event) => setDate(event.target.value)}
-                />
-              </div>
-              <div className="ln-row">
-                <label htmlFor="loan-note">Note (Optional)</label>
-                <input
-                  id="loan-note"
-                  value={note}
-                  maxLength={2000}
-                  placeholder="Add"
-                  onChange={(event) => setNote(event.target.value)}
-                />
-              </div>
-            </div>
-          </Fold>
+          <WhoSection form={form} />
+          <HintLine form={form} />
+          <DirectionFold form={form} />
+          <BalanceNotes form={form} />
+          <AmountField form={form} />
+          <CurrencyFold form={form} />
+          <DetailsFold form={form} />
         </fieldset>
         {error && (
           <p id="loan-error" role="alert" className="field-error">

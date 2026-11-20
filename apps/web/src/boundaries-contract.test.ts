@@ -111,8 +111,6 @@ describe("lib and components", () => {
 /** Source files over 400 lines, with the most lines each may have. A file that gets longer fails; one that shrinks under 400 must leave. */
 const long: Record<string, number> = {
   "features/clients/workspace.tsx": 647,
-  "features/loans/loan-dialog.tsx": 520,
-  "features/accounts/editor.tsx": 469,
   "features/transactions/transfer-form.tsx": 462,
   "features/clients/client-detail.tsx": 446,
   "features/home/sections.tsx": 437,
