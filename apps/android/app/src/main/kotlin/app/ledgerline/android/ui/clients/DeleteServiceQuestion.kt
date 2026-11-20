@@ -3,16 +3,14 @@ package app.ledgerline.android.ui.clients
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.theme.LocalPalette
@@ -34,30 +32,16 @@ private val DeleteCopy = WriteCopy(
  */
 @Composable
 internal fun DeleteServiceQuestion(ui: DeleteUi, actions: DeleteServiceActions) {
-    val danger = LocalPalette.current.danger
-    AlertDialog(
-        onDismissRequest = actions.dismiss,
-        title = { Text(stringResource(R.string.service_delete_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(ui.description, style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.service_delete_body))
-                ui.error?.let { Text(it.text(DeleteCopy), color = MaterialTheme.colorScheme.error) }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                shape = MaterialTheme.shapes.small,
-                onClick = actions.confirm,
-                enabled = !ui.saving,
-                colors = ButtonDefaults.textButtonColors(contentColor = danger),
-                modifier = Modifier.heightIn(min = 48.dp),
-            ) { Text(stringResource(R.string.service_delete_confirm)) }
-        },
-        dismissButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.dismiss, enabled = !ui.saving, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+    Question(
+        title = stringResource(R.string.service_delete_title),
+        confirm = stringResource(R.string.service_delete_confirm),
+        onConfirm = actions.confirm,
+        onDismiss = actions.dismiss,
+        danger = true,
+        enabled = !ui.saving,
+    ) {
+        Text(ui.description, style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.service_delete_body))
+        ui.error?.let { Text(it.text(DeleteCopy), color = MaterialTheme.colorScheme.error) }
+    }
 }

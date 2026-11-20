@@ -9,12 +9,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +35,7 @@ import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SheetTitle
@@ -176,7 +175,7 @@ internal fun LoanSheetContent(ui: LoanUi, actions: LoanActions, modifier: Modifi
         }
     }
     if (pickingDate) DatePickerStep(form.date, onPick = { date -> actions.edit { it.copy(date = date) } }, onClose = { pickingDate = false })
-    if (ui.asking) Question(ui, actions)
+    if (ui.asking) LoanQuestion(ui, actions)
 }
 
 /** For a repayment: what is open with the person, in the loan's currency; in privacy mode the amount is masked and said in words. */
@@ -209,35 +208,26 @@ private fun DateRow(date: String, onDate: () -> Unit) {
 
 /** The question before anything is sent: which way, how much, with whom and through which account. */
 @Composable
-private fun Question(ui: LoanUi, actions: LoanActions) {
+private fun LoanQuestion(ui: LoanUi, actions: LoanActions) {
     val form = ui.form
     val request = form.request() ?: return
     val amount = money(request.amount.amount, request.amount.currency).text
     val name = form.who.name
     val account = form.account?.name.orEmpty()
-    AlertDialog(
-        onDismissRequest = actions.dismissAsk,
-        title = { Text(stringResource(askTitleOf(form.kind))) },
-        text = {
-            Text(
-                when (form.kind) {
-                    LoanKind.Lend -> stringResource(R.string.loan_ask_body_lend, amount, name, account)
-                    LoanKind.Borrow -> stringResource(R.string.loan_ask_body_borrow, amount, name, account)
-                    LoanKind.Repay -> stringResource(if (form.owedToYou) R.string.loan_ask_body_repay_in else R.string.loan_ask_body_repay_out, amount, name, account)
-                },
-            )
-        },
-        confirmButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.confirm, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(askConfirmOf(form.kind)))
-            }
-        },
-        dismissButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.dismissAsk, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+    Question(
+        title = stringResource(askTitleOf(form.kind)),
+        confirm = stringResource(askConfirmOf(form.kind)),
+        onConfirm = actions.confirm,
+        onDismiss = actions.dismissAsk,
+    ) {
+        Text(
+            when (form.kind) {
+                LoanKind.Lend -> stringResource(R.string.loan_ask_body_lend, amount, name, account)
+                LoanKind.Borrow -> stringResource(R.string.loan_ask_body_borrow, amount, name, account)
+                LoanKind.Repay -> stringResource(if (form.owedToYou) R.string.loan_ask_body_repay_in else R.string.loan_ask_body_repay_out, amount, name, account)
+            },
+        )
+    }
 }
 
 @Composable

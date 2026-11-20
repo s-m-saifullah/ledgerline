@@ -1035,4 +1035,42 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         ShownLine(entry("e5", "2026-10-21", "expense", -3000, "Market", null, "Wallet", split = true), unsent = false),
         ShownLine(entry("e6", "2026-10-20", "expense", -123456789, "A very long payee name that keeps going and going", "Home and garden", "Rainy day savings account with a long name"), unsent = false),
     )
+
+    // Questions are windows, which a screenshot does not draw; these draw the card a window holds (WP-16).
+    private fun questionShot(name: String, card: @Composable () -> Unit) = shot(name, Tab.More) {
+        androidx.compose.foundation.layout.Box(
+            androidx.compose.ui.Modifier.fillMaxSize().padding(24.dp),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) { card() }
+    }
+
+    @Test
+    fun questionDelete() = questionShot("question-delete") {
+        QuestionCard("Delete this transaction?", "Delete", {}, {}, danger = true) {
+            androidx.compose.material3.Text("It is removed from your accounts and reports. This cannot be undone.")
+        }
+    }
+
+    @Test
+    fun questionPlain() = questionShot("question-plain") {
+        QuestionCard("Record this payment?", "Record", {}, {}) {
+            androidx.compose.material3.Text("$460.25 from Northwind Studio into Everyday account, with a $12.00 tip.")
+            androidx.compose.material3.Text("It pays 2 services in full and part of a third.")
+        }
+    }
+
+    @Test
+    fun questionThreeChoices() = questionShot("question-three") {
+        QuestionCard(
+            "3 changes are not sent yet", "Send now", {}, {},
+            extra = QuestionAction("Delete 3 unsent changes", {}, danger = true),
+        ) { androidx.compose.material3.Text("Sign out only after they are sent, or delete them for good.") }
+    }
+
+    @Test
+    fun questionNotice() = questionShot("question-notice") {
+        QuestionCard("This category is in use", "Close", {}, {}, cancel = null) {
+            androidx.compose.material3.Text("12 transactions use Groceries. Archive it instead, so they keep their category.")
+        }
+    }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -34,35 +33,21 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.overlay.AttentionItem
 import app.ledgerline.android.overlay.AttentionReason
+import app.ledgerline.android.ui.design.Question
+import app.ledgerline.android.ui.design.QuestionAction
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.privacy.money
 
 /** Sign out with changes the server does not have: send them first, or delete them on purpose. */
 @Composable
 internal fun SignOutQuestion(waiting: Int, viewModel: SignedInViewModel) {
-    AlertDialog(
-        onDismissRequest = viewModel::cancelSignOut,
-        title = { Text(pluralStringResource(R.plurals.signout_unsent_title, waiting, waiting)) },
-        text = { Text(stringResource(R.string.signout_unsent_body)) },
-        confirmButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::sendBeforeSigningOut, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.signout_send_now))
-            }
-        },
-        dismissButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::cancelSignOut, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
-                TextButton(shape = MaterialTheme.shapes.small, onClick = viewModel::signOutDeletingUnsent, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(
-                        pluralStringResource(R.plurals.signout_delete_unsent, waiting, waiting),
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-            }
-        },
-    )
+    Question(
+        title = pluralStringResource(R.plurals.signout_unsent_title, waiting, waiting),
+        confirm = stringResource(R.string.signout_send_now),
+        onConfirm = viewModel::sendBeforeSigningOut,
+        onDismiss = viewModel::cancelSignOut,
+        extra = QuestionAction(pluralStringResource(R.plurals.signout_delete_unsent, waiting, waiting), viewModel::signOutDeletingUnsent, danger = true),
+    ) { Text(stringResource(R.string.signout_unsent_body)) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

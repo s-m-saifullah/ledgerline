@@ -519,7 +519,6 @@
     <string name="updates_whats_new">What\'s new</string>
     <string name="updates_no_notes">No notes were written for this version.</string>
     <string name="updates_download">Download</string>
-    <string name="updates_cancel">Cancel</string>
     <string name="updates_downloading">Downloading…</string>
     <string name="updates_downloading_of">Downloading %1$s of %2$s</string>
     <string name="updates_ready">Downloaded and checked: the file matches the release and is signed with Ledgerline\'s key.</string>
@@ -586,7 +585,6 @@
     <string name="category_save_add">Add category</string>
     <string name="category_save_edit">Save changes</string>
     <string name="category_saving">Saving…</string>
-    <string name="category_cancel">Cancel</string>
     <string name="category_archive_title">Archive category</string>
     <string name="category_archive_body">Archive %1$s? Its label and history are kept, and it stops being offered for new entries.</string>
     <string name="category_archive_confirm">Archive</string>

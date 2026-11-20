@@ -105,7 +105,7 @@ private fun UpdateList(installed: String, state: UpdateState, release: Release?,
                     is UpdateState.Downloading -> {
                         Title(state.release)
                         Progress(state.received, state.release.apkSize)
-                        Buttons { SecondaryButton(stringResource(R.string.updates_cancel), actions.cancel) }
+                        Buttons { SecondaryButton(stringResource(R.string.cancel), actions.cancel) }
                     }
                     is UpdateState.Ready -> {
                         Title(state.release)

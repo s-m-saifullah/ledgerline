@@ -11,12 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +27,7 @@ import app.ledgerline.android.R
 import app.ledgerline.android.ui.design.FilterChip
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.WriteCopy
@@ -137,20 +136,12 @@ internal fun LimitSheetContent(ui: LimitUi, actions: LimitActions, modifier: Mod
         }
     }
     if (ui.askRemove) {
-        AlertDialog(
-            onDismissRequest = actions.dismissRemove,
-            title = { Text(stringResource(R.string.limit_remove_title)) },
-            text = { Text(stringResource(R.string.limit_remove_body, target.name, monthLabel(target.month))) },
-            confirmButton = {
-                TextButton(shape = MaterialTheme.shapes.small, onClick = actions.confirmRemove, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.limit_remove_confirm), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(shape = MaterialTheme.shapes.small, onClick = actions.dismissRemove, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-        )
+        Question(
+            title = stringResource(R.string.limit_remove_title),
+            confirm = stringResource(R.string.limit_remove_confirm),
+            onConfirm = actions.confirmRemove,
+            onDismiss = actions.dismissRemove,
+            danger = true,
+        ) { Text(stringResource(R.string.limit_remove_body, target.name, monthLabel(target.month))) }
     }
 }
