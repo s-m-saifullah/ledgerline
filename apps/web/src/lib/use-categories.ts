@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../lib/query-keys";
-import { getCategories } from "./api";
+import { getCategories } from "./categories";
+import { queryKeys } from "./query-keys";
 
 /** The ledger's categories (archived ones included): one request and one cache entry for every screen that reads them. */
 export function useCategories(ledgerId: string | undefined, enabled = true) {

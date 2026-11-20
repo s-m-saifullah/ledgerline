@@ -21,20 +21,20 @@ import type { z } from "zod";
 import { Amount, BaseNote } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
+import { usePageAdd } from "../../components/page-add";
 import { ReadOnlyNote } from "../../components/read-only-note";
 import { Toast, toastDuration } from "../../components/toast";
+import { getAccounts } from "../../lib/accounts";
+import { useBaseValues } from "../../lib/base-values";
 import { randomUuid } from "../../lib/random-uuid";
-import { useBaseValues } from "../currencies/base-value";
-import { usePageAdd } from "../shell/page-add";
-import { getAccounts } from "./api";
 import { ArchiveAccountDialog } from "./archive";
 import { AccountEditor } from "./editor";
 import { accountHint, isOverdrawn, splitAccounts } from "./model";
 import "./accounts.css";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";
+import { useCategories } from "../../lib/use-categories";
 import { useLedger } from "../../lib/use-ledger";
-import { useCategories } from "../categories/hooks";
 
 const icons = {
   bank: Landmark,

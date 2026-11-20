@@ -8,9 +8,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";
+import { useActiveAccounts } from "../../lib/use-accounts";
+import { useCategories } from "../../lib/use-categories";
 import { useLedger } from "../../lib/use-ledger";
-import { useActiveAccounts } from "../accounts/hooks";
-import { useCategories } from "../categories/hooks";
 import { prepareImport, previewImport } from "./api";
 import { categoryNeeds } from "./categories";
 import {

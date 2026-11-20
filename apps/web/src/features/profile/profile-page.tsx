@@ -12,11 +12,12 @@ import { KeyRound, ShieldCheck, Smartphone } from "lucide-react";
 import { type ReactElement, type ReactNode, useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { Toast, toastDuration } from "../../components/toast";
-import { devicesKey, getDevices } from "../settings/devices-api";
-import { getMe, meKey } from "./api";
+import { getDevices } from "../../lib/devices";
+import { getMe } from "../../lib/me";
 import { NameSheet } from "./name-sheet";
 import { PasswordSheet } from "./password-sheet";
 import "./profile.css";
+import { queryKeys } from "../../lib/query-keys";
 
 const press =
   (id: string, onClick: () => void) =>
@@ -36,8 +37,11 @@ const toSettings = (inner: ReactNode, className: string): ReactElement => (
  * settings live. Settings keeps Two-factor, the devices and Sign out; two rows here lead to it.
  */
 export function ProfilePage() {
-  const me = useQuery({ queryKey: meKey, queryFn: getMe });
-  const devices = useQuery({ queryKey: devicesKey, queryFn: getDevices });
+  const me = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
+  const devices = useQuery({
+    queryKey: queryKeys.devices,
+    queryFn: getDevices,
+  });
   const [sheet, setSheet] = useState<"name" | "password" | null>(null);
   // One notice for the page; its number restarts the timer when the same words come twice in a row.
   const [notice, setNotice] = useState<{ id: number; text: string } | null>(

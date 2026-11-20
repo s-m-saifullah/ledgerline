@@ -3,8 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
+import { type PageAdd, PageAddProvider } from "../../components/page-add";
 import { json, ledgerId } from "../../test-support/category-fixtures";
-import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { TagsPage } from "./tags-page";
 
 vi.mock("@tanstack/react-router", () => ({

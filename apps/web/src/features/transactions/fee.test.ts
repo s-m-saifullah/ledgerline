@@ -1,6 +1,6 @@
 import type { Account } from "@ledgerline/shared";
 import { expect, it } from "vitest";
-import { defaultFeeText, feeMinor, parseFee } from "./fee";
+import { defaultFeeText, feeMinor, parseFee } from "../../lib/fee";
 
 it("reads a plain number as a fixed fee and a number with % as a percentage", () => {
   expect(parseFee("", "USD")).toEqual({ kind: "none" });

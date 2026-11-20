@@ -1,11 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { forgetMarkers } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";
-import { meKey } from "../profile/api";
-import { usersKey } from "../users/api";
 
 /** What belongs to the signed-in person alone: who I am (and whether I am the admin) and, for the admin, the people list. */
-const personKeys = [meKey, usersKey] as const;
+const personKeys = [queryKeys.me, queryKeys.users] as const;
 
 /** Forgets what belongs to a person, so whoever signs in next on this browser is never shown it (ADR 0048). */
 export function forgetPerson(client: QueryClient) {

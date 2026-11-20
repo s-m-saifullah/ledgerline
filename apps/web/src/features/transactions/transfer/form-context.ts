@@ -6,7 +6,7 @@ import type {
   UseFormSetValue,
   UseFormWatch,
 } from "react-hook-form";
-import type { parseFee } from "../fee";
+import type { parseFee } from "../../../lib/fee";
 import type { Values } from "./schema";
 
 /** What the transfer form's field sections read from the form (one object, no hidden state). */

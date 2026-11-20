@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../lib/query-keys";
-import { getActiveAccounts, getAllAccounts, pickableAccounts } from "./api";
+import {
+  getActiveAccounts,
+  getAllAccounts,
+  pickableAccounts,
+} from "./accounts";
+import { queryKeys } from "./query-keys";
 
 /**
  * The ledger's active accounts: one request and one cache entry for Home, the Add sheet, loans and the import, so the

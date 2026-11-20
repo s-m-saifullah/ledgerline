@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../lib/query-keys";
-import { getTags } from "./api";
+import { queryKeys } from "./query-keys";
+import { getTags } from "./tags";
 
 /** The ledger's tags (archived included); pickers and chips read names from here. */
 export function useTags(ledgerId: string | undefined, enabled = true) {

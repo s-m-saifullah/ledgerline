@@ -7,8 +7,8 @@ import {
 import { useRef, useState } from "react";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { getCategories } from "../../lib/categories";
 import {
-  getCategories,
   prepareCategoryArchive,
   prepareCategoryDelete,
   prepareCategoryStarterSet,

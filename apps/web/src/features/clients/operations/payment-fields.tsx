@@ -1,10 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
+import { CategoryCombo } from "../../../components/category-combo";
+import { EntryRate } from "../../../components/entry-rate";
 import { PickRow } from "../../../components/pick-row";
+import { amountMinor } from "../../../lib/amount-input";
 import { formatMoney } from "../../../lib/money";
-import { EntryRate } from "../../currencies/entry-rate";
-import { CategoryCombo } from "../../transactions/category-combo";
-import { amountMinor } from "../../transactions/form";
 import { inputFor } from "./fields";
 import type { OperationForm } from "./form-context";
 import { PaymentRate } from "./payment-rate";

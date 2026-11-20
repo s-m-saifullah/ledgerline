@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { json, ledgerId } from "../../test-support/category-fixtures";
+import { json, ledgerId } from "../test-support/category-fixtures";
 import { TagPicker } from "./tag-picker";
 
 const tag = (name: string, over: Partial<Tag> = {}): Tag => ({

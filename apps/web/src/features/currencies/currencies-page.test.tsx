@@ -15,8 +15,8 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { type PageAdd, PageAddProvider } from "../../components/page-add";
 import { addableCurrencies, rateSentence, today } from "../../lib/rate-format";
-import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { CurrenciesPage } from "./currencies-page";
 
 vi.mock("@tanstack/react-router", () => ({

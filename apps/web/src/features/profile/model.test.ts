@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "../../lib/api";
-import {
-  checkPasswords,
-  nameMessage,
-  parseName,
-  passwordProblem,
-} from "./model";
+import { checkPasswords, passwordProblem } from "../../lib/password";
+import { nameMessage, parseName } from "./model";
 
 describe("parseName", () => {
   it("trims, and takes 1 to 100 characters", () => {

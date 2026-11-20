@@ -9,8 +9,9 @@ import userEvent from "@testing-library/user-event";
 import { useEffect } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { api } from "../../lib/api";
+import { getMe } from "../../lib/me";
+import { queryKeys } from "../../lib/query-keys";
 import { json } from "../../test-support/category-fixtures";
-import { getMe, meKey } from "../profile/api";
 import { PasswordGate } from "./password-gate";
 
 const navigate = vi.fn(async () => undefined);
@@ -181,7 +182,7 @@ it("opens the app once when /me cannot be read, and keeps it open while /me is a
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   let mounts = 0;
   function App() {
-    const me = useQuery({ queryKey: meKey, queryFn: getMe });
+    const me = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
     useEffect(() => {
       mounts += 1;
     }, []);

@@ -12,14 +12,14 @@ import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import { formatDay } from "../../lib/time";
-import { ActionRow } from "./action-row";
 import {
-  devicesKey,
   getDevices,
   signOutDevice,
   signOutOtherDevices,
-} from "./devices-api";
+} from "../../lib/devices";
+import { queryKeys } from "../../lib/query-keys";
+import { formatDay } from "../../lib/time";
+import { ActionRow } from "./action-row";
 
 /** The most recently used devices shown at once; the rest sit behind a disclosure. */
 const shownDevices = 10;
@@ -31,14 +31,17 @@ export function DevicesCard({
   onNotice: (text: string) => void;
 }) {
   const client = useQueryClient();
-  const devices = useQuery({ queryKey: devicesKey, queryFn: getDevices });
+  const devices = useQuery({
+    queryKey: queryKeys.devices,
+    queryFn: getDevices,
+  });
   const [asking, setAsking] = useState(false);
   const [failure, setFailure] = useState("");
   const done = (message: string) => {
     setAsking(false);
     setFailure("");
     onNotice(message);
-    return client.invalidateQueries({ queryKey: devicesKey });
+    return client.invalidateQueries({ queryKey: queryKeys.devices });
   };
   const failed = (error: unknown) => {
     setAsking(false);

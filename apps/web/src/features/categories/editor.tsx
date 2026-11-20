@@ -8,12 +8,13 @@ import { SegmentedControl } from "@ledgerline/ui";
 import { Circle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import { CategoryPicker } from "../../components/category-picker";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import { getCategories, getCategory, prepareCategorySave } from "./api";
+import { getCategories, prepareCategorySave } from "../../lib/categories";
+import { getCategory } from "./api";
 import { categoryColors, categoryIcons } from "./appearance";
 import { AppearanceRow, NoneMark, Swatch } from "./appearance-row";
-import { CategoryPicker } from "./picker";
 import "./categories.css";
 
 const categoryFormSchema = createCategorySchema.extend({

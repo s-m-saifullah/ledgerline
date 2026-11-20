@@ -5,7 +5,7 @@ import {
   parseMinorUnits,
   type Transfer,
 } from "@ledgerline/shared";
-import { parseFee } from "../fee";
+import { parseFee } from "../../../lib/fee";
 import type { Values } from "./schema";
 
 /** The request body for a new or edited transfer, built from the form values. */

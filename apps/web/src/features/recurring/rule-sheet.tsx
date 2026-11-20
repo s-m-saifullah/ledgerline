@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
+import { amountMinor } from "../../lib/amount-input";
 import { ApiError } from "../../lib/api";
-import { useCategoryCreate } from "../categories/use-category-create";
-import { defaultFeeText, parseFee } from "../transactions/fee";
-import { amountMinor } from "../transactions/form";
+import { defaultFeeText, parseFee } from "../../lib/fee";
+import { useCategoryCreate } from "../../lib/use-category-create";
 import {
   getRuns,
   prepareRuleCreate,

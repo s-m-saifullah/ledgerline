@@ -13,7 +13,7 @@ import {
   profilePage,
   showsAdd,
   usersPage,
-} from "./nav";
+} from "../../lib/nav";
 
 describe("the navigation model", () => {
   it("has the five destinations in order", () => {

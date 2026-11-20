@@ -1,12 +1,12 @@
 import { KeyRound } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "../../lib/api";
-import { changePassword } from "../profile/api";
+import { changePassword } from "../../lib/me";
 import {
   checkPasswords,
   type PasswordField,
   passwordProblem,
-} from "../profile/model";
+} from "../../lib/password";
 import { AuthMark } from "./sign-in";
 import "./auth.css";
 

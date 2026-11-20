@@ -7,16 +7,16 @@ import { useState } from "react";
 import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
-import { usePageAdd } from "../shell/page-add";
+import { usePageAdd } from "../../components/page-add";
 import { getRules } from "./api";
 import { ruleEndHint, ruleHint } from "./model";
 import { RuleSheet } from "./rule-sheet";
 import "./recurring.css";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";
+import { useAllAccounts } from "../../lib/use-accounts";
+import { useCategories } from "../../lib/use-categories";
 import { useLedger } from "../../lib/use-ledger";
-import { useAllAccounts } from "../accounts/hooks";
-import { useCategories } from "../categories/hooks";
 
 /**
  * Recurring (ADR 0047, the prototype's `R.recurring`): one grouped card of rules, each a row with its name, one

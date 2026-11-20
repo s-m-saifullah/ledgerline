@@ -2,10 +2,10 @@ import { maxTagsPerEntry, tagNameSchema } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
-import { ApiError } from "../../lib/api";
-import { invalidateLedger } from "../../lib/ledger-cache";
-import { prepareTagCreate } from "./api";
-import { useTags } from "./use-tags";
+import { ApiError } from "../lib/api";
+import { invalidateLedger } from "../lib/ledger-cache";
+import { prepareTagCreate } from "../lib/tags";
+import { useTags } from "../lib/use-tags";
 
 /**
  * Chips for the chosen tags, a box to find or type one, and your most used tags to tap. Typing a

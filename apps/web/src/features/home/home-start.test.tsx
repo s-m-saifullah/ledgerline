@@ -14,7 +14,7 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("../transactions/workspace", () => ({
   useTransactionWorkspace: () => null,
 }));
-vi.mock("../currencies/base-value", () => ({
+vi.mock("../../lib/base-values", () => ({
   useBaseValues: () => ({
     baseCurrency: "USD",
     currencies: ["USD"],

@@ -1,28 +1,14 @@
 import {
-  type CurrencyList,
-  currencyListSchema,
   type ExchangeRate,
   exchangeRateSchema,
   type PinnedCurrency,
   pinnedCurrencySchema,
-  type RateLookup,
   type RefreshRatesResult,
-  rateLookupSchema,
   refreshRatesResultSchema,
 } from "@ledgerline/shared";
-import { api, prepareFinancialWrite } from "../../lib/api";
+import { prepareFinancialWrite } from "../../lib/api";
 
 const path = (ledgerId: string) => `/ledgers/${ledgerId}`;
-export async function getCurrencies(
-  ledgerId: string,
-  signal?: AbortSignal,
-): Promise<CurrencyList> {
-  return currencyListSchema.parse(
-    await api(`${path(ledgerId)}/currencies`, {
-      ...(signal ? { signal } : {}),
-    }),
-  );
-}
 export function prepareCurrencyPin(ledgerId: string, code: string) {
   const run = prepareFinancialWrite<unknown>(
     `${path(ledgerId)}/currencies`,
@@ -63,19 +49,4 @@ export function prepareRatesRefresh(ledgerId: string, code?: string) {
   );
   return async (): Promise<RefreshRatesResult> =>
     refreshRatesResultSchema.parse(await run());
-}
-
-/** The rate an entry in `code` on `date` would be saved with (null when none exists yet). */
-export async function getRateLookup(
-  ledgerId: string,
-  code: string,
-  date: string,
-  signal?: AbortSignal,
-): Promise<RateLookup> {
-  const query = new URLSearchParams({ code, date });
-  return rateLookupSchema.parse(
-    await api(`${path(ledgerId)}/exchange-rates/lookup?${query}`, {
-      ...(signal ? { signal } : {}),
-    }),
-  );
 }

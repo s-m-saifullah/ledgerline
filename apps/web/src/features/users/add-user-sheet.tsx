@@ -4,7 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import { addUser, usersKey } from "./api";
+import { queryKeys } from "../../lib/query-keys";
+import { addUser } from "./api";
 import { firstName, makeTemporaryPassword } from "./model";
 import { PasswordBox } from "./password-box";
 
@@ -70,7 +71,7 @@ export function AddUserSheet({
           field: null,
           message: "We couldn't confirm that. Check the list, then try again.",
         });
-        void client.invalidateQueries({ queryKey: usersKey });
+        void client.invalidateQueries({ queryKey: queryKeys.users });
       }
       setBusy(false);
       return;

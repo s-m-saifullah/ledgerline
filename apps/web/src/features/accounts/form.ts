@@ -7,13 +7,13 @@ import {
   parseMinorUnits,
 } from "@ledgerline/shared";
 import { z } from "zod";
+import { defaultFeeText, parseFee } from "../../lib/fee";
 import {
   bpsToPercent,
   cleanAmountText,
   decimalFromCents,
   percentToBps,
 } from "../../lib/money";
-import { defaultFeeText, parseFee } from "../transactions/fee";
 
 export const accountFormSchema = z
   .object({

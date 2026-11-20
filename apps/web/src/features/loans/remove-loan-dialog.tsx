@@ -5,7 +5,7 @@ import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { formatDay } from "../../lib/time";
-import { getTransactions } from "../transactions/api";
+import { getTransactions } from "../../lib/transactions";
 import { prepareRemoveLoan } from "./loans-api";
 import "./loans.css";
 import { queryKeys } from "../../lib/query-keys";

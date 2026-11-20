@@ -1,7 +1,5 @@
 import { type SessionList, sessionListSchema } from "@ledgerline/shared";
-import { api } from "../../lib/api";
-
-export const devicesKey = ["sessions"] as const;
+import { api } from "./api";
 
 /** The devices signed in as the caller (ADR 0042). */
 export async function getDevices(): Promise<SessionList> {

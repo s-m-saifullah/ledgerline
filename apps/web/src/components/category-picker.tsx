@@ -1,7 +1,7 @@
 import type { Category } from "@ledgerline/shared";
 import { ChevronDown } from "lucide-react";
 import { useId, useRef, useState } from "react";
-import { categoryOptions } from "./tree";
+import { categoryOptions } from "../lib/category-tree";
 
 /**
  * One field: tap to open the list, type to filter it. Follows the ARIA 1.2

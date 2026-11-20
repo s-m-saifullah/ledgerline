@@ -31,6 +31,13 @@ export type LedgerArea = (typeof ledgerAreas)[number];
 export const queryKeys = {
   session: ["session"] as const,
   ledgers: ["ledgers"] as const,
+  /** Who I am (name, email, admin, two-factor): belongs to the person, not to a ledger. */
+  me: ["me"] as const,
+  /** The people the admin manages, and under it the deleted ones, so refreshing the people refreshes both. */
+  users: ["users"] as const,
+  deletedUsers: ["users", "deleted"] as const,
+  /** The devices signed in as the person. */
+  devices: ["sessions"] as const,
   /** The ledger's change marker (ADR 0044); a reload never refreshes it. */
   changes: (ledgerId: Id) => ["changes", ledgerId] as const,
   /** Everything about the ledger. */

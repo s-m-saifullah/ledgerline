@@ -8,16 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
+import { CategoryPicker } from "../../components/category-picker";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { Toast, toastDuration } from "../../components/toast";
 import { ApiError } from "../../lib/api";
-import {
-  getCategories,
-  getCategoryMergePreview,
-  prepareCategoryMerge,
-} from "./api";
-import { CategoryPicker } from "./picker";
+import { getCategories } from "../../lib/categories";
+import { getCategoryMergePreview, prepareCategoryMerge } from "./api";
 import "./categories.css";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";

@@ -6,9 +6,9 @@ import {
   type RecurringFrequency,
   type RecurringRule,
 } from "@ledgerline/shared";
+import { amountMessage, amountMinor } from "../../lib/amount-input";
+import { feeMinor, parseFee } from "../../lib/fee";
 import { bpsToPercent, decimalFromCents } from "../../lib/money";
-import { feeMinor, parseFee } from "../transactions/fee";
-import { amountMessage, amountMinor } from "../transactions/form";
 
 export type RuleFormValues = {
   title: string;

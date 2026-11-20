@@ -1,11 +1,11 @@
 import { convertMinor, invertRate, rateFromInverse } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
-import { Amount } from "../../components/amount-text";
-import { queryKeys } from "../../lib/query-keys";
-import { rateSentence } from "../../lib/rate-format";
-import { getRateLookup } from "./api";
-import { useBaseValues } from "./base-value";
+import { useBaseValues } from "../lib/base-values";
+import { getRateLookup } from "../lib/currencies";
+import { queryKeys } from "../lib/query-keys";
+import { rateSentence } from "../lib/rate-format";
+import { Amount } from "./amount-text";
 
 /**
  * Under an amount in another currency: what it is worth in the base currency, which rate that

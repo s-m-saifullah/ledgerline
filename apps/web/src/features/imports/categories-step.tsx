@@ -1,6 +1,6 @@
 import type { Category } from "@ledgerline/shared";
 import { PickRow } from "../../components/pick-row";
-import { categoryOptions } from "../categories/tree";
+import { categoryOptions } from "../../lib/category-tree";
 import type { Wizard } from "./wizard";
 
 const DEFAULT = "default";

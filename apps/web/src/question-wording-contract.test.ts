@@ -58,7 +58,7 @@ describe("the words of a question", () => {
   it("Delete is the only word for deleting: no Remove, Removed or Removing as a button, title or toast", () => {
     // A tag chip's cross takes the tag off a transaction; nothing is deleted, so it keeps "Remove".
     expect(
-      offenders(/["'`>]\s*Remov(e|ed|ing)\b/, ["features/tags/tag-picker.tsx"]),
+      offenders(/["'`>]\s*Remov(e|ed|ing)\b/, ["components/tag-picker.tsx"]),
     ).toEqual([]);
   });
 });

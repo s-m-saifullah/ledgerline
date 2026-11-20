@@ -1,6 +1,10 @@
 import { newId } from "@ledgerline/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { getActiveAccounts, getAllAccounts, pickableAccounts } from "./api";
+import {
+  getActiveAccounts,
+  getAllAccounts,
+  pickableAccounts,
+} from "./accounts";
 
 const ledgerId = newId();
 const account = (name: string, contactId: string | null = null) => ({
