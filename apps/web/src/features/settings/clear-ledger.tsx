@@ -1,15 +1,16 @@
 import { IconTile, ListRow } from "@ledgerline/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Archive, ArchiveRestore } from "lucide-react";
 import { useRef, useState } from "react";
 import { Question, TypedConfirm } from "../../components/question";
-import { ApiError, getLedgers } from "../../lib/api";
+import { ApiError } from "../../lib/api";
 import {
   daysLeft,
   daysLeftText,
   undoDays,
   undoEndsAt,
 } from "../../lib/days-left";
+import { useLedger } from "../../lib/use-ledger";
 import { prepareClearLedger, prepareRestoreLedger } from "../ledger/api";
 
 type Asking = "clear" | "restore";
@@ -26,8 +27,7 @@ export function ClearLedger({
   onNotice: (text: string) => void;
 }) {
   const client = useQueryClient();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger } = useLedger();
   const [asking, setAsking] = useState<Asking | null>(null);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);

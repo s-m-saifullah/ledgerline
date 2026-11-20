@@ -104,6 +104,8 @@ it("requires latest details after a stale conflict and saves with the new versio
       json({ title: "Conflict", detail: "Changed", errors: [] }, 409),
     )
     .mockResolvedValueOnce(json({ ...row, version: 3, time: null }))
+    // The reload reads the ledger's change marker (the next request), then the save is the one after it.
+    .mockResolvedValueOnce(json({ marker: "m" }))
     .mockResolvedValueOnce(json({ ...row, version: 4, time: null }));
   vi.stubGlobal("fetch", fetchMock);
   render(
@@ -120,7 +122,7 @@ it("requires latest details after a stale conflict and saves with the new versio
   );
   await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
-  expect(JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body))).toMatchObject({
+  expect(JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body))).toMatchObject({
     expectedVersion: 3,
     time: null,
   });

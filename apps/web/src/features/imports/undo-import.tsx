@@ -2,6 +2,7 @@ import type { ImportBatch } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Overlay } from "../../components/overlay";
+import { invalidateLedger } from "../../lib/ledger-cache";
 import { prepareUndoImport } from "./api";
 
 /**
@@ -31,15 +32,7 @@ export function UndoQuestion({
     setError("");
     try {
       const done = await prepareUndoImport(ledgerId, batch)();
-      for (const name of [
-        "transactions",
-        "accounts",
-        "home",
-        "reports",
-        "budgets",
-        "imports",
-      ])
-        void client.invalidateQueries({ queryKey: [name] });
+      void invalidateLedger(client, ledgerId);
       onUndone(done.removed);
       onClose();
     } catch (failure) {

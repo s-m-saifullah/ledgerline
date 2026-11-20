@@ -3,6 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import type { ComboCreate } from "../../components/combo-field";
 import { ApiError } from "../../lib/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
 import { prepareCategorySave } from "./api";
 
 /**
@@ -53,12 +55,14 @@ export function useCategoryCreate(
         const made = await attempt.current.run();
         attempt.current = null;
         setUncertain(false);
-        client.setQueryData<Category[]>(["categories", ledgerId], (items) => [
-          ...(items ?? []).filter((row) => row.id !== made.id),
-          made,
-        ]);
-        void client.invalidateQueries({ queryKey: ["categories", ledgerId] });
-        void client.invalidateQueries({ queryKey: ["home", ledgerId] });
+        client.setQueryData<Category[]>(
+          queryKeys.categories(ledgerId),
+          (items) => [
+            ...(items ?? []).filter((row) => row.id !== made.id),
+            made,
+          ],
+        );
+        void invalidateLedger(client, ledgerId);
         onCreated?.(made);
         return made.id;
       } catch (failure) {

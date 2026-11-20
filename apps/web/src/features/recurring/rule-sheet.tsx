@@ -33,6 +33,7 @@ import {
 } from "./form";
 import { dueNow, ledgerToday, upcomingDates } from "./schedule";
 import "./recurring.css";
+import { queryKeys } from "../../lib/query-keys";
 
 /**
  * The rule sheet (the prototype's `OV["rule-form"]`): the type and the big amount, one card for what the rule is,
@@ -142,7 +143,7 @@ export function RuleSheet({
     };
   }, [values, interval, today, rule]);
   const runs = useQuery({
-    queryKey: ["recurring-runs", ledgerId, rule?.id],
+    queryKey: queryKeys.recurringRuns(ledgerId, rule?.id),
     queryFn: ({ signal }) => getRuns(ledgerId, rule?.id as string, signal),
     enabled: !!rule,
     staleTime: 0,

@@ -3,6 +3,7 @@ import { EmptyState, ListCard, ListRow, SectionLabel } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Amount } from "../../components/amount-text";
+import { queryKeys } from "../../lib/query-keys";
 import { formatDay } from "../../lib/time";
 import { getTransactions } from "../transactions/api";
 import { getLoans } from "./loans-api";
@@ -13,7 +14,7 @@ export function useLoans(
   personId: string | null,
 ) {
   return useQuery({
-    queryKey: ["loans", ledgerId, personId],
+    queryKey: queryKeys.loansOf(ledgerId, personId),
     queryFn: ({ signal }) =>
       getLoans(ledgerId as string, personId as string, signal),
     enabled: !!ledgerId && !!personId,
@@ -60,7 +61,7 @@ export function PersonLoans({
 }) {
   const ids = loans.map((loan) => loan.accountId);
   const activity = useQuery({
-    queryKey: ["loans", ledgerId, personId, "activity", ids],
+    queryKey: queryKeys.loanActivity(ledgerId, personId, ids),
     queryFn: async ({ signal }) => {
       const pages = await Promise.all(
         ids.map((accountId) =>

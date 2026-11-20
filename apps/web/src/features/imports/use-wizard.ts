@@ -6,9 +6,11 @@ import {
 } from "@ledgerline/shared";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getLedgers } from "../../lib/api";
-import { getCategories } from "../categories/api";
-import { getActiveAccounts } from "../transactions/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
+import { useActiveAccounts } from "../accounts/hooks";
+import { useCategories } from "../categories/hooks";
 import { prepareImport, previewImport } from "./api";
 import { categoryNeeds } from "./categories";
 import {
@@ -53,18 +55,9 @@ function fingerprint(text: string) {
 
 export function useImportWizard(): Wizard {
   const client = useQueryClient();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledgerId = ledgers.data?.items[0]?.id;
-  const accountsQuery = useQuery({
-    queryKey: ["accounts", ledgerId, "active-no-clients"],
-    queryFn: ({ signal }) => getActiveAccounts(ledgerId as string, signal),
-    enabled: !!ledgerId,
-  });
-  const categoriesQuery = useQuery({
-    queryKey: ["categories", ledgerId],
-    queryFn: ({ signal }) => getCategories(ledgerId as string, signal),
-    enabled: !!ledgerId,
-  });
+  const { ledgerId, ledgers } = useLedger();
+  const accountsQuery = useActiveAccounts(ledgerId, { ownOnly: true });
+  const categoriesQuery = useCategories(ledgerId);
   const accounts = accountsQuery.data ?? [];
   const categories: Category[] = categoriesQuery.data ?? [];
   const [step, setStep] = useState<Step>("file");
@@ -107,7 +100,7 @@ export function useImportWizard(): Wizard {
       : null;
   const payloadKey = payload ? fingerprint(JSON.stringify(payload)) : "";
   const previewQuery = useQuery({
-    queryKey: ["imports", "preview", ledgerId, payloadKey],
+    queryKey: queryKeys.importPreview(ledgerId, payloadKey),
     queryFn: ({ signal }) =>
       previewImport(
         ledgerId as string,
@@ -253,15 +246,7 @@ export function useImportWizard(): Wizard {
           to: dates.at(-1) as string,
         });
         setStep("done");
-        for (const name of [
-          "transactions",
-          "accounts",
-          "home",
-          "reports",
-          "budgets",
-          "imports",
-        ])
-          void client.invalidateQueries({ queryKey: [name] });
+        if (ledgerId) void invalidateLedger(client, ledgerId);
       } catch (error) {
         setConfirmError(
           error instanceof Error && error.message

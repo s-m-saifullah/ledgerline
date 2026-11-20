@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
 import { useCategoryCreate } from "../categories/use-category-create";
 import {
   getTransaction,
@@ -132,11 +133,7 @@ export function TransactionEditor({
     setBusy(true);
     try {
       const latest = await getTransaction(ledgerId, baseline.id);
-      await Promise.all([
-        client.invalidateQueries({ queryKey: ["accounts", ledgerId] }),
-        client.invalidateQueries({ queryKey: ["categories", ledgerId] }),
-        client.invalidateQueries({ queryKey: ["home", ledgerId] }),
-      ]);
+      await invalidateLedger(client, ledgerId);
       setBaseline(latest);
       reset(transactionEditDefaults(latest));
       attempt.current = null;

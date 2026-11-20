@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
-import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
 import { useAppWide } from "../../lib/use-app-width";
 import { getHome } from "../home/api";
@@ -24,6 +23,9 @@ import { PersonDialog } from "./person-dialog";
 import { PersonList } from "./person-list";
 import { RemoveLoanDialog } from "./remove-loan-dialog";
 import "./loans.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 
 type Open = { editor: PersonEditor | { kind: "add" }; trigger: string };
 
@@ -38,17 +40,16 @@ export function LoansPage() {
   const queryClient = useQueryClient();
   const month = useCurrentMonth();
   const wide = useAppWide(1100);
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const writable = !!ledger && ledger.role !== "viewer";
   const home = useQuery({
-    queryKey: ["home", ledger?.id, month],
+    queryKey: queryKeys.home(ledger?.id, month),
     queryFn: ({ signal }) => getHome(ledger?.id as string, month, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
   const people = useQuery({
-    queryKey: ["loanPeople", ledger?.id, "book"],
+    queryKey: queryKeys.loanPeople(ledger?.id),
     queryFn: ({ signal }) => getAllPeople(ledger?.id as string, signal),
     enabled: !!ledger,
     refetchOnMount: "always",
@@ -63,7 +64,7 @@ export function LoansPage() {
   const selectedId = personId ?? (wide ? shown[0]?.id : undefined);
   const fallback = all.find((row) => row.id === selectedId);
   const person = useQuery({
-    queryKey: ["loanPerson", ledger?.id, selectedId],
+    queryKey: queryKeys.loanPerson(ledger?.id, selectedId),
     queryFn: () => getPerson(ledger?.id as string, selectedId as string),
     enabled: !!ledger && !!selectedId,
     refetchOnMount: "always",
@@ -76,16 +77,7 @@ export function LoansPage() {
   const archived = !!archivedAt;
   const blocked = !!open;
   const refresh = () => {
-    for (const key of [
-      "loans",
-      "loanPeople",
-      "loanPerson",
-      "accounts",
-      "home",
-      "transactions",
-      "contacts",
-    ])
-      void queryClient.invalidateQueries({ queryKey: [key] });
+    if (ledger) void invalidateLedger(queryClient, ledger.id);
   };
   const start = (editor: Open["editor"], trigger: string) =>
     setOpen({ editor, trigger });

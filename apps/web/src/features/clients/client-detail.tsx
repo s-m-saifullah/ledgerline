@@ -22,6 +22,7 @@ import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
+import { queryKeys } from "../../lib/query-keys";
 import { formatDay, formatDayTime, localToday } from "../../lib/time";
 import { getClient, getHistory, getServices } from "./api";
 import { Balances } from "./balances";
@@ -188,11 +189,11 @@ export function ClientDetail({
   const blocked = workspace?.blocked ?? false;
   const today = localToday();
   const client = useQuery({
-    queryKey: ["contacts", ledgerId, "detail", clientId, month],
+    queryKey: queryKeys.clientDetail(ledgerId, clientId, month),
     queryFn: ({ signal }) => getClient(ledgerId, clientId, month, signal),
   });
   const services = useInfiniteQuery({
-    queryKey: ["receivables", ledgerId, "client", clientId],
+    queryKey: queryKeys.clientServices(ledgerId, clientId),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getServices(ledgerId, clientId, pageParam, signal),
@@ -205,7 +206,7 @@ export function ClientDetail({
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
   const history = useInfiniteQuery({
-    queryKey: ["clientHistory", ledgerId, clientId],
+    queryKey: queryKeys.clientHistory(ledgerId, clientId),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getHistory(ledgerId, clientId, pageParam, signal),

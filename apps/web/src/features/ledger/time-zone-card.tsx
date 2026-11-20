@@ -1,8 +1,10 @@
 import { ListCard, SectionLabel } from "@ledgerline/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { NativeSelect } from "../../components/native-select";
-import { ApiError, getLedgers } from "../../lib/api";
+import { ApiError } from "../../lib/api";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 import { prepareLedgerTimeZone } from "./api";
 
 function zoneNames(): string[] {
@@ -23,8 +25,7 @@ export function TimeZoneCard({
   onNotice: (text: string) => void;
 }) {
   const client = useQueryClient();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const attempt = useRef<{ sig: string; run: () => Promise<unknown> } | null>(
@@ -56,7 +57,7 @@ export function TimeZoneCard({
     try {
       await attempt.current.run();
       attempt.current = null;
-      await client.invalidateQueries({ queryKey: ["ledgers"] });
+      await client.invalidateQueries({ queryKey: queryKeys.ledgers });
       onNotice("Time zone saved.");
     } catch (error) {
       attempt.current = null;

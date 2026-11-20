@@ -7,7 +7,6 @@ import {
   parseMinorUnits,
 } from "@ledgerline/shared";
 import { SegmentedControl } from "@ledgerline/ui";
-import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { Amount } from "../../components/amount-text";
 import { DateTimeInput } from "../../components/date-time-input";
@@ -17,9 +16,7 @@ import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
 import { decimalFromCents } from "../../lib/money";
 import { localToday } from "../../lib/time";
-import { getCategories } from "../categories/api";
 import { useBaseValues } from "../currencies/base-value";
-import { getActiveAccounts } from "../transactions/api";
 import { CategoryCombo } from "../transactions/category-combo";
 import {
   type LoanAction,
@@ -28,6 +25,8 @@ import {
 } from "./loans-api";
 
 import "./loans.css";
+import { useActiveAccounts } from "../accounts/hooks";
+import { useCategories } from "../categories/hooks";
 
 const NEW = "new";
 const hints = (
@@ -137,16 +136,11 @@ export function LoanDialog({
   const balance = loan?.balance.amount ?? 0;
   const owedToYou = balance > 0;
   const moves = kind === "lend" || kind === "borrow" || kind === "repay";
-  const accounts = useQuery({
-    queryKey: ["accounts", ledgerId, "active-own"],
-    queryFn: ({ signal }) => getActiveAccounts(ledgerId, signal),
+  const accounts = useActiveAccounts(ledgerId, {
+    ownOnly: true,
     enabled: moves,
   });
-  const categories = useQuery({
-    queryKey: ["categories", ledgerId, "loan-waive"],
-    queryFn: ({ signal }) => getCategories(ledgerId, signal),
-    enabled: kind === "waive",
-  });
+  const categories = useCategories(ledgerId, kind === "waive");
   const [accountId, setAccountId] = useState("");
   const [amount, setAmount] = useState(
     editing

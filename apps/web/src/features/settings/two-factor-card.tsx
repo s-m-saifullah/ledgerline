@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Overlay } from "../../components/overlay";
 import { getSession } from "../../lib/api";
+import { queryKeys } from "../../lib/query-keys";
 import {
   makeBackupCodes,
   secretFromUri,
@@ -38,14 +39,18 @@ export function TwoFactorCard({
   onNotice: (text: string) => void;
 }) {
   const client = useQueryClient();
-  const session = useQuery({ queryKey: ["session"], queryFn: getSession });
+  const session = useQuery({
+    queryKey: queryKeys.session,
+    queryFn: getSession,
+  });
   const ready = session.isSuccess;
   const enabled = session.data?.user?.twoFactorEnabled === true;
   const [step, setStep] = useState<Step>({ name: "idle" });
   const [opener, setOpener] = useState<Action>("setup");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
-  const refresh = () => client.invalidateQueries({ queryKey: ["session"] });
+  const refresh = () =>
+    client.invalidateQueries({ queryKey: queryKeys.session });
   const begin = (action: Action) => {
     setOpener(action);
     setSaved(false);

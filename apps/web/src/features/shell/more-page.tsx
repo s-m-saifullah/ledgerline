@@ -10,11 +10,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import type { ReactElement, ReactNode } from "react";
 import { Amount } from "../../components/amount-text";
-import { getLedgers, type Session } from "../../lib/api";
+import type { Session } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
 import { getHome } from "../home/api";
 import { getMe, meKey } from "../profile/api";
 import "./more.css";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 import { moreGroupsFor } from "./nav";
 
 /** As the prototype draws it, a row has a hint only where there is something to say: Settings carries the version, which used to be a line at the foot. Clients and Loans say who owes when someone does. */
@@ -33,17 +35,18 @@ const linkTo =
 /** More (ADR 0047): More's pages in three groups of rows, with the two figures of money owed that the web keeps apart. */
 export function MorePage() {
   const month = useCurrentMonth();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger } = useLedger();
   // The same query Home and Loans use, so a page opened from either shows its figures at once.
   const summary = useQuery({
-    queryKey: ["home", ledger?.id, month],
+    queryKey: queryKeys.home(ledger?.id, month),
     queryFn: ({ signal }) => getHome(ledger?.id as string, month, signal),
     enabled: !!ledger,
   });
   // Profile comes first (ADR 0048). The name is known at once from the session; the Admin pill follows `/me`.
   const me = useQuery({ queryKey: meKey, queryFn: getMe });
-  const session = useQueryClient().getQueryData<Session | null>(["session"]);
+  const session = useQueryClient().getQueryData<Session | null>(
+    queryKeys.session,
+  );
   const name = me.data?.name ?? session?.user.name;
   const owed = summary.data?.owed;
   const lent = summary.data?.loans.lent;

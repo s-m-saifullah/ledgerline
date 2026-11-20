@@ -2,6 +2,8 @@ import type { Category, ReorderCategories } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { ApiError } from "../../lib/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
 import { getCategories, prepareCategoryReorder } from "./api";
 
 /** Each click is one intent. An interrupted response retains its key and body. */
@@ -16,7 +18,7 @@ export function useCategoryReorder(ledgerId: string) {
     null,
   );
   const inFlight = useRef(false);
-  const queryKey = ["categories", ledgerId];
+  const queryKey = queryKeys.categories(ledgerId);
 
   const save = async (body?: ReorderCategories) => {
     if (inFlight.current || state === "conflict") return;
@@ -37,7 +39,7 @@ export function useCategoryReorder(ledgerId: string) {
       client.setQueryData<Category[]>(queryKey, (items = []) =>
         items.map((item) => updated.get(item.id) ?? item),
       );
-      await client.invalidateQueries({ queryKey });
+      await invalidateLedger(client, ledgerId);
       attempt.current = null;
       setState("idle");
       setNotice("Category order updated.");

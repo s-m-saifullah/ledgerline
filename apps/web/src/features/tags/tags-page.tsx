@@ -1,6 +1,6 @@
 import type { Tag } from "@ledgerline/shared";
 import { EmptyState, IconTile, ListCard, RowBody } from "@ledgerline/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Plus, TagIcon } from "lucide-react";
 import { useState } from "react";
@@ -9,16 +9,16 @@ import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { SearchField } from "../../components/search-field";
 import { Toast, toastDuration } from "../../components/toast";
-import { getLedgers } from "../../lib/api";
 import { usePageAdd } from "../shell/page-add";
 import { splitTags, tagHint } from "./model";
 import { TagSheet } from "./tag-sheet";
 import { useTags } from "./use-tags";
 import "./tags.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { useLedger } from "../../lib/use-ledger";
 
 export function TagsPage() {
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   if (ledgers.isPending) return <Loading what="tags" />;
   if (ledgers.isError || !ledger)
     return (
@@ -173,7 +173,7 @@ function LedgerTags({
           onSaved={(done) => {
             setOpen(null);
             setNotice(done);
-            void client.invalidateQueries({ queryKey: ["tags", ledgerId] });
+            void invalidateLedger(client, ledgerId);
           }}
         />
       )}

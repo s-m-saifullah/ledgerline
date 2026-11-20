@@ -3,11 +3,7 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "./styles.css";
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
   createRootRoute,
   createRoute,
@@ -46,10 +42,12 @@ import {
   ThemeContext,
   usePreferences,
 } from "./lib/preferences";
+import { createQueryClient, prefetchStartup } from "./lib/query-client";
+import { queryKeys } from "./lib/query-keys";
 
-const client = new QueryClient({
-  defaultOptions: { queries: { retry: false, staleTime: 30_000 } },
-});
+const client = createQueryClient();
+// The ledgers are needed as soon as the session is known: ask for them beside it.
+void prefetchStartup(client);
 /** Forgets the signed-in person, then goes to the sign-in page. */
 async function signedOut() {
   await forgetSession(client);
@@ -57,7 +55,10 @@ async function signedOut() {
 }
 function Root() {
   const preferences = usePreferences();
-  const session = useQuery({ queryKey: ["session"], queryFn: getSession });
+  const session = useQuery({
+    queryKey: queryKeys.session,
+    queryFn: getSession,
+  });
   if (session.isPending)
     return (
       <main className="loading" role="status">
@@ -84,7 +85,7 @@ function Root() {
         onSuccess={async () => {
           // Whoever signs in now is not necessarily who was here before.
           forgetPerson(client);
-          await client.invalidateQueries({ queryKey: ["session"] });
+          await client.invalidateQueries({ queryKey: queryKeys.session });
         }}
       />
     );

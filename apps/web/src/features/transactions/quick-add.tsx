@@ -1,11 +1,10 @@
 import type { Category, Transaction } from "@ledgerline/shared";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { LoadingSheet } from "../../components/loading-sheet";
 import { Toast, toastDuration } from "../../components/toast";
 import { ApiError } from "../../lib/api";
-import { getCategories } from "../categories/api";
-import { getActiveAccounts, prepareTransactionUndo } from "./api";
+import { prepareTransactionUndo } from "./api";
 import { type EntryType, TypePill } from "./entry-sheet";
 import { TransferForm } from "./transfer-form";
 import { useTransactionWorkspace } from "./workspace";
@@ -13,6 +12,10 @@ import { useTransactionWorkspace } from "./workspace";
 const uncertainFailure = (failure: unknown) =>
   !(failure instanceof ApiError) || failure.status >= 500;
 
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useActiveAccounts } from "../accounts/hooks";
+import { useCategories } from "../categories/hooks";
 import { QuickAddForm } from "./quick-add-form";
 export function QuickAdd({
   actorId,
@@ -40,18 +43,12 @@ export function QuickAdd({
   const externalBlocked = workspace?.editorLocked ?? false;
   const setQuickAddLocked = workspace?.setQuickAddLocked;
   const client = useQueryClient();
-  const accounts = useQuery({
-    queryKey: ["accounts", ledgerId, "quick-add"],
-    queryFn: ({ signal }) => getActiveAccounts(ledgerId, signal),
+  // The same answers Home and the shell have loaded, so the sheet opens ready.
+  const accounts = useActiveAccounts(ledgerId, {
+    ownOnly: true,
     enabled: open,
-    refetchOnMount: "always",
   });
-  const categories = useQuery({
-    queryKey: ["categories", ledgerId],
-    queryFn: ({ signal }) => getCategories(ledgerId, signal),
-    enabled: open,
-    refetchOnMount: "always",
-  });
+  const categories = useCategories(ledgerId, open);
   const [saved, setSaved] = useState<Transaction | null>(null);
   // A saved transfer that came with a bonus or fee entry: Undo removes them too.
   const [savedBonus, setSavedBonus] = useState(false);
@@ -65,11 +62,7 @@ export function QuickAdd({
   }, [formLocked, undoBusy, undoUncertain, setQuickAddLocked]);
   const undoAttempt = useRef<(() => Promise<void>) | null>(null);
   const undoInFlight = useRef(false);
-  const invalidate = () => {
-    void client.invalidateQueries({ queryKey: ["accounts", ledgerId] });
-    void client.invalidateQueries({ queryKey: ["transactions", ledgerId] });
-    void client.invalidateQueries({ queryKey: ["home", ledgerId] });
-  };
+  const invalidate = () => void invalidateLedger(client, ledgerId);
   const undo = async () => {
     if (
       !saved ||
@@ -170,16 +163,13 @@ export function QuickAdd({
           onRefresh={refreshed}
           onCategorySaved={(category) => {
             client.setQueryData<Category[]>(
-              ["categories", ledgerId],
+              queryKeys.categories(ledgerId),
               (items) => [
                 ...(items ?? []).filter((row) => row.id !== category.id),
                 category,
               ],
             );
-            void client.invalidateQueries({
-              queryKey: ["categories", ledgerId],
-            });
-            void client.invalidateQueries({ queryKey: ["home", ledgerId] });
+            void invalidateLedger(client, ledgerId);
           }}
           onSaved={(transaction) => {
             setSaved(transaction);

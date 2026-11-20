@@ -3,7 +3,6 @@ import { EmptyState, FilterChip, ListCard, ListHead } from "@ledgerline/ui";
 import {
   keepPreviousData,
   useInfiniteQuery,
-  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
@@ -13,13 +12,13 @@ import type { ComboCreate } from "../../components/combo-field";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { SearchField } from "../../components/search-field";
-import { ApiError, getLedgers } from "../../lib/api";
+import { ApiError } from "../../lib/api";
 import { formatDayHead } from "../../lib/time";
-import { getCategories, prepareCategorySave } from "../categories/api";
+import { prepareCategorySave } from "../categories/api";
 import { ExportButton } from "../exports/export-button";
 import { prepareTagCreate } from "../tags/api";
 import { useTags } from "../tags/use-tags";
-import { getAllAccounts, getTransactions } from "./api";
+import { getTransactions } from "./api";
 import { EntryRow } from "./entry-row";
 import type { TransactionFilters } from "./filters";
 import { FiltersSheet } from "./filters-sheet";
@@ -32,6 +31,11 @@ import {
 } from "./list-model";
 import { useTransactionWorkspace } from "./workspace";
 import "./transactions.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
+import { useAllAccounts } from "../accounts/hooks";
+import { useCategories } from "../categories/hooks";
 
 /** How long the search waits after the last key before it applies (Enter applies at once). */
 export const SEARCH_PAUSE_MS = 400;
@@ -55,13 +59,12 @@ export function TransactionsPage() {
   const filters = useSearch({ from: "/transactions" });
   const navigate = useNavigate();
   const workspace = useTransactionWorkspace();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const rangeInvalid =
     !!filters.from && !!filters.to && filters.from > filters.to;
   const client = useQueryClient();
   const entries = useInfiniteQuery({
-    queryKey: ["transactions", ledger?.id, "list", filters],
+    queryKey: queryKeys.transactionList(ledger?.id, filters),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getTransactions(ledger?.id as string, filters, pageParam, signal),
@@ -73,16 +76,8 @@ export function TransactionsPage() {
     // The rows stay while the next ones load, so a new search does not blank and rebuild the page.
     placeholderData: keepPreviousData,
   });
-  const accounts = useQuery({
-    queryKey: ["accounts", ledger?.id, "history"],
-    queryFn: ({ signal }) => getAllAccounts(ledger?.id as string, signal),
-    enabled: !!ledger,
-  });
-  const categories = useQuery({
-    queryKey: ["categories", ledger?.id],
-    queryFn: ({ signal }) => getCategories(ledger?.id as string, signal),
-    enabled: !!ledger,
-  });
+  const accounts = useAllAccounts(ledger?.id);
+  const categories = useCategories(ledger?.id);
   const tags = useTags(ledger?.id);
   const accountNames = new Map(
     accounts.data?.map((row) => [
@@ -173,7 +168,7 @@ export function TransactionsPage() {
         undefined,
         parsed.data,
       )();
-      await client.invalidateQueries({ queryKey: ["categories", ledger.id] });
+      await invalidateLedger(client, ledger.id);
       return made.id;
     },
   });
@@ -188,10 +183,10 @@ export function TransactionsPage() {
         );
       try {
         const made = await prepareTagCreate(ledger.id, parsed.data)();
-        await client.invalidateQueries({ queryKey: ["tags", ledger.id] });
+        await invalidateLedger(client, ledger.id);
         return made.id;
       } catch (failure) {
-        await client.invalidateQueries({ queryKey: ["tags", ledger.id] });
+        await invalidateLedger(client, ledger.id);
         throw new Error(
           failure instanceof ApiError && failure.status === 409
             ? "A tag with this name already exists. Pick it from the list."

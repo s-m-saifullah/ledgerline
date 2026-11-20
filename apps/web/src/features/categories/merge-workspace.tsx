@@ -19,6 +19,8 @@ import {
 } from "./api";
 import { CategoryPicker } from "./picker";
 import "./categories.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
 
 type Workspace = {
   blocked: boolean;
@@ -57,7 +59,7 @@ export function CategoryMergeWorkspace({
   const attempt = useRef<ReturnType<typeof prepareCategoryMerge> | null>(null),
     inFlight = useRef(false);
   const choices = useQuery({
-    queryKey: ["categories", ledgerId],
+    queryKey: queryKeys.categories(ledgerId),
     queryFn: ({ signal }) => getCategories(ledgerId as string, signal),
     enabled: !!ledgerId && !!source,
     refetchOnMount: "always",
@@ -163,16 +165,7 @@ export function CategoryMergeWorkspace({
     setError("");
     try {
       await attempt.current();
-      for (const key of [
-        "categories",
-        "transactions",
-        "contacts",
-        "receivables",
-        "clientHistory",
-        "accounts",
-        "home",
-      ])
-        void client.invalidateQueries({ queryKey: [key, ledgerId] });
+      if (ledgerId) void invalidateLedger(client, ledgerId);
       reset();
       setNotice("Categories merged. The source is archived.");
     } catch (failure) {
