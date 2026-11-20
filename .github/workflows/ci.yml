@@ -181,6 +181,10 @@ jobs:
       - name: Build and test the Android app
         working-directory: apps/android
         run: ./gradlew --no-daemon --stacktrace :api-client:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease
+      # The release build is shrunk by R8 and the debug build is not, so a type R8 deleted is invisible to every test: the
+      # release app then crashes on the call that answers with it (the lend, repay and client payment crash of android-v0.3.2).
+      - name: Check that R8 kept every type the API returns
+        run: node infra/scripts/android-r8-check.mjs apps/android/api-client/src/main/kotlin/app/ledgerline/api/LedgerlineApi.kt apps/android/app/build/outputs/mapping/release/usage.txt
       # The release workflow's signature check, run here against a throwaway key on this runner's own build tools, so a
       # difference in apksigner's output shows up in a pull request and not after a release tag.
       - name: Check the release signature step with a throwaway key
