@@ -61,10 +61,10 @@ export function CategoryMark({
       : Circle;
   // Color is a decorative swatch; text/icons always use theme contrast tokens.
   return (
-    <span className="category-mark" aria-hidden="true">
-      <Icon size={20} />
+    <span className="ui-tile cg-mark" aria-hidden="true">
+      <Icon size={18} />
       <span
-        className="category-swatch"
+        className="cg-swatch"
         style={{ backgroundColor: color ?? "var(--muted)" }}
       />
     </span>

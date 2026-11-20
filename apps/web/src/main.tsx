@@ -14,7 +14,6 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { Layers } from "lucide-react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { AccountsPage } from "./features/accounts/accounts-page";
@@ -33,7 +32,8 @@ import { ProfilePage } from "./features/profile/profile-page";
 import { RecurringPage } from "./features/recurring/recurring-page";
 import { SettingsPage } from "./features/settings/settings-page";
 import { MorePage } from "./features/shell/more-page";
-import { EmptyPage, Shell } from "./features/shell/shell";
+import { NotFoundPage } from "./features/shell/not-found-page";
+import { Shell } from "./features/shell/shell";
 import { TagsPage } from "./features/tags/tags-page";
 import { transactionSearchSchema } from "./features/transactions/filters";
 import { TransactionsPage } from "./features/transactions/transactions-page";
@@ -124,13 +124,7 @@ function Root() {
 }
 const rootRoute = createRootRoute({
   component: Root,
-  notFoundComponent: () => (
-    <EmptyPage
-      title="Page not found"
-      description="Choose a page from the navigation to continue."
-      icon={Layers}
-    />
-  ),
+  notFoundComponent: NotFoundPage,
 });
 const home = createRoute({
   getParentRoute: () => rootRoute,
