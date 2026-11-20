@@ -64,7 +64,7 @@ export function CategoryMark({
     <span className="ui-tile cg-mark" aria-hidden="true">
       <Icon size={18} />
       <span
-        className="cg-swatch"
+        className="cg-mark-dot"
         style={{ backgroundColor: color ?? "var(--muted)" }}
       />
     </span>

@@ -136,7 +136,7 @@
 .cg-mark {
   position: relative;
 }
-.cg-swatch {
+.cg-mark-dot {
   position: absolute;
   right: 2px;
   bottom: 2px;
