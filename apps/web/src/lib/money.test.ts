@@ -152,6 +152,13 @@ it("turns a bonus percentage into whole basis points and back", () => {
   expect(percentToBps("0.01")).toBe(1);
   expect(percentToBps("100")).toBe(10_000);
   expect(percentToBps("12.34")).toBe(1234);
+  // A point with nothing before or after it is how a decimal looks while it is typed.
+  expect(percentToBps(".8")).toBe(80);
+  expect(percentToBps("8.")).toBe(800);
+  expect(percentToBps(" .25 ")).toBe(25);
+  expect(percentToBps(".")).toBeNull();
+  expect(percentToBps("1.2.3")).toBeNull();
+  expect(percentToBps(".005")).toBeNull();
   for (const bad of ["", "0", "0.00", "100.01", "2.555", "-1", "1e2", "abc"])
     expect(percentToBps(bad)).toBeNull();
   expect(bpsToPercent(250)).toBe("2.5");

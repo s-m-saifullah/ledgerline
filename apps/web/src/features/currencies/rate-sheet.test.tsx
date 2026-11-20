@@ -127,6 +127,16 @@ it("saves the typed rate inverted, for today with an idempotency key, with no da
   });
   expect(writes[0]?.key).not.toBe("");
 });
+it("takes a rate typed as .8 or 8. as 0.8 and 8", async () => {
+  const user = userEvent.setup();
+  const { writes, onSaved } = mount(pinned(rate("1.1217")));
+  const box = await screen.findByLabelText("Set the rate yourself");
+  await user.clear(box);
+  await user.type(box, ".8");
+  await user.click(screen.getByRole("button", { name: "Save" }));
+  await waitFor(() => expect(onSaved).toHaveBeenCalledWith("Rate saved."));
+  expect(writes[0]?.body).toMatchObject({ code: "EUR", rate: "1.25" });
+});
 it("edits today's stored rate, and adds today's when the latest is from another day", async () => {
   const user = userEvent.setup();
   const sheet = pinned(rate("1.1", "api", today()));

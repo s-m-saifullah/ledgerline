@@ -1,4 +1,4 @@
-import { currencyDigits } from "@ledgerline/shared";
+import { currencyDigits, typedDecimal } from "@ledgerline/shared";
 
 /**
  * Accept what people actually type ("$1,200.50", ".50", "5.") and return the plain
@@ -50,7 +50,7 @@ export function formatMoney(amount: number, currency = "USD"): string {
 export const formatUsd = (amount: number) => formatMoney(amount, "USD");
 /** "2.5" becomes 250 basis points; anything that is not 0.01 to 100 with at most two decimals is null. */
 export function percentToBps(text: string): number | null {
-  const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(text.trim());
+  const match = /^(\d{1,3})(?:\.(\d{1,2}))?$/.exec(typedDecimal(text));
   if (!match) return null;
   const bps = Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"));
   return bps >= 1 && bps <= 10_000 ? bps : null;

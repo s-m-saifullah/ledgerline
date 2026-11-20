@@ -1,9 +1,10 @@
-import { type BudgetLine, parseMinorUnits } from "@ledgerline/shared";
+import type { BudgetLine } from "@ledgerline/shared";
 import { Avatar, ListCard, SwitchRow } from "@ledgerline/ui";
 import { useRef, useState } from "react";
 import { Amount } from "../../components/amount-text";
 import { EntryAmount } from "../../components/entry-amount";
 import { Overlay } from "../../components/overlay";
+import { typedMinor } from "../../lib/amount-input";
 import { ApiError } from "../../lib/api";
 import { cleanAmountText, decimalFromCents } from "../../lib/money";
 import { monthLabel } from "../../lib/month";
@@ -14,7 +15,7 @@ export function parseBudgetAmount(text: string) {
   const cleaned = cleanAmountText(text);
   if (!cleaned) return { error: "Enter a budget amount." } as const;
   try {
-    const cents = parseMinorUnits(cleaned);
+    const cents = typedMinor(cleaned);
     if (cents < 0) return { error: "A budget cannot be negative." } as const;
     return { cents } as const;
   } catch {

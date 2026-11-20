@@ -4,9 +4,9 @@ import {
   createAccountSchema,
   currencyDigits,
   currencySchema,
-  parseMinorUnits,
 } from "@ledgerline/shared";
 import { z } from "zod";
+import { typedMinor } from "../../lib/amount-input";
 import { defaultFeeText, parseFee } from "../../lib/fee";
 import {
   bpsToPercent,
@@ -55,7 +55,7 @@ export const accountFormSchema = z
       digits === 0 ? /^\d+$/.test(values.amount) : pattern.test(values.amount);
     if (valid)
       try {
-        parseMinorUnits(values.amount, digits);
+        typedMinor(values.amount, digits);
       } catch {
         valid = false;
       }
@@ -104,7 +104,7 @@ export function formDefaults(
 }
 export function accountBody(values: AccountFormValues) {
   const parsed = accountFormSchema.parse(values);
-  const cents = parseMinorUnits(parsed.amount, currencyDigits(parsed.currency));
+  const cents = typedMinor(parsed.amount, currencyDigits(parsed.currency));
   const fee = parseFee(parsed.defaultFee, parsed.currency);
   return createAccountSchema.parse({
     name: parsed.name,

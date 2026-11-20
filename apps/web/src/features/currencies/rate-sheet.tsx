@@ -1,7 +1,7 @@
 import {
   invertRate,
   type PinnedCurrency,
-  rateFromInverse,
+  rateFromTyped,
 } from "@ledgerline/shared";
 import { StatusPill } from "@ledgerline/ui";
 import { type FormEvent, useRef, useState } from "react";
@@ -68,7 +68,7 @@ export function RateSheet({
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const stored = rateFromInverse(rate);
+    const stored = rateFromTyped(rate);
     if (!stored) {
       setError(
         `Enter how much ${currency.code} one ${baseCurrency} is worth, such as 122.5.`,

@@ -143,6 +143,21 @@ describe("LoanDialog", () => {
       amount: { amount: 30000, currency: "USD" },
     });
   });
+  it.each([
+    [".8", 80],
+    ["8.", 800],
+    ["1,000.5", 100050],
+    ["$12", 1200],
+  ])("reads the amount %s as it is meant", async (typed, minor) => {
+    const { writes, saved } = mount("lend", []);
+    await screen.findByRole("option", { name: "Everyday (USD)" });
+    await userEvent.type(screen.getByLabelText(/Amount/), typed);
+    await userEvent.click(screen.getByRole("button", { name: "Lend" }));
+    await waitFor(() => expect(saved).toHaveBeenCalled());
+    expect(writes[0]?.body).toMatchObject({
+      amount: { amount: minor, currency: "USD" },
+    });
+  });
   it("refuses a repayment larger than what is open, and sends nothing", async () => {
     const { writes } = mount("repay", [loan(10000)]);
     await screen.findByRole("option", { name: "Everyday (USD)" });

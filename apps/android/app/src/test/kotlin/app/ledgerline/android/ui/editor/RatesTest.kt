@@ -43,6 +43,21 @@ class RatesTest {
     }
 
     @Test
+    fun everyRateTypedByHandIsStoredAsTheWebStoresIt() {
+        // WP-15: the web reads ".8" and "8." as meant too (`rateFromTyped` in `packages/shared`), so the two agree.
+        val cases = fixture["fromTyped"]!!.jsonArray
+        assertTrue(cases.size >= 90)
+        cases.forEach { case ->
+            val c = case.jsonObject
+            val text = c["text"]!!.jsonPrimitive.content
+            val expected = c["rate"]!!.let { if (it is kotlinx.serialization.json.JsonNull) null else it.jsonPrimitive.content }
+            assertEquals("\"$text\"", expected, rateFromTyped(text))
+        }
+        assertTrue(cases.any { it.jsonObject["text"]!!.jsonPrimitive.content == ".8" && it.jsonObject["rate"] !is kotlinx.serialization.json.JsonNull })
+        assertTrue(cases.any { it.jsonObject["rate"] is kotlinx.serialization.json.JsonNull })
+    }
+
+    @Test
     fun everyConvertedAmountMatchesTheWebsConvertMinor() {
         val cases = fixture["convert"]!!.jsonArray
         cases.forEach { case ->

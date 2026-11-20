@@ -192,3 +192,21 @@ it("follows the chosen account: another currency, a clean rate, no rate field fo
   expect(body.amount.currency).toBe("USD");
   expect(body.fxRate).toBeUndefined();
 });
+
+it("reads a rate typed as .8 as 0.8", async () => {
+  mount("1.1217");
+  await userEvent.type(screen.getByLabelText("Amount (EUR)"), "100");
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Set the rate yourself" }),
+  );
+  const field = screen.getByLabelText("1 USD is worth (EUR)");
+  await userEvent.clear(field);
+  await userEvent.type(field, ".8");
+  // 1 USD = 0.8 EUR means 1 EUR = 1.25 USD, so 100 EUR is 125 USD.
+  expect(await screen.findByText(/About/)).toHaveTextContent(
+    "About $125.00 · 1 USD = 0.8 EUR (set by you)",
+  );
+  expect(
+    screen.queryByText("Enter a positive amount such as 122.5."),
+  ).toBeNull();
+});
