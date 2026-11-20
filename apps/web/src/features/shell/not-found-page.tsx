@@ -10,7 +10,7 @@ export function NotFoundPage() {
       <div className="ui-card">
         <EmptyState text="This page does not exist." />
       </div>
-      <Link to="/" className="ui-btn ui-btn-primary">
+      <Link to="/" className="ui-btn ui-btn-primary nf-home">
         Go to Home
       </Link>
     </div>

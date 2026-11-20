@@ -368,3 +368,8 @@
     display: block;
   }
 }
+
+/* The page that is not found: the way home is as wide as its word, not the page. */
+.nf-home {
+  justify-self: start;
+}
