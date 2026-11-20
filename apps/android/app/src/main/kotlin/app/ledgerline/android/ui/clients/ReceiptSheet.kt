@@ -8,12 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +33,7 @@ import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.SectionLabel
@@ -233,7 +232,7 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
     }
     if (pickingDate) DatePickerStep(form.date, onPick = { date -> actions.edit { it.copy(date = date) } }, onClose = { pickingDate = false })
     if (pickingTime) TimePickerStep(form.time, onPick = { time -> actions.edit { it.copy(time = time) } }, onClose = { pickingTime = false })
-    if (ui.asking) Question(ui, actions)
+    if (ui.asking) ReceiptQuestion(ui, actions)
 }
 
 /**
@@ -291,7 +290,7 @@ private fun PreviewRows(preview: ReceiptPreview, currency: String) {
 
 /** The question before anything is sent: how much, from whom, into which account, which services it pays and how much is a tip. */
 @Composable
-private fun Question(ui: ReceiptUi, actions: ReceiptActions) {
+private fun ReceiptQuestion(ui: ReceiptUi, actions: ReceiptActions) {
     val form = ui.form
     val split = form.split ?: return
     val cross = form.cross
@@ -305,35 +304,24 @@ private fun Question(ui: ReceiptUi, actions: ReceiptActions) {
         summary.partial -> pluralStringResource(R.plurals.receipt_pays_full_part, summary.full, summary.full)
         else -> pluralStringResource(R.plurals.receipt_pays_full, summary.full, summary.full)
     }
-    AlertDialog(
-        onDismissRequest = actions.dismissAsk,
-        title = { Text(stringResource(R.string.payment_ask_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (cross != null) {
-                    Text(stringResource(R.string.payment_ask_body_across, total.text, form.target.clientName, account, money(split.settle, form.currency).text))
-                } else {
-                    Text(stringResource(R.string.payment_ask_body, total.text, form.target.clientName, account))
-                }
-                if (pays != null) Text(pays)
-                if (cross != null) {
-                    if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
-                } else if (split.tip > 0) {
-                    Text(stringResource(R.string.payment_ask_tip, money(split.tip, form.currency).text))
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.confirm, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.payment_ask_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.dismissAsk, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+    Question(
+        title = stringResource(R.string.payment_ask_title),
+        confirm = stringResource(R.string.payment_ask_confirm),
+        onConfirm = actions.confirm,
+        onDismiss = actions.dismissAsk,
+    ) {
+        if (cross != null) {
+            Text(stringResource(R.string.payment_ask_body_across, total.text, form.target.clientName, account, money(split.settle, form.currency).text))
+        } else {
+            Text(stringResource(R.string.payment_ask_body, total.text, form.target.clientName, account))
+        }
+        if (pays != null) Text(pays)
+        if (cross != null) {
+            if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
+        } else if (split.tip > 0) {
+            Text(stringResource(R.string.payment_ask_tip, money(split.tip, form.currency).text))
+        }
+    }
 }
 
 private fun ReceiptProblem.messageRes() = when (this) {

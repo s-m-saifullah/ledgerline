@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.ui.privacy.ShownMoney
 import app.ledgerline.android.ui.theme.LocalPalette
@@ -140,11 +141,18 @@ fun DayHeader(text: String, net: String? = null) {
     }
 }
 
-/** The button ladder (ADR 0039): filled for the one primary action, 8 dp corners as on the web. */
+/** The button ladder (ADR 0039): filled for the one primary action (red when it deletes), 12 dp corners as on the web. */
 @Composable
-fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
-    Button(onClick = onClick, enabled = enabled, shape = MaterialTheme.shapes.small, modifier = modifier.heightIn(min = 48.dp)) {
-        Text(text, style = MaterialTheme.typography.labelLarge)
+fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, danger: Boolean = false) {
+    val palette = LocalPalette.current
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        shape = MaterialTheme.shapes.small,
+        colors = if (danger) ButtonDefaults.buttonColors(containerColor = palette.danger, contentColor = palette.dangerForeground) else ButtonDefaults.buttonColors(),
+        modifier = modifier.heightIn(min = 48.dp),
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
     }
 }
 
@@ -159,7 +167,7 @@ fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
         border = BorderStroke(1.dp, if (danger) palette.danger else palette.border),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = if (danger) palette.danger else palette.text),
         modifier = modifier.heightIn(min = 48.dp),
-    ) { Text(text, style = MaterialTheme.typography.labelLarge) }
+    ) { Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center) }
 }
 
 /** `.text-button`: the accent colour, for light actions such as Manage or Try again. */

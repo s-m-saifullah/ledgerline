@@ -23,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -67,6 +66,7 @@ import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SegmentedControl
@@ -147,17 +147,13 @@ private fun EditorTopBar(title: String, canDelete: Boolean, transfer: Boolean, a
 
 @Composable
 private fun DeleteQuestion(transfer: Boolean, onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (transfer) R.string.editor_delete_transfer_title else R.string.editor_delete_entry_title)) },
-        text = { Text(stringResource(R.string.editor_delete_body)) },
-        confirmButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = onConfirm, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.editor_delete), color = MaterialTheme.colorScheme.error)
-            }
-        },
-        dismissButton = { TextButton(shape = MaterialTheme.shapes.small, onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.cancel)) } },
-    )
+    Question(
+        title = stringResource(if (transfer) R.string.editor_delete_transfer_title else R.string.editor_delete_entry_title),
+        confirm = stringResource(R.string.editor_delete),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        danger = true,
+    ) { Text(stringResource(R.string.editor_delete_body)) }
 }
 
 @Composable

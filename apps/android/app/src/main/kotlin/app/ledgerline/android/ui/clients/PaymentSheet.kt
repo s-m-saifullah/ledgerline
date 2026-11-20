@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,6 +36,7 @@ import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SheetTitle
@@ -235,43 +234,32 @@ internal fun PaymentSheetContent(ui: PaymentUi, actions: PaymentActions, modifie
     }
     if (pickingDate) DatePickerStep(form.date, onPick = { date -> actions.edit { it.copy(date = date) } }, onClose = { pickingDate = false })
     if (pickingTime) TimePickerStep(form.time, onPick = { time -> actions.edit { it.copy(time = time) } }, onClose = { pickingTime = false })
-    if (ui.asking) Question(ui, actions)
+    if (ui.asking) PaymentQuestion(ui, actions)
 }
 
 /** The question before anything is sent: how much, from whom, into which account, and how much of it is a tip. */
 @Composable
-private fun Question(ui: PaymentUi, actions: PaymentActions) {
+private fun PaymentQuestion(ui: PaymentUi, actions: PaymentActions) {
     val form = ui.form
     val target = form.target
     val split = form.split ?: return
     val cross = form.cross
     val total = if (cross != null) money(cross.receivedMinor ?: return, cross.accountCurrency) else money(split.settle + split.tip, target.currency)
     val account = ui.accounts.labelOf(form.accountId)
-    AlertDialog(
-        onDismissRequest = actions.dismissAsk,
-        title = { Text(stringResource(R.string.payment_ask_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (cross != null) {
-                    Text(stringResource(R.string.payment_ask_body_across, total.text, target.clientName, account, money(split.settle, target.currency).text))
-                    if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
-                } else {
-                    Text(stringResource(R.string.payment_ask_body, total.text, target.clientName, account))
-                    if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, target.currency).text))
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.confirm, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.payment_ask_confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = actions.dismissAsk, modifier = Modifier.heightIn(min = 48.dp)) {
-                Text(stringResource(R.string.cancel))
-            }
-        },
-    )
+    Question(
+        title = stringResource(R.string.payment_ask_title),
+        confirm = stringResource(R.string.payment_ask_confirm),
+        onConfirm = actions.confirm,
+        onDismiss = actions.dismissAsk,
+    ) {
+        if (cross != null) {
+            Text(stringResource(R.string.payment_ask_body_across, total.text, target.clientName, account, money(split.settle, target.currency).text))
+            if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
+        } else {
+            Text(stringResource(R.string.payment_ask_body, total.text, target.clientName, account))
+            if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, target.currency).text))
+        }
+    }
 }
 
 /** A row that opens and shuts what is under it, as the prototype's `<details>` rows. */

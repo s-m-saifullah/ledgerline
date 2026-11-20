@@ -13,12 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +39,7 @@ import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.FilterChip
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchBox
@@ -277,56 +276,43 @@ private fun SubcategoryRow(row: CategoryRow, actions: CategoriesActions) {
 
 @Composable
 private fun ArchiveQuestion(category: CategoryRow, actions: CategoriesActions) {
-    AlertDialog(
-        onDismissRequest = actions.dismissAsk,
-        title = { Text(stringResource(R.string.category_archive_title)) },
-        text = { Text(stringResource(R.string.category_archive_body, category.name)) },
-        confirmButton = { TextButton(onClick = actions.confirmArchive) { Text(stringResource(R.string.category_archive_confirm)) } },
-        dismissButton = { TextButton(onClick = actions.dismissAsk) { Text(stringResource(R.string.category_cancel)) } },
-    )
+    Question(
+        title = stringResource(R.string.category_archive_title),
+        confirm = stringResource(R.string.category_archive_confirm),
+        onConfirm = actions.confirmArchive,
+        onDismiss = actions.dismissAsk,
+    ) { Text(stringResource(R.string.category_archive_body, category.name)) }
 }
 
 /** Delete asks first; when something uses the category it explains and recommends archiving, and nothing is sent. */
 @Composable
 private fun DeleteQuestion(ask: DeleteAsk, actions: CategoriesActions) {
-    val palette = LocalPalette.current
     val name = ask.category.name
     val block = ask.block
     if (block == null) {
-        AlertDialog(
-            onDismissRequest = actions.dismissDeleteAsk,
-            title = { Text(stringResource(R.string.category_delete_title)) },
-            text = { Text(stringResource(R.string.category_delete_body, name)) },
-            confirmButton = { TextButton(onClick = actions.confirmDelete) { Text(stringResource(R.string.category_delete_confirm), color = palette.danger) } },
-            dismissButton = { TextButton(onClick = actions.dismissDeleteAsk) { Text(stringResource(R.string.category_cancel)) } },
-        )
+        Question(
+            title = stringResource(R.string.category_delete_title),
+            confirm = stringResource(R.string.category_delete_confirm),
+            onConfirm = actions.confirmDelete,
+            onDismiss = actions.dismissDeleteAsk,
+            danger = true,
+        ) { Text(stringResource(R.string.category_delete_body, name)) }
         return
     }
-    AlertDialog(
-        onDismissRequest = actions.dismissDeleteAsk,
-        title = { Text(stringResource(R.string.category_delete_blocked_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                when (block) {
-                    DeleteBlock.HasSubcategories -> Text(stringResource(R.string.category_delete_blocked_subcategories, name))
-                    is DeleteBlock.UsedByEntries -> {
-                        Text(pluralStringResource(R.plurals.category_delete_blocked_entries, block.count, name, block.count))
-                        if (!ask.canArchiveInstead && ask.category.archivedAt == null) Text(stringResource(R.string.category_delete_blocked_archive_first))
-                    }
-                }
+    val archiveInstead = ask.canArchiveInstead && block is DeleteBlock.UsedByEntries
+    Question(
+        title = stringResource(R.string.category_delete_blocked_title),
+        confirm = stringResource(if (archiveInstead) R.string.category_delete_archive_instead else R.string.category_delete_close),
+        onConfirm = if (archiveInstead) actions.archiveInstead else actions.dismissDeleteAsk,
+        onDismiss = actions.dismissDeleteAsk,
+        cancel = if (archiveInstead) stringResource(R.string.category_delete_close) else null,
+    ) {
+        when (block) {
+            DeleteBlock.HasSubcategories -> Text(stringResource(R.string.category_delete_blocked_subcategories, name))
+            is DeleteBlock.UsedByEntries -> {
+                Text(pluralStringResource(R.plurals.category_delete_blocked_entries, block.count, name, block.count))
+                if (!ask.canArchiveInstead && ask.category.archivedAt == null) Text(stringResource(R.string.category_delete_blocked_archive_first))
             }
-        },
-        confirmButton = {
-            if (ask.canArchiveInstead && block is DeleteBlock.UsedByEntries) {
-                TextButton(onClick = actions.archiveInstead) { Text(stringResource(R.string.category_delete_archive_instead)) }
-            } else {
-                TextButton(onClick = actions.dismissDeleteAsk) { Text(stringResource(R.string.category_delete_close)) }
-            }
-        },
-        dismissButton = if (ask.canArchiveInstead && block is DeleteBlock.UsedByEntries) {
-            { TextButton(onClick = actions.dismissDeleteAsk) { Text(stringResource(R.string.category_delete_close)) } }
-        } else {
-            null
-        },
-    )
+        }
+    }
 }
