@@ -9,15 +9,15 @@ import {
 import { SegmentedControl } from "@ledgerline/ui";
 import { useRef, useState } from "react";
 import { Amount } from "../../components/amount-text";
+import { CategoryCombo } from "../../components/category-combo";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EntryAmount } from "../../components/entry-amount";
 import { Overlay } from "../../components/overlay";
 import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
+import { useBaseValues } from "../../lib/base-values";
 import { decimalFromCents } from "../../lib/money";
 import { localToday } from "../../lib/time";
-import { useBaseValues } from "../currencies/base-value";
-import { CategoryCombo } from "../transactions/category-combo";
 import {
   type LoanAction,
   prepareCreatePerson,
@@ -25,8 +25,8 @@ import {
 } from "./loans-api";
 
 import "./loans.css";
-import { useActiveAccounts } from "../accounts/hooks";
-import { useCategories } from "../categories/hooks";
+import { useActiveAccounts } from "../../lib/use-accounts";
+import { useCategories } from "../../lib/use-categories";
 
 const NEW = "new";
 const hints = (

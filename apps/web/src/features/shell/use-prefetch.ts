@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { getActiveAccounts } from "../../lib/accounts";
+import { getCategories } from "../../lib/categories";
 import { queryKeys } from "../../lib/query-keys";
-import { getActiveAccounts } from "../accounts/api";
-import { getCategories } from "../categories/api";
 
 /**
  * Loads what the Add sheet needs as soon as the ledger is known, so the first Add of a visit opens ready whatever page the

@@ -1,7 +1,7 @@
 import { convertMinor, type Money } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../../lib/query-keys";
-import { getCurrencies } from "./api";
+import { getCurrencies } from "./currencies";
+import { queryKeys } from "./query-keys";
 
 /**
  * The ledger's currencies and their newest stored rates, for showing what an amount in another

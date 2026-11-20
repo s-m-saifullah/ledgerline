@@ -18,14 +18,10 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LoadError } from "../../components/load-error";
+import { type PageAdd, PageAddProvider } from "../../components/page-add";
 import { TopBar } from "../../components/top-bar";
 import { api, type Session } from "../../lib/api";
-import { type Preferences, SignOutContext } from "../../lib/preferences";
-import { useLiveChanges } from "../../lib/use-live-changes";
-import { usePageAnnouncement } from "../../lib/use-page-announcement";
-import { getMe, meKey } from "../profile/api";
-import { QuickAdd } from "../transactions/quick-add";
-import { TransactionWorkspace } from "../transactions/workspace";
+import { getMe } from "../../lib/me";
 import {
   backTarget,
   basePath,
@@ -35,11 +31,16 @@ import {
   navPagesFor,
   pageTitle,
   showsAdd,
-} from "./nav";
-import { type PageAdd, PageAddProvider } from "./page-add";
+} from "../../lib/nav";
+import { type Preferences, SignOutContext } from "../../lib/preferences";
+import { useLiveChanges } from "../../lib/use-live-changes";
+import { usePageAnnouncement } from "../../lib/use-page-announcement";
+import { QuickAdd } from "../transactions/quick-add";
+import { TransactionWorkspace } from "../transactions/workspace";
 import { CommandPalette, type PaletteItem } from "./palette";
 import { SyncStatus } from "./sync-status";
 import "./shell.css";
+import { queryKeys } from "../../lib/query-keys";
 import { useLedger } from "../../lib/use-ledger";
 import { usePrefetchLedgerData } from "./use-prefetch";
 
@@ -66,7 +67,7 @@ export function Shell({
   const pageAnnouncement = usePageAnnouncement(currentPage);
   const { ledger, ledgers } = useLedger();
   // Whether I am the admin: the sidebar says so under my name (ADR 0048). A failed read just leaves the line blank.
-  const me = useQuery({ queryKey: meKey, queryFn: getMe });
+  const me = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
   const isAdmin = me.data?.isAdmin === true;
   const sync = useLiveChanges(ledger?.id);
   // The Add sheet needs the accounts and categories: have them ready before it is opened.

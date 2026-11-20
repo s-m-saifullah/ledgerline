@@ -4,12 +4,8 @@ import { Link } from "@tanstack/react-router";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
-import {
-  prepareTagArchive,
-  prepareTagCreate,
-  prepareTagDelete,
-  prepareTagRename,
-} from "./api";
+import { prepareTagCreate } from "../../lib/tags";
+import { prepareTagArchive, prepareTagDelete, prepareTagRename } from "./api";
 import { parseTagName, tagNameMessage } from "./model";
 
 const failure = (error: unknown, fallback: string) =>

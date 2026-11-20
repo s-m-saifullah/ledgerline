@@ -1,9 +1,9 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { category } from "../../test-support/category-fixtures";
-import { CategoryMark } from "./appearance";
-import { CategoryPicker } from "./picker";
+import { CategoryMark } from "../features/categories/appearance";
+import { category } from "../test-support/category-fixtures";
+import { CategoryPicker } from "./category-picker";
 
 const root = category("Food");
 const child = category("Groceries", { parentId: root.id });

@@ -7,7 +7,7 @@ import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
 import { invalidateLedger } from "../../lib/ledger-cache";
-import { useCategoryCreate } from "../categories/use-category-create";
+import { useCategoryCreate } from "../../lib/use-category-create";
 import {
   getTransaction,
   prepareTransactionEdit,

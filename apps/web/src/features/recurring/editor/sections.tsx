@@ -2,14 +2,14 @@ import type { RecurringFrequency } from "@ledgerline/shared";
 import { SegmentedControl, SwitchRow } from "@ledgerline/ui";
 import { ChevronDown } from "lucide-react";
 import { AmountInput } from "../../../components/amount-input";
+import { CategoryCombo } from "../../../components/category-combo";
 import { DateTimeInput } from "../../../components/date-time-input";
 import { EntryAmount } from "../../../components/entry-amount";
+import { FeePreview } from "../../../components/fee-preview";
 import { PickRow } from "../../../components/pick-row";
+import { TagPicker } from "../../../components/tag-picker";
+import { feeHint, feeMinor } from "../../../lib/fee";
 import { formatDay } from "../../../lib/time";
-import { TagPicker } from "../../tags/tag-picker";
-import { CategoryCombo } from "../../transactions/category-combo";
-import { feeHint, feeMinor } from "../../transactions/fee";
-import { FeePreview } from "../../transactions/fee-preview";
 import { everySentence } from "../schedule";
 import type { RuleFormContext } from "./form-context";
 

@@ -13,13 +13,14 @@ import { useForm } from "react-hook-form";
 import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ReadOnlyNote } from "../../components/read-only-note";
+import { amountMinor } from "../../lib/amount-input";
 import { ApiError } from "../../lib/api";
+import { defaultFeeText, feeMinor, parseFee } from "../../lib/fee";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { prepareTransactionUndo } from "./api";
-import { defaultFeeText, feeMinor, parseFee } from "./fee";
-import { amountMinor, rememberAccount } from "./form";
+import { rememberAccount } from "./form";
 import { buildTransferBody } from "./transfer/build-body";
 import {
   renderAccountsAndWhen,

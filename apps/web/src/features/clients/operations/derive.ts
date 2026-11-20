@@ -1,5 +1,5 @@
 import type { Account } from "@ledgerline/shared";
-import { amountMinor } from "../../transactions/form";
+import { amountMinor } from "../../../lib/amount-input";
 import { positiveMoney, splitExtra } from "../form";
 import {
   type ClientOperation,

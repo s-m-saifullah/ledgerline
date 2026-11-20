@@ -3,9 +3,9 @@ import { Trash2 } from "lucide-react";
 import { useContext } from "react";
 import { type UseFormReturn, useFieldArray } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
+import { CategoryCombo } from "../../components/category-combo";
 import type { ComboCreate } from "../../components/combo-field";
 import { PrivacyContext } from "../../lib/preferences";
-import { CategoryCombo } from "./category-combo";
 import type { TransactionFormValues } from "./form";
 export function SplitFields({
   form,

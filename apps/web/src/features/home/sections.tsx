@@ -25,8 +25,8 @@ import type { ReactElement, ReactNode } from "react";
 import { Amount, BaseNote } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { NativeSelect } from "../../components/native-select";
+import { morePages } from "../../lib/nav";
 import { formatDay } from "../../lib/time";
-import { morePages } from "../shell/nav";
 import { useTransactionWorkspace } from "../transactions/workspace";
 import { accountGroups, cashFlow, heroFigures, isOverdrawn } from "./model";
 

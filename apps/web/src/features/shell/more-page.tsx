@@ -11,13 +11,13 @@ import { Link } from "@tanstack/react-router";
 import type { ReactElement, ReactNode } from "react";
 import { Amount } from "../../components/amount-text";
 import type { Session } from "../../lib/api";
+import { getHome } from "../../lib/home-summary";
+import { getMe } from "../../lib/me";
 import { useCurrentMonth } from "../../lib/month";
-import { getHome } from "../home/api";
-import { getMe, meKey } from "../profile/api";
 import "./more.css";
+import { moreGroupsFor } from "../../lib/nav";
 import { queryKeys } from "../../lib/query-keys";
 import { useLedger } from "../../lib/use-ledger";
-import { moreGroupsFor } from "./nav";
 
 /** As the prototype draws it, a row has a hint only where there is something to say: Settings carries the version, which used to be a line at the foot. Clients and Loans say who owes when someone does. */
 const hints: Record<string, string> = {
@@ -43,7 +43,7 @@ export function MorePage() {
     enabled: !!ledger,
   });
   // Profile comes first (ADR 0048). The name is known at once from the session; the Admin pill follows `/me`.
-  const me = useQuery({ queryKey: meKey, queryFn: getMe });
+  const me = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
   const session = useQueryClient().getQueryData<Session | null>(
     queryKeys.session,
   );

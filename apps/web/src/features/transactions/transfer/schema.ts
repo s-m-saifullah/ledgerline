@@ -8,16 +8,15 @@ import {
   tagIdsSchema,
 } from "@ledgerline/shared";
 import { z } from "zod";
-import { cleanAmountText, decimalFromCents } from "../../../lib/money";
-import { localToday } from "../../../lib/time";
-import { parseFee } from "../fee";
 import {
   amountMessage,
   amountMinor,
   isPositiveAmount,
-  lastActiveAccount,
-  transactionFormSchema,
-} from "../form";
+} from "../../../lib/amount-input";
+import { parseFee } from "../../../lib/fee";
+import { cleanAmountText, decimalFromCents } from "../../../lib/money";
+import { localToday } from "../../../lib/time";
+import { lastActiveAccount, transactionFormSchema } from "../form";
 
 /** The transfer form's rules depend on the two accounts' currencies, so they are built per list. */
 export function makeSchema(accounts: readonly Account[]) {

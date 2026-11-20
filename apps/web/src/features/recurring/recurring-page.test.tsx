@@ -23,7 +23,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type PageAdd, PageAddProvider } from "../shell/page-add";
+import { type PageAdd, PageAddProvider } from "../../components/page-add";
 import { RecurringPage } from "./recurring-page";
 import { ledgerToday } from "./schedule";
 

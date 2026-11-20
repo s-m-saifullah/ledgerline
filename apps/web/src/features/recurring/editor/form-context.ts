@@ -1,7 +1,7 @@
 import type { Account, Category, RecurringRule } from "@ledgerline/shared";
 import type { ReactNode } from "react";
 import type { ComboCreate } from "../../../components/combo-field";
-import type { parseFee } from "../../transactions/fee";
+import type { parseFee } from "../../../lib/fee";
 import type { RuleFormValues } from "../form";
 import type { upcomingDates } from "../schedule";
 

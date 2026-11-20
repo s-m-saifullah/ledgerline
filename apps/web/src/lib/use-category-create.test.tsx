@@ -3,8 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { queryKeys } from "../../lib/query-keys";
-import { category, json, ledgerId } from "../../test-support/category-fixtures";
+import { category, json, ledgerId } from "../test-support/category-fixtures";
+import { queryKeys } from "./query-keys";
 import { useCategoryCreate } from "./use-category-create";
 
 afterEach(() => vi.unstubAllGlobals());

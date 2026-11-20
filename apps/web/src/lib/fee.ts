@@ -1,11 +1,11 @@
 import { type Account, currencyDigits, feeFromBps } from "@ledgerline/shared";
+import { amountMinor, isPositiveAmount } from "./amount-input";
 import {
   bpsToPercent,
   cleanAmountText,
   decimalFromCents,
   percentToBps,
-} from "../../lib/money";
-import { amountMinor, isPositiveAmount } from "./form";
+} from "./money";
 
 /** What the one Fee box holds (ADR 0025): nothing, a fixed amount, a percentage, or a mistake. */
 type FeeInput =

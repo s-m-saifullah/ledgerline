@@ -11,13 +11,13 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getAllAccounts } from "../../lib/accounts";
 import { ApiError, getLedgers } from "../../lib/api";
+import { getCategories, prepareCategorySave } from "../../lib/categories";
 import { PrivacyContext } from "../../lib/preferences";
 import { queryKeys } from "../../lib/query-keys";
-import { getAllAccounts } from "../accounts/api";
-import { getCategories, prepareCategorySave } from "../categories/api";
-import { getTags, prepareTagCreate } from "../tags/api";
-import { getTransactions } from "./api";
+import { getTags, prepareTagCreate } from "../../lib/tags";
+import { getTransactions } from "../../lib/transactions";
 import { TransactionsPage } from "./transactions-page";
 
 const router = vi.hoisted(() => ({
@@ -66,19 +66,18 @@ vi.mock("../../lib/api", async (original) => ({
   ...(await original<typeof import("../../lib/api")>()),
   getLedgers: vi.fn(),
 }));
-vi.mock("./api", async (original) => ({
-  ...(await original<typeof import("./api")>()),
+vi.mock("../../lib/transactions", () => ({
   getTransactions: vi.fn(),
 }));
-vi.mock("../accounts/api", async (original) => ({
-  ...(await original<typeof import("../accounts/api")>()),
+vi.mock("../../lib/accounts", async (original) => ({
+  ...(await original<typeof import("../../lib/accounts")>()),
   getAllAccounts: vi.fn(),
 }));
-vi.mock("../categories/api", () => ({
+vi.mock("../../lib/categories", () => ({
   getCategories: vi.fn(),
   prepareCategorySave: vi.fn(),
 }));
-vi.mock("../tags/api", () => ({
+vi.mock("../../lib/tags", () => ({
   getTags: vi.fn(),
   prepareTagCreate: vi.fn(),
 }));

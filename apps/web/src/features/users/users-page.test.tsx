@@ -10,8 +10,8 @@ import {
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { type PageAdd, PageAddProvider } from "../../components/page-add";
 import { json } from "../../test-support/category-fixtures";
-import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { UsersPage } from "./users-page";
 
 vi.mock("@tanstack/react-router", () => ({

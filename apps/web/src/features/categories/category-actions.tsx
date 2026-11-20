@@ -11,9 +11,9 @@ import {
   Trash2,
 } from "lucide-react";
 import { Overlay } from "../../components/overlay";
+import { moveCategory } from "../../lib/category-tree";
 import type { DialogIntent } from "./dialog-state";
 import { archiveBlocked } from "./model";
-import { moveCategory } from "./tree";
 
 /**
  * Everything one can do with a category, in one sheet (the prototype's `OV["category-actions"]`): Edit, Add

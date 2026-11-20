@@ -9,13 +9,13 @@ import { ChevronDown } from "lucide-react";
 import { useContext, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AmountInput } from "../../components/amount-input";
+import { CategoryPicker } from "../../components/category-picker";
 import { Overlay } from "../../components/overlay";
 import { PickRow } from "../../components/pick-row";
 import { ApiError } from "../../lib/api";
+import { feeHint } from "../../lib/fee";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
-import { CategoryPicker } from "../categories/picker";
-import { feeHint } from "../transactions/fee";
 import { getAccount, prepareAccountSave } from "./api";
 import {
   type AccountFormValues,

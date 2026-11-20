@@ -14,15 +14,15 @@ import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
 import { Toast, toastDuration } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
+import { getAllAccounts } from "../../lib/accounts";
 import { ApiError } from "../../lib/api";
+import { useBaseValues } from "../../lib/base-values";
+import { getCategories } from "../../lib/categories";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { PrivacyContext } from "../../lib/preferences";
 import { queryKeys } from "../../lib/query-keys";
-import { getAllAccounts } from "../accounts/api";
-import { useAllAccounts } from "../accounts/hooks";
-import { getCategories } from "../categories/api";
-import { useCategories } from "../categories/hooks";
-import { useBaseValues } from "../currencies/base-value";
+import { useAllAccounts } from "../../lib/use-accounts";
+import { useCategories } from "../../lib/use-categories";
 import {
   getAllClients,
   getClient,

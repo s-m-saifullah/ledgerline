@@ -2,7 +2,7 @@ import { type Account, newId } from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useActiveAccounts, useAllAccounts } from "./hooks";
+import { useActiveAccounts, useAllAccounts } from "./use-accounts";
 
 const ledgerId = newId();
 const row = (name: string, over: Partial<Account> = {}): Account => ({

@@ -1,15 +1,15 @@
 import { SwitchRow } from "@ledgerline/ui";
 import { ArrowUpDown } from "lucide-react";
 import { AmountInput } from "../../../components/amount-input";
+import { CategoryPicker } from "../../../components/category-picker";
 import { DateTimeInput } from "../../../components/date-time-input";
 import { EntryAmount } from "../../../components/entry-amount";
+import { EntryRate } from "../../../components/entry-rate";
+import { FeePreview } from "../../../components/fee-preview";
 import { NativeSelect } from "../../../components/native-select";
-import { CategoryPicker } from "../../categories/picker";
-import { EntryRate } from "../../currencies/entry-rate";
-import { TagPicker } from "../../tags/tag-picker";
+import { TagPicker } from "../../../components/tag-picker";
+import { amountMinor } from "../../../lib/amount-input";
 import { EntryCard } from "../entry-sheet";
-import { FeePreview } from "../fee-preview";
-import { amountMinor } from "../form";
 import type { TransferFormContext } from "./form-context";
 import { TransferRate } from "./transfer-rate";
 

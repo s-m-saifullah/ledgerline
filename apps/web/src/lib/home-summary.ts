@@ -1,5 +1,5 @@
 import { type HomeSummary, homeSummarySchema } from "@ledgerline/shared";
-import { api } from "../../lib/api";
+import { api } from "./api";
 
 export async function getHome(
   ledgerId: string,

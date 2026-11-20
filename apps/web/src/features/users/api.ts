@@ -11,10 +11,6 @@ import {
 } from "@ledgerline/shared";
 import { api } from "../../lib/api";
 
-export const usersKey = ["users"] as const;
-/** Under `usersKey`, so refreshing the people refreshes the waiting list too. */
-export const deletedUsersKey = ["users", "deleted"] as const;
-
 /** The people on this server (admin only): account facts, never anything from a ledger (ADR 0048). */
 export async function listUsers(): Promise<ManagedUserList> {
   return managedUserListSchema.parse(await api("/users"));

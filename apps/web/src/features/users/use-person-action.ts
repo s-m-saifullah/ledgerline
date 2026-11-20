@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ApiError } from "../../lib/api";
-import { usersKey } from "./api";
+import { queryKeys } from "../../lib/query-keys";
 
 /**
  * Runs one change to a person for a sheet: busy while it goes, the server's own words when it refuses, a calm
@@ -23,7 +23,7 @@ export function usePersonAction(
     } catch (problem) {
       if (problem instanceof ApiError && problem.status === 404) {
         setError(notFound);
-        void client.invalidateQueries({ queryKey: usersKey });
+        void client.invalidateQueries({ queryKey: queryKeys.users });
       } else if (problem instanceof ApiError && problem.status < 500) {
         setError(problem.message);
       } else {

@@ -1,11 +1,11 @@
 import { type Category, createCategorySchema } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
-import type { ComboCreate } from "../../components/combo-field";
-import { ApiError } from "../../lib/api";
-import { invalidateLedger } from "../../lib/ledger-cache";
-import { queryKeys } from "../../lib/query-keys";
-import { prepareCategorySave } from "./api";
+import type { ComboCreate } from "../components/combo-field";
+import { ApiError } from "./api";
+import { prepareCategorySave } from "./categories";
+import { invalidateLedger } from "./ledger-cache";
+import { queryKeys } from "./query-keys";
 
 /**
  * "Create <kind> category “name”" as a suggestion in a category field. It saves a top-level category of that kind

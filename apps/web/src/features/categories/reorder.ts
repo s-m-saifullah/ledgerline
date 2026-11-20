@@ -2,9 +2,10 @@ import type { Category, ReorderCategories } from "@ledgerline/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { ApiError } from "../../lib/api";
+import { getCategories } from "../../lib/categories";
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";
-import { getCategories, prepareCategoryReorder } from "./api";
+import { prepareCategoryReorder } from "./api";
 
 /** Each click is one intent. An interrupted response retains its key and body. */
 export function useCategoryReorder(ledgerId: string) {

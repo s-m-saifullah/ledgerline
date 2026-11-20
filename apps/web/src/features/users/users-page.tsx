@@ -13,16 +13,17 @@ import { type ReactElement, type ReactNode, useState } from "react";
 import { Fold } from "../../components/fold";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
+import { usePageAdd } from "../../components/page-add";
 import { Toast, toastDuration } from "../../components/toast";
 import { daysLeft, daysLeftText, isUrgent } from "../../lib/days-left";
-import { getMe, meKey } from "../profile/api";
-import { usePageAdd } from "../shell/page-add";
+import { getMe } from "../../lib/me";
 import { AddUserSheet } from "./add-user-sheet";
-import { deletedUsersKey, listDeletedUsers, listUsers, usersKey } from "./api";
+import { listDeletedUsers, listUsers } from "./api";
 import { DeletedUserSheet } from "./deleted-user-sheet";
 import { userHint, userPill } from "./model";
 import { UserSheet } from "./user-sheet";
 import "./users.css";
+import { queryKeys } from "../../lib/query-keys";
 
 type Open = { id: number; person?: ManagedUser; gone?: DeletedUser };
 
@@ -39,15 +40,15 @@ const toProfile = (inner: ReactNode, className: string): ReactElement => (
  */
 export function UsersPage() {
   const client = useQueryClient();
-  const me = useQuery({ queryKey: meKey, queryFn: getMe });
+  const me = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
   const admin = me.data?.isAdmin === true;
   const users = useQuery({
-    queryKey: usersKey,
+    queryKey: queryKeys.users,
     queryFn: listUsers,
     enabled: admin,
   });
   const deleted = useQuery({
-    queryKey: deletedUsersKey,
+    queryKey: queryKeys.deletedUsers,
     queryFn: listDeletedUsers,
     enabled: admin,
   });
@@ -72,8 +73,8 @@ export function UsersPage() {
   const saved = (text: string) => {
     setOpen(null);
     setNotice((last) => ({ id: (last?.id ?? 0) + 1, text }));
-    // `usersKey` is the start of the deleted list's key too, so both lists are read again.
-    void client.invalidateQueries({ queryKey: usersKey });
+    // `queryKeys.users` is the start of the deleted list's key too, so both lists are read again.
+    void client.invalidateQueries({ queryKey: queryKeys.users });
   };
   const items = users.data?.items ?? [];
   const waiting = deleted.data?.items ?? [];

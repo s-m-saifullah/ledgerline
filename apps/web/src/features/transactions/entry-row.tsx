@@ -2,8 +2,8 @@ import type { Transaction } from "@ledgerline/shared";
 import { Avatar, IconTile, StatusPill } from "@ledgerline/ui";
 import { ArrowLeftRight } from "lucide-react";
 import { Amount, BaseNote } from "../../components/amount-text";
+import { TagChips } from "../../components/tag-chips";
 import { formatTime12 } from "../../lib/time";
-import { TagChips } from "../tags/tag-chips";
 import type { ListEntry } from "./list-model";
 
 type Names = {

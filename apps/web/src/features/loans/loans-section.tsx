@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { Amount } from "../../components/amount-text";
 import { queryKeys } from "../../lib/query-keys";
 import { formatDay } from "../../lib/time";
-import { getTransactions } from "../transactions/api";
+import { getTransactions } from "../../lib/transactions";
 import { getLoans } from "./loans-api";
 import { activityWord } from "./model";
 

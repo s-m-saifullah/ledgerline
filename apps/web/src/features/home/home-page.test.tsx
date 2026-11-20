@@ -41,7 +41,7 @@ vi.mock("../transactions/workspace", () => ({
   useTransactionWorkspace: () => workspace.current,
 }));
 // What an amount in another currency is worth: EUR at 1.1217, nothing for anything else.
-vi.mock("../currencies/base-value", () => ({
+vi.mock("../../lib/base-values", () => ({
   useBaseValues: () => ({
     baseCurrency: "USD",
     currencies: ["USD", "EUR"],

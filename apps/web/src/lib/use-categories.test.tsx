@@ -2,8 +2,8 @@ import { newId } from "@ledgerline/shared";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { category } from "../../test-support/category-fixtures";
-import { useCategories } from "./hooks";
+import { category } from "../test-support/category-fixtures";
+import { useCategories } from "./use-categories";
 
 afterEach(() => {
   cleanup();

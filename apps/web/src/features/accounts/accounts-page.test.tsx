@@ -4,8 +4,8 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { type PageAdd, PageAddProvider } from "../../components/page-add";
 import { PrivacyContext } from "../../lib/preferences";
-import { type PageAdd, PageAddProvider } from "../shell/page-add";
 import { AccountsPage } from "./accounts-page";
 
 const ledgerId = newId();

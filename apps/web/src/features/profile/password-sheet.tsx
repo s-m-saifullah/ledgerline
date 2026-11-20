@@ -2,9 +2,13 @@ import { SwitchRow } from "@ledgerline/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Overlay } from "../../components/overlay";
-import { devicesKey } from "../settings/devices-api";
-import { changePassword } from "./api";
-import { checkPasswords, type PasswordField, passwordProblem } from "./model";
+import { changePassword } from "../../lib/me";
+import {
+  checkPasswords,
+  type PasswordField,
+  passwordProblem,
+} from "../../lib/password";
+import { queryKeys } from "../../lib/query-keys";
 
 const rows: {
   field: PasswordField;
@@ -84,7 +88,7 @@ export function PasswordSheet({
       return;
     }
     // Other devices may have been signed out: the devices count on this page reads again.
-    await client.invalidateQueries({ queryKey: devicesKey });
+    await client.invalidateQueries({ queryKey: queryKeys.devices });
     setBusy(false);
     onSaved("Password changed.");
   };

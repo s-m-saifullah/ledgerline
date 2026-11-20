@@ -1,15 +1,16 @@
 import type { Account, Category } from "@ledgerline/shared";
 import { SwitchRow } from "@ledgerline/ui";
 import type { UseFormReturn } from "react-hook-form";
+import { CategoryCombo } from "../../components/category-combo";
 import type { ComboCreate } from "../../components/combo-field";
 import { DateTimeInput } from "../../components/date-time-input";
 import { EntryAmount } from "../../components/entry-amount";
+import { EntryRate } from "../../components/entry-rate";
 import { NativeSelect } from "../../components/native-select";
-import { EntryRate } from "../currencies/entry-rate";
-import { TagPicker } from "../tags/tag-picker";
-import { CategoryCombo } from "./category-combo";
+import { TagPicker } from "../../components/tag-picker";
+import { amountMinor } from "../../lib/amount-input";
 import { EntryCard } from "./entry-sheet";
-import { amountMinor, type TransactionFormValues } from "./form";
+import type { TransactionFormValues } from "./form";
 import { SplitFields } from "./split-fields";
 
 type Kind = "expense" | "income";

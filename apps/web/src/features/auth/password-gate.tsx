@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef } from "react";
 import { onPasswordChangeRequired } from "../../lib/api";
-import { getMe, meKey } from "../profile/api";
+import { getMe } from "../../lib/me";
+import { queryKeys } from "../../lib/query-keys";
 import { FirstSignIn } from "./first-sign-in";
 
 /**
@@ -20,7 +21,7 @@ export function PasswordGate({
 }) {
   const client = useQueryClient();
   const navigate = useNavigate();
-  const me = useQuery({ queryKey: meKey, queryFn: getMe });
+  const me = useQuery({ queryKey: queryKeys.me, queryFn: getMe });
   // Only the first answer is waited for. A failed query that is asked again goes back to "pending", and swapping the
   // app for the loading text each time would mount it again, ask again, and so on without end.
   const answered = useRef(false);
@@ -29,7 +30,7 @@ export function PasswordGate({
   useEffect(
     () =>
       onPasswordChangeRequired(() =>
-        client.setQueryData<Me>(meKey, (old) =>
+        client.setQueryData<Me>(queryKeys.me, (old) =>
           old ? { ...old, mustChangePassword: true } : old,
         ),
       ),
@@ -46,7 +47,7 @@ export function PasswordGate({
       <FirstSignIn
         onSignOut={onSignOut}
         onSaved={async () => {
-          await client.invalidateQueries({ queryKey: meKey });
+          await client.invalidateQueries({ queryKey: queryKeys.me });
           await navigate({ to: "/" });
         }}
       />

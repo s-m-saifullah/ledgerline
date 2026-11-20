@@ -14,8 +14,8 @@ const uncertainFailure = (failure: unknown) =>
 
 import { invalidateLedger } from "../../lib/ledger-cache";
 import { queryKeys } from "../../lib/query-keys";
-import { useActiveAccounts } from "../accounts/hooks";
-import { useCategories } from "../categories/hooks";
+import { useActiveAccounts } from "../../lib/use-accounts";
+import { useCategories } from "../../lib/use-categories";
 import { QuickAddForm } from "./quick-add-form";
 export function QuickAdd({
   actorId,

@@ -1,5 +1,5 @@
 import type { Category } from "@ledgerline/shared";
-import { byOrder } from "./tree";
+import { byOrder } from "../../lib/category-tree";
 
 /** The chips above the list: everything, the active ones or the archived ones (ADR 0047). */
 export type StatusFilter = "all" | "active" | "archived";

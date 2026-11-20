@@ -1,6 +1,6 @@
 import type { Category } from "@ledgerline/shared";
-import { type ComboCreate, ComboField } from "../../components/combo-field";
-import { categoryOptions } from "../categories/tree";
+import { categoryOptions } from "../lib/category-tree";
+import { type ComboCreate, ComboField } from "./combo-field";
 
 /**
  * The category field of an entry: type to narrow the list, and a name nobody has yet offers to create it. A

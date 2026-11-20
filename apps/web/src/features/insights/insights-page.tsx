@@ -13,8 +13,8 @@ import { SpendingCard } from "./spending-card";
 import { SummaryCard } from "./summary-card";
 import "./insights.css";
 import { queryKeys } from "../../lib/query-keys";
+import { useAllAccounts } from "../../lib/use-accounts";
 import { useLedger } from "../../lib/use-ledger";
-import { useAllAccounts } from "../accounts/hooks";
 
 /** Insights (ADR 0047): this month, spending by category, money in and out, net worth now and over time. */
 export function InsightsPage() {
