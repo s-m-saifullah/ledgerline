@@ -358,6 +358,428 @@
       "hundredths": null
     }
   ],
+  "hoursTyped": [
+    {
+      "text": "3.5",
+      "hundredths": 350
+    },
+    {
+      "text": "0.25",
+      "hundredths": 25
+    },
+    {
+      "text": "1",
+      "hundredths": 100
+    },
+    {
+      "text": "0",
+      "hundredths": null
+    },
+    {
+      "text": "0.0",
+      "hundredths": null
+    },
+    {
+      "text": "0.00",
+      "hundredths": null
+    },
+    {
+      "text": "0.01",
+      "hundredths": 1
+    },
+    {
+      "text": "00.5",
+      "hundredths": 50
+    },
+    {
+      "text": "9999.99",
+      "hundredths": 999999
+    },
+    {
+      "text": "10000",
+      "hundredths": null
+    },
+    {
+      "text": "10000.5",
+      "hundredths": null
+    },
+    {
+      "text": "1.234",
+      "hundredths": null
+    },
+    {
+      "text": "-1",
+      "hundredths": null
+    },
+    {
+      "text": "abc",
+      "hundredths": null
+    },
+    {
+      "text": "",
+      "hundredths": null
+    },
+    {
+      "text": " ",
+      "hundredths": null
+    },
+    {
+      "text": " 2.5 ",
+      "hundredths": 250
+    },
+    {
+      "text": "2.",
+      "hundredths": 200
+    },
+    {
+      "text": ".5",
+      "hundredths": 50
+    },
+    {
+      "text": "1e2",
+      "hundredths": null
+    },
+    {
+      "text": "12345",
+      "hundredths": null
+    },
+    {
+      "text": "0.1",
+      "hundredths": 10
+    },
+    {
+      "text": "7.05",
+      "hundredths": 705
+    },
+    {
+      "text": "100",
+      "hundredths": 10000
+    },
+    {
+      "text": "99.9",
+      "hundredths": 9990
+    },
+    {
+      "text": "1.50",
+      "hundredths": 150
+    },
+    {
+      "text": "01",
+      "hundredths": 100
+    },
+    {
+      "text": "0001.5",
+      "hundredths": 150
+    },
+    {
+      "text": "484.294",
+      "hundredths": null
+    },
+    {
+      "text": "99853.0",
+      "hundredths": null
+    },
+    {
+      "text": "55.3",
+      "hundredths": 5530
+    },
+    {
+      "text": "0731.6",
+      "hundredths": 73160
+    },
+    {
+      "text": "705",
+      "hundredths": 70500
+    },
+    {
+      "text": "6418",
+      "hundredths": 641800
+    },
+    {
+      "text": "08.602",
+      "hundredths": null
+    },
+    {
+      "text": "32.2",
+      "hundredths": 3220
+    },
+    {
+      "text": "99.686",
+      "hundredths": null
+    },
+    {
+      "text": "2594",
+      "hundredths": 259400
+    },
+    {
+      "text": "54.71",
+      "hundredths": 5471
+    },
+    {
+      "text": "07356.175",
+      "hundredths": null
+    },
+    {
+      "text": "75.4",
+      "hundredths": 7540
+    },
+    {
+      "text": "448.39",
+      "hundredths": 44839
+    },
+    {
+      "text": "5797",
+      "hundredths": 579700
+    },
+    {
+      "text": "4.768",
+      "hundredths": null
+    },
+    {
+      "text": "93.2",
+      "hundredths": 9320
+    },
+    {
+      "text": "2197.910",
+      "hundredths": null
+    },
+    {
+      "text": "4.262",
+      "hundredths": null
+    },
+    {
+      "text": "5.938",
+      "hundredths": null
+    },
+    {
+      "text": "79983.0",
+      "hundredths": null
+    },
+    {
+      "text": "0215.20",
+      "hundredths": 21520
+    },
+    {
+      "text": "050.48",
+      "hundredths": 5048
+    },
+    {
+      "text": "7914.97",
+      "hundredths": 791497
+    },
+    {
+      "text": "6",
+      "hundredths": 600
+    },
+    {
+      "text": "891",
+      "hundredths": 89100
+    },
+    {
+      "text": "6.0",
+      "hundredths": 600
+    },
+    {
+      "text": "479.48",
+      "hundredths": 47948
+    },
+    {
+      "text": "5.383",
+      "hundredths": null
+    },
+    {
+      "text": "6.8",
+      "hundredths": 680
+    },
+    {
+      "text": "10703",
+      "hundredths": null
+    },
+    {
+      "text": "5.143",
+      "hundredths": null
+    },
+    {
+      "text": "75",
+      "hundredths": 7500
+    },
+    {
+      "text": "15793.8",
+      "hundredths": null
+    },
+    {
+      "text": "0013",
+      "hundredths": 1300
+    },
+    {
+      "text": "546.8",
+      "hundredths": 54680
+    },
+    {
+      "text": "19.54",
+      "hundredths": 1954
+    },
+    {
+      "text": "617.76",
+      "hundredths": 61776
+    },
+    {
+      "text": "12470.91",
+      "hundredths": null
+    },
+    {
+      "text": "37952.04",
+      "hundredths": null
+    },
+    {
+      "text": "2279.55",
+      "hundredths": 227955
+    },
+    {
+      "text": "9065.846",
+      "hundredths": null
+    },
+    {
+      "text": "9.548",
+      "hundredths": null
+    },
+    {
+      "text": "28309",
+      "hundredths": null
+    },
+    {
+      "text": "7.772",
+      "hundredths": null
+    },
+    {
+      "text": "7488",
+      "hundredths": 748800
+    },
+    {
+      "text": "78564.415",
+      "hundredths": null
+    },
+    {
+      "text": "3.2",
+      "hundredths": 320
+    },
+    {
+      "text": "6535.97",
+      "hundredths": 653597
+    },
+    {
+      "text": "3.0",
+      "hundredths": 300
+    },
+    {
+      "text": "8.4",
+      "hundredths": 840
+    },
+    {
+      "text": "6.14",
+      "hundredths": 614
+    },
+    {
+      "text": "1211.9",
+      "hundredths": 121190
+    },
+    {
+      "text": "425",
+      "hundredths": 42500
+    },
+    {
+      "text": "223.081",
+      "hundredths": null
+    },
+    {
+      "text": "61658.81",
+      "hundredths": null
+    },
+    {
+      "text": "396.518",
+      "hundredths": null
+    },
+    {
+      "text": "1869.229",
+      "hundredths": null
+    },
+    {
+      "text": "409.50",
+      "hundredths": 40950
+    },
+    {
+      "text": "6.252",
+      "hundredths": null
+    },
+    {
+      "text": ".5",
+      "hundredths": 50
+    },
+    {
+      "text": ".25",
+      "hundredths": 25
+    },
+    {
+      "text": "3.",
+      "hundredths": 300
+    },
+    {
+      "text": "3.5",
+      "hundredths": 350
+    },
+    {
+      "text": " .5 ",
+      "hundredths": 50
+    },
+    {
+      "text": ".",
+      "hundredths": null
+    },
+    {
+      "text": "",
+      "hundredths": null
+    },
+    {
+      "text": "0.",
+      "hundredths": null
+    },
+    {
+      "text": ".0",
+      "hundredths": null
+    },
+    {
+      "text": ".00",
+      "hundredths": null
+    },
+    {
+      "text": ".001",
+      "hundredths": null
+    },
+    {
+      "text": ".999",
+      "hundredths": null
+    },
+    {
+      "text": "9999.",
+      "hundredths": 999900
+    },
+    {
+      "text": "10000.",
+      "hundredths": null
+    },
+    {
+      "text": "1.2.3",
+      "hundredths": null
+    },
+    {
+      "text": "..5",
+      "hundredths": null
+    },
+    {
+      "text": "-.5",
+      "hundredths": null
+    }
+  ],
   "total": [
     {
       "rate": 1,

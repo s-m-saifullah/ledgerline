@@ -4,7 +4,6 @@ import {
   currencyDigits,
   currencySchema,
   idSchema,
-  parseMinorUnits,
   rateSchema,
   type Transaction,
   tagIdsSchema,
@@ -13,7 +12,11 @@ import {
   transactionTimeSchema,
 } from "@ledgerline/shared";
 import { z } from "zod";
-import { amountMessage, isPositiveAmount } from "../../lib/amount-input";
+import {
+  amountMessage,
+  isPositiveAmount,
+  typedMinor,
+} from "../../lib/amount-input";
 import { cleanAmountText, decimalFromCents } from "../../lib/money";
 import { localToday } from "../../lib/time";
 export const transactionFormSchema = z
@@ -83,7 +86,7 @@ export const transactionFormSchema = z
           message: "Choose a category.",
         });
       const text = cleanAmountText(line.amount);
-      if (valid(text)) total += BigInt(parseMinorUnits(text, digits));
+      if (valid(text)) total += BigInt(typedMinor(text, digits));
       else
         ctx.addIssue({
           code: "custom",
@@ -92,7 +95,7 @@ export const transactionFormSchema = z
         });
     }
     try {
-      if (total !== BigInt(parseMinorUnits(values.amount, digits)))
+      if (total !== BigInt(typedMinor(values.amount, digits)))
         ctx.addIssue({
           code: "custom",
           path: ["splits"],
@@ -106,7 +109,7 @@ export type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 export function transactionBody(values: TransactionFormValues) {
   const parsed = transactionFormSchema.parse(values);
   const digits = currencyDigits(parsed.currency);
-  const cents = parseMinorUnits(parsed.amount, digits);
+  const cents = typedMinor(parsed.amount, digits);
   const { splitEnabled, splits, currency, fxRate, tagIds, ...fields } = parsed;
   return createTransactionSchema.parse({
     ...fields,
@@ -121,7 +124,7 @@ export function transactionBody(values: TransactionFormValues) {
             amount: {
               amount:
                 (parsed.kind === "expense" ? -1 : 1) *
-                parseMinorUnits(cleanAmountText(line.amount), digits),
+                typedMinor(cleanAmountText(line.amount), digits),
               currency,
             },
             note: line.note || null,

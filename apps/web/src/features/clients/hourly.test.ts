@@ -18,6 +18,17 @@ describe("hourly helper", () => {
       total: 7499,
     });
   });
+  it("reads .5 and 3. hours as meant", () => {
+    expect(hourlyResult(".5", "40", "USD")).toMatchObject({
+      ok: true,
+      total: 2000,
+    });
+    expect(hourlyResult("3.", "40", "USD")).toMatchObject({
+      ok: true,
+      total: 12000,
+    });
+    expect(hourlyResult(".", "40", "USD")).toMatchObject({ ok: false });
+  });
   it("follows the currency's decimals", () => {
     expect(hourlyResult("1.5", "5000", "JPY")).toMatchObject({
       ok: true,

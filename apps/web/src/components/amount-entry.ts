@@ -1,4 +1,4 @@
-import { parseMinorUnits } from "@ledgerline/shared";
+import { typedMinor } from "../lib/amount-input";
 import { cleanAmountText, decimalFromCents } from "../lib/money";
 
 /**
@@ -14,7 +14,7 @@ function minorOf(text: string, digits: number): bigint | null {
     digits === 0 ? /^\d+$/ : new RegExp(`^\\d+(?:\\.\\d{1,${digits}})?$`);
   if (!pattern.test(cleaned)) return null;
   try {
-    return BigInt(parseMinorUnits(cleaned, digits));
+    return BigInt(typedMinor(cleaned, digits));
   } catch {
     return null;
   }

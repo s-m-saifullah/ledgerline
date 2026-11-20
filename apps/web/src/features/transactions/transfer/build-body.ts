@@ -2,9 +2,9 @@ import {
   type Account,
   createTransferSchema,
   currencyDigits,
-  parseMinorUnits,
   type Transfer,
 } from "@ledgerline/shared";
+import { typedMinor } from "../../../lib/amount-input";
 import { parseFee } from "../../../lib/fee";
 import type { Values } from "./schema";
 
@@ -33,13 +33,13 @@ export function buildTransferBody(
   return createTransferSchema.parse({
     ...fields,
     amount: {
-      amount: parseMinorUnits(values.amount, currencyDigits(from)),
+      amount: typedMinor(values.amount, currencyDigits(from)),
       currency: from,
     },
     ...(from !== to
       ? {
           receivedAmount: {
-            amount: parseMinorUnits(receivedAmount, currencyDigits(to)),
+            amount: typedMinor(receivedAmount, currencyDigits(to)),
             currency: to,
           },
         }
@@ -50,7 +50,7 @@ export function buildTransferBody(
       ? {
           bonus: {
             amount: {
-              amount: parseMinorUnits(bonusAmount, currencyDigits(to)),
+              amount: typedMinor(bonusAmount, currencyDigits(to)),
               currency: to,
             },
             categoryId: bonusCategoryId,

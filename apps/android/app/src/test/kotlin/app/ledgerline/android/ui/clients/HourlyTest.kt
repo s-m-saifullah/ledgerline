@@ -40,6 +40,22 @@ class HourlyTest {
     }
 
     @Test
+    fun everyHourCountTypedByHandIsReadAsTheWebReadsIt() {
+        // WP-15: the web reads ".5" and "3." as meant too (`hoursFromTyped` in `packages/shared`). A comma as the point
+        // ("1,5") is the phone's own and is not in the fixture.
+        val cases = fixture["hoursTyped"]!!.jsonArray
+        assertTrue(cases.size >= 90)
+        cases.forEach { case ->
+            val c = case.jsonObject
+            val text = c["text"]!!.jsonPrimitive.content
+            val expected = c["hundredths"]!!.let { if (it is JsonNull) null else it.jsonPrimitive.long.toInt() }
+            assertEquals("\"$text\"", expected, hoursFromTyped(text))
+        }
+        assertTrue(cases.any { it.jsonObject["text"]!!.jsonPrimitive.content == ".5" && it.jsonObject["hundredths"] !is JsonNull })
+        assertTrue(cases.any { it.jsonObject["hundredths"] is JsonNull })
+    }
+
+    @Test
     fun everyTotalIsRoundedAsTheWebRoundsIt() {
         val cases = fixture["total"]!!.jsonArray
         cases.forEach { case ->

@@ -1,4 +1,4 @@
-import { convertMinor, invertRate, rateFromInverse } from "@ledgerline/shared";
+import { convertMinor, invertRate, rateFromTyped } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { useBaseValues } from "../lib/base-values";
@@ -124,7 +124,7 @@ function ForeignEntryRate({
             onChange={(event) => {
               const text = event.target.value;
               setTyped(text);
-              const next = rateFromInverse(text);
+              const next = rateFromTyped(text);
               if (!text.trim()) {
                 setTypedError("");
                 onManualRate("");

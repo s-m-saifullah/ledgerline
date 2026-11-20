@@ -74,3 +74,4 @@ export * from "./receivables";
 export * from "./recurring";
 export * from "./reports";
 export * from "./transfers";
+export * from "./typed";

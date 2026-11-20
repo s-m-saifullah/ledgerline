@@ -1,8 +1,5 @@
-import {
-  type Category,
-  currencyDigits,
-  parseMinorUnits,
-} from "@ledgerline/shared";
+import { type Category, currencyDigits } from "@ledgerline/shared";
+import { typedMinor } from "../../lib/amount-input";
 import { cleanAmountText } from "../../lib/money";
 
 /** The last confirmed active income category, otherwise an active income root with this name. */
@@ -63,7 +60,7 @@ export function positiveMoney(text: string, currency: string) {
         ? `Enter a whole positive ${currency} amount.`
         : `Enter a positive ${currency} amount with up to ${digits === 2 ? "two" : digits} decimal places.`,
     );
-  const amount = parseMinorUnits(cleaned, digits);
+  const amount = typedMinor(cleaned, digits);
   if (amount <= 0) throw new Error(`Enter a positive ${currency} amount.`);
   return { amount, currency };
 }

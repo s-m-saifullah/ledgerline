@@ -1,7 +1,7 @@
 import {
   currencyDigits,
   hourlyTotal,
-  hoursToHundredths,
+  hoursFromTyped,
 } from "@ledgerline/shared";
 import { decimalFromCents, formatMoney } from "../../lib/money";
 import { positiveMoney } from "./form";
@@ -22,7 +22,7 @@ export function hourlyResult(
   currency: string,
 ): HourlyResult | null {
   if (!hoursInput.trim() || !rateInput.trim()) return null;
-  const hundredths = hoursToHundredths(hoursInput);
+  const hundredths = hoursFromTyped(hoursInput);
   if (hundredths === null)
     return {
       ok: false,

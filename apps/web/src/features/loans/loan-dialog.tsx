@@ -4,7 +4,6 @@ import {
   type LoanBalance,
   type LoanMove,
   type LoanPerson,
-  parseMinorUnits,
 } from "@ledgerline/shared";
 import { useRef, useState } from "react";
 import { Overlay } from "../../components/overlay";
@@ -32,6 +31,7 @@ import {
 } from "./loans-api";
 
 import "./loans.css";
+import { typedMinor } from "../../lib/amount-input";
 
 /**
  * Lend, borrow, repay, waive or add an existing loan (ADR 0030): one form. Opened for one
@@ -136,7 +136,7 @@ export function LoanDialog({
     let minor = 0;
     if (kind !== "waive") {
       try {
-        minor = parseMinorUnits(amount, digits);
+        minor = typedMinor(amount, digits);
       } catch {
         return fail("Enter an amount using numbers only.");
       }
