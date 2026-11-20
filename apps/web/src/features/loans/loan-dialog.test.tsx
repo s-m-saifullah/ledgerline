@@ -62,6 +62,7 @@ function mount(
   loans: LoanBalance[],
   adding: { people: LoanPerson[] } | null = null,
   editCurrency?: string,
+  extra: { currencies?: string[]; accounts?: (typeof bank)[] } = {},
 ) {
   const writes: { url: string; body: Record<string, unknown> }[] = [];
   vi.stubGlobal(
@@ -84,10 +85,26 @@ function mount(
       }
       if (url.includes("/accounts"))
         return new Response(
-          JSON.stringify({ items: [bank], nextCursor: null }),
+          JSON.stringify({
+            items: extra.accounts ?? [bank],
+            nextCursor: null,
+          }),
         );
       if (url.endsWith("/currencies"))
-        return new Response(JSON.stringify({ baseCurrency: "USD", items: [] }));
+        return new Response(
+          JSON.stringify({
+            baseCurrency: "USD",
+            items: (extra.currencies ?? []).map((code) => ({
+              id: newId(),
+              ledgerId,
+              code,
+              version: 1,
+              latestRate: null,
+              createdAt: stamp,
+              updatedAt: stamp,
+            })),
+          }),
+        );
       return new Response(JSON.stringify({ items: [], nextCursor: null }));
     }),
   );
@@ -227,5 +244,45 @@ describe("LoanDialog", () => {
       amount: { amount: 12550, currency: "USD" },
       expectedVersion: 3,
     });
+  });
+  it("goes back to the base currency when another person is chosen", async () => {
+    const sam: LoanPerson = {
+      id: client.id,
+      name: "Sam",
+      origin: "loan",
+      archivedAt: null,
+      version: 1,
+      balances: [loan(5000)],
+    };
+    mount("opening", [], { people: [sam] }, undefined, {
+      currencies: ["EUR"],
+    });
+    await screen.findByRole("option", { name: "EUR" });
+    await userEvent.selectOptions(screen.getByLabelText("Currency"), "EUR");
+    expect(screen.getByLabelText("Amount (EUR)")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText(/^Who(?! owes)/), [
+      sam.id,
+    ]);
+    expect(screen.getByLabelText("Amount (USD)")).toBeInTheDocument();
+  });
+  it("forgets the chosen account when the currency changes", async () => {
+    const second = { ...bank, id: newId(), name: "Savings" };
+    const euros = { ...bank, id: newId(), name: "Euro", currency: "EUR" };
+    mount(
+      "repay",
+      [loan(5000), { ...loan(3000), currency: "EUR" }],
+      null,
+      undefined,
+      {
+        accounts: [bank, second, euros],
+      },
+    );
+    await screen.findByRole("option", { name: "Savings (USD)" });
+    const account = screen.getByLabelText("Received into");
+    await userEvent.selectOptions(account, second.id);
+    expect(account).toHaveValue(second.id);
+    await userEvent.selectOptions(screen.getByLabelText("Currency"), "EUR");
+    await userEvent.selectOptions(screen.getByLabelText("Currency"), "USD");
+    expect(screen.getByLabelText("Received into")).toHaveValue(bank.id);
   });
 });
