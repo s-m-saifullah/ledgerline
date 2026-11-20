@@ -363,3 +363,47 @@ for (const theme of ["light", "dark"] as const)
     await settled(sheet(page));
     await scan();
   });
+
+// WP-11e: a category's mark is the shared tile, like every other icon lead: 36 px, 12 px corners, the soft accent
+// fill, the chosen icon centred and a small dot in the chosen color.
+for (const theme of ["light", "dark"] as const)
+  for (const width of [320, 390, 1280])
+    test(`a category's mark is the shared 36 px tile in ${theme} at ${width} px`, async ({
+      page,
+    }) => {
+      await open(page, width, theme);
+      const marks = page.locator(".cg-col:visible .cg-toggle .ui-tile");
+      expect(await marks.count()).toBeGreaterThan(0);
+      const soft = await page.evaluate(() => {
+        const probe = document.createElement("span");
+        probe.style.background = "var(--accent-soft)";
+        document.body.append(probe);
+        const color = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return color;
+      });
+      for (const mark of await marks.all()) {
+        const found = await box(mark);
+        expect(Math.round(found.width)).toBe(36);
+        expect(Math.round(found.height)).toBe(36);
+        const style = await mark.evaluate((node) => {
+          const css = getComputedStyle(node);
+          const dot = node.querySelector("span");
+          const dotBox = dot?.getBoundingClientRect();
+          const box = node.getBoundingClientRect();
+          return {
+            radius: css.borderTopLeftRadius,
+            background: css.backgroundColor,
+            dotInside:
+              !!dotBox &&
+              dotBox.left >= box.left - 0.5 &&
+              dotBox.right <= box.right + 0.5 &&
+              dotBox.top >= box.top - 0.5 &&
+              dotBox.bottom <= box.bottom + 0.5,
+          };
+        });
+        expect(style.radius).toBe("12px");
+        expect(style.background).toBe(soft);
+        expect(style.dotInside).toBe(true);
+      }
+    });
