@@ -23,11 +23,38 @@ function assetUrls(html) {
   return [...found];
 }
 
-/** The /assets files a style sheet loads (fonts). */
+/**
+ * True when a unicode-range covers the letter "a": no range at all, or a range whose interval holds it. A minifier may
+ * write U+0000-00FF as U+?? (a "?" stands for any digit), so the digits are read, not the text.
+ */
+function coversLatin(range) {
+  if (range === undefined) return true;
+  return range.split(",").some((part) => {
+    const token = part.trim().replace(/^u\+/i, "");
+    const [from, to = from] = token.split("-");
+    const low = Number.parseInt(from.replaceAll("?", "0"), 16);
+    const high = Number.parseInt(to.replaceAll("?", "F"), 16);
+    return low <= 0x61 && 0x61 <= high;
+  });
+}
+
+/**
+ * The font files a style sheet loads that are worth keeping: the woff2 file of each face that covers basic Latin text.
+ * The other scripts and the Latin extended face are fetched by a browser only when a glyph needs them, so keeping them
+ * would be a release's worth of downloads nobody reads; offline, such a glyph falls back to the system font. The old woff
+ * files are never asked for by a browser that has woff2.
+ */
 function fontUrls(css) {
-  return [...css.matchAll(/url\((\/assets\/[^)]+)\)/g)].map(
-    (match) => match[1],
-  );
+  const found = [];
+  for (const face of css.matchAll(/@font-face\s*\{[^}]*\}/g)) {
+    const range = /unicode-range:\s*([^;}]*)/.exec(face[0]);
+    if (!coversLatin(range ? range[1] : undefined)) continue;
+    for (const url of face[0].matchAll(
+      /url\(\s*["']?(\/assets\/[^"')\s]+\.woff2)["']?\s*\)/g,
+    ))
+      found.push(url[1]);
+  }
+  return found;
 }
 
 function isHtml(response) {

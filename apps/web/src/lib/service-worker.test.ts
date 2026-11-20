@@ -151,6 +151,82 @@ describe("service worker (ADR 0041)", () => {
     ]);
   });
 
+  // What Vite writes for fonts.css: minified, no quotes in url(), and a unicode-range on every face.
+  const face = (name: string, range?: string) =>
+    `@font-face{font-family:Inter;font-style:normal;font-display:swap;font-weight:400;src:url(/assets/${name}.woff2)format("woff2"),url(/assets/${name}.woff)format("woff");${range ? `unicode-range:${range};` : ""}}`;
+  const LATIN = "U+0000-00FF,U+0131,U+0152-0153,U+2000-206F,U+20AC";
+  async function installedWith(css: string) {
+    const worker = makeWorker({
+      network: (url) =>
+        url === "/"
+          ? html()
+          : url === "/assets/index-abc.css"
+            ? new Response(css, { headers: { "content-type": "text/css" } })
+            : new Response("x"),
+    });
+    await worker.run("install");
+    const cache = worker.stores.get("ledgerline-v-test") as Map<
+      string,
+      Response
+    >;
+    return { cache: [...cache.keys()].sort(), fetched: worker.fetched };
+  }
+
+  it("keeps only the woff2 file of the font faces that cover Latin text, not the other scripts or the old format", async () => {
+    const { cache, fetched } = await installedWith(
+      [
+        face("inter-cyrillic-400", "U+0301,U+0400-045F"),
+        face("inter-greek-400", "U+0370-0377,U+03A3-03FF"),
+        face("inter-latin-ext-400", "U+0100-02BA,U+20A0-20AB"),
+        face("inter-latin-400", LATIN),
+      ].join(""),
+    );
+    expect(cache).toEqual([
+      "/",
+      "/assets/index-abc.css",
+      "/assets/index-abc.js",
+      "/assets/inter-latin-400.woff2",
+    ]);
+    // Not downloaded at all, so a release costs the Latin files only.
+    expect(
+      fetched.filter((url) => /\.woff$|cyrillic|greek|latin-ext/.test(url)),
+    ).toEqual([]);
+  });
+
+  it("reads the range the CSS minifier writes: U+?? is U+0000-00FF", async () => {
+    // The real build rewrites the Latin face's range this way (checked on a build), and the Latin extended one stays.
+    const { cache } = await installedWith(
+      face("inter-latin-ext-500", "U+100-2BA,U+2BD-2C5,U+20A0-20AB") +
+        face(
+          "inter-latin-500",
+          "U+??,U+131,U+152-153,U+2BB-2BC,U+2000-206F,U+20AC",
+        ),
+    );
+    expect(cache).toContain("/assets/inter-latin-500.woff2");
+    expect(cache).not.toContain("/assets/inter-latin-ext-500.woff2");
+  });
+
+  it("keeps a face only when its range reaches the letters: one that ends before them, or sits after, is left to the browser", async () => {
+    const { cache } = await installedWith(
+      face("inter-digits-400", "U+0020-0040") +
+        face("inter-wild-400", "U+7?") +
+        face("inter-wide-400", "U+0020-0040,U+6?"),
+    );
+    expect(cache).toContain("/assets/inter-wide-400.woff2");
+    expect(cache).not.toContain("/assets/inter-digits-400.woff2");
+    expect(cache).not.toContain("/assets/inter-wild-400.woff2");
+  });
+
+  it("reads a face written over several lines with quotes, and one with no range at all", async () => {
+    const { cache } = await installedWith(
+      `@font-face {\n  font-family: 'Inter';\n  src: url("/assets/plain.woff2") format('woff2'), url("/assets/plain.woff") format('woff');\n}\n` +
+        face("inter-vietnamese-400", "U+0102-0103,U+1EA0-1EF9"),
+    );
+    expect(cache).toContain("/assets/plain.woff2");
+    expect(cache).not.toContain("/assets/plain.woff");
+    expect(cache).not.toContain("/assets/inter-vietnamese-400.woff2");
+  });
+
   it("loads pages from the network and falls back to the shell only when it fails", async () => {
     let online = true;
     const worker = makeWorker({
