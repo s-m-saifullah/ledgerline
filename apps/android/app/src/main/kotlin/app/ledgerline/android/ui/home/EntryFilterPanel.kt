@@ -1,6 +1,5 @@
 package app.ledgerline.android.ui.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -24,8 +22,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -43,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryFilters
@@ -57,9 +52,9 @@ import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.LedgerField
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.editor.ComboField
 import app.ledgerline.android.ui.format.formatEntryDate
-import app.ledgerline.android.ui.theme.LocalPalette
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -111,14 +106,7 @@ private fun RangeInvalid() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun EntryFiltersSheet(filters: EntryFilters, options: FilterOptions, onChange: (EntryFilters) -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        EntryFiltersSheetContent(filters, options, onApply = { onChange(it); onDismiss() }, onCancel = onDismiss)
-    }
+    LedgerSheet(onDismiss) { EntryFiltersSheetContent(filters, options, onApply = { onChange(it); onDismiss() }, onCancel = onDismiss) }
 }
 
 /**

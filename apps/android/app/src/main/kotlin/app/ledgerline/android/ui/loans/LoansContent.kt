@@ -12,18 +12,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,19 +28,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
+import app.ledgerline.android.ui.design.ActionsButton
+import app.ledgerline.android.ui.design.ActionsSheet
 import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.SheetTitle
@@ -61,6 +55,7 @@ import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.SectionLabel
+import app.ledgerline.android.ui.design.SheetAction
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.format.formatEntryDate
@@ -390,14 +385,7 @@ private fun MoveButtons(name: String, hasOpen: Boolean, actions: PersonActions) 
         }
         if (hasMenu) {
             val label = stringResource(R.string.loans_actions_for, name)
-            OutlinedIconButton(
-                onClick = { menu = true },
-                modifier = Modifier.size(TouchTarget).semantics { contentDescription = label },
-                shape = MaterialTheme.shapes.small,
-                border = BorderStroke(1.dp, LocalPalette.current.border),
-            ) {
-                Icon(painterResource(R.drawable.ic_more), contentDescription = null, tint = LocalPalette.current.text)
-            }
+            ActionsButton(label, { menu = true }, outlined = true)
         }
     }
     if (menu) {
@@ -411,23 +399,15 @@ private fun MoveButtons(name: String, hasOpen: Boolean, actions: PersonActions) 
 }
 
 /** The ⋮ menu as a sheet; a swipe away or Cancel chooses nothing. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PersonMenuSheet(name: String, onLend: (() -> Unit)?, onBorrow: (() -> Unit)?, onClose: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onClose,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        Column(modifier = Modifier.padding(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.padding(horizontal = ScreenMargin)) { SheetTitle(name, onClose) }
-            GroupedListCard {
-                if (onLend != null) row { ListRow(title = stringResource(R.string.loans_lend_money), onClick = onLend) }
-                if (onBorrow != null) row { ListRow(title = stringResource(R.string.loans_borrow_money), onClick = onBorrow) }
-            }
-        }
-    }
+    val lend = stringResource(R.string.loans_lend_money)
+    val borrow = stringResource(R.string.loans_borrow_money)
+    ActionsSheet(
+        name,
+        onClose,
+        listOfNotNull(onLend?.let { SheetAction(lend, it) }, onBorrow?.let { SheetAction(borrow, it) }),
+    )
 }
 
 /** One move on a loan account: Sent (money out to them) or Received (money in from them), when, and with whom or what for. */

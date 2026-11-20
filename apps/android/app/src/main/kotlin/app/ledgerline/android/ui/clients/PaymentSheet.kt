@@ -1,22 +1,13 @@
 package app.ledgerline.android.ui.clients
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,20 +15,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.InputRow
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
-import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.Question
-import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.WriteCopy
@@ -76,17 +65,9 @@ private val AmountProblems = setOf(
 )
 
 /** The Record payment sheet (ADR 0050); a swipe away or Cancel records nothing. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun PaymentSheet(ui: PaymentUi, actions: PaymentActions) {
-    ModalBottomSheet(
-        onDismissRequest = actions.close,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        PaymentSheetContent(ui, actions)
-    }
+    LedgerSheet(actions.close) { PaymentSheetContent(ui, actions) }
 }
 
 /**
@@ -215,7 +196,7 @@ internal fun PaymentSheetContent(ui: PaymentUi, actions: PaymentActions, modifie
     }
     picker?.let { which ->
         val close = { picker = null }
-        PickerSheet(close) {
+        LedgerSheet(close) {
             when (which) {
                 PaymentPicker.Account -> PickerContent(
                     stringResource(R.string.editor_account), ui.accounts, form.accountId,
@@ -259,24 +240,6 @@ private fun PaymentQuestion(ui: PaymentUi, actions: PaymentActions) {
             Text(stringResource(R.string.payment_ask_body, total.text, target.clientName, account))
             if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, target.currency).text))
         }
-    }
-}
-
-/** A row that opens and shuts what is under it, as the prototype's `<details>` rows. */
-@Composable
-internal fun FoldRow(title: String, open: Boolean, onToggle: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle, role = Role.Button).heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        Icon(
-            painterResource(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down),
-            contentDescription = null,
-            tint = LocalPalette.current.muted,
-            modifier = Modifier.size(20.dp),
-        )
     }
 }
 

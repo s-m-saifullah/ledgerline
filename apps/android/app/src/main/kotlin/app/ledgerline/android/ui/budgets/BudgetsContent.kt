@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -33,6 +31,7 @@ import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.CardGap
+import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.MonthControl
@@ -280,26 +279,7 @@ private fun FoldedLine(folded: List<BudgetLine>, actions: LimitActions?) {
     var open by rememberSaveable { mutableStateOf(false) }
     LedgerCard(padding = PaddingValues(0.dp)) {
         Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = { open = !open }, role = Role.Button)
-                    .heightIn(min = RowHeight)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    pluralStringResource(R.plurals.budgets_folded, folded.size, folded.size),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    painterResource(if (open) R.drawable.ic_chevron_down else R.drawable.ic_chevron_right),
-                    contentDescription = null,
-                    tint = LocalPalette.current.muted,
-                )
-            }
+            FoldRow(pluralStringResource(R.plurals.budgets_folded, folded.size, folded.size), open) { open = !open }
             if (open) {
                 folded.forEach { line ->
                     val open = actions?.takeIf { !line.archived }?.let { a -> { a.open(line) } }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,6 +29,7 @@ import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.IconAvatar
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
+import app.ledgerline.android.ui.design.PillShape
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.TopBar
@@ -224,7 +224,7 @@ internal fun TransferRow(transfer: EntryRowModel.Transfer, onOpen: () -> Unit) {
 /** A tag as the web shows it: a small outlined pill. */
 @Composable
 private fun Pill(text: String) {
-    Surface(shape = RoundedCornerShape(percent = 50), border = BorderStroke(1.dp, LocalPalette.current.fieldBorder), color = MaterialTheme.colorScheme.surface) {
+    Surface(shape = PillShape, border = BorderStroke(1.dp, LocalPalette.current.fieldBorder), color = MaterialTheme.colorScheme.surface) {
         Text(text, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp))
     }
 }

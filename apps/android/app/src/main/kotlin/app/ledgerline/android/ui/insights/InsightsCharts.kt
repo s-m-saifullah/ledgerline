@@ -3,7 +3,6 @@ package app.ledgerline.android.ui.insights
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,14 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -37,15 +33,10 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
@@ -53,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.TitleAndAmount
@@ -290,7 +282,6 @@ private fun WorthRow(row: NetWorthMonth) {
 @Composable
 private fun Figures(open: Boolean, onToggle: () -> Unit, content: @Composable () -> Unit) {
     val palette = LocalPalette.current
-    val state = stringResource(if (open) R.string.expanded else R.string.collapsed)
     Surface(
         modifier = Modifier.fillMaxWidth().padding(horizontal = ScreenMargin),
         shape = MaterialTheme.shapes.medium,
@@ -298,26 +289,7 @@ private fun Figures(open: Boolean, onToggle: () -> Unit, content: @Composable ()
         border = BorderStroke(1.dp, palette.border),
     ) {
         Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggle)
-                    .semantics {
-                        role = Role.Button
-                        stateDescription = state
-                    }
-                    .heightIn(min = 48.dp)
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    painterResource(R.drawable.ic_chevron_right),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp).rotate(if (open) 90f else 0f),
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.insights_show_figures), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
-            }
+            FoldRow(stringResource(R.string.insights_show_figures), open, onToggle = onToggle)
             if (open) {
                 Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)) { content() }
             }

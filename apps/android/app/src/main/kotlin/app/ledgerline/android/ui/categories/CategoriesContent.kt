@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
+import app.ledgerline.android.ui.design.ActionsButton
 import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.EmptyState
@@ -241,9 +242,7 @@ private fun GroupBlock(group: CategoryGroup, open: Boolean, actions: CategoriesA
                 }
             }
             val menuLabel = stringResource(R.string.category_actions_for, root.name)
-            IconButton(onClick = { actions.openMenu(root) }, modifier = Modifier.size(TouchTarget).semantics { contentDescription = menuLabel }) {
-                Icon(painterResource(R.drawable.ic_more), contentDescription = null, tint = palette.muted)
-            }
+            ActionsButton(menuLabel, { actions.openMenu(root) })
             // Not a button of its own: the whole row opens and closes the group.
             if (hasChildren) {
                 Icon(painterResource(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp))

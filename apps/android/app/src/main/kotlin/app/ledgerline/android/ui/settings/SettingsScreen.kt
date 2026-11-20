@@ -64,6 +64,7 @@ import app.ledgerline.android.settings.FilterKeep
 import app.ledgerline.android.settings.KeepMode
 import app.ledgerline.android.settings.KeepUnit
 import app.ledgerline.android.ui.design.LedgerField
+import app.ledgerline.android.ui.design.PillShape
 import app.ledgerline.android.ui.design.SegmentedControl
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -301,7 +302,7 @@ private fun SyncPillView(pill: SyncPill) {
         SyncPill.NotSent -> R.string.sync_pill_unsent to palette.muted
     }
     Row(
-        modifier = Modifier.heightIn(min = 32.dp).border(1.dp, palette.border, CircleShape).padding(horizontal = 12.dp),
+        modifier = Modifier.heightIn(min = 32.dp).border(1.dp, palette.border, PillShape).padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

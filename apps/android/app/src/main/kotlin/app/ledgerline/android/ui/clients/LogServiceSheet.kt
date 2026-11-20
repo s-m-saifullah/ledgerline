@@ -9,16 +9,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,10 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
@@ -37,7 +29,6 @@ import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.InputRow
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
-import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -46,6 +37,8 @@ import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.FoldRow
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
 import app.ledgerline.android.ui.editor.DatePickerStep
@@ -79,17 +72,9 @@ private val AmountProblems = setOf(
 )
 
 /** The Log service sheet (ADR 0050, slice 5); a swipe away or Cancel saves nothing. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LogServiceSheet(ui: LogServiceUi, actions: LogServiceActions) {
-    ModalBottomSheet(
-        onDismissRequest = actions.close,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        LogServiceSheetContent(ui, actions)
-    }
+    LedgerSheet(actions.close) { LogServiceSheetContent(ui, actions) }
 }
 
 /**
@@ -227,7 +212,7 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
     }
     if (picking) {
         val close = { picking = false }
-        PickerSheet(close) {
+        LedgerSheet(close) {
             PickerContent(
                 stringResource(R.string.service_currency), ui.currencies.map { Choice(it, it) }, form.currency,
                 { code -> actions.edit { it.copy(currency = code) }; close() }, close,

@@ -7,13 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,14 +22,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
-import app.ledgerline.android.ui.clients.FoldRow
 import app.ledgerline.android.ui.clients.Hint
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.InputRow
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
-import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
@@ -76,17 +72,9 @@ private val AmountProblems = setOf(
 )
 
 /** The Lend, Borrow and Repay sheet (ADR 0050, slice 6); a swipe away or Cancel moves no money. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LoanSheet(ui: LoanUi, actions: LoanActions) {
-    ModalBottomSheet(
-        onDismissRequest = actions.close,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        LoanSheetContent(ui, actions)
-    }
+    LedgerSheet(actions.close) { LoanSheetContent(ui, actions) }
 }
 
 /**
@@ -159,7 +147,7 @@ internal fun LoanSheetContent(ui: LoanUi, actions: LoanActions, modifier: Modifi
     }
     picker?.let { which ->
         val close = { picker = null }
-        PickerSheet(close) {
+        LedgerSheet(close) {
             when (which) {
                 LoanPicker.Account -> PickerContent(
                     stringResource(if (form.accountReceives) R.string.loan_received_into else R.string.loan_paid_from),
