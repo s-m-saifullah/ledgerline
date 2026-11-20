@@ -100,13 +100,6 @@ select {
   font-size: 14px;
   line-height: 1.7;
 }
-.eyebrow {
-  color: var(--muted);
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
 .brand-mark {
   width: 34px;
   height: 34px;
@@ -128,17 +121,6 @@ select {
   color: var(--danger);
   font-size: 14px;
   line-height: 1.5;
-}
-.small-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: var(--shape-card);
-  margin-bottom: 24px;
 }
 .app-version {
   margin: 12px 0 0;
@@ -163,27 +145,6 @@ select {
 }
 .page-heading {
   margin-bottom: 36px;
-}
-.welcome-card {
-  overflow: hidden;
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--shape-card);
-  padding: 44px 28px;
-  text-align: center;
-  margin-bottom: 24px;
-}
-.welcome-card h2 {
-  font-size: 19px;
-  margin-bottom: 16px;
-}
-.welcome-card > p:not(.eyebrow) {
-  font-size: 14px;
-  line-height: 1.8;
-  color: var(--muted);
-  max-width: 440px;
-  margin: 0 auto;
 }
 .loading {
   min-height: 100dvh;
@@ -226,9 +187,6 @@ select {
   .page-heading {
     margin-bottom: 28px;
   }
-  .welcome-card {
-    padding: 36px 20px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -266,27 +224,6 @@ select {
   width: 100%;
   min-width: 0;
   padding-inline-end: 40px;
-}
-.category-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  position: relative;
-  background: var(--background);
-  border-radius: var(--shape-field);
-  color: var(--text);
-}
-.category-swatch {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  border: 1px solid var(--border);
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
 }
 .category-picker {
   display: grid;

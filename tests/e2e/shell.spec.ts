@@ -282,6 +282,22 @@ test.describe("the edges at 699, 700, 1099 and 1100 px", () => {
 });
 
 test.describe("the sidebar", () => {
+  for (const width of [1100, 1280])
+    test(`every link is a 44 px target at ${width} px`, async ({ page }) => {
+      await at(page, width);
+      for (const name of ["Main navigation", "More pages"]) {
+        const links = page.getByRole("navigation", { name }).getByRole("link");
+        const count = await links.count();
+        expect(count).toBeGreaterThan(0);
+        for (let i = 0; i < count; i++) {
+          const link = links.nth(i);
+          if (!(await link.isVisible())) continue;
+          const found = await link.boundingBox();
+          expect(found?.height ?? 0).toBeGreaterThanOrEqual(43.9);
+        }
+      }
+    });
+
   test("goes to a More page and marks it as the current page", async ({
     page,
   }) => {
@@ -496,4 +512,33 @@ test.describe("fit and accessibility", () => {
           ),
         ).toEqual([]);
       });
+});
+
+// WP-11e: a page that does not exist says so, with one way home, not a welcome card that promises more clarity.
+test.describe("a page that is not found", () => {
+  for (const width of [320, 390, 1280])
+    test(`has a title, one line and a way home at ${width} px`, async ({
+      page,
+    }) => {
+      await at(page, width, "/there-is-nothing-here");
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Page not found" }),
+      ).toBeVisible();
+      await expect(page.getByText("This page does not exist.")).toBeVisible();
+      await expect(page.getByText("YOUR PERSONAL LEDGER")).toHaveCount(0);
+      await expect(page.getByText(/little more clarity/)).toHaveCount(0);
+      await expect(page.locator(".welcome-card")).toHaveCount(0);
+      const home = page.getByRole("link", { name: "Go to Home" });
+      const homeBox = await home.boundingBox();
+      expect(homeBox?.height ?? 0).toBeGreaterThanOrEqual(43.9);
+      // As wide as its word, not the page: it never runs past 240 px.
+      expect(homeBox?.width ?? 0).toBeLessThanOrEqual(240);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      await home.click();
+      await expect(page).toHaveURL(/\/$/);
+    });
 });

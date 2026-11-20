@@ -10,7 +10,6 @@ import {
   Command,
   Eye,
   EyeOff,
-  type Home,
   LogOut,
   Moon,
   Plus,
@@ -396,33 +395,6 @@ export function Shell({
   );
 }
 
-export function EmptyPage({
-  title,
-  description,
-  icon: Icon,
-}: {
-  title: string;
-  description: string;
-  icon: typeof Home;
-}) {
-  // One root, like every page: the frame is a grid, and two roots would be spaced by its gap.
-  return (
-    <div>
-      <div className="page-heading">
-        <p className="eyebrow">YOUR PERSONAL LEDGER</p>
-        <h1>{title}</h1>
-        <p className="muted">{description}</p>
-      </div>
-      <section className="welcome-card">
-        <div className="small-mark">
-          <Icon size={28} />
-        </div>
-        <h2>A little more clarity is on its way.</h2>
-        <p>This part of your ledger is coming soon.</p>
-      </section>
-    </div>
-  );
-}
 /** The deployed release tag, small and quiet. */
 export function AppVersion() {
   return (
