@@ -15,7 +15,7 @@
   --scrim: rgb(9 9 11 / 0.45);
   --track: color-mix(in oklab, var(--text) 9%, transparent);
   --tint: color-mix(in oklab, var(--text) 5%, transparent);
-  --neutral-chart: color-mix(in oklab, var(--muted) 55%, var(--surface));
+  --neutral-chart: color-mix(in oklab, var(--muted) 70%, var(--surface));
 }
 
 /* `ui-figure` is the 31 px amount of a card. */
