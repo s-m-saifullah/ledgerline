@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,6 +19,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.categories.errorText
+import app.ledgerline.android.ui.design.LedgerField
 import app.ledgerline.android.ui.design.PrimaryButton
 
 /**
@@ -33,14 +33,13 @@ fun NewCategoryFields(box: NewCategory, onName: (String) -> Unit, onCreate: () -
         val label = stringResource(R.string.editor_new_category_name)
         Text(label, style = MaterialTheme.typography.bodyMedium)
         val invalid = box.name.isNotEmpty() && !box.valid
-        OutlinedTextField(
+        LedgerField(
             value = box.name,
             onValueChange = onName,
             isError = invalid,
             supportingText = if (invalid) ({ Text(stringResource(R.string.editor_new_category_invalid)) }) else null,
             singleLine = true,
             enabled = !box.creating,
-            shape = MaterialTheme.shapes.small,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onCreate() }),
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label },

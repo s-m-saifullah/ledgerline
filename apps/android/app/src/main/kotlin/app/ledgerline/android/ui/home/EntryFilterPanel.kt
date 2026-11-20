@@ -26,7 +26,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -57,6 +56,7 @@ import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.LedgerField
 import app.ledgerline.android.ui.editor.ComboField
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.theme.LocalPalette
@@ -202,7 +202,7 @@ private fun FilterBox(label: Int, all: Int, none: Int, choices: List<Choice>, se
 internal fun DateField(label: String, value: String?, onChange: (String?) -> Unit) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Box {
-        OutlinedTextField(
+        LedgerField(
             value = value?.let { runCatching { formatEntryDate(it) }.getOrDefault(it) } ?: "",
             onValueChange = {},
             readOnly = true,

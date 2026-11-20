@@ -13,10 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,10 +38,10 @@ import app.ledgerline.android.settings.ThemeChoice
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.GroupedRows
-import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.SectionLabel
 import app.ledgerline.android.ui.design.SegmentedControl
+import app.ledgerline.android.ui.design.SwitchRow
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.home.SyncLine
 import app.ledgerline.android.ui.home.SyncProblem
@@ -57,7 +55,6 @@ import app.ledgerline.android.ui.home.SignedInViewModel
 import app.ledgerline.android.ui.update.UpdateViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -66,6 +63,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import app.ledgerline.android.settings.FilterKeep
 import app.ledgerline.android.settings.KeepMode
 import app.ledgerline.android.settings.KeepUnit
+import app.ledgerline.android.ui.design.LedgerField
 import app.ledgerline.android.ui.design.SegmentedControl
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -222,9 +220,9 @@ fun SettingsContent(state: SettingsState, actions: SettingsActions, bottomSpace:
             }
             item {
                 Section(R.string.settings_privacy) {
-                    row { SwitchRow(R.string.privacy_mode, R.string.privacy_mode_detail, state.hideAmounts, actions.setHideAmounts) }
-                    row { SwitchRow(R.string.cents_first, R.string.cents_first_detail, state.centsFirst, actions.setCentsFirst) }
-                    row { SwitchRow(R.string.allow_screenshots, R.string.allow_screenshots_detail, state.allowScreenshots, actions.setAllowScreenshots) }
+                    row { SwitchRow(stringResource(R.string.privacy_mode), stringResource(R.string.privacy_mode_detail), state.hideAmounts, actions.setHideAmounts) }
+                    row { SwitchRow(stringResource(R.string.cents_first), stringResource(R.string.cents_first_detail), state.centsFirst, actions.setCentsFirst) }
+                    row { SwitchRow(stringResource(R.string.allow_screenshots), stringResource(R.string.allow_screenshots_detail), state.allowScreenshots, actions.setAllowScreenshots) }
                     row { KeepFilters(state.filterKeep, actions.setFilterKeep) }
                 }
             }
@@ -324,7 +322,7 @@ private fun UpdatesRows(updates: UpdatesInfo, actions: SettingsActions) {
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp),
             )
         }
-        SwitchRow(R.string.updates_auto, R.string.updates_auto_detail, updates.auto, actions.setAutoUpdate)
+        SwitchRow(stringResource(R.string.updates_auto), stringResource(R.string.updates_auto_detail), updates.auto, actions.setAutoUpdate)
         SecondaryButton(
             stringResource(R.string.updates_check),
             onClick = actions.openUpdates,
@@ -357,7 +355,7 @@ private fun KeepFilters(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
             Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.filters_keep_number), style = MaterialTheme.typography.bodyMedium)
-                    OutlinedTextField(
+                    LedgerField(
                         value = text,
                         onValueChange = { typed ->
                             text = typed.filter { it.isDigit() }.take(3)
@@ -366,7 +364,6 @@ private fun KeepFilters(keep: FilterKeep, onChange: (FilterKeep) -> Unit) {
                         isError = amount == null,
                         supportingText = if (amount == null) ({ Text(stringResource(R.string.filters_keep_invalid)) }) else null,
                         singleLine = true,
-                        shape = MaterialTheme.shapes.small,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = numberLabel },
                     )
@@ -411,24 +408,5 @@ private fun ThemeRow(label: Int, selected: Boolean, onSelect: () -> Unit) {
     ) {
         RadioButton(selected = selected, onClick = null)
         Text(stringResource(label), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 12.dp))
-    }
-}
-
-/** The whole row is the switch, so it is one 48 dp target that a screen reader announces as a switch. */
-@Composable
-private fun SwitchRow(title: Int, detail: Int, checked: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange)
-            .heightIn(min = RowHeight)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
-            Muted(stringResource(detail), top = 0.dp)
-        }
-        Switch(checked = checked, onCheckedChange = null)
     }
 }

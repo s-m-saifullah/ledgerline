@@ -1,5 +1,7 @@
 package app.ledgerline.android.ui.theme
 
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -48,5 +50,37 @@ class TypeScaleTest {
         assertEquals(14f * 1.5f, t.bodyLarge.lineHeight.value, 0.01f)
         assertEquals(12f * 1.6f, t.bodyMedium.lineHeight.value, 0.01f)
         assertEquals(10f * 1.5f, t.bodySmall.lineHeight.value, 0.01f)
+    }
+
+    /** Every text style Material can ask for, found by reflection so a slot Material adds later cannot slip in. */
+    private fun everySlot(typography: Typography): Map<String, TextStyle> =
+        Typography::class.java.methods
+            .filter { it.name.startsWith("get") && it.parameterCount == 0 && TextStyle::class.java.isAssignableFrom(it.returnType) }
+            .associate { it.name.removePrefix("get") to (it.invoke(typography) as TextStyle) }
+
+    @Test
+    fun everyMaterialSlotIsDefinedByUsAndNotLeftToMaterial() {
+        val ours = everySlot(t)
+        val materials = everySlot(Typography())
+        assertTrue("found ${ours.size} slots", ours.size >= 15)
+        // A slot left at Material's default (24 sp and larger, the system font) differs from ours only if we set it.
+        val left = ours.filter { (name, style) -> style == materials[name] }.keys
+        assertEquals("slots left at Material's default", emptySet<String>(), left)
+    }
+
+    @Test
+    fun everySlotIsInterOnTheScale() {
+        val scale = setOf(35f, 31f, 27f, 19f, 14f, 12f, 10f)
+        everySlot(t).forEach { (name, style) ->
+            assertEquals("$name font", Inter, style.fontFamily)
+            assertTrue("$name is ${style.fontSize.value} sp", style.fontSize.value in scale)
+        }
+    }
+
+    @Test
+    fun theDialogTitleIsTheSectionTitleAndThePickersUseTheBigSizes() {
+        assertEquals(t.titleLarge.fontSize, t.headlineSmall.fontSize)
+        assertEquals(31f, t.headlineLarge.fontSize.value)
+        assertEquals(35f, t.displayLarge.fontSize.value)
     }
 }

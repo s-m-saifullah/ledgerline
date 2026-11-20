@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -39,6 +38,7 @@ import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.LedgerField
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.SheetTitle
@@ -130,7 +130,7 @@ internal fun CategoryFormContent(
         val nameLabel = stringResource(R.string.category_name)
         Column(side, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(nameLabel, style = MaterialTheme.typography.bodyMedium)
-            OutlinedTextField(
+            LedgerField(
                 value = form.name,
                 onValueChange = { typed -> touched = true; actions.changeForm { it.copy(name = typed.take(MaxCategoryName + 20)) } },
                 isError = nameError,
@@ -139,7 +139,6 @@ internal fun CategoryFormContent(
                 }) else null,
                 singleLine = true,
                 enabled = !saving,
-                shape = MaterialTheme.shapes.small,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth().semantics { contentDescription = nameLabel },
             )

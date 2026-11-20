@@ -9,7 +9,6 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +23,7 @@ import app.ledgerline.android.ui.design.Choice
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import app.ledgerline.android.ui.design.LedgerField
 
 /** The choices whose label contains what was typed (ignoring case and the spaces around it); all of them when nothing is typed. */
 fun List<Choice>.matching(query: String): List<Choice> {
@@ -66,7 +66,7 @@ fun ComboField(
         if (!clearAfterPick) focus.clearFocus()
     }
     ExposedDropdownMenuBox(expanded = open && enabled, onExpandedChange = { open = it; query = "" }, modifier = modifier) {
-        OutlinedTextField(
+        LedgerField(
             value = if (open) query else if (clearAfterPick) "" else current,
             onValueChange = {
                 query = it

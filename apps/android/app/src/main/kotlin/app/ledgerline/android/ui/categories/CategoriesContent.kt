@@ -236,7 +236,7 @@ private fun GroupBlock(group: CategoryGroup, open: Boolean, actions: CategoriesA
                 } else if (hasChildren) {
                     Text(
                         pluralStringResource(R.plurals.category_subs, group.children.size, group.children.size),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = palette.muted,
                     )
                 }
@@ -256,7 +256,7 @@ private fun GroupBlock(group: CategoryGroup, open: Boolean, actions: CategoriesA
 
 @Composable
 private fun ArchivedHint() {
-    Text(stringResource(R.string.category_archived_badge), style = MaterialTheme.typography.labelMedium, color = LocalPalette.current.muted)
+    Text(stringResource(R.string.category_archived_badge), style = MaterialTheme.typography.bodySmall, color = LocalPalette.current.muted)
 }
 
 /** A subcategory: its name, and an Archived hint when it is; a tap opens its actions. */
