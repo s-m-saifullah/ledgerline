@@ -529,9 +529,10 @@ test.describe("a page that is not found", () => {
       await expect(page.getByText(/little more clarity/)).toHaveCount(0);
       await expect(page.locator(".welcome-card")).toHaveCount(0);
       const home = page.getByRole("link", { name: "Go to Home" });
-      expect((await home.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(
-        43.9,
-      );
+      const homeBox = await home.boundingBox();
+      expect(homeBox?.height ?? 0).toBeGreaterThanOrEqual(43.9);
+      // As wide as its word, not the page: it never runs past 240 px.
+      expect(homeBox?.width ?? 0).toBeLessThanOrEqual(240);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth,
