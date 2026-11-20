@@ -19,6 +19,7 @@ import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Overlay } from "../../components/overlay";
+import { queryKeys } from "../../lib/query-keys";
 import { formatDay, formatTime12 } from "../../lib/time";
 import { getPayments } from "./api";
 import { type ServiceState, serviceState } from "./model";
@@ -96,7 +97,7 @@ export function ServiceSheet({
   const trigger = `service-${s.id}`;
   const state = serviceState(s, today);
   const payments = useInfiniteQuery({
-    queryKey: ["receivables", ledgerId, "payments", s.id],
+    queryKey: queryKeys.servicePayments(ledgerId, s.id),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getPayments(ledgerId, s.id, pageParam, signal),

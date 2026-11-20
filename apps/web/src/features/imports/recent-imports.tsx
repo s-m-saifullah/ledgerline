@@ -1,6 +1,7 @@
 import { RowBody, SectionLabel } from "@ledgerline/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { queryKeys } from "../../lib/query-keys";
 import { formatDay } from "../../lib/time";
 import { getImports } from "./api";
 import { UndoQuestion } from "./undo-import";
@@ -10,7 +11,7 @@ export function RecentImports({ ledgerId }: { ledgerId: string | undefined }) {
   const [notice, setNotice] = useState("");
   const [asking, setAsking] = useState<string | null>(null);
   const imports = useQuery({
-    queryKey: ["imports", ledgerId],
+    queryKey: queryKeys.imports(ledgerId),
     queryFn: ({ signal }) => getImports(ledgerId as string, signal),
     enabled: !!ledgerId,
     staleTime: 0,

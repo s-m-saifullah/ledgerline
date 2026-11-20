@@ -2,9 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loading } from "../../components/loading";
 import { MonthHead } from "../../components/month-head";
-import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
-import { getAllAccounts } from "../transactions/api";
 import { getCashFlowReport, getNetWorthReport, getSpendingReport } from "./api";
 import { CashFlowCard } from "./cash-flow-card";
 import { Figures } from "./figures";
@@ -14,42 +12,39 @@ import { NetWorthNow } from "./net-worth-now";
 import { SpendingCard } from "./spending-card";
 import { SummaryCard } from "./summary-card";
 import "./insights.css";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
+import { useAllAccounts } from "../accounts/hooks";
 
 /** Insights (ADR 0047): this month, spending by category, money in and out, net worth now and over time. */
 export function InsightsPage() {
   const current = useCurrentMonth();
   const [chosen, setChosen] = useState<string | null>(null);
   const month = chosen ?? current;
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const spending = useQuery({
-    queryKey: ["reports", "spending", ledger?.id, month],
+    queryKey: queryKeys.report(ledger?.id, "spending", month),
     queryFn: ({ signal }) =>
       getSpendingReport(ledger?.id as string, month, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
   const flow = useQuery({
-    queryKey: ["reports", "cash-flow", ledger?.id, month],
+    queryKey: queryKeys.report(ledger?.id, "cash-flow", month),
     queryFn: ({ signal }) =>
       getCashFlowReport(ledger?.id as string, month, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
   const worth = useQuery({
-    queryKey: ["reports", "net-worth", ledger?.id, month],
+    queryKey: queryKeys.report(ledger?.id, "net-worth", month),
     queryFn: ({ signal }) =>
       getNetWorthReport(ledger?.id as string, month, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
   // Net worth now is today's, so it does not follow the month; the balances are the accounts' own.
-  const accounts = useQuery({
-    queryKey: ["accounts", ledger?.id, "insights"],
-    queryFn: ({ signal }) => getAllAccounts(ledger?.id as string, signal),
-    enabled: !!ledger,
-    staleTime: 0,
-  });
+  const accounts = useAllAccounts(ledger?.id);
   const selected = flow.data?.months.find((row) => row.month === month);
   const failed =
     ledgers.isError || spending.isError || flow.isError || worth.isError;

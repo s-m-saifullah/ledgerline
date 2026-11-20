@@ -14,7 +14,6 @@ import { Loading } from "../../components/loading";
 import { ReadOnlyNote } from "../../components/read-only-note";
 import { SearchField } from "../../components/search-field";
 import { Toast, toastDuration } from "../../components/toast";
-import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
 import { usePageAdd } from "../shell/page-add";
 import { CategoryActionDialog } from "./action-dialog";
@@ -35,10 +34,12 @@ import {
 import { useCategoryReorder } from "./reorder";
 import { StarterButton } from "./starter-preview";
 import "./categories.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 
 export function CategoriesPage() {
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   if (ledgers.isPending) return <Loading what="categories" />;
   if (ledgers.isError || !ledger)
     return (
@@ -80,7 +81,7 @@ function LedgerCategories({
   const [notice, setNotice] = useState("");
   const writable = ledger.role !== "viewer";
   const query = useQuery({
-    queryKey: ["categories", ledger.id],
+    queryKey: queryKeys.categories(ledger.id),
     queryFn: ({ signal }) => getCategories(ledger.id, signal),
     refetchOnMount: "always",
   });
@@ -123,10 +124,13 @@ function LedgerCategories({
     );
   const saved = (category?: Category) => {
     if (category)
-      client.setQueryData<Category[]>(["categories", ledger.id], (rows) => [
-        ...(rows ?? []).filter((row) => row.id !== category.id),
-        category,
-      ]);
+      client.setQueryData<Category[]>(
+        queryKeys.categories(ledger.id),
+        (rows) => [
+          ...(rows ?? []).filter((row) => row.id !== category.id),
+          category,
+        ],
+      );
     setNotice(
       dialog?.kind === "action"
         ? dialog.action.kind === "archive"
@@ -141,8 +145,7 @@ function LedgerCategories({
           : "Category added.",
     );
     setDialog(null);
-    void client.invalidateQueries({ queryKey: ["categories", ledger.id] });
-    void client.invalidateQueries({ queryKey: ["home", ledger.id] });
+    void invalidateLedger(client, ledger.id);
   };
   const kinds = ["expense", "income"] as const;
   const groupsOf = (value: Category["kind"]) =>
@@ -403,7 +406,7 @@ function LedgerCategories({
           onUnconfirmed={unconfirmed}
           onSaved={saved}
           onReloaded={(latest) => {
-            client.setQueryData(["categories", ledger.id], latest);
+            client.setQueryData(queryKeys.categories(ledger.id), latest);
             setDialog(null);
             setNotice(
               "Categories reloaded. Choose the action again using the latest details.",

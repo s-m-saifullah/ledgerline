@@ -1,5 +1,6 @@
 import { convertMinor, type Money } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/query-keys";
 import { getCurrencies } from "./api";
 
 /**
@@ -8,7 +9,7 @@ import { getCurrencies } from "./api";
  */
 export function useBaseValues(ledgerId: string | undefined) {
   const list = useQuery({
-    queryKey: ["currencies", ledgerId],
+    queryKey: queryKeys.currencies(ledgerId),
     queryFn: ({ signal }) => getCurrencies(ledgerId as string, signal),
     enabled: !!ledgerId,
     staleTime: 0,

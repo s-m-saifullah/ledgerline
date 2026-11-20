@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Plus, X } from "lucide-react";
 import { useState } from "react";
 import { ApiError } from "../../lib/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
 import { prepareTagCreate } from "./api";
 import { useTags } from "./use-tags";
 
@@ -63,7 +64,7 @@ export function TagPicker({
     setError("");
     try {
       const tag = await prepareTagCreate(ledgerId, parsed.data)();
-      await client.invalidateQueries({ queryKey: ["tags", ledgerId] });
+      await invalidateLedger(client, ledgerId);
       add(tag.id);
     } catch (failure) {
       setError(
@@ -71,7 +72,7 @@ export function TagPicker({
           ? "A tag with this name already exists. Pick it from the list."
           : "Couldn't add the tag. Try again.",
       );
-      await client.invalidateQueries({ queryKey: ["tags", ledgerId] });
+      await invalidateLedger(client, ledgerId);
     } finally {
       setBusy(false);
     }

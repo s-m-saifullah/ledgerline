@@ -1,4 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { forgetMarkers } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
 import { meKey } from "../profile/api";
 import { usersKey } from "../users/api";
 
@@ -17,9 +19,10 @@ export function forgetPerson(client: QueryClient) {
  */
 export async function forgetSession(client: QueryClient) {
   await client.cancelQueries();
-  client.setQueryData(["session"], null);
+  forgetMarkers(client);
+  client.setQueryData(queryKeys.session, null);
   client.removeQueries({
-    predicate: (query) => query.queryKey[0] !== "session",
+    predicate: (query) => query.queryKey[0] !== queryKeys.session[0],
   });
   client.getMutationCache().clear();
 }

@@ -15,10 +15,14 @@ import { Overlay } from "../../components/overlay";
 import { Toast, toastDuration } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
 import { PrivacyContext } from "../../lib/preferences";
+import { queryKeys } from "../../lib/query-keys";
+import { getAllAccounts } from "../accounts/api";
+import { useAllAccounts } from "../accounts/hooks";
 import { getCategories } from "../categories/api";
+import { useCategories } from "../categories/hooks";
 import { useBaseValues } from "../currencies/base-value";
-import { getAllAccounts } from "../transactions/api";
 import {
   getAllClients,
   getClient,
@@ -109,32 +113,22 @@ export function ClientsWorkspace({
   const allowWrite =
     writable && !(op?.kind === "payment" && op.service.status === "writtenOff");
   const clients = useQuery({
-    queryKey: ["contacts", ledgerId, "choices"],
+    queryKey: queryKeys.clientChoices(ledgerId),
     queryFn: ({ signal }) => getAllClients(ledgerId as string, signal),
     enabled: !!ledgerId && op?.kind === "service" && !!op.service,
   });
-  const accounts = useQuery({
-    queryKey: ["accounts", ledgerId, "history"],
-    queryFn: ({ signal }) => getAllAccounts(ledgerId as string, signal),
-    enabled: !!ledgerId && paymentMode,
-  });
-  const categories = useQuery({
-    queryKey: ["categories", ledgerId],
-    queryFn: ({ signal }) => getCategories(ledgerId as string, signal),
-    enabled: !!ledgerId && paymentMode,
-  });
+  const accounts = useAllAccounts(ledgerId, paymentMode);
+  const categories = useCategories(ledgerId, paymentMode);
   const baseValues = useBaseValues(ledgerId);
   const derived = derivePayment(op, values, accounts.data);
   const { receiptCreate, previewCents } = derived;
   const preview = useQuery({
-    queryKey: [
-      "receivables",
+    queryKey: queryKeys.receiptPreview(
       ledgerId,
-      "receipt-preview",
       receiptCreate?.client.id,
       values.receiptCurrency,
       previewCents,
-    ],
+    ),
     queryFn: ({ signal }) =>
       getReceiptPreview(
         ledgerId as string,
@@ -150,15 +144,7 @@ export function ClientsWorkspace({
   const preference = `ledgerline:payment-category:${actorId}:${ledgerId}`;
   const tipPreference = `ledgerline:tip-category:${actorId}:${ledgerId}`;
   const invalidate = () => {
-    for (const key of [
-      "contacts",
-      "receivables",
-      "clientHistory",
-      "accounts",
-      "transactions",
-      "home",
-    ])
-      void queryClient.invalidateQueries({ queryKey: [key, ledgerId] });
+    if (ledgerId) void invalidateLedger(queryClient, ledgerId);
   };
   useEffect(() => {
     if (!open) {
@@ -279,10 +265,13 @@ export function ClientsWorkspace({
         ]);
         if (loadSequence.current !== sequence) return;
         queryClient.setQueryData(
-          ["accounts", ledgerId, "history"],
+          queryKeys.allAccounts(ledgerId),
           freshAccounts,
         );
-        queryClient.setQueryData(["categories", ledgerId], freshCategories);
+        queryClient.setQueryData(
+          queryKeys.categories(ledgerId),
+          freshCategories,
+        );
         if (!(loaded.kind === "payment" ? loaded.payment : loaded.receipt)) {
           fields.accountId = freshAccounts.find((a) => !a.archivedAt)?.id ?? "";
           fields.categoryId = paymentDefault(

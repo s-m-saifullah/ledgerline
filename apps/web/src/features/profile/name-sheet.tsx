@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Overlay } from "../../components/overlay";
 import { ApiError } from "../../lib/api";
+import { queryKeys } from "../../lib/query-keys";
 import { meKey, renameMe } from "./api";
 import { nameMessage, parseName } from "./model";
 
@@ -37,7 +38,7 @@ export function NameSheet({
     try {
       client.setQueryData(meKey, await renameMe(parsed));
       // The sidebar reads the name from the session.
-      await client.invalidateQueries({ queryKey: ["session"] });
+      await client.invalidateQueries({ queryKey: queryKeys.session });
     } catch (problem) {
       setError(
         problem instanceof ApiError && problem.status < 500

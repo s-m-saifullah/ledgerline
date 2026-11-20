@@ -12,14 +12,13 @@ import { LoadingSheet } from "../../components/loading-sheet";
 import { Toast, toastDuration } from "../../components/toast";
 import { UndoPill } from "../../components/undo-pill";
 import { ApiError } from "../../lib/api";
-import { getCategories } from "../categories/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useAllAccounts } from "../accounts/hooks";
+import { useCategories } from "../categories/hooks";
 import { CategoryMergeWorkspace } from "../categories/merge-workspace";
 import { ClientsWorkspace } from "../clients/workspace";
-import {
-  getAllAccounts,
-  getTransaction,
-  prepareTransactionRestore,
-} from "./api";
+import { getTransaction, prepareTransactionRestore } from "./api";
 import { TransactionEditor } from "./editor";
 import { TransferForm } from "./transfer-form";
 import { getTransfer } from "./transfers";
@@ -62,45 +61,31 @@ export function TransactionWorkspace({
   const [undoUncertain, setUndoUncertain] = useState(false);
   const attempt = useRef<(() => Promise<Transaction>) | null>(null);
   const inFlight = useRef(false);
-  const accounts = useQuery({
-    queryKey: ["accounts", ledgerId, "history"],
-    queryFn: ({ signal }) => getAllAccounts(ledgerId as string, signal),
-    enabled: !!ledgerId && !!selected,
-  });
-  const categories = useQuery({
-    queryKey: ["categories", ledgerId],
-    queryFn: ({ signal }) => getCategories(ledgerId as string, signal),
-    enabled: !!ledgerId && !!selected,
-  });
+  const accounts = useAllAccounts(ledgerId, !!selected);
+  const categories = useCategories(ledgerId, !!selected);
   const detail = useQuery({
-    queryKey: [
-      "transactions",
+    queryKey: queryKeys.transactionDetail(
       ledgerId,
-      "detail",
       selected?.id,
       selectionSequence,
-    ],
+    ),
     queryFn: () => getTransaction(ledgerId as string, selected?.id as string),
     enabled: !!ledgerId && !!selected,
     staleTime: 0,
   });
   const transfer = useQuery({
-    queryKey: [
-      "transactions",
+    queryKey: queryKeys.transferDetail(
       ledgerId,
-      "transfer",
       selected?.transferId,
       selectionSequence,
-    ],
+    ),
     queryFn: () =>
       getTransfer(ledgerId as string, selected?.transferId as string),
     enabled: !!ledgerId && !!selected?.transferId,
     staleTime: 0,
   });
   const invalidate = useCallback(() => {
-    void client.invalidateQueries({ queryKey: ["accounts", ledgerId] });
-    void client.invalidateQueries({ queryKey: ["transactions", ledgerId] });
-    void client.invalidateQueries({ queryKey: ["home", ledgerId] });
+    if (ledgerId) void invalidateLedger(client, ledgerId);
   }, [client, ledgerId]);
   const undo = async () => {
     if (

@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
-import { getLedgers } from "../../lib/api";
 import { useCurrentMonth } from "../../lib/month";
 import { localToday } from "../../lib/time";
 import { useAppWide } from "../../lib/use-app-width";
@@ -15,6 +14,8 @@ import { ClientList } from "./client-list";
 import { type ClientFilter, resolveFilter, visibleClients } from "./model";
 import { useClientsWorkspace } from "./workspace";
 import "./clients.css";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 
 /**
  * Clients (ADR 0047, the prototype's `R.clients`): the list and one client beside it from 1100 px, one at a
@@ -27,12 +28,11 @@ export function ClientsPage() {
   const month = useCurrentMonth();
   const wide = useAppWide(1100);
   const workspace = useClientsWorkspace();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const writable = !!ledger && ledger.role !== "viewer";
   const blocked = workspace?.blocked ?? false;
   const clients = useQuery({
-    queryKey: ["contacts", ledger?.id, "book", month],
+    queryKey: queryKeys.clientBook(ledger?.id, month),
     queryFn: ({ signal }) => getAllClients(ledger?.id as string, signal, month),
     enabled: !!ledger,
   });

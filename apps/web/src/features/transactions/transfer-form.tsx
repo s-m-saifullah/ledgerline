@@ -14,6 +14,7 @@ import { DeleteTrigger } from "../../components/delete-trigger";
 import { Overlay } from "../../components/overlay";
 import { ReadOnlyNote } from "../../components/read-only-note";
 import { ApiError } from "../../lib/api";
+import { invalidateLedger } from "../../lib/ledger-cache";
 import { decimalFromCents } from "../../lib/money";
 import { PrivacyContext } from "../../lib/preferences";
 import { prepareTransactionUndo } from "./api";
@@ -240,8 +241,7 @@ export function TransferForm({
     setBusy(true);
     try {
       const latest = await getTransfer(ledgerId, baseline.id);
-      await client.invalidateQueries({ queryKey: ["accounts", ledgerId] });
-      await client.invalidateQueries({ queryKey: ["home", ledgerId] });
+      await invalidateLedger(client, ledgerId);
       setBaseline(latest);
       reset(defaults(latest, accounts, actorId, ledgerId));
       setConflict(false);

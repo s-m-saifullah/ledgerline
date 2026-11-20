@@ -3,11 +3,13 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
-import { getLedgers } from "../../lib/api";
 import { monthLabel, useCurrentMonth } from "../../lib/month";
 import { useBaseValues } from "../currencies/base-value";
-import { getActiveAccounts, getHome } from "./api";
+import { getHome } from "./api";
 import "./home.css";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
+import { useActiveAccounts } from "../accounts/hooks";
 import { currenciesOf } from "./model";
 import {
   AccountsColumn,
@@ -40,23 +42,17 @@ function FirstAccount({ writable }: { writable: boolean }) {
 
 export function HomePage() {
   const month = useCurrentMonth();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const writable = !!ledger && ledger.role !== "viewer";
   const summary = useQuery({
-    queryKey: ["home", ledger?.id, month],
+    queryKey: queryKeys.home(ledger?.id, month),
     queryFn: ({ signal }) => getHome(ledger?.id as string, month, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
   const data = summary.data;
-  const ready = !!data?.setup.hasActiveAccount;
   // The summary leaves cards and loans out of its account list, so the lists come from the accounts themselves.
-  const accounts = useQuery({
-    queryKey: ["accounts", ledger?.id, "home"],
-    queryFn: ({ signal }) => getActiveAccounts(ledger?.id as string, signal),
-    enabled: !!ledger && ready,
-  });
+  const accounts = useActiveAccounts(ledger?.id);
   const values = useBaseValues(ledger?.id);
   const baseOf: BaseOf = (money) => {
     const amount = values.baseValue(money);

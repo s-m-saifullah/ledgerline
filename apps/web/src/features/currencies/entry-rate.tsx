@@ -2,6 +2,7 @@ import { convertMinor, invertRate, rateFromInverse } from "@ledgerline/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { Amount } from "../../components/amount-text";
+import { queryKeys } from "../../lib/query-keys";
 import { rateSentence } from "../../lib/rate-format";
 import { getRateLookup } from "./api";
 import { useBaseValues } from "./base-value";
@@ -44,7 +45,7 @@ function ForeignEntryRate({
   const foreign = currency !== baseCurrency;
   const validDate = /^\d{4}-\d{2}-\d{2}$/.test(date);
   const lookup = useQuery({
-    queryKey: ["rate-lookup", ledgerId, currency, date],
+    queryKey: queryKeys.rateLookup(ledgerId, currency, date),
     queryFn: ({ signal }) => getRateLookup(ledgerId, currency, date, signal),
     enabled: foreign && validDate,
     staleTime: 30_000,

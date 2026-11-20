@@ -4,6 +4,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { queryKeys } from "../../lib/query-keys";
 import {
   category,
   chooseCategory,
@@ -160,16 +161,9 @@ it("keeps one immutable key/body through an uncertain result, closing and naviga
       String(url).includes("merge-preview"),
     ),
   ).toHaveLength(1);
-  expect(
-    invalidate.mock.calls.map(([options]) => options?.queryKey?.[0]),
-  ).toEqual([
-    "categories",
-    "transactions",
-    "contacts",
-    "receivables",
-    "clientHistory",
-    "accounts",
-    "home",
+  // Once, for the whole ledger: categories, entries, clients, accounts and Home all reload together.
+  expect(invalidate.mock.calls.map(([options]) => options?.queryKey)).toEqual([
+    queryKeys.ledger(ledgerId),
   ]);
   expect(screen.getByRole("button", { name: "Competing write" })).toBeEnabled();
 });

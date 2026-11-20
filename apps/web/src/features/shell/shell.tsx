@@ -19,7 +19,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { TopBar } from "../../components/top-bar";
-import { api, getLedgers, type Session } from "../../lib/api";
+import { api, type Session } from "../../lib/api";
 import { type Preferences, SignOutContext } from "../../lib/preferences";
 import { useLiveChanges } from "../../lib/use-live-changes";
 import { usePageAnnouncement } from "../../lib/use-page-announcement";
@@ -40,6 +40,8 @@ import { type PageAdd, PageAddProvider } from "./page-add";
 import { CommandPalette, type PaletteItem } from "./palette";
 import { SyncStatus } from "./sync-status";
 import "./shell.css";
+import { useLedger } from "../../lib/use-ledger";
+import { usePrefetchLedgerData } from "./use-prefetch";
 
 /**
  * The frame of every signed-in screen (ADR 0047). One `aside` is a bottom bar's counterpart: hidden under
@@ -62,12 +64,13 @@ export function Shell({
   const currentPage = pageTitle(pathname);
   const back = backTarget(pathname);
   const pageAnnouncement = usePageAnnouncement(currentPage);
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   // Whether I am the admin: the sidebar says so under my name (ADR 0048). A failed read just leaves the line blank.
   const me = useQuery({ queryKey: meKey, queryFn: getMe });
   const isAdmin = me.data?.isAdmin === true;
   const sync = useLiveChanges(ledger?.id);
+  // The Add sheet needs the accounts and categories: have them ready before it is opened.
+  usePrefetchLedgerData(ledger?.id);
   const canAdd = !!ledger && ledger.role !== "viewer";
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [addTrigger, setAddTrigger] = useState("add-transaction");

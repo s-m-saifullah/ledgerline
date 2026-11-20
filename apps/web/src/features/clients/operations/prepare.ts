@@ -15,6 +15,7 @@ import {
   updateReceivableSchema,
 } from "@ledgerline/shared";
 import type { QueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../../lib/query-keys";
 import { prepareClientWrite } from "../api";
 import { positiveMoney } from "../form";
 import type { PaymentDerived } from "./derive";
@@ -376,9 +377,13 @@ function prepareAction(
     }
     if (a === "deleteContact" && client) {
       // Drop the deleted client's detail queries first so nothing refetches them (they would 404).
-      for (const key of ["contacts", "receivables", "clientHistory"]) {
+      for (const key of [
+        queryKeys.contacts(l),
+        queryKeys.receivables(l),
+        queryKeys.clientHistory(l),
+      ]) {
         queryClient.removeQueries({
-          queryKey: [key, l],
+          queryKey: key,
           predicate: (query) => query.queryKey.includes(client.id),
         });
       }

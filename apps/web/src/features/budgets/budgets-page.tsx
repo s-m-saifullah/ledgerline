@@ -16,7 +16,6 @@ import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { MonthHead } from "../../components/month-head";
 import { Toast, toastDuration } from "../../components/toast";
-import { getLedgers } from "../../lib/api";
 import { monthLabel, shiftMonth, useCurrentMonth } from "../../lib/month";
 import { getBudgetMonth, prepareBudgetCopy } from "./api";
 import { LimitSheet } from "./limit-sheet";
@@ -30,6 +29,9 @@ import {
   usedShare,
 } from "./model";
 import "./budgets.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 
 /** The days left in the month, in words, for the hero's line; nothing for another month. */
 function daysText(days: number | null) {
@@ -138,11 +140,10 @@ export function BudgetsPage() {
   );
   const [copying, setCopying] = useState(false);
   const client = useQueryClient();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const writable = !!ledger && ledger.role !== "viewer";
   const view = useQuery({
-    queryKey: ["budgets", ledger?.id, month],
+    queryKey: queryKeys.budgets(ledger?.id, month),
     queryFn: ({ signal }) =>
       getBudgetMonth(ledger?.id as string, month, signal),
     enabled: !!ledger,
@@ -150,8 +151,7 @@ export function BudgetsPage() {
   });
   const data = view.data;
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: ["budgets", ledger?.id] });
-    // Budgets feed no Home number yet, but keep the cache honest if that changes.
+    if (ledger) void invalidateLedger(client, ledger.id);
   };
   // One notice for the page; its number restarts the timer when the same words come twice in a row.
   const tell = (text: string) =>

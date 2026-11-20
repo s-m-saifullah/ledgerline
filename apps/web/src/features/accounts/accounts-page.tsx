@@ -6,11 +6,7 @@ import {
   RowBody,
   SectionLabel,
 } from "@ledgerline/ui";
-import {
-  useInfiniteQuery,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Banknote,
   ChevronDown,
@@ -27,9 +23,7 @@ import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { ReadOnlyNote } from "../../components/read-only-note";
 import { Toast, toastDuration } from "../../components/toast";
-import { getLedgers } from "../../lib/api";
 import { randomUuid } from "../../lib/random-uuid";
-import { getCategories } from "../categories/api";
 import { useBaseValues } from "../currencies/base-value";
 import { usePageAdd } from "../shell/page-add";
 import { getAccounts } from "./api";
@@ -37,6 +31,10 @@ import { ArchiveAccountDialog } from "./archive";
 import { AccountEditor } from "./editor";
 import { accountHint, isOverdrawn, splitAccounts } from "./model";
 import "./accounts.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
+import { useCategories } from "../categories/hooks";
 
 const icons = {
   bank: Landmark,
@@ -56,8 +54,7 @@ type DialogState = {
 } & AccountIntent;
 
 export function AccountsPage() {
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   if (ledgers.isPending) return <Loading what="accounts" />;
   if (ledgers.isError || !ledger)
     return (
@@ -86,16 +83,13 @@ export function AccountsPage() {
  */
 function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
   const client = useQueryClient();
-  const categories = useQuery({
-    queryKey: ["categories", ledger.id],
-    queryFn: ({ signal }) => getCategories(ledger.id, signal),
-  });
+  const categories = useCategories(ledger.id);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [notice, setNotice] = useState("");
   const writable = ledger.role !== "viewer";
   const values = useBaseValues(ledger.id);
   const accounts = useInfiniteQuery({
-    queryKey: ["accounts", ledger.id, "all"],
+    queryKey: queryKeys.accountPages(ledger.id),
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) =>
       getAccounts(ledger.id, "all", pageParam, signal),
@@ -149,8 +143,7 @@ function LedgerAccounts({ ledger }: { ledger: z.infer<typeof ledgerSchema> }) {
               : "Account added.",
     );
     setDialog(null);
-    void client.invalidateQueries({ queryKey: ["accounts", ledger.id] });
-    void client.invalidateQueries({ queryKey: ["home", ledger.id] });
+    void invalidateLedger(client, ledger.id);
   };
   const row = (account: Account) => {
     const Icon = icons[account.type];

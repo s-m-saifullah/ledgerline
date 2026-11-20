@@ -430,7 +430,10 @@ it("selects the category it created, so Save sends it", async () => {
     screen.getByRole("button", { name: "Save transaction" }),
   );
   await waitFor(() => expect(saved).toHaveBeenCalledOnce());
-  const body = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
+  const save = fetchMock.mock.calls.find(([url]) =>
+    String(url).includes("/transactions"),
+  );
+  const body = JSON.parse(String(save?.[1]?.body));
   expect(body.categoryId).toBe(coffee.id);
 });
 

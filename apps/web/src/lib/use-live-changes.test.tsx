@@ -5,6 +5,8 @@ import {
 } from "@tanstack/react-query";
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { invalidateLedger } from "./ledger-cache";
+import { queryKeys } from "./query-keys";
 import {
   liveChangesInterval,
   type SyncState,
@@ -32,7 +34,7 @@ function respond(url: string) {
 function Page({ dialog = false }: { dialog?: boolean }) {
   useLiveChanges("ledger-1");
   useQuery({
-    queryKey: ["accounts", "ledger-1"],
+    queryKey: queryKeys.accounts("ledger-1"),
     queryFn: () =>
       fetch("/api/v1/ledgers/ledger-1/accounts").then((r) => r.json()),
     staleTime: Number.POSITIVE_INFINITY,
@@ -53,7 +55,7 @@ async function renderPage(dialog = false) {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(10);
   });
-  return { setDialog: (open: boolean) => view.rerender(page(open)) };
+  return { client, setDialog: (open: boolean) => view.rerender(page(open)) };
 }
 
 const tick = () =>
@@ -91,6 +93,31 @@ describe("useLiveChanges", () => {
     expect(accountsLoads).toBe(2);
     await tick();
     expect(accountsLoads).toBe(2);
+  });
+
+  it("does not reload the screen a second time for a change the page made itself", async () => {
+    // The page saves something: the marker moves from a to b, and the save reloads the screen once.
+    markers = ["a", "b"];
+    const { client } = await renderPage();
+    expect(accountsLoads).toBe(1);
+    await act(async () => {
+      await invalidateLedger(client, "ledger-1");
+    });
+    expect(accountsLoads).toBe(2);
+    await tick();
+    await tick();
+    expect(accountsLoads).toBe(2);
+  });
+
+  it("still reloads for a change made elsewhere after the page's own save", async () => {
+    markers = ["a", "b", "c"];
+    const { client } = await renderPage();
+    await act(async () => {
+      await invalidateLedger(client, "ledger-1");
+    });
+    expect(accountsLoads).toBe(2);
+    await tick();
+    expect(accountsLoads).toBe(3);
   });
 
   it("waits while a dialog is open and reloads after it closes", async () => {
@@ -212,7 +239,7 @@ describe("updating while a reload runs", () => {
   function Probe() {
     seen = useLiveChanges("ledger-1");
     useQuery({
-      queryKey: ["accounts", "ledger-1"],
+      queryKey: queryKeys.accounts("ledger-1"),
       queryFn: () =>
         fetch("/api/v1/ledgers/ledger-1/accounts").then((r) => r.json()),
       staleTime: Number.POSITIVE_INFINITY,

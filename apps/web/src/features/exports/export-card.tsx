@@ -1,16 +1,14 @@
-import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { DateTimeInput } from "../../components/date-time-input";
-import { getLedgers } from "../../lib/api";
+import { useLedger } from "../../lib/use-ledger";
 import { DownloadMessage } from "./message";
 import { exportPath } from "./paths";
 import { useCsvDownload } from "./use-csv-download";
 
 /** Export, on the Import and export page: the ledger as CSV files made at the moment of download. */
 export function ExportCard() {
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledgerId = ledgers.data?.items[0]?.id;
+  const { ledgerId } = useLedger();
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const { busy, message, start } = useCsvDownload();

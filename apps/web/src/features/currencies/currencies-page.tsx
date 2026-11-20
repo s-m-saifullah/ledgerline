@@ -12,7 +12,6 @@ import { useState } from "react";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
 import { Toast, toastDuration } from "../../components/toast";
-import { getLedgers } from "../../lib/api";
 import { currencyName } from "../../lib/rate-format";
 import { usePageAdd } from "../shell/page-add";
 import { AddCurrencySheet } from "./add-sheet";
@@ -20,6 +19,9 @@ import { getCurrencies, prepareRatesRefresh } from "./api";
 import { rateHint, refreshFailed, refreshNotice } from "./model";
 import { RateSheet } from "./rate-sheet";
 import "./currencies.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
 
 /**
  * Currencies (ADR 0047, the prototype's `R.currencies`): one card with the base currency first and then each added
@@ -27,11 +29,10 @@ import "./currencies.css";
  */
 export function CurrenciesPage() {
   const client = useQueryClient();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const writable = !!ledger && ledger.role !== "viewer";
   const list = useQuery({
-    queryKey: ["currencies", ledger?.id],
+    queryKey: queryKeys.currencies(ledger?.id),
     queryFn: ({ signal }) => getCurrencies(ledger?.id as string, signal),
     enabled: !!ledger,
     staleTime: 0,
@@ -41,8 +42,9 @@ export function CurrenciesPage() {
   const [adding, setAdding] = useState(false);
   const [notice, setNotice] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const reload = () =>
-    void client.invalidateQueries({ queryKey: ["currencies", ledger?.id] });
+  const reload = () => {
+    if (ledger) void invalidateLedger(client, ledger.id);
+  };
   const editingCurrency: PinnedCurrency | undefined = data?.items.find(
     (item) => item.code === editing,
   );

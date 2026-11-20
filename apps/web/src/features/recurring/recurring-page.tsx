@@ -7,14 +7,16 @@ import { useState } from "react";
 import { Amount } from "../../components/amount-text";
 import { LoadError } from "../../components/load-error";
 import { Loading } from "../../components/loading";
-import { getLedgers } from "../../lib/api";
-import { getCategories } from "../categories/api";
 import { usePageAdd } from "../shell/page-add";
-import { getAllAccounts } from "../transactions/api";
 import { getRules } from "./api";
 import { ruleEndHint, ruleHint } from "./model";
 import { RuleSheet } from "./rule-sheet";
 import "./recurring.css";
+import { invalidateLedger } from "../../lib/ledger-cache";
+import { queryKeys } from "../../lib/query-keys";
+import { useLedger } from "../../lib/use-ledger";
+import { useAllAccounts } from "../accounts/hooks";
+import { useCategories } from "../categories/hooks";
 
 /**
  * Recurring (ADR 0047, the prototype's `R.recurring`): one grouped card of rules, each a row with its name, one
@@ -22,32 +24,20 @@ import "./recurring.css";
  */
 export function RecurringPage() {
   const client = useQueryClient();
-  const ledgers = useQuery({ queryKey: ["ledgers"], queryFn: getLedgers });
-  const ledger = ledgers.data?.items[0];
+  const { ledger, ledgers } = useLedger();
   const writable = !!ledger && ledger.role !== "viewer";
   const rules = useQuery({
-    queryKey: ["recurring", ledger?.id],
+    queryKey: queryKeys.recurring(ledger?.id),
     queryFn: ({ signal }) => getRules(ledger?.id as string, signal),
     enabled: !!ledger,
     staleTime: 0,
   });
-  const accounts = useQuery({
-    queryKey: ["accounts", ledger?.id, "history"],
-    queryFn: ({ signal }) => getAllAccounts(ledger?.id as string, signal),
-    enabled: !!ledger,
-  });
-  const categories = useQuery({
-    queryKey: ["categories", ledger?.id],
-    queryFn: ({ signal }) => getCategories(ledger?.id as string, signal),
-    enabled: !!ledger,
-  });
+  const accounts = useAllAccounts(ledger?.id);
+  const categories = useCategories(ledger?.id);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: ["recurring", ledger?.id] });
     // Entries made by a rule change balances, lists and totals.
-    void client.invalidateQueries({ queryKey: ["accounts"] });
-    void client.invalidateQueries({ queryKey: ["transactions"] });
-    void client.invalidateQueries({ queryKey: ["home"] });
+    if (ledger) void invalidateLedger(client, ledger.id);
   };
   const failed = ledgers.isError || rules.isError;
   const timeZone = ledger?.timeZone ?? null;

@@ -8,6 +8,7 @@ import { formatDay } from "../../lib/time";
 import { getTransactions } from "../transactions/api";
 import { prepareRemoveLoan } from "./loans-api";
 import "./loans.css";
+import { queryKeys } from "../../lib/query-keys";
 
 const shown = 50;
 
@@ -32,7 +33,7 @@ export function RemoveLoanDialog({
   onRemoved: () => void;
 }) {
   const entries = useQuery({
-    queryKey: ["loans", ledgerId, person.id, "remove-check", loan.accountId],
+    queryKey: queryKeys.loanRemoveCheck(ledgerId, person.id, loan.accountId),
     queryFn: ({ signal }) =>
       getTransactions(ledgerId, { accountId: loan.accountId }, null, signal),
     refetchOnMount: "always",

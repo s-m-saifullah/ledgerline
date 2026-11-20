@@ -1,5 +1,4 @@
 import {
-  type Account,
   type CreateTransaction,
   type JsonValue,
   type Transaction,
@@ -8,26 +7,7 @@ import {
   transferSchema,
 } from "@ledgerline/shared";
 import { api, prepareFinancialWrite } from "../../lib/api";
-import { getAccounts } from "../accounts/api";
 import { transferLeg } from "./transfers";
-export async function getActiveAccounts(
-  ledgerId: string,
-  signal?: AbortSignal,
-) {
-  const items: Account[] = [],
-    visited = new Set<string>();
-  let cursor: string | null = null;
-  do {
-    const page = await getAccounts(ledgerId, "active", cursor, signal);
-    // A client's balance account (ADR 0030) is managed from Clients, never picked by hand.
-    items.push(...page.items.filter((account) => !account.contactId));
-    cursor = page.nextCursor;
-    if (cursor && visited.has(cursor))
-      throw new Error("Account pagination did not advance");
-    if (cursor) visited.add(cursor);
-  } while (cursor);
-  return items;
-}
 export function prepareTransactionCreate(
   ledgerId: string,
   body: CreateTransaction,
@@ -62,21 +42,6 @@ export function prepareTransactionUndo(
         : {}),
     },
   );
-}
-
-export async function getAllAccounts(ledgerId: string, signal?: AbortSignal) {
-  const items: Account[] = [],
-    visited = new Set<string>();
-  let cursor: string | null = null;
-  do {
-    const page = await getAccounts(ledgerId, "all", cursor, signal);
-    items.push(...page.items);
-    cursor = page.nextCursor;
-    if (cursor && visited.has(cursor))
-      throw new Error("Account pagination did not advance");
-    if (cursor) visited.add(cursor);
-  } while (cursor);
-  return items;
 }
 export async function getTransactions(
   ledgerId: string,

@@ -83,6 +83,8 @@ it("reloads stale transfer details before a fresh expected-version write", async
       json({ title: "Conflict", detail: "Changed", errors: [] }, 409),
     )
     .mockResolvedValueOnce(json({ ...row, version: 3, time: null }))
+    // The reload reads the ledger's change marker (the next request), then the save is the one after it.
+    .mockResolvedValueOnce(json({ marker: "m" }))
     .mockResolvedValueOnce(json({ ...row, version: 4, time: null }));
   vi.stubGlobal("fetch", fetchMock);
   render(
@@ -100,7 +102,7 @@ it("reloads stale transfer details before a fresh expected-version write", async
   await userEvent.click(screen.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(props.onSaved).toHaveBeenCalled());
   expect(
-    JSON.parse(String(fetchMock.mock.calls[2]?.[1]?.body)).expectedVersion,
+    JSON.parse(String(fetchMock.mock.calls[3]?.[1]?.body)).expectedVersion,
   ).toBe(3);
 });
 it("retries paired deletion with its original key/version", async () => {

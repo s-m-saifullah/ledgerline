@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { currentMonth, monthLabel } from "../../lib/month";
 import { PrivacyContext } from "../../lib/preferences";
+import { queryKeys } from "../../lib/query-keys";
 import { HomePage } from "./home-page";
 
 vi.mock("@tanstack/react-router", () => ({
@@ -422,8 +423,10 @@ describe("Home", () => {
       cleanup();
       const { view } = mount([ok(summary({ pendingCount: 0 }))]);
       await screen.findByText("In hand");
+      // The accounts load beside the summary now, so wait for them: a card for each list, and none for a note.
+      await screen.findByText("Checking");
       expect(view.container.querySelector(".ui-list:empty")).toBeNull();
-      expect(view.container.querySelectorAll(".ui-list")).toHaveLength(2);
+      expect(view.container.querySelectorAll(".ui-list")).toHaveLength(3);
     });
 
     it("links a currency with no rate to where a rate is added", async () => {
@@ -900,7 +903,7 @@ describe("Home", () => {
   it("keeps the last numbers visible when a refresh fails", async () => {
     mount([ok(summary()), fail]);
     expect(await screen.findByText("$3,590.00")).toBeInTheDocument();
-    await client.invalidateQueries({ queryKey: ["home"] });
+    await client.invalidateQueries({ queryKey: queryKeys.home(ledgerId) });
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Showing the last numbers");
     expect(screen.getByText("$3,590.00")).toBeInTheDocument();

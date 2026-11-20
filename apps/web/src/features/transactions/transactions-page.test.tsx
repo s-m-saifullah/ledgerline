@@ -13,9 +13,11 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, getLedgers } from "../../lib/api";
 import { PrivacyContext } from "../../lib/preferences";
+import { queryKeys } from "../../lib/query-keys";
+import { getAllAccounts } from "../accounts/api";
 import { getCategories, prepareCategorySave } from "../categories/api";
 import { getTags, prepareTagCreate } from "../tags/api";
-import { getAllAccounts, getTransactions } from "./api";
+import { getTransactions } from "./api";
 import { TransactionsPage } from "./transactions-page";
 
 const router = vi.hoisted(() => ({
@@ -67,6 +69,9 @@ vi.mock("../../lib/api", async (original) => ({
 vi.mock("./api", async (original) => ({
   ...(await original<typeof import("./api")>()),
   getTransactions: vi.fn(),
+}));
+vi.mock("../accounts/api", async (original) => ({
+  ...(await original<typeof import("../accounts/api")>()),
   getAllAccounts: vi.fn(),
 }));
 vi.mock("../categories/api", () => ({
@@ -1006,7 +1011,9 @@ describe("the Filters sheet", () => {
         screen.getByRole("option", { name: "Create tag “Trip”" }),
       );
       await waitFor(() =>
-        expect(invalidate).toHaveBeenCalledWith({ queryKey: ["tags", "l1"] }),
+        expect(invalidate).toHaveBeenCalledWith({
+          queryKey: queryKeys.ledger("l1"),
+        }),
       );
     });
 
@@ -1020,7 +1027,7 @@ describe("the Filters sheet", () => {
       );
       await waitFor(() =>
         expect(invalidate).toHaveBeenCalledWith({
-          queryKey: ["categories", "l1"],
+          queryKey: queryKeys.ledger("l1"),
         }),
       );
     });
