@@ -392,6 +392,9 @@ for (const theme of ["light", "dark"] as const)
           const dotBox = dot?.getBoundingClientRect();
           const box = node.getBoundingClientRect();
           return {
+            dotSize: dotBox
+              ? [Math.round(dotBox.width), Math.round(dotBox.height)]
+              : [],
             radius: css.borderTopLeftRadius,
             background: css.backgroundColor,
             dotInside:
@@ -405,5 +408,7 @@ for (const theme of ["light", "dark"] as const)
         expect(style.radius).toBe("12px");
         expect(style.background).toBe(soft);
         expect(style.dotInside).toBe(true);
+        // The dot is a small key in the corner (8 px), never a second icon.
+        expect(style.dotSize).toEqual([8, 8]);
       }
     });
