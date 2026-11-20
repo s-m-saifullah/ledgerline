@@ -27,24 +27,32 @@ export function rememberMarker(
 export const forgetMarkers = (client: QueryClient) => seen.delete(client);
 
 /**
+ * Reads the ledger's marker now and remembers it as accounted for. Anyone who reloads more than a ledger's own queries
+ * after a write (clearing a ledger reloads everything) calls this first; `invalidateLedger` does it for you. A marker that
+ * cannot be read only means the next check may reload once more.
+ */
+export async function recordMarker(client: QueryClient, ledgerId: string) {
+  try {
+    const { marker } = await fetchChangeMarker(ledgerId);
+    if (typeof marker === "string") rememberMarker(client, ledgerId, marker);
+  } catch {
+    // Offline, or the server said no: the reload that follows says so by itself.
+  }
+}
+
+/**
  * Refreshes what a write may have changed: call it after any write to a ledger, so no screen keeps a hand-picked list.
  * Everything on screen for that ledger reloads, and what is not on screen is marked out of date and loads when it opens;
  * nothing of another ledger or of the signed-in person is touched. It is always the whole ledger: the marker it records
  * stands for the whole ledger, so refreshing only some of it would hide a change made elsewhere in the rest.
  *
  * The marker is read first, then the reload starts: a change made elsewhere before the read is in what reloads, and one
- * made after it moves the marker again, so the next check still finds it. A marker that cannot be read only means the
- * next check may reload once more.
+ * made after it moves the marker again, so the next check still finds it.
  */
 export async function invalidateLedger(
   client: QueryClient,
   ledgerId: string,
 ): Promise<void> {
-  try {
-    const { marker } = await fetchChangeMarker(ledgerId);
-    if (typeof marker === "string") rememberMarker(client, ledgerId, marker);
-  } catch {
-    // Offline, or the server said no: the reload below says so by itself.
-  }
+  await recordMarker(client, ledgerId);
   await client.invalidateQueries({ queryKey: queryKeys.ledger(ledgerId) });
 }

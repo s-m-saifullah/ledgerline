@@ -10,6 +10,7 @@ import {
   undoDays,
   undoEndsAt,
 } from "../../lib/days-left";
+import { recordMarker } from "../../lib/ledger-cache";
 import { useLedger } from "../../lib/use-ledger";
 import { prepareClearLedger, prepareRestoreLedger } from "../ledger/api";
 
@@ -69,8 +70,9 @@ export function ClearLedger({
     }
     setBusy(false);
     close();
-    // Everything on screen came from the ledger as it was: read it all again.
-    void client.invalidateQueries();
+    // Everything on screen came from the ledger as it was: read it all again. The marker this change produced is
+    // recorded first, so the next live check does not reload it a second time.
+    void recordMarker(client, ledger.id).then(() => client.invalidateQueries());
     onNotice(kind === "clear" ? "Ledger cleared." : "Ledger restored.");
   };
   const waiting = ledger.clearedAt ?? null;

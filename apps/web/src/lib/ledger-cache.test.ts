@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   forgetMarkers,
   invalidateLedger,
+  recordMarker,
   rememberMarker,
   seenMarker,
 } from "./ledger-cache";
@@ -125,6 +126,20 @@ describe("invalidateLedger", () => {
     markerAnswer = () => Promise.reject(new TypeError("Failed to fetch"));
     await invalidateLedger(client, "l1");
     expect(loads.budgets).toBe(2);
+    expect(seenMarker(client, "l1")).toBeUndefined();
+  });
+});
+
+describe("recordMarker", () => {
+  it("remembers the marker without reloading anything", async () => {
+    await recordMarker(client, "l1");
+    expect(seenMarker(client, "l1")).toBe("after-write");
+    expect(loads.budgets).toBe(1);
+  });
+
+  it("stays quiet when the marker cannot be read", async () => {
+    markerAnswer = () => Promise.reject(new TypeError("Failed to fetch"));
+    await expect(recordMarker(client, "l1")).resolves.toBeUndefined();
     expect(seenMarker(client, "l1")).toBeUndefined();
   });
 });
