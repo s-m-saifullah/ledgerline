@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -32,7 +31,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -72,6 +70,7 @@ import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SegmentedControl
+import app.ledgerline.android.ui.design.SwitchRow
 import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.theme.LocalPalette
@@ -435,19 +434,8 @@ private fun TagsRow(tags: List<Choice>, chosen: List<String>, onRemove: (String)
 
 /** The web's Status: off is cleared (the default), on is pending, which stays out of the posted balance. */
 @Composable
-private fun PendingRow(pending: Boolean, onChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().toggleable(value = pending, onValueChange = onChange, role = Role.Switch).heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(stringResource(R.string.editor_pending), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.editor_pending_hint), style = MaterialTheme.typography.labelMedium, color = LocalPalette.current.muted)
-        }
-        Switch(checked = pending, onCheckedChange = null)
-    }
-}
+private fun PendingRow(pending: Boolean, onChange: (Boolean) -> Unit) =
+    SwitchRow(stringResource(R.string.editor_pending), stringResource(R.string.editor_pending_hint), pending, onChange)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

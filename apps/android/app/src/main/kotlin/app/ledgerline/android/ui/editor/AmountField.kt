@@ -2,7 +2,6 @@ package app.ledgerline.android.ui.editor
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import app.ledgerline.android.ui.design.LedgerField
 import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.theme.LocalPalette
 
@@ -95,7 +95,7 @@ fun AmountField(
         }
         return
     }
-    OutlinedTextField(
+    LedgerField(
         value = field,
         onValueChange = onType,
         label = { Text(label) },

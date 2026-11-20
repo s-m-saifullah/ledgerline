@@ -111,7 +111,7 @@ private fun ChartCard(
 ) {
     val palette = LocalPalette.current
     val hidden = LocalPrivacy.current
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp, letterSpacing = 0.sp, fontWeight = FontWeight.SemiBold)
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp)
     val measurer = rememberTextMeasurer()
     val names = months.map { shortMonth(it) }
     LedgerCard(padding = PaddingValues(start = 12.dp, end = 12.dp, top = 16.dp, bottom = 8.dp), modifier = Modifier.clearAndSetSemantics { contentDescription = described }) {
@@ -342,9 +342,9 @@ private fun FigureRow(cells: List<String>, header: Boolean = false) {
     }
 }
 
-/** `.flow-table`: 11 sp with tabular figures. */
+/** `.flow-table`: the muted-text size (12 sp, on the scale) with tabular figures. */
 @Composable
-private fun FigureStyle() = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp).tabular()
+private fun FigureStyle() = MaterialTheme.typography.bodyMedium.tabular()
 
 /** With amounts hidden, says why the chart has no bars. */
 @Composable

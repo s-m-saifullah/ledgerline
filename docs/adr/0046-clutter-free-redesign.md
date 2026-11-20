@@ -79,6 +79,14 @@ Top bar; segmented control (two to four options); grouped list card (leading ava
 - **Update screen:** a top bar with a back arrow, an Installed row, and the same states as before. The eyebrow and subtitle are gone.
 - **Retired:** `PageHeader`, `BackLink`, `SearchField` and `ChoiceField`. Settings' "Keep my filters" unit is a three-option segmented control (Minutes, Hours, Days); the Categories form's Parent is a row that opens the shared picker. The picker sheet, the pick row and the input row moved to the shared design package.
 
+### Amendment, 2026-11-20: the phone's shared pieces, first part (WP-16; the owner approved the plan)
+
+- **Every text style is defined.** `LedgerlineTypography` sets all Material slots, including `headlineSmall` (a dialog's title, the 19 sp section title), `headlineLarge` (31 sp) and `displayLarge` (35 sp, the time picker's digits); a slot left out is Material's 24 sp or larger in the system font. `TypeScaleTest` finds every slot by reflection and fails on one that is not Inter on the scale or is left at Material's value.
+- **One text field.** `LedgerField` in `ui/design` is the outlined field (12 dp corners; Material's own is 8 dp), used by every sheet and form; the borderless `InputRow` in a grouped card stays. A sheet's amount stays 27 sp (`headlineMedium`) and the entry editor's hero amount 31 sp: forcing 31 in sheets risks overflow at 320 dp with the largest text.
+- **One switch row.** `SwitchRow` in `ui/design` (title, one hint, a switch; the whole row is the target). Its hint is the 12 sp muted style; a row's hint in a list (`ListRow`, Categories) stays 10 sp.
+- **The Insights figures table is 12 sp** (it was an off-scale 11 sp), and no screen writes a font size of its own.
+- `SharedPiecesTest` reads the sources and fails on a raw `OutlinedTextField`, a private switch row or a font size written in a screen. The question, the sheet, the action sheet, the fold row and the pill shapes follow in the next two pull requests.
+
 ## Not changing
 
 The API, the mirror, the outbox, sync, privacy mode through `money()`, FLAG_SECURE, integer minor-unit money, each screen's content as a function of plain data, the search-stays-put rule (`narrowingRoom` and a `SearchStaysPut` test on every list screen with a search or filter), the colour source (`tokens.css`), light, dark and system themes, and the existing tests (kept green, or changed on purpose and said so in the pull request).

@@ -48,6 +48,12 @@ const val TEXT_FLOOR_SP = 10
  * with tabular figures where shown.
  */
 val LedgerlineTypography = Typography(
+    // The three slots no screen of ours asks for, but Material's own pieces do: a dialog's title is headlineSmall and
+    // the time picker's digits are displayLarge. They take the nearest size of the scale and Inter (a slot left
+    // out is Material's 24 sp or larger in the system font); TypeScaleTest fails on any slot left at Material's value.
+    displayLarge = inter(35, 600, lineHeight = 1.15, spacing = -0.02),
+    headlineLarge = inter(31, 600, lineHeight = 1.15, spacing = -0.02),
+    headlineSmall = inter(19, 600, lineHeight = 1.3, spacing = -0.025),
     displayMedium = inter(35, 600, lineHeight = 1.15, spacing = -0.02),
     displaySmall = inter(31, 600, lineHeight = 1.15, spacing = -0.02),
     headlineMedium = inter(27, 600, lineHeight = 1.2, spacing = -0.045),
