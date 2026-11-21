@@ -170,6 +170,57 @@ test("when the changed paths are unknown the web and API suites run too", () => 
 test("documentation-only changes skip the Android build", () => {
   assert.equal(classify(["docs/PLAN.md", "README.md"]).android, false);
 });
+test("a release notes file is documentation: it skips the Android build and the other suites", () => {
+  const notes = "apps/android/release-notes/0.3.5.md";
+  assert.deepEqual(
+    (({ application, android, web }) => ({ application, android, web }))(
+      classify([notes]),
+    ),
+    { application: false, android: false, web: false },
+  );
+  assert.equal(classify([notes, "docs/PROGRESS.md"]).application, false);
+  assert.equal(affectsAndroid(notes), false);
+  assert.equal(affectsWebOrApi(notes), false);
+});
+test("a release notes file next to code does not widen what runs", () => {
+  const notes = "apps/android/release-notes/0.3.5.md";
+  const web = classify([notes, "apps/web/src/main.tsx"]);
+  assert.equal(web.android, false);
+  assert.equal(web.web, true);
+  const android = classify([notes, "apps/android/app/build.gradle.kts"]);
+  assert.equal(android.android, true);
+  assert.equal(android.web, false);
+});
+test("only the notes files are documentation under apps/android", () => {
+  for (const path of [
+    "apps/android/README.md",
+    "apps/android/release-notes/0.3.5.txt",
+    "apps/android/release-notes/draft/0.3.5.md",
+    "apps/android/release-notes/.md",
+    "apps/android/release-notes/../app/Notes.md",
+    "apps/android/release-notes-extra/0.3.5.md",
+  ]) {
+    const result = classify([path]);
+    assert.equal(result.application, true, path);
+    assert.equal(result.android, true, path);
+  }
+});
+test("the notes are still validated on every change: the scope job checks them, not only the Android job", () => {
+  const workflow = readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../.github/workflows/ci.yml",
+    ),
+    "utf8",
+  );
+  const job = (name) => {
+    const start = workflow.indexOf(`\n  ${name}:\n`);
+    const next = workflow.slice(start + 1).search(/\n {2}[a-z-]+:\n/);
+    return workflow.slice(start, next === -1 ? undefined : start + 1 + next);
+  };
+  assert.match(job("scope"), /android-release-notes\.mjs check-all/);
+  assert.doesNotMatch(job("android"), /android-release-notes\.mjs check-all/);
+});
 
 function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), "ledgerline-ci-"));

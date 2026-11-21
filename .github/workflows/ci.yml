@@ -46,6 +46,10 @@ jobs:
           node-version-file: .node-version
       - name: Test CI scope policy
         run: node --test infra/scripts/*.test.mjs
+      # The Android release notes count as documentation (a notes-only change skips the builds), so every committed file is
+      # checked here, on every change, instead of in the Android job.
+      - name: Check the Android release notes
+        run: node infra/scripts/android-release-notes.mjs check-all
       # Only the public repository runs this: the private tooling that builds the public tree is absent there.
       - name: Audit the repository for keys, private addresses, personal emails and private files
         if: hashFiles('infra/scripts/export-public.mjs') == ''
@@ -197,12 +201,11 @@ jobs:
           LEDGERLINE_KEYSTORE_FILE="$RUNNER_TEMP/throwaway.jks" LEDGERLINE_KEYSTORE_PASSWORD="$password" \
             LEDGERLINE_KEY_ALIAS=throwaway LEDGERLINE_KEY_PASSWORD="$password" ./gradlew --no-daemon :app:assembleRelease
           ../../infra/scripts/android-verify-apk.sh app/build/outputs/apk/release/app-release.apk
-      # The release notes the update screen shows (ADR 0043): every committed file is usable, and the release body step
-      # produces notes, then one marker line, then the fingerprints of this throwaway build.
+      # The release body step (ADR 0043) produces the notes, then one marker line, then the fingerprints of this throwaway build;
+      # the committed notes files are checked in the scope job.
       - name: Check the release notes step
         run: |
           set -euo pipefail
-          node infra/scripts/android-release-notes.mjs check-all
           sample="$RUNNER_TEMP/notes"
           mkdir "$sample"
           printf 'Sample notes.\n' > "$sample/9.9.9.md"
