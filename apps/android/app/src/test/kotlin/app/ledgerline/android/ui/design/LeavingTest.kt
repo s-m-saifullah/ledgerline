@@ -20,7 +20,11 @@ import org.robolectric.annotation.Config
 class LeavingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { if (showing) OnLeaving { left += step } }
+        setContent {
+            // Read while composing, so the callback below holds this value: a stale callback would add the first one.
+            val now = step
+            if (showing) OnLeaving { left += now }
+        }
     }
 
     companion object {

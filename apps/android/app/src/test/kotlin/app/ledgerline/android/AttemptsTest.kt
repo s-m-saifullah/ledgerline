@@ -1,4 +1,4 @@
-package app.ledgerline.android.ui.editor
+package app.ledgerline.android
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
@@ -8,8 +8,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** A save that is cancelled is not a save that failed (AND-P6). */
-class SucceededTest {
+/** A step that is cancelled is not a step that failed (AND-P6). */
+class AttemptsTest {
     @Test
     fun aBlockThatFinishesSucceeded() = runBlocking { assertTrue(succeeded { }) }
 
@@ -22,6 +22,14 @@ class SucceededTest {
     @Test
     fun aCancellationPassesThroughInsteadOfBecomingAFailure() {
         val result = runCatching { runBlocking { succeeded { throw CancellationException("stop") } } }
+        assertTrue(result.exceptionOrNull() is CancellationException)
+    }
+
+    @Test
+    fun orNullGivesTheValueOrNullAndLetsACancellationPass() = runBlocking {
+        assertEquals("kept", orNull { "kept" })
+        assertEquals(null, orNull<String> { error("refused") })
+        val result = runCatching { orNull<String> { throw CancellationException("stop") } }
         assertTrue(result.exceptionOrNull() is CancellationException)
     }
 

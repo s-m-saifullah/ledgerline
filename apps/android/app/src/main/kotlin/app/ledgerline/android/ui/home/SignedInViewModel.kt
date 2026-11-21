@@ -6,6 +6,7 @@ import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.MirrorReads
+import app.ledgerline.android.orNull
 import app.ledgerline.android.outbox.OutboxStore
 import app.ledgerline.android.overlay.AttentionItem
 import app.ledgerline.android.overlay.LedgerView
@@ -24,7 +25,6 @@ import app.ledgerline.android.settings.PaymentChoicesStore
 import app.ledgerline.android.settings.KeepMode
 import app.ledgerline.android.settings.PhoneSettings
 import app.ledgerline.android.settings.SavedFilters
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
@@ -276,17 +276,12 @@ class SignedInViewModel @Inject constructor(
         if (_signingOut.value) return
         _signingOut.value = true
         viewModelScope.launch {
-            // Whatever goes wrong asking the server, the button comes back and the session still ends on the phone.
-            val ended = try {
+            // Whatever goes wrong asking the server, the session still ends on the phone.
+            val ended = orNull {
                 val origin = addressStore.origin.first()
                 origin?.let { clients.forOrigin(it).auth.signOut() } ?: false
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                false
-            } finally {
-                _signingOut.value = false
-            }
+            } ?: false
+            _signingOut.value = false
             // The next sign-in starts on an unfiltered list, and nothing of it stays on the phone.
             _filters.value = EntryFilters()
             filterStore.clear()

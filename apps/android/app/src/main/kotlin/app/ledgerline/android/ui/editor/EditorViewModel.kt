@@ -10,6 +10,7 @@ import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.CategoryWrites
 import app.ledgerline.android.online.Written
 import app.ledgerline.android.outbox.OutboxRow
+import app.ledgerline.android.succeeded
 import app.ledgerline.android.outbox.Uuid7
 import app.ledgerline.android.ui.categories.toCategoryError
 import app.ledgerline.api.CreateCategory
