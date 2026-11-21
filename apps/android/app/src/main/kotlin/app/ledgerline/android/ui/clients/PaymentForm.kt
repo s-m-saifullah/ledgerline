@@ -6,8 +6,11 @@ import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.CreatePayment
 import app.ledgerline.api.Money
 import app.ledgerline.api.TipInput
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /** What a payment is for: one service of one client, as the phone holds it when the sheet opens. */
+@Serializable
 data class PaymentTarget(
     val serviceId: String,
     /** The version of the service the phone holds; the server refuses the payment if the service moved on. */
@@ -63,6 +66,7 @@ const val PaymentNoteMax = 2_000
  * shown, and when neither is (slice 4b-2) the rate for the account's currency on the date is the one the ledger stores
  * ([rateAnswer]) or one typed by hand ([rateTyped]), which is the only case where a rate is sent.
  */
+@Serializable
 data class PaymentForm(
     val target: PaymentTarget,
     val amount: String,
@@ -82,7 +86,7 @@ data class PaymentForm(
     /** A rate set by hand, base currency first ("122.5"), when neither side is the base currency; blank uses the stored one. */
     val rateTyped: String = "",
     /** What the last look-up of the stored rate found, with what it asked for; only used while it still matches [rateKey]. */
-    val rateAnswer: RateAnswer? = null,
+    @Transient val rateAnswer: RateAnswer? = null,
 ) {
     /** The rate to look up: the account's currency on the date, when neither side is the base currency. */
     val rateKey: RateKey? get() = accountCurrency?.takeIf { needsRate(target.currency, it) }?.let { RateKey(it, date) }

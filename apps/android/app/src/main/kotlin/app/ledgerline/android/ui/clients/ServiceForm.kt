@@ -8,8 +8,10 @@ import app.ledgerline.api.CreateService
 import app.ledgerline.api.Money
 import app.ledgerline.api.Service
 import app.ledgerline.api.UpdateService
+import kotlinx.serialization.Serializable
 
 /** The client a service is logged for, as the phone holds it when the sheet opens. */
+@Serializable
 data class ServiceClient(val id: String, val name: String)
 
 /** What is wrong with the form; each is said next to the field it belongs to. */
@@ -21,6 +23,7 @@ enum class ServiceProblem {
 }
 
 /** What an edit needs to know about the service it changes: which one, at which version, and how much was received. */
+@Serializable
 data class ServiceEdit(val serviceId: String, val version: Int, val received: Long)
 
 /** The longest description the server takes. */
@@ -31,6 +34,7 @@ const val ServiceDescriptionMax = 2_000
  * cost and in which currency. Nothing is sent until Save. The hourly helper's two boxes ([hours], [hourlyRate]) only fill
  * the amount through [useTotal]; they are never part of the request.
  */
+@Serializable
 data class ServiceForm(
     val client: ServiceClient,
     val description: String,

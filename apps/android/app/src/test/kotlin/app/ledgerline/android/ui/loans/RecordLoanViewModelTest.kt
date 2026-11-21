@@ -83,7 +83,7 @@ class RecordLoanViewModelTest {
     private fun problem(status: Int, detail: String) =
         harness.json(status, """{"type":"about:blank","title":"x","status":$status,"detail":"$detail","errors":[]}""")
 
-    private fun model(origin: String? = null): RecordLoanViewModel {
+    private fun model(origin: String? = null, saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()): RecordLoanViewModel {
         val database = harness.database
         val lock = SyncLock()
         val source = object : PullSource {
@@ -97,7 +97,7 @@ class RecordLoanViewModelTest {
         val runner = SyncRunner(engine, PushEngine(FakeServer(), outboxFor(database), lock), FakeLookup(), choice, harness.session)
         val sync = SyncCoordinator(harness.session, runner, engine, FakeScheduler(), choice, FakeClock())
         val writer = if (origin == null) harness.writer() else harness.writer(origin)
-        return RecordLoanViewModel(database.reads(), LoanWrites(writer), sync, store).also { it.today = { "2026-11-11" } }
+        return RecordLoanViewModel(database.reads(), LoanWrites(writer), sync, store, saved).also { it.today = { "2026-11-11" } }
     }
 
     @Before
@@ -516,5 +516,65 @@ class RecordLoanViewModelTest {
         assertNull(viewModel.sheet.value)
         viewModel.confirm()
         assertNothingWritten()
+    }
+
+    // Android may end the app in the background; what was typed and the key of a write already tried come back (WP-18b).
+    private val handle = androidx.lifecycle.SavedStateHandle()
+
+    /** What Android brings back after the process died: the same saved values in a new handle. */
+    private fun restarted() = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) })
+
+    @Test
+    fun aTypedMoveComesBackAfterTheAppIsEnded() {
+        viewModel = model(saved = handle)
+        openSheet(LoanKind.Repay, listOf(theyOweUsd, theyOweEur))
+        viewModel.edit { it.copy(amount = "25.00", accountId = checking, note = "part one") }
+        val typed = ui().form
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value != null }
+        assertEquals(typed, back.sheet.value!!.form)
+        assertEquals(LoanKind.Repay, back.sheet.value!!.form.kind)
+        assertFalse(back.sheet.value!!.asking)
+        assertFalse(back.sheet.value!!.saving)
+    }
+
+    @Test
+    fun theRetryAfterARestartCarriesTheKeyOfTheFirstTry() {
+        harness.route(Moves) { harness.json(500) }
+        viewModel = model(saved = handle)
+        lendFifty()
+        sent()
+        harness.until { writes().size == 1 }
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value != null }
+        back.save()
+        back.confirm()
+        harness.until { writes().size == 2 }
+        assertEquals(writes()[0].idempotencyKey, writes()[1].idempotencyKey)
+    }
+
+    @Test
+    fun aSheetThatWasClosedIsNotBroughtBack() {
+        viewModel = model(saved = handle)
+        lendFifty()
+        viewModel.close()
+        val back = model(saved = restarted())
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun aDraftOfAnotherLedgerIsNeverShownAndItsKeysAreForgotten() {
+        harness.route(Moves) { harness.json(500) }
+        viewModel = model(saved = handle)
+        lendFifty()
+        sent()
+        harness.until { writes().size == 1 }
+        val other = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { (handle.get<Any>(it) as String).replace("ledger-a", "ledger-z") })
+        val back = model(saved = other)
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals("the other person's keys are dropped too", emptySet<String>(), other.keys())
     }
 }

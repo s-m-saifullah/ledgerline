@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.MirrorReads
@@ -20,6 +21,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import javax.inject.Inject
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
+import kotlinx.serialization.Serializable
 
 /** The Log service sheet as the screen sees it: the form, the currencies it can choose from, the problems found when Save was pressed, whether a write is in flight and how the last one ended. */
 data class LogServiceUi(
@@ -30,6 +35,10 @@ data class LogServiceUi(
     val saving: Boolean = false,
     val error: WriteError? = null,
 )
+
+/** What the sheet keeps through Android ending the app: the form and its currencies, with the ledger they belong to. */
+@Serializable
+internal data class LogServiceDraft(val ledgerId: String, val form: ServiceForm, val currencies: List<String>)
 
 /**
  * Logging a service for a client, and editing one (ADR 0050, slices 5 and 5b). Nothing is sent until Save, and Save asks no
@@ -42,16 +51,37 @@ data class LogServiceUi(
 class LogServiceViewModel @Inject constructor(
     private val reads: MirrorReads,
     private val writes: ServiceWrites,
+    saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     /** Today's date as the form starts with it; a test sets it. */
     internal var today: () -> String = { LocalDate.now().toString() }
 
-    private val keys = WriteKeys("svc")
+    private val keys = WriteKeys("svc", keysDraft(saved))
+    private val draft = Draft(saved, "service", LogServiceDraft.serializer())
+    private val restored = draft.load()
+    private var ledgerId: String? = null
     private val _sheet = MutableStateFlow<LogServiceUi?>(null)
     private val _reread = MutableStateFlow(0)
 
     /** The sheet while it is open (null otherwise). */
     val sheet: StateFlow<LogServiceUi?> = _sheet.asStateFlow()
+
+    init {
+        // What was typed comes back after Android ended the app (WP-18b); a draft of another ledger is never shown.
+        restored?.let { viewModelScope.launch { restore(it) } }
+        keepDraft(draft, sheet) { LogServiceDraft(ledgerId.orEmpty(), it.form, it.currencies) }
+    }
+
+    private suspend fun restore(kept: LogServiceDraft) {
+        val ledger = reads.mirroredLedger().first()
+        if (ledger != kept.ledgerId) {
+            keys.clear()
+            return
+        }
+        if (_sheet.value != null) return
+        ledgerId = ledger
+        _sheet.value = LogServiceUi(kept.form, kept.currencies)
+    }
 
     /** Goes up each time the client on screen should be read again: after a service was saved, and after a stale answer. */
     val reread: StateFlow<Int> = _reread.asStateFlow()
@@ -75,6 +105,7 @@ class LogServiceViewModel @Inject constructor(
         keys.clear()
         viewModelScope.launch {
             val ledger = reads.mirroredLedger().first() ?: return@launch
+            ledgerId = ledger
             val added = reads.liveCurrencyCodes(ledger)
             _sheet.value = LogServiceUi(form(), currencies = listOf(BaseCurrency) + added.filter { it != BaseCurrency })
         }

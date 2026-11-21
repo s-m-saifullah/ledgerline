@@ -1,7 +1,11 @@
 package app.ledgerline.android.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.PaymentWrites
 import app.ledgerline.android.online.RateReads
@@ -22,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -42,6 +47,16 @@ data class PaymentUi(
     val asking: Boolean = false,
 )
 
+/** What the sheet keeps through Android ending the app: the form and what it can choose from, with the ledger they belong to. */
+@Serializable
+internal data class PaymentDraft(
+    val ledgerId: String,
+    val form: PaymentForm,
+    val accounts: List<Choice>,
+    val categories: List<Choice>,
+    val noIncomeCategory: Boolean,
+)
+
 /**
  * Receiving a payment for one service (ADR 0050, slices 4a to 4b-2). Save checks the form and asks the confirmation
  * question; nothing is sent until it is answered. An account where neither side is the base currency reads the rate the
@@ -58,11 +73,14 @@ class RecordPaymentViewModel @Inject constructor(
     private val sync: SyncCoordinator,
     private val store: PaymentChoicesStore,
     rates: RateReads,
+    saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     /** Today's date as the form starts with it; a test sets it. */
     internal var today: () -> String = { LocalDate.now().toString() }
 
-    private val keys = WriteKeys("pay")
+    private val keys = WriteKeys("pay", keysDraft(saved))
+    private val draft = Draft(saved, "payment", PaymentDraft.serializer())
+    private val restored = draft.load()
     private val _sheet = MutableStateFlow<PaymentUi?>(null)
     private val _reread = MutableStateFlow(0)
     private val follower = RateFollower(viewModelScope, rates)
@@ -70,6 +88,24 @@ class RecordPaymentViewModel @Inject constructor(
 
     /** The sheet while it is open (null otherwise). */
     val sheet: StateFlow<PaymentUi?> = _sheet.asStateFlow()
+
+    init {
+        // What was typed comes back after Android ended the app (WP-18b); a draft of another ledger is never shown.
+        restored?.let { viewModelScope.launch { restore(it) } }
+        keepDraft(draft, sheet) { PaymentDraft(ledgerId.orEmpty(), it.form, it.accounts, it.categories, it.noIncomeCategory) }
+    }
+
+    private suspend fun restore(kept: PaymentDraft) {
+        val ledger = reads.mirroredLedger().first()
+        if (ledger != kept.ledgerId) {
+            keys.clear()
+            return
+        }
+        if (_sheet.value != null) return
+        ledgerId = ledger
+        _sheet.value = PaymentUi(kept.form, kept.accounts, kept.categories, kept.noIncomeCategory)
+        followRate(kept.form.rateKey)
+    }
 
     /** Goes up each time the client on screen should be read again: after a payment, and after a stale answer. */
     val reread: StateFlow<Int> = _reread.asStateFlow()

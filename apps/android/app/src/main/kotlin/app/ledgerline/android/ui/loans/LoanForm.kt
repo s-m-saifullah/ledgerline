@@ -6,17 +6,21 @@ import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.LoanMove
 import app.ledgerline.api.Money
 import kotlin.math.abs
+import kotlinx.serialization.Serializable
 
 /** What the sheet does with the money: [Lend] and [Borrow] open a loan or add to it, [Repay] settles some of what is open. */
 enum class LoanKind { Lend, Borrow, Repay }
 
 /** The person the money moves to or from, as the phone holds them when the sheet opens. */
+@Serializable
 data class LoanWho(val id: String, val name: String)
 
 /** One of the owner's own open accounts (an account kept for a client or a person is not one). */
+@Serializable
 data class LoanAccount(val id: String, val name: String, val currency: String)
 
 /** What is open with the person in one currency: positive when they owe you, negative when you owe them. */
+@Serializable
 data class OpenLoan(val currency: String, val balance: Long)
 
 /** What is wrong with the form; each is said next to the field it belongs to. */
@@ -31,6 +35,7 @@ const val LoanNoteMax = 2_000
  * currency; a repayment is in the currency of the loan being settled ([currency], the one chosen if it is open, else the
  * first), and only accounts in it are offered. With no account chosen the first one offered is used, as on the web.
  */
+@Serializable
 data class LoanForm(
     val who: LoanWho,
     val kind: LoanKind,

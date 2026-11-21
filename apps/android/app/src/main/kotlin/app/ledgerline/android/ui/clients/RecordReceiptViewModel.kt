@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.AccountBalance
@@ -31,6 +32,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import javax.inject.Inject
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
+import kotlinx.serialization.Serializable
 
 /**
  * The Record payment sheet for a client as the screen sees it: the form, what it can choose from, the services the amount
@@ -53,6 +58,16 @@ data class ReceiptUi(
     val currencies: List<String> get() = form.target.owed.map { it.currency }
 }
 
+/** What the sheet keeps through Android ending the app: the form and what it can choose from, with the ledger they belong to. */
+@Serializable
+internal data class ReceiptDraft(
+    val ledgerId: String,
+    val form: ReceiptForm,
+    val accounts: List<Choice>,
+    val categories: List<Choice>,
+    val noIncomeCategory: Boolean,
+)
+
 /**
  * Receiving a payment from a client (ADR 0050, slices 4c to 4b-2). Each change to the amount or currency reads which services it
  * would pay (the newest answer wins). Save checks the form and the preview and asks the confirmation question; nothing is
@@ -70,6 +85,7 @@ class RecordReceiptViewModel @Inject constructor(
     private val sync: SyncCoordinator,
     private val store: PaymentChoicesStore,
     rates: RateReads,
+    saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     /** Today's date as the form starts with it; a test sets it. */
     internal var today: () -> String = { LocalDate.now().toString() }
@@ -77,7 +93,9 @@ class RecordReceiptViewModel @Inject constructor(
     /** How long the amount rests before the services it pays are read, so typing does not ask at every key. */
     internal var previewDelayMillis: Long = 250
 
-    private val keys = WriteKeys("rcpt")
+    private val keys = WriteKeys("rcpt", keysDraft(saved))
+    private val draft = Draft(saved, "receipt", ReceiptDraft.serializer())
+    private val restored = draft.load()
     private val _sheet = MutableStateFlow<ReceiptUi?>(null)
     private val _reread = MutableStateFlow(0)
     private var openAccounts: List<AccountBalance> = emptyList()
@@ -87,6 +105,26 @@ class RecordReceiptViewModel @Inject constructor(
 
     /** The sheet while it is open (null otherwise). */
     val sheet: StateFlow<ReceiptUi?> = _sheet.asStateFlow()
+
+    init {
+        // What was typed comes back after Android ended the app (WP-18b); a draft of another ledger is never shown.
+        restored?.let { viewModelScope.launch { restore(it) } }
+        keepDraft(draft, sheet) { ReceiptDraft(ledgerId.orEmpty(), it.form, it.accounts, it.categories, it.noIncomeCategory) }
+    }
+
+    private suspend fun restore(kept: ReceiptDraft) {
+        val ledger = reads.mirroredLedger().first()
+        if (ledger != kept.ledgerId) {
+            keys.clear()
+            return
+        }
+        if (_sheet.value != null) return
+        ledgerId = ledger
+        openAccounts = reads.accountBalancesNow(ledger, includeHidden = false).filter { it.archivedAt == null }
+        _sheet.value = ReceiptUi(kept.form, kept.accounts, kept.categories, kept.noIncomeCategory)
+        followRate(kept.form.rateKey)
+        readPreview()
+    }
 
     /** Goes up each time the client on screen should be read again: after a payment, and after a stale answer. */
     val reread: StateFlow<Int> = _reread.asStateFlow()
