@@ -20,9 +20,15 @@ const full = (reason, { android = true, web = true } = {}) => ({
 const git = (args) =>
   execFileSync("git", args, { encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
 
+// The text the Android update screen shows for a release: one hand-written file per version. It is prose, not code, and
+// the scope job validates every one (`android-release-notes.mjs check-all`), so a notes-only change skips the builds.
+const releaseNotes = /^apps\/android\/release-notes\/\d+\.\d+\.\d+\.md$/;
+
 export function isDocumentation(path) {
   return (
-    rootDocs.has(path) || (path.startsWith("docs/") && path.endsWith(".md"))
+    rootDocs.has(path) ||
+    (path.startsWith("docs/") && path.endsWith(".md")) ||
+    releaseNotes.test(path)
   );
 }
 
@@ -38,7 +44,10 @@ const androidInputs = new Set([
 ]);
 
 export function affectsAndroid(path) {
-  return path.startsWith("apps/android/") || androidInputs.has(path);
+  return (
+    !isDocumentation(path) &&
+    (path.startsWith("apps/android/") || androidInputs.has(path))
+  );
 }
 
 // The web, API and browser suites cannot be affected by documentation or by files that only the Android build uses.
