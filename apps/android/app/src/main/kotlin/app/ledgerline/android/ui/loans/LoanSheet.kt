@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.clients.Hint
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.DatePickerStep
 import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.InputRow
@@ -35,12 +36,11 @@ import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SheetTitle
+import app.ledgerline.android.ui.design.ValuePill
 import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
-import app.ledgerline.android.ui.editor.DatePickerStep
 import app.ledgerline.android.ui.editor.LocalCentsFirst
-import app.ledgerline.android.ui.editor.ValuePill
 import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.privacy.LocalPrivacy

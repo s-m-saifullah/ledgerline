@@ -301,10 +301,10 @@ private fun DeleteQuestion(ask: DeleteAsk, actions: CategoriesActions) {
     val archiveInstead = ask.canArchiveInstead && block is DeleteBlock.UsedByEntries
     Question(
         title = stringResource(R.string.category_delete_blocked_title),
-        confirm = stringResource(if (archiveInstead) R.string.category_delete_archive_instead else R.string.category_delete_close),
+        confirm = stringResource(if (archiveInstead) R.string.category_delete_archive_instead else R.string.close),
         onConfirm = if (archiveInstead) actions.archiveInstead else actions.dismissDeleteAsk,
         onDismiss = actions.dismissDeleteAsk,
-        cancel = if (archiveInstead) stringResource(R.string.category_delete_close) else null,
+        cancel = if (archiveInstead) stringResource(R.string.close) else null,
     ) {
         when (block) {
             DeleteBlock.HasSubcategories -> Text(stringResource(R.string.category_delete_blocked_subcategories, name))

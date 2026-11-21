@@ -3,8 +3,9 @@ package app.ledgerline.android.ui.home
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getBoundsInRoot
@@ -46,7 +47,7 @@ class EntryFiltersPanelTest {
     private var changed = mutableListOf<EntryFilters>()
     private var applied = mutableListOf<EntryFilters>()
     private var opened = 0
-    private var cancelled = 0
+    private var closed = 0
 
     private fun bar(filters: EntryFilters = EntryFilters(), fontScale: Float = 1f) {
         compose.setContent {
@@ -59,10 +60,17 @@ class EntryFiltersPanelTest {
         }
     }
 
-    private fun sheet(filters: EntryFilters = EntryFilters()) {
+    /** The sheet as its host holds it: each change is kept as the filters, so the sheet shows what it just asked for. */
+    private fun sheet(filters: EntryFilters = EntryFilters(), fontScale: Float = 1f) {
         compose.setContent {
-            LedgerlineTheme {
-                androidx.compose.foundation.layout.Box(Modifier.requiredHeight(3000.dp)) { EntryFiltersSheetContent(filters, options, { applied += it }, { cancelled++ }) }
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, fontScale)) {
+                LedgerlineTheme {
+                    var current by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(filters) }
+                    androidx.compose.foundation.layout.Box(Modifier.requiredHeight(3000.dp)) {
+                        EntryFiltersSheetContent(current, options, { applied += it; current = it }, { closed++ })
+                    }
+                }
             }
         }
     }
@@ -109,66 +117,69 @@ class EntryFiltersPanelTest {
     }
 
     @Test
-    fun nothingTakesEffectUntilApply() {
+    fun everyChoiceTakesEffectAtOnce() {
         sheet()
         compose.onNodeWithText("Pending").performClick()
-        assertEquals(emptyList<EntryFilters>(), applied)
-        compose.onNodeWithText("Apply").performClick()
         assertEquals("pending", applied.single().status)
+    }
+
+    @Test
+    fun thereIsNoApplyAndNoCancelButtonJustClose() {
+        sheet()
+        compose.onNodeWithText("Apply").assertDoesNotExist()
+        compose.onNodeWithText("Cancel").assertDoesNotExist()
+        compose.onNodeWithText("Close").assertExists()
+    }
+
+    @Test
+    fun closeClosesTheSheetAndChangesNothing() {
+        sheet(EntryFilters(accountId = "a1"))
+        compose.onNodeWithText("Close").performClick()
+        assertEquals(1, closed)
+        assertEquals(emptyList<EntryFilters>(), applied)
     }
 
     @Test
     fun choosingAFilterDoesNotChangeTheSheetsHeight() {
         sheet()
-        val before = compose.onNodeWithText("Apply").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top
+        fun height() = compose.onNodeWithText("Status").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top
+        val before = height()
         compose.onNodeWithText("Pending").performClick()
         compose.onNodeWithText("Reset all").assertExists()
-        assertEquals(before, compose.onNodeWithText("Apply").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top, 0f)
+        assertEquals(before, height())
         compose.onNodeWithText("All").performClick()
         compose.onNodeWithText("Reset all").assertDoesNotExist()
-        assertEquals(before, compose.onNodeWithText("Apply").fetchSemanticsNode().boundsInRoot.top - compose.onNodeWithText("Filters").fetchSemanticsNode().boundsInRoot.top, 0f)
+        assertEquals(before, height())
     }
 
     @Test
-    fun cancelLeavesTheFiltersAsTheyWere() {
-        sheet(EntryFilters(accountId = "a1"))
-        compose.onNodeWithText("Cleared").performClick()
-        compose.onNodeWithText("Cancel").performClick()
-        assertEquals(1, cancelled)
-        assertEquals(emptyList<EntryFilters>(), applied)
-    }
-
-    @Test
-    fun applyKeepsTheSearchAndTheTypeItWasOpenedWith() {
+    fun aChoiceKeepsTheSearchAndTheTypeTheSheetWasOpenedWith() {
         sheet(EntryFilters(text = "cafe", kind = "income"))
         compose.onNodeWithText("Cleared").performClick()
-        compose.onNodeWithText("Apply").performClick()
         assertEquals(EntryFilters(text = "cafe", kind = "income", status = "cleared"), applied.single())
     }
 
     @Test
-    fun resetAllShowsOnlyWhileASheetFilterIsSetAndClearsThemInTheDraftOnly() {
+    fun resetAllShowsOnlyWhileASheetFilterIsSet() {
         sheet()
         compose.onNodeWithText("Reset all").assertDoesNotExist()
     }
 
     @Test
-    fun resetAllClearsTheSheetFiltersButNotTheSearchOrTheTypeAndNeedsApply() {
+    fun resetAllClearsTheSheetFiltersAtOnceButNotTheSearchOrTheType() {
         sheet(EntryFilters(accountId = "a1", text = "x", status = "pending", kind = "income", from = "2026-10-01"))
         compose.onNodeWithText("Reset all").performClick()
-        assertEquals(emptyList<EntryFilters>(), applied)
-        compose.onNodeWithText("Apply").performClick()
         assertEquals(EntryFilters(text = "x", kind = "income"), applied.single())
+        compose.onNodeWithText("Reset all").assertDoesNotExist()
     }
 
     @Test
-    fun pickingAnAccountIsAppliedWithApply() {
+    fun pickingAnAccountTakesEffectAtOnce() {
         sheet()
         compose.onNodeWithText("Account").performClick()
         // The box shows its choice ("All accounts") and the open list offers it again, with the accounts.
         assertEquals(2, compose.onAllNodesWithText("All accounts").fetchSemanticsNodes().size)
         compose.onNodeWithText("Cash").performClick()
-        compose.onNodeWithText("Apply").performClick()
         assertEquals("a2", applied.single().accountId)
     }
 
@@ -177,7 +188,6 @@ class EntryFiltersPanelTest {
         sheet(EntryFilters(accountId = "a1"))
         compose.onNodeWithText("Account").performClick()
         compose.onNodeWithText("All accounts").performClick()
-        compose.onNodeWithText("Apply").performClick()
         assertNull(applied.single().accountId)
     }
 
@@ -186,29 +196,58 @@ class EntryFiltersPanelTest {
         sheet(EntryFilters(categoryId = "c1", includeSubcategories = false))
         compose.onNodeWithText("Category").performClick()
         compose.onNodeWithText("Food › Groceries").performClick()
-        compose.onNodeWithText("Apply").performClick()
         assertEquals(EntryFilters(categoryId = "c2", includeSubcategories = true), applied.single())
     }
 
     @Test
-    fun aDateShowsAndItsCrossClearsIt() {
+    fun anUnsetDateIsAnAnyDatePillAndASetOneShowsTheDay() {
+        sheet(EntryFilters(from = "2026-10-05"))
+        compose.onNodeWithText("Oct 5, 2026").assertExists()
+        // To has no date: one "Any date" pill, and From has the day instead.
+        assertEquals(1, compose.onAllNodesWithText("Any date").fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun aDatesCrossClearsItAtOnce() {
         sheet(EntryFilters(from = "2026-10-05"))
         compose.onNodeWithContentDescription("Clear From date").performClick()
-        compose.onNodeWithText("Apply").performClick()
         assertNull(applied.single().from)
     }
 
     @Test
-    fun anEndDateBeforeTheStartIsExplainedInTheBarAndTheSheetAndCannotBeApplied() {
+    fun theToDatesCrossClearsOnlyTheToDate() {
+        sheet(EntryFilters(from = "2026-10-05", to = "2026-10-20"))
+        compose.onNodeWithContentDescription("Clear To date").performClick()
+        assertEquals(EntryFilters(from = "2026-10-05", to = null), applied.single())
+    }
+
+    @Test
+    fun theSheetsCloseButtonDismissesTheSheetItself() {
+        compose.setContent { LedgerlineTheme { EntryFiltersSheet(EntryFilters(), options, { applied += it }, { closed++ }) } }
+        compose.onNodeWithText("Close").performClick()
+        assertEquals(1, closed)
+        assertEquals(emptyList<EntryFilters>(), applied)
+    }
+
+    @Test
+    fun aDatePillOpensTheSharedPickerAndCancelChangesNothing() {
+        sheet()
+        compose.onAllNodesWithText("Any date")[0].performClick()
+        compose.onNode(androidx.compose.ui.test.hasText("OK") and androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.isDialog())).assertExists()
+        compose.onNode(androidx.compose.ui.test.hasText("Cancel") and androidx.compose.ui.test.hasAnyAncestor(androidx.compose.ui.test.isDialog())).performClick()
+        assertEquals(emptyList<EntryFilters>(), applied)
+    }
+
+    @Test
+    fun anEndDateBeforeTheStartIsExplainedInTheBar() {
         bar(EntryFilters(from = "2026-10-31", to = "2026-10-01"))
         compose.onNodeWithText("Choose an end date on or after the start date.").assertExists()
     }
 
     @Test
-    fun aBadRangeInTheSheetDisablesApply() {
+    fun aBadRangeIsExplainedInTheSheetToo() {
         sheet(EntryFilters(from = "2026-10-31", to = "2026-10-01"))
         compose.onNodeWithText("Choose an end date on or after the start date.").assertExists()
-        compose.onNodeWithText("Apply").assertIsNotEnabled()
     }
 
     @Test

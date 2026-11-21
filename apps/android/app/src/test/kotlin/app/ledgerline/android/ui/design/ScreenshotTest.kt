@@ -1073,4 +1073,21 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
             androidx.compose.material3.Text("12 transactions use Groceries. Archive it instead, so they keep their category.")
         }
     }
+
+    private val attentionActions = app.ledgerline.android.ui.home.AttentionActions({}, {}, {}, {}, {})
+
+    @Test
+    fun attention() = shot("attention", Tab.Home) {
+        app.ledgerline.android.ui.home.AttentionContent(
+            listOf(
+                app.ledgerline.android.overlay.AttentionItem("1", "transaction.create", "Grocer", -12500, "USD", app.ledgerline.android.overlay.AttentionReason.Rejected, "The category is archived.", false),
+                app.ledgerline.android.overlay.AttentionItem("2", "transaction.update", "Landlord", -90000, "USD", app.ledgerline.android.overlay.AttentionReason.ChangedElsewhere, null, true),
+                app.ledgerline.android.overlay.AttentionItem("3", "transaction.delete", "Gym", -3000, "USD", app.ledgerline.android.overlay.AttentionReason.DeletedElsewhere, null, false),
+            ),
+            attentionActions,
+        )
+    }
+
+    @Test
+    fun attentionEmpty() = shot("attention-empty", Tab.Home) { app.ledgerline.android.ui.home.AttentionContent(emptyList(), attentionActions) }
 }

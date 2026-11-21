@@ -3,6 +3,7 @@
     <string name="app_name">Ledgerline</string>
 
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
     <string name="back">Back</string>
     <string name="dismiss">Dismiss</string>
     <string name="try_again">Try again</string>
@@ -362,7 +363,6 @@
     <string name="chip_all">All</string>
     <string name="filters_chip">Filters</string>
     <string name="filters_chip_count">Filters (%1$d)</string>
-    <string name="filters_apply">Apply</string>
     <string name="filters_reset">Reset all</string>
     <string name="filters_clear">Clear filters</string>
     <string name="filters_range_invalid">Choose an end date on or after the start date.</string>
@@ -470,6 +470,8 @@
     <string name="attention_keep_mine">Keep mine</string>
     <string name="attention_keep_theirs">Keep the other</string>
     <string name="attention_discard">Discard</string>
+    <string name="attention_discard_title">Discard this change?</string>
+    <string name="attention_discard_body">It has not reached the server, so discarding it deletes it for good.</string>
     <string name="change_new_entry">New entry</string>
     <string name="change_edit_entry">Edit</string>
     <string name="change_delete_entry">Delete</string>
@@ -608,7 +610,6 @@
     </plurals>
     <string name="category_delete_blocked_archive_first">To archive it, archive its subcategories first.</string>
     <string name="category_delete_archive_instead">Archive instead</string>
-    <string name="category_delete_close">Close</string>
     <string name="more_group_receivables">Receivables and lending</string>
     <string name="more_group_structure">Structure and preferences</string>
     <string name="more_version">v%1$s</string>

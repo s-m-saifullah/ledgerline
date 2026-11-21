@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.DatePickerStep
 import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.InputRow
@@ -37,7 +38,6 @@ import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
-import app.ledgerline.android.ui.editor.DatePickerStep
 import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.TimePickerStep
 import app.ledgerline.android.ui.editor.WhenRow
