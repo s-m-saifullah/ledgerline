@@ -242,11 +242,11 @@ private fun GroupBlock(group: CategoryGroup, open: Boolean, actions: CategoriesA
                 }
             }
             val menuLabel = stringResource(R.string.category_actions_for, root.name)
-            ActionsButton(menuLabel, { actions.openMenu(root) })
-            // Not a button of its own: the whole row opens and closes the group.
+            // Not a button of its own: the whole row opens and closes the group. It sits before the ⋮ button, so every row's ⋮ is at the same right edge.
             if (hasChildren) {
                 Icon(painterResource(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp))
             }
+            ActionsButton(menuLabel, { actions.openMenu(root) })
         }
         if (open) group.children.forEach { child -> SubcategoryRow(child, actions) }
     }

@@ -30,6 +30,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.centerLeft
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.width
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.id
 import app.ledgerline.android.mirror.syncCategory
@@ -182,6 +183,16 @@ class CategoriesContentTest {
         compose.onNodeWithContentDescription("Actions for Old project").performClick()
         compose.onNodeWithText("+ Sub").assertDoesNotExist()
         assertEquals(listOf("menu:Food", "menu:Old project"), taps.log)
+    }
+
+    @Test
+    fun everyActionsButtonIsAtTheSameRightEdgeWhetherOrNotTheRowHasAChevron() {
+        show()
+        // Food has subcategories (so a chevron, which sits before the button); Old project has none.
+        val withChevron = compose.onNodeWithContentDescription("Actions for Food").getUnclippedBoundsInRoot()
+        val without = compose.onNodeWithContentDescription("Actions for Old project").getUnclippedBoundsInRoot()
+        assertEquals(without.right.value, withChevron.right.value, 0.5f)
+        assertEquals(without.width.value, withChevron.width.value, 0.5f)
     }
 
     @Test
