@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.setValue
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -39,11 +40,17 @@ class LeavingActivity : ComponentActivity() {
 class LeavingTest {
     private var controller: ActivityController<LeavingActivity>? = null
 
+    /** Compose reads a state change when the global snapshot says so; that notice is tied to the first test's looper in a shared run, so send it by hand. */
+    private fun settle() {
+        Snapshot.sendApplyNotifications()
+        shadowOf(android.os.Looper.getMainLooper()).idle()
+    }
+
     /** Each test's activity is destroyed at its end: the state is shared, and a screen left composed would count in the next test. */
     @After
     fun destroy() {
         controller?.destroy()
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        settle()
     }
 
     private fun start(): ActivityController<LeavingActivity> {
@@ -52,7 +59,7 @@ class LeavingTest {
         LeavingActivity.step = 1
         return Robolectric.buildActivity(LeavingActivity::class.java).setup().also {
             controller = it
-            shadowOf(android.os.Looper.getMainLooper()).idle()
+            settle()
         }
     }
 
@@ -60,7 +67,7 @@ class LeavingTest {
     fun aRecreatedActivityDoesNotLeaveTheScreen() {
         val controller = start()
         controller.recreate()
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        settle()
         assertEquals("rotation is not leaving", 0, LeavingActivity.left)
     }
 
@@ -68,7 +75,7 @@ class LeavingTest {
     fun goingToAnotherScreenLeavesIt() {
         start()
         LeavingActivity.showing = false
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        settle()
         assertEquals(1, LeavingActivity.left)
     }
 
@@ -76,9 +83,9 @@ class LeavingTest {
     fun theLeaveCallbackIsTheLatestOneNotTheFirst() {
         start()
         LeavingActivity.step = 7
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        settle()
         LeavingActivity.showing = false
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        settle()
         assertEquals(7, LeavingActivity.left)
     }
 }
