@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.clients
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.MirrorReads
@@ -7,8 +8,8 @@ import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.OnlineReader
 import app.ledgerline.android.online.Page
 import app.ledgerline.android.online.PageSize
-import app.ledgerline.android.online.PagedRead
 import app.ledgerline.android.online.Paged
+import app.ledgerline.android.online.PagedRead
 import app.ledgerline.android.online.map
 import app.ledgerline.android.online.readOnTrigger
 import app.ledgerline.android.online.readings
@@ -40,6 +41,7 @@ import javax.inject.Inject
 class ClientsViewModel @Inject constructor(
     private val reader: OnlineReader,
     private val reads: MirrorReads,
+    private val saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     /** How long typing pauses before the search is sent; a test sets it to 0. */
     internal var searchDelayMillis = 300L
@@ -47,8 +49,9 @@ class ClientsViewModel @Inject constructor(
     private val retries = MutableStateFlow(0)
     private val _text = MutableStateFlow("")
     private val _filter = MutableStateFlow(ClientFilter.Open)
-    private val _tab = MutableStateFlow(ClientTab.Paid)
-    private val _selected = MutableStateFlow<String?>(null)
+    // The client being looked at and the tab come back after Android ended the app, so a sheet kept with them has a screen (WP-18b).
+    private val _tab = MutableStateFlow(saved.get<String>(TabKey)?.let { name -> ClientTab.entries.find { it.name == name } } ?: ClientTab.Paid)
+    private val _selected = MutableStateFlow(saved.get<String>(SelectedKey))
     val text: StateFlow<String> = _text.asStateFlow()
 
     /** Which clients the chips show; the server is always asked for all of them. */
@@ -59,6 +62,11 @@ class ClientsViewModel @Inject constructor(
 
     /** The client being looked at, or null while the list shows. */
     val selected: StateFlow<String?> = _selected.asStateFlow()
+
+    init {
+        viewModelScope.launch { _selected.collect { if (it == null) saved.remove<String>(SelectedKey) else saved[SelectedKey] = it } }
+        viewModelScope.launch { _tab.collect { saved[TabKey] = it.name } }
+    }
 
     private val query = _text.debounce { if (it.isEmpty()) 0L else searchDelayMillis }
     private val ofClient = reads.readings(_selected.filterNotNull(), retries)
@@ -141,5 +149,10 @@ class ClientsViewModel @Inject constructor(
     fun retry() {
         retries.value += 1
         _payments.value.keys.forEach(::readPayments)
+    }
+
+    private companion object {
+        const val SelectedKey = "selected"
+        const val TabKey = "tab"
     }
 }

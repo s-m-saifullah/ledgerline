@@ -89,7 +89,7 @@ class RecordPaymentViewModelTest {
     private fun problem(status: Int, detail: String) =
         harness.json(status, """{"type":"about:blank","title":"x","status":$status,"detail":"$detail","errors":[]}""")
 
-    private fun model(origin: String? = null): RecordPaymentViewModel {
+    private fun model(origin: String? = null, saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()): RecordPaymentViewModel {
         val database = harness.database
         val lock = SyncLock()
         val source = object : PullSource {
@@ -104,7 +104,7 @@ class RecordPaymentViewModelTest {
         val sync = SyncCoordinator(harness.session, runner, engine, FakeScheduler(), choice, FakeClock())
         val writer = if (origin == null) harness.writer() else harness.writer(origin)
         val reader = if (origin == null) harness.reader() else harness.reader(origin)
-        return RecordPaymentViewModel(database.reads(), PaymentWrites(writer), sync, store, RateReads(reader)).also { it.today = { "2026-11-09" } }
+        return RecordPaymentViewModel(database.reads(), PaymentWrites(writer), sync, store, RateReads(reader), saved).also { it.today = { "2026-11-09" } }
     }
 
     @Before
@@ -685,5 +685,97 @@ class RecordPaymentViewModelTest {
         viewModel.edit { it.copy(rateTyped = "122.5") }
         viewModel.edit { it.withAccount(euros, "EUR") }
         assertEquals("", ui().form.rateTyped)
+    }
+
+    // Android may end the app in the background; what was typed and the key of a payment already tried come back (WP-18b).
+    private val handle = androidx.lifecycle.SavedStateHandle()
+
+    /** What Android brings back after the process died: the same saved values in a new handle. */
+    private fun restarted() = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) })
+
+    private fun restartedModel(from: androidx.lifecycle.SavedStateHandle = restarted()) = model(saved = from)
+
+    @Test
+    fun aTypedPaymentComesBackAfterTheAppIsEnded() {
+        viewModel = model(saved = handle)
+        openSheet()
+        viewModel.edit { it.copy(accountId = checking, categoryId = freelance, amount = "120.50", note = "first part") }
+        val typed = ui().form
+        val back = restartedModel()
+        harness.until { back.sheet.value != null }
+        val restored = back.sheet.value!!
+        assertEquals(typed, restored.form)
+        assertEquals(ui().accounts, restored.accounts)
+        assertEquals(ui().categories, restored.categories)
+        assertFalse(restored.saving)
+        assertFalse(restored.asking)
+        assertNull(restored.error)
+    }
+
+    @Test
+    fun theRetryAfterARestartCarriesTheKeyOfTheFirstTry() {
+        harness.route(PaymentsPath) { problem(500, "try again") }
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.save()
+        viewModel.confirm()
+        harness.until { writes().size == 1 && !ui().saving }
+        val back = restartedModel()
+        harness.until { back.sheet.value != null }
+        back.save()
+        back.confirm()
+        harness.until { writes().size == 2 }
+        assertEquals(writes()[0].idempotencyKey, writes()[1].idempotencyKey)
+    }
+
+    @Test
+    fun aSheetThatWasClosedIsNotBroughtBack() {
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.close()
+        val back = restartedModel()
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun aPaymentThatWentThroughIsNotBroughtBack() {
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.save()
+        viewModel.confirm()
+        harness.until { viewModel.sheet.value == null }
+        val back = restartedModel()
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun aDraftOfAnotherLedgerIsNeverShownAndItsKeysAreForgotten() {
+        harness.route(PaymentsPath) { problem(500, "try again") }
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.save()
+        viewModel.confirm()
+        harness.until { writes().size == 1 && !ui().saving }
+        val other = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { (handle.get<Any>(it) as String).replace("ledger-a", "ledger-z") })
+        val back = restartedModel(other)
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals("the other person's keys are dropped too", emptySet<String>(), other.keys())
+    }
+
+    @Test
+    fun aPaymentAcrossCurrenciesLooksUpTheStoredRateAgainAfterARestart() {
+        routeRates(mapOf("2026-11-09" to "1.2658227848"))
+        viewModel = model(saved = handle)
+        aPoundPayment()
+        harness.until { stored() is StoredRate.Found }
+        val back = restartedModel()
+        // The answer is not kept (it may be out of date); the restored sheet asks again.
+        harness.until { back.sheet.value?.form?.cross?.stored is StoredRate.Found }
+        assertEquals(2, lookups().size)
     }
 }

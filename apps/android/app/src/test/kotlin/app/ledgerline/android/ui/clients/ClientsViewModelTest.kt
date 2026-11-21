@@ -12,9 +12,9 @@ import app.ledgerline.api.ServiceList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -245,5 +245,28 @@ class ClientsViewModelTest {
         val failed = model.clients.settled { (it as? Online.Ready)?.value?.moreFailed == true }
         assertEquals(listOf(northwind), (failed as Online.Ready).value.items)
         assertTrue(failed.value.hasMore)
+    }
+
+    // The client being looked at (and the tab) comes back after Android ended the app, so a sheet kept with it has a screen (WP-18b).
+    private fun restartedHandle(from: androidx.lifecycle.SavedStateHandle) = androidx.lifecycle.SavedStateHandle(from.keys().associateWith { from.get<Any>(it) })
+
+    @Test
+    fun theClientBeingLookedAtAndItsTabComeBackAfterTheAppIsEnded() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val first = ClientsViewModel(harness.reader(), harness.database.reads(), handle)
+        first.open("northwind-design")
+        first.tab(ClientTab.History)
+        val back = ClientsViewModel(harness.reader(), harness.database.reads(), restartedHandle(handle))
+        assertEquals("northwind-design", back.selected.value)
+        assertEquals(ClientTab.History, back.tab.value)
+    }
+
+    @Test
+    fun aClosedClientDoesNotComeBack() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val first = ClientsViewModel(harness.reader(), harness.database.reads(), handle)
+        first.open("northwind-design")
+        first.close()
+        assertNull(ClientsViewModel(harness.reader(), harness.database.reads(), restartedHandle(handle)).selected.value)
     }
 }

@@ -1,7 +1,11 @@
 package app.ledgerline.android.ui.loans
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.LoanWrites
 import app.ledgerline.android.online.WriteError
@@ -20,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -31,6 +36,10 @@ data class LoanUi(
     val error: WriteError? = null,
     val asking: Boolean = false,
 )
+
+/** What the sheet keeps through Android ending the app: the form (it holds the accounts it can choose from), with the ledger it belongs to. */
+@Serializable
+internal data class LoanDraft(val ledgerId: String, val form: LoanForm)
 
 /**
  * Lending to a person, borrowing from them and repaying what is open (ADR 0050, slice 6). Save checks the form and asks the
@@ -45,16 +54,37 @@ class RecordLoanViewModel @Inject constructor(
     private val writes: LoanWrites,
     private val sync: SyncCoordinator,
     private val store: PaymentChoicesStore,
+    saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     /** Today's date as the form starts with it; a test sets it. */
     internal var today: () -> String = { LocalDate.now().toString() }
 
-    private val keys = WriteKeys("loan")
+    private val keys = WriteKeys("loan", keysDraft(saved))
+    private val draft = Draft(saved, "loan", LoanDraft.serializer())
+    private val restored = draft.load()
+    private var ledgerId: String? = null
     private val _sheet = MutableStateFlow<LoanUi?>(null)
     private val _reread = MutableStateFlow(0)
 
     /** The sheet while it is open (null otherwise). */
     val sheet: StateFlow<LoanUi?> = _sheet.asStateFlow()
+
+    init {
+        // What was typed comes back after Android ended the app (WP-18b); a draft of another ledger is never shown.
+        restored?.let { viewModelScope.launch { restore(it) } }
+        keepDraft(draft, sheet) { LoanDraft(ledgerId.orEmpty(), it.form) }
+    }
+
+    private suspend fun restore(kept: LoanDraft) {
+        val ledger = reads.mirroredLedger().first()
+        if (ledger != kept.ledgerId) {
+            keys.clear()
+            return
+        }
+        if (_sheet.value != null) return
+        ledgerId = ledger
+        _sheet.value = LoanUi(kept.form)
+    }
 
     /** Goes up each time the person on screen should be read again: after a move, and after a stale answer. */
     val reread: StateFlow<Int> = _reread.asStateFlow()
@@ -66,6 +96,7 @@ class RecordLoanViewModel @Inject constructor(
         keys.clear()
         viewModelScope.launch {
             val ledger = reads.mirroredLedger().first() ?: return@launch
+            ledgerId = ledger
             val accounts = reads.accountBalancesNow(ledger, includeHidden = false)
                 .filter { it.archivedAt == null }
                 .map { LoanAccount(it.id, it.name, it.currency) }

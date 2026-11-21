@@ -56,4 +56,44 @@ class WriteKeysTest {
         assertTrue(key.length <= 128)
         assertTrue("x".repeat(20) !in key)
     }
+
+    // A restart (Android ending the app in the background) must not turn a retry into a second payment: the key a change
+    // had is kept with the form, so the same change sent again after the restart carries the same key (WP-18b).
+    private fun restarted(handle: androidx.lifecycle.SavedStateHandle) =
+        androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) })
+
+    private fun kept(handle: androidx.lifecycle.SavedStateHandle) =
+        WriteKeys("pay", app.ledgerline.android.drafts.Draft(handle, "keys", kotlinx.serialization.builtins.MapSerializer(kotlinx.serialization.serializer<String>(), kotlinx.serialization.serializer<String>())))
+
+    @Test
+    fun theKeyOfAChangeSurvivesARestart() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val before = kept(handle).keyFor("pay|a1|1200")
+        assertEquals(before, kept(restarted(handle)).keyFor("pay|a1|1200"))
+    }
+
+    @Test
+    fun aChangedChangeStillGetsANewKeyAfterARestart() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val before = kept(handle).keyFor("pay|a1|1200")
+        assertNotEquals(before, kept(restarted(handle)).keyFor("pay|a1|1300"))
+    }
+
+    @Test
+    fun clearedKeysDoNotComeBackAfterARestart() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val keys = kept(handle)
+        val before = keys.keyFor("pay|a1|1200")
+        keys.clear()
+        assertNotEquals(before, kept(restarted(handle)).keyFor("pay|a1|1200"))
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun theTextOfAChangeIsNeverKeptOnlyWhichKeyItGot() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        kept(handle).keyFor("pay|a1|1200|a private note")
+        val stored = handle.keys().joinToString { handle.get<String>(it).orEmpty() }
+        assertTrue(!stored.contains("private") && !stored.contains("1200"))
+    }
 }

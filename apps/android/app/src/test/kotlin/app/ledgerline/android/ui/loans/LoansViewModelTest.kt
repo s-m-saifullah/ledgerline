@@ -19,9 +19,9 @@ import app.ledgerline.api.LoanPersonList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -202,5 +202,25 @@ class LoansViewModelTest {
         assertEquals(Online.Failed, model.people.settled { it == Online.Failed })
         runBlocking { withTimeout(5_000) { harness.session.state.first { it == SessionState.SignedOut } } }
         assertNull(harness.session.token.value)
+    }
+
+    // The person being looked at comes back after Android ended the app, so a sheet kept with it has a screen (WP-18b).
+    private fun restartedHandle(from: androidx.lifecycle.SavedStateHandle) = androidx.lifecycle.SavedStateHandle(from.keys().associateWith { from.get<Any>(it) })
+
+    @Test
+    fun thePersonBeingLookedAtComesBackAfterTheAppIsEnded() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val first = LoansViewModel(harness.reader(), harness.database.reads(), handle)
+        first.open("sam-rivera")
+        assertEquals("sam-rivera", LoansViewModel(harness.reader(), harness.database.reads(), restartedHandle(handle)).selected.value)
+    }
+
+    @Test
+    fun aClosedPersonDoesNotComeBack() {
+        val handle = androidx.lifecycle.SavedStateHandle()
+        val first = LoansViewModel(harness.reader(), harness.database.reads(), handle)
+        first.open("sam-rivera")
+        first.close()
+        assertNull(LoansViewModel(harness.reader(), harness.database.reads(), restartedHandle(handle)).selected.value)
     }
 }

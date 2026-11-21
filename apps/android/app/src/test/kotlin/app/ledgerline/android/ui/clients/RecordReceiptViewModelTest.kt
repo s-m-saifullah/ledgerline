@@ -115,7 +115,7 @@ class RecordReceiptViewModelTest {
     private fun problem(status: Int, detail: String) =
         harness.json(status, """{"type":"about:blank","title":"x","status":$status,"detail":"$detail","errors":[]}""")
 
-    private fun model(origin: String? = null, readOrigin: String? = null): RecordReceiptViewModel {
+    private fun model(origin: String? = null, readOrigin: String? = null, saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()): RecordReceiptViewModel {
         val database = harness.database
         val lock = SyncLock()
         val source = object : PullSource {
@@ -130,7 +130,7 @@ class RecordReceiptViewModelTest {
         val sync = SyncCoordinator(harness.session, runner, engine, FakeScheduler(), choice, FakeClock())
         val writer = if (origin == null) harness.writer() else harness.writer(origin)
         val reader = if (readOrigin == null) harness.reader() else harness.reader(readOrigin)
-        return RecordReceiptViewModel(database.reads(), ReceiptWrites(writer, reader), sync, store, RateReads(reader)).also {
+        return RecordReceiptViewModel(database.reads(), ReceiptWrites(writer, reader), sync, store, RateReads(reader), saved).also {
             it.today = { "2026-11-10" }
             it.previewDelayMillis = 0
         }
@@ -817,5 +817,79 @@ class RecordReceiptViewModelTest {
         harness.until { !ui().asking }
         assertNothingWritten()
     }
-}
 
+    // Android may end the app in the background; what was typed and the key of a write already tried come back (WP-18b).
+    private val handle = androidx.lifecycle.SavedStateHandle()
+
+    /** What Android brings back after the process died: the same saved values in a new handle. */
+    private fun restarted() = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) })
+
+    @Test
+    fun aTypedPaymentComesBackAfterTheAppIsEndedAndReadsWhatItWouldPayAgain() {
+        routePreview()
+        viewModel = model(saved = handle)
+        filled(amount = "200.00")
+        val typed = ui().form
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value != null }
+        assertEquals(typed, back.sheet.value!!.form)
+        assertEquals(ui().accounts, back.sheet.value!!.accounts)
+        assertFalse(back.sheet.value!!.asking)
+        assertFalse(back.sheet.value!!.saving)
+        harness.until { back.sheet.value?.preview is Online.Ready }
+    }
+
+    @Test
+    fun theRetryAfterARestartCarriesTheKeyOfTheFirstTry() {
+        routePreview()
+        harness.route(ReceiptsPath) { harness.json(500) }
+        viewModel = model(saved = handle)
+        filled()
+        sent()
+        harness.until { writes().size == 1 }
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value?.preview is Online.Ready }
+        back.save()
+        back.confirm()
+        harness.until { writes().size == 2 }
+        assertEquals(writes()[0].idempotencyKey, writes()[1].idempotencyKey)
+    }
+
+    @Test
+    fun aSheetThatWasClosedIsNotBroughtBack() {
+        routePreview()
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.close()
+        val back = model(saved = restarted())
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun aDraftOfAnotherLedgerIsNeverShownAndItsKeysAreForgotten() {
+        routePreview()
+        harness.route(ReceiptsPath) { harness.json(500) }
+        viewModel = model(saved = handle)
+        filled()
+        sent()
+        harness.until { writes().size == 1 }
+        val other = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { (handle.get<Any>(it) as String).replace("ledger-a", "ledger-z") })
+        val back = model(saved = other)
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals("the other person's keys are dropped too", emptySet<String>(), other.keys())
+    }
+
+    @Test
+    fun aPaymentAcrossCurrenciesLooksUpTheStoredRateAgainAfterARestart() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        viewModel = model(saved = handle)
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value?.form?.cross?.stored is StoredRate.Found }
+        assertEquals(2, harness.rateLookups().size)
+    }
+}

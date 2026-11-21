@@ -46,9 +46,9 @@ class LogServiceViewModelTest {
     private fun problem(status: Int, detail: String) =
         harness.json(status, """{"type":"about:blank","title":"x","status":$status,"detail":"$detail","errors":[]}""")
 
-    private fun model(origin: String? = null): LogServiceViewModel {
+    private fun model(origin: String? = null, saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()): LogServiceViewModel {
         val writer = if (origin == null) harness.writer() else harness.writer(origin)
-        return LogServiceViewModel(harness.database.reads(), ServiceWrites(writer)).also { it.today = { "2026-11-11" } }
+        return LogServiceViewModel(harness.database.reads(), ServiceWrites(writer), saved).also { it.today = { "2026-11-11" } }
     }
 
     @Before
@@ -511,5 +511,75 @@ class LogServiceViewModelTest {
         viewModel.close()
         assertEquals("Logo refresh", openEdit().form.description)
     }
-}
 
+    // Android may end the app in the background; what was typed and the key of a write already tried come back (WP-18b).
+    private val handle = androidx.lifecycle.SavedStateHandle()
+
+    /** What Android brings back after the process died: the same saved values in a new handle. */
+    private fun restarted() = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { handle.get<Any>(it) })
+
+    @Test
+    fun aTypedServiceComesBackAfterTheAppIsEnded() {
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.edit { it.copy(hours = "3", hourlyRate = "150", dueDate = "2026-12-01") }
+        val typed = ui().form
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value != null }
+        assertEquals(typed, back.sheet.value!!.form)
+        assertEquals(ui().currencies, back.sheet.value!!.currencies)
+        assertFalse(back.sheet.value!!.saving)
+        assertNull(back.sheet.value!!.error)
+    }
+
+    @Test
+    fun anEditComesBackAsAnEditOfTheSameService() {
+        viewModel = model(saved = handle)
+        viewModel.openEdit(northwind, logged)
+        harness.until { viewModel.sheet.value != null }
+        viewModel.edit { it.copy(description = "Logo refresh, round two") }
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value != null }
+        assertEquals(ui().form, back.sheet.value!!.form)
+        assertEquals("logo-refresh", back.sheet.value!!.form.editing?.serviceId)
+    }
+
+    @Test
+    fun theRetryAfterARestartCarriesTheKeyOfTheFirstTry() {
+        harness.route(ServicesPath) { harness.json(500) }
+        viewModel = model(saved = handle)
+        filled()
+        sent()
+        harness.until { writes().size == 1 }
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value != null }
+        back.save()
+        harness.until { writes().size == 2 }
+        assertEquals(writes()[0].idempotencyKey, writes()[1].idempotencyKey)
+    }
+
+    @Test
+    fun aSheetThatWasClosedIsNotBroughtBack() {
+        viewModel = model(saved = handle)
+        filled()
+        viewModel.close()
+        val back = model(saved = restarted())
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun aDraftOfAnotherLedgerIsNeverShownAndItsKeysAreForgotten() {
+        harness.route(ServicesPath) { harness.json(500) }
+        viewModel = model(saved = handle)
+        filled()
+        sent()
+        harness.until { writes().size == 1 }
+        val other = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { (handle.get<Any>(it) as String).replace("ledger-a", "ledger-z") })
+        val back = model(saved = other)
+        Thread.sleep(300)
+        assertNull(back.sheet.value)
+        assertEquals("the other person's keys are dropped too", emptySet<String>(), other.keys())
+    }
+}

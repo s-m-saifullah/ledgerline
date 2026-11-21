@@ -1,14 +1,15 @@
 package app.ledgerline.android.ui.editor
 
-import app.ledgerline.android.ui.design.Choice
 import android.content.Context
-import app.ledgerline.android.mirror.CategoryRow
 import androidx.core.content.edit
+import app.ledgerline.android.mirror.CategoryRow
+import app.ledgerline.android.ui.design.Choice
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,6 +82,7 @@ internal fun categoryChoices(
 /** The most tags one entry can have (the server's limit, as the web's picker). */
 const val MaxTagsPerEntry = 10
 
+@Serializable
 data class EditorForm(
     val mode: EntryMode,
     val amount: String,

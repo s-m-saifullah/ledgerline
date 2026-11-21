@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.theme.LocalPalette
+import kotlinx.serialization.Serializable
 
 /*
  * The pieces every form of the redesign shares (ADR 0046): the picker sheet with its choices, the row that opens it, and
@@ -48,6 +49,7 @@ import app.ledgerline.android.ui.theme.LocalPalette
  */
 
 /** One entry of a list the owner picks from; [archived] ones are offered only while they are the current choice. */
+@Serializable
 data class Choice(val id: String, val label: String, val currency: String = "", val archived: Boolean = false)
 
 /** A picker sheet offers a search box from this many choices on (the same rule as Loans' search). */

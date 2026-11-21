@@ -9,8 +9,11 @@ import app.ledgerline.api.Money
 import app.ledgerline.api.ReceiptAllocation
 import app.ledgerline.api.ReceiptPreview
 import app.ledgerline.api.TipInput
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 /** Whom a payment is from, as the phone holds the client when the sheet opens: what they owe, in each currency. */
+@Serializable
 data class ReceiptTarget(
     val contactId: String,
     val clientName: String,
@@ -69,6 +72,7 @@ const val ReceiptNoteMax = 2_000
  * 4b-2) the rate for the account's currency on the date is the one the ledger stores ([rateAnswer]) or one typed by hand
  * ([rateTyped]), which is the only case where a rate is sent.
  */
+@Serializable
 data class ReceiptForm(
     val target: ReceiptTarget,
     val currency: String,
@@ -89,7 +93,7 @@ data class ReceiptForm(
     /** A rate set by hand, base currency first ("122.5"), when neither side is the base currency; blank uses the stored one. */
     val rateTyped: String = "",
     /** What the last look-up of the stored rate found, with what it asked for; only used while it still matches [rateKey]. */
-    val rateAnswer: RateAnswer? = null,
+    @Transient val rateAnswer: RateAnswer? = null,
 ) {
     /** The rate to look up: the account's currency on the date, when neither side is the base currency. */
     val rateKey: RateKey? get() = accountCurrency?.takeIf { needsRate(currency, it) }?.let { RateKey(it, date) }
