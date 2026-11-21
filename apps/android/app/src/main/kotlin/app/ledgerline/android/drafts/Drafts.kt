@@ -3,6 +3,7 @@ package app.ledgerline.android.drafts
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
@@ -40,7 +41,11 @@ class Draft<T>(private val handle: SavedStateHandle, private val key: String, pr
 fun keysDraft(handle: SavedStateHandle, key: String = "keys"): Draft<Map<String, String>> =
     Draft(handle, key, MapSerializer(String.serializer(), String.serializer()))
 
-/** Keeps [draft] in step with [sheet]: every change is saved, and a closed sheet forgets it. */
+/**
+ * Keeps [draft] in step with [sheet]: every change is saved, and a closed sheet forgets it. The collector runs where the
+ * change is made (unconfined), so the draft is written the moment the form changes, not a moment later: Android may end the
+ * app at any time.
+ */
 fun <U, D> ViewModel.keepDraft(draft: Draft<D>, sheet: StateFlow<U?>, toDraft: (U) -> D) {
-    viewModelScope.launch { sheet.collect { draft.save(it?.let(toDraft)) } }
+    viewModelScope.launch(Dispatchers.Unconfined) { sheet.collect { draft.save(it?.let(toDraft)) } }
 }

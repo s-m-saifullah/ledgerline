@@ -1,8 +1,9 @@
 package app.ledgerline.android.ui.editor
 
-import app.ledgerline.android.ui.design.Choice
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.ledgerline.android.drafts.Draft
 import app.ledgerline.android.mirror.AccountRow
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.MirrorDao
@@ -10,25 +11,33 @@ import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.CategoryWrites
 import app.ledgerline.android.online.Written
 import app.ledgerline.android.outbox.OutboxRow
-import app.ledgerline.android.succeeded
-import app.ledgerline.android.outbox.Uuid7
-import app.ledgerline.android.ui.categories.toCategoryError
-import app.ledgerline.api.CreateCategory
 import app.ledgerline.android.outbox.OutboxStore
+import app.ledgerline.android.outbox.Uuid7
 import app.ledgerline.android.outbox.WallClock
 import app.ledgerline.android.overlay.LedgerView
 import app.ledgerline.android.overlay.Overlay
 import app.ledgerline.android.overlay.ShownEntry
+import app.ledgerline.android.succeeded
 import app.ledgerline.android.sync.SyncCoordinator
+import app.ledgerline.android.ui.categories.toCategoryError
+import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.api.CreateCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.ZoneId
 import javax.inject.Inject
+
+/** What the editor keeps through Android ending the app: the form of one opening, with the ledger it belongs to. */
+@Serializable
+internal data class EditorDraft(val session: String, val ledgerId: String, val form: EditorForm)
 
 /**
  * Adding, editing and deleting an entry or a transfer on the phone (ADR 0043, slice 4). Saving only writes the outbox
@@ -45,6 +54,7 @@ class EditorViewModel @Inject constructor(
     private val memory: FormMemory,
     private val clock: WallClock,
     private val categoryWrites: CategoryWrites,
+    saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private val _state = MutableStateFlow<EditorState?>(null)
     private val _newCategory = MutableStateFlow<NewCategory?>(null)
@@ -56,6 +66,10 @@ class EditorViewModel @Inject constructor(
     /** Null while loading. */
     val state: StateFlow<EditorState?> = _state.asStateFlow()
 
+    private val draft = Draft(saved, "editor", EditorDraft.serializer())
+
+    /** What was typed before Android ended the app; used once, by the same opening of the editor on the same ledger (WP-18b). */
+    private var restored = draft.load()
     private var session: String? = null
     private var loading: Job? = null
     private var ledgerId = ""
@@ -83,7 +97,30 @@ class EditorViewModel @Inject constructor(
         currentTo = null
         fixRow = null
         this.target = target
-        loading = viewModelScope.launch { _state.value = load(target).copy(session = session) }
+        loading = viewModelScope.launch {
+            val loaded = load(target)
+            val kept = restored?.takeIf { it.session == session && it.ledgerId == ledgerId && loaded.readOnly == null }
+            restored = null
+            _state.value = (if (kept != null) stateFor(kept.form, loaded.isNew, loaded.tags, loaded.readOnly, loaded.canDelete) else loaded).copy(session = session)
+        }
+    }
+
+    init {
+        // Every change is kept for a restart; a finished save and a read-only entry keep nothing.
+        viewModelScope.launch(Dispatchers.Unconfined) {
+            _state.filterNotNull().collect { shown ->
+                when {
+                    shown.done -> draft.save(null)
+                    shown.readOnly == null -> draft.save(EditorDraft(shown.session, ledgerId, shown.form))
+                }
+            }
+        }
+    }
+
+    /** The editor was left (saved, cancelled, or the session ended): nothing typed is kept. */
+    fun leave() {
+        restored = null
+        draft.save(null)
     }
 
     /** Applies a finished save or delete only if the owner is still in the same opening of the editor. */

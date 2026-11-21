@@ -3,6 +3,9 @@ package app.ledgerline.android.ui.clients
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.Online
@@ -30,12 +33,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import javax.inject.Inject
-import app.ledgerline.android.drafts.Draft
-import app.ledgerline.android.drafts.keepDraft
-import app.ledgerline.android.drafts.keysDraft
-import kotlinx.serialization.Serializable
 
 /**
  * The Record payment sheet for a client as the screen sees it: the form, what it can choose from, the services the amount

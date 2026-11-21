@@ -11,11 +11,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.design.OnLeaving
 
 /** Add, edit or delete an entry or a transfer. Saving works offline: the change waits in the outbox until sent. */
 @Composable
 fun EditorScreen(target: EditorTarget, session: String, onClose: () -> Unit, viewModel: EditorViewModel = hiltViewModel(key = "editor")) {
     LaunchedEffect(session) { viewModel.open(target, session) }
+    // Leaving the editor for good forgets what was typed; a rotation or Android ending the app does not.
+    OnLeaving { viewModel.leave() }
     val latest by viewModel.state.collectAsState()
     // Only this opening's state counts: the view model may still hold the last opening's (for example a finished save).
     val state = latest?.takeIf { it.session == session }

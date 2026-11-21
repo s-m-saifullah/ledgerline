@@ -5,8 +5,8 @@ import app.ledgerline.android.ui.editor.AmountInput
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.LoanMove
 import app.ledgerline.api.Money
-import kotlin.math.abs
 import kotlinx.serialization.Serializable
+import kotlin.math.abs
 
 /** What the sheet does with the money: [Lend] and [Borrow] open a loan or add to it, [Repay] settles some of what is open. */
 enum class LoanKind { Lend, Borrow, Repay }

@@ -3,6 +3,9 @@ package app.ledgerline.android.ui.loans
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.LoanWrites
 import app.ledgerline.android.online.WriteError
@@ -21,12 +24,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import javax.inject.Inject
-import app.ledgerline.android.drafts.Draft
-import app.ledgerline.android.drafts.keepDraft
-import app.ledgerline.android.drafts.keysDraft
-import kotlinx.serialization.Serializable
 
 /** The Lend, Borrow and Repay sheet as the screen sees it: the form, the problems found when Save was pressed, whether a write is in flight, how the last one ended and whether the question is showing. */
 data class LoanUi(

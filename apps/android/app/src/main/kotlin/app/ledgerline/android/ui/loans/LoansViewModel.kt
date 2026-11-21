@@ -1,5 +1,6 @@
 package app.ledgerline.android.ui.loans
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.EntryLine
@@ -7,8 +8,8 @@ import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.OnlineReader
 import app.ledgerline.android.online.Page
-import app.ledgerline.android.online.Paged
 import app.ledgerline.android.online.PageSize
+import app.ledgerline.android.online.Paged
 import app.ledgerline.android.online.PagedRead
 import app.ledgerline.android.online.map
 import app.ledgerline.android.online.readOnTrigger
@@ -21,14 +22,15 @@ import app.ledgerline.api.LoanPerson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.YearMonth
 import javax.inject.Inject
 
@@ -44,11 +46,13 @@ import javax.inject.Inject
 class LoansViewModel @Inject constructor(
     private val reader: OnlineReader,
     private val reads: MirrorReads,
+    private val saved: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private val retries = MutableStateFlow(0)
     private val _text = MutableStateFlow("")
     private val _filter = MutableStateFlow(LoanFilter.Active)
-    private val _selected = MutableStateFlow<String?>(null)
+    // The person being looked at comes back after Android ended the app, so a sheet kept with them has a screen (WP-18b).
+    private val _selected = MutableStateFlow(saved.get<String>(SelectedKey))
     val text: StateFlow<String> = _text.asStateFlow()
 
     /** Which people the chips show; the server is always asked for all of them. */
@@ -56,6 +60,10 @@ class LoansViewModel @Inject constructor(
 
     /** The person being looked at, or null while the list shows. */
     val selected: StateFlow<String?> = _selected.asStateFlow()
+
+    init {
+        viewModelScope.launch { _selected.collect { if (it == null) saved.remove<String>(SelectedKey) else saved[SelectedKey] = it } }
+    }
 
     private val ofPerson = reads.readings(_selected.filterNotNull(), retries)
 
@@ -121,5 +129,9 @@ class LoansViewModel @Inject constructor(
 
     fun retry() {
         retries.value += 1
+    }
+
+    private companion object {
+        const val SelectedKey = "selected"
     }
 }

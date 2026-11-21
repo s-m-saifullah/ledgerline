@@ -3,6 +3,9 @@ package app.ledgerline.android.ui.clients
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.ledgerline.android.drafts.Draft
+import app.ledgerline.android.drafts.keepDraft
+import app.ledgerline.android.drafts.keysDraft
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.ServiceWrites
 import app.ledgerline.android.online.WriteError
@@ -19,12 +22,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 import java.time.LocalDate
 import javax.inject.Inject
-import app.ledgerline.android.drafts.Draft
-import app.ledgerline.android.drafts.keepDraft
-import app.ledgerline.android.drafts.keysDraft
-import kotlinx.serialization.Serializable
 
 /** The Log service sheet as the screen sees it: the form, the currencies it can choose from, the problems found when Save was pressed, whether a write is in flight and how the last one ended. */
 data class LogServiceUi(

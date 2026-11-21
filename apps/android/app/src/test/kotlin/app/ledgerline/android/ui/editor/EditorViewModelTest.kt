@@ -127,7 +127,7 @@ class EditorViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun editor() = EditorViewModel(database.reads(), database.dao(), LedgerView(database.reads(), database.dao(), database.outbox()), outbox, sync, memory, clock, writes)
+    private fun editor(saved: androidx.lifecycle.SavedStateHandle = androidx.lifecycle.SavedStateHandle()) = EditorViewModel(database.reads(), database.dao(), LedgerView(database.reads(), database.dao(), database.outbox()), outbox, sync, memory, clock, writes, saved)
 
     private var sessions = 0
 
@@ -488,5 +488,99 @@ class EditorViewModelTest {
         val kept = rows().single { it.id == rejectedId }
         assertEquals(OutboxRow.Rejected, kept.state)
         assertEquals("""{"payee":"Bad"}""", kept.body)
+    }
+
+    // Android may end the app in the background; what was typed comes back for the same opening of the editor (WP-18b).
+    private val handle = androidx.lifecycle.SavedStateHandle()
+
+    /** What Android brings back after the process died: the same saved values in a new handle. */
+    private fun restarted(from: androidx.lifecycle.SavedStateHandle = handle) = androidx.lifecycle.SavedStateHandle(from.keys().associateWith { from.get<Any>(it) })
+
+    /** The draft is written a moment after the form changes; wait until it holds [text]. */
+    private suspend fun draftHolds(text: String) = withTimeout(5_000) { while (handle.get<String>("editor")?.contains(text) != true) kotlinx.coroutines.delay(10) }
+
+    @Test
+    fun aTypedEntryComesBackForTheSameOpeningAfterTheAppIsEnded() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.New(), "s-same")
+        vm.update { it.copy(amount = "12.50", payee = "Cafe", note = "with Sam", categoryId = id(20), accountId = id(2)) }
+        val typed = vm.state.value!!.form
+        draftHolds("Cafe")
+        val back = editor(restarted()).opened(EditorTarget.New(), "s-same")
+        assertEquals(typed, back.form)
+        assertEquals(false, back.saving)
+        assertEquals(emptySet<FormError>(), back.errors)
+    }
+
+    @Test
+    fun aNewOpeningStartsEmptyEvenIfAnEarlierOneWasKept() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.New(), "s-first")
+        vm.update { it.copy(amount = "99.00", payee = "Old") }
+        draftHolds("Old")
+        val fresh = editor(restarted()).opened(EditorTarget.New(), "s-second")
+        assertEquals("", fresh.form.amount)
+        assertEquals("", fresh.form.payee)
+    }
+
+    @Test
+    fun aTypedChangeToASavedEntryComesBackOverTheEntryAsItWas() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.Entry(id(10)), "s-edit")
+        vm.update { it.copy(payee = "Grocer, corrected", note = "typed") }
+        draftHolds("Grocer, corrected")
+        val back = editor(restarted()).opened(EditorTarget.Entry(id(10)), "s-edit")
+        assertEquals("Grocer, corrected", back.form.payee)
+        assertEquals("typed", back.form.note)
+        assertEquals(false, back.isNew)
+        assertEquals(true, back.canDelete)
+    }
+
+    @Test
+    fun leavingTheEditorForgetsTheDraft() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.New(), "s-same")
+        vm.update { it.copy(amount = "5.00") }
+        draftHolds("5.00")
+        vm.leave()
+        assertEquals(emptySet<String>(), handle.keys())
+        assertEquals("", editor(restarted()).opened(EditorTarget.New(), "s-same").form.amount)
+    }
+
+    @Test
+    fun aSavedEntryLeavesNoDraftBehind() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.New(), "s-same")
+        vm.update { it.copy(amount = "5.00", categoryId = id(20), accountId = id(1)) }
+        draftHolds("5.00")
+        vm.save()
+        vm.saved()
+        withTimeout(5_000) { while (handle.keys().isNotEmpty()) kotlinx.coroutines.delay(10) }
+        assertEquals(emptySet<String>(), handle.keys())
+    }
+
+    @Test
+    fun aDraftOfAnotherLedgerIsNeverShown() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.New(), "s-same")
+        vm.update { it.copy(amount = "7.00", payee = "Private") }
+        draftHolds("Private")
+        val other = androidx.lifecycle.SavedStateHandle(handle.keys().associateWith { (handle.get<Any>(it) as String).replace("ledger-a", "ledger-z") })
+        val back = editor(other).opened(EditorTarget.New(), "s-same")
+        assertEquals("", back.form.amount)
+        assertEquals("", back.form.payee)
+    }
+
+    @Test
+    fun aRejectedChangeBeingCorrectedComesBackWithWhatWasTyped() = runBlocking {
+        val created = outbox.createEntry(ledger, entryCreateBody(EntryValues("expense", id(1), id(20), "2026-10-22", -500, "USD", "Cafe", null, emptyList())))
+        val batch = outbox.takeBatch(ledger)
+        outbox.settle(ledger, batch, listOf(rejected(created)))
+        val vm = editor(handle)
+        vm.opened(EditorTarget.Fix(created), "s-fix")
+        vm.update { it.copy(payee = "Cafe, fixed") }
+        draftHolds("Cafe, fixed")
+        val back = editor(restarted()).opened(EditorTarget.Fix(created), "s-fix")
+        assertEquals("Cafe, fixed", back.form.payee)
     }
 }
