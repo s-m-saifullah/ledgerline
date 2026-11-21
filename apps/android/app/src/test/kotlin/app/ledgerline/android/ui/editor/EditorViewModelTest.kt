@@ -471,4 +471,22 @@ class EditorViewModelTest {
         assertEquals("""{"payee":"Good"}""", row.body)
         assertNull(rows().find { it.id == batch.single().id })
     }
+
+    @Test
+    fun aCorrectionThatCannotBeSavedLeavesTheRejectedChangeWhereItWas() = runBlocking {
+        outbox.updateEntry(ledger, id(10), kotlinx.serialization.json.buildJsonObject { put("payee", kotlinx.serialization.json.JsonPrimitive("Bad")) })
+        val batch = outbox.takeBatch(ledger)
+        val rejectedId = batch.single().id
+        outbox.settle(ledger, batch, listOf(rejected(rejectedId)))
+        val vm = editor()
+        vm.opened(EditorTarget.Fix(rejectedId))
+        // Meanwhile the entry was deleted on the phone, so a new edit of it is refused.
+        outbox.deleteEntry(ledger, id(10))
+        vm.update { it.copy(payee = "Good") }
+        vm.save()
+        assertEquals(setOf(FormError.CouldNotSave), vm.saved().errors)
+        val kept = rows().single { it.id == rejectedId }
+        assertEquals(OutboxRow.Rejected, kept.state)
+        assertEquals("""{"payee":"Bad"}""", kept.body)
+    }
 }
