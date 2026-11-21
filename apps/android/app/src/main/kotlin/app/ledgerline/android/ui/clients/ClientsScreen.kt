@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -12,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.AutoLoadMore
+import app.ledgerline.android.ui.design.OnLeaving
 import java.time.LocalDate
 
 /**
@@ -32,14 +32,12 @@ fun ClientsScreen(
     deleteService: DeleteServiceViewModel = hiltViewModel(),
 ) {
     val selected by model.selected.collectAsState()
-    DisposableEffect(Unit) {
-        onDispose {
-            model.close()
-            payment.close()
-            receipt.close()
-            logService.close()
-            deleteService.dismiss()
-        }
+    OnLeaving {
+        model.close()
+        payment.close()
+        receipt.close()
+        logService.close()
+        deleteService.dismiss()
     }
     // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
     val reread by payment.reread.collectAsState()

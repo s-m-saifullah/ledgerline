@@ -147,4 +147,14 @@ class SharedPiecesTest {
         }
         assertEquals("a size written in a screen", emptyList<String>(), sizes)
     }
+
+    @Test
+    fun aScreenClosesItsSheetsWhenLeftThroughOnLeavingNeverOnEveryDisposal() {
+        // A raw DisposableEffect also runs when the activity is recreated, which shut an open sheet and threw away its keys (AND-P4).
+        assertEquals(emptyList<String>(), outside("Leaving.kt", Regex("""\bDisposableEffect\(""")))
+        listOf("clients/ClientsScreen.kt", "loans/LoansScreen.kt").forEach { path ->
+            val text = File(ui, path).readText()
+            assertTrue("$path does not close its sheets through OnLeaving", Regex("""\bOnLeaving \{""").containsMatchIn(text))
+        }
+    }
 }
