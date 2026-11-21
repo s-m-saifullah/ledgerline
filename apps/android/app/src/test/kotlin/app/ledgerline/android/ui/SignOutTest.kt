@@ -16,6 +16,7 @@ import app.ledgerline.android.outbox.outboxFor
 import app.ledgerline.android.outbox.rejected
 import app.ledgerline.android.overlay.LedgerView
 import app.ledgerline.android.session.ClientsProvider
+import app.ledgerline.android.session.SessionEnd
 import app.ledgerline.android.session.SessionManager
 import app.ledgerline.android.session.SessionState
 import app.ledgerline.android.sync.FakeLedgerChoice
@@ -56,6 +57,7 @@ class SignOutTest {
     private lateinit var session: SessionManager
     private lateinit var viewModel: SignedInViewModel
     private val server = FakeServer()
+    private val address = FakeServerAddressStore(null)
 
     @Before
     fun open() {
@@ -71,7 +73,7 @@ class SignOutTest {
         val runner = SyncRunner(engine, PushEngine(server, outbox, lock), FakeLookup(), choice, session)
         val sync = SyncCoordinator(session, runner, engine, FakeScheduler(), choice, FakeClock())
         viewModel = SignedInViewModel(
-            FakeServerAddressStore(null),
+            address,
             ClientsProvider(session),
             session,
             sync,
@@ -148,5 +150,14 @@ class SignOutTest {
         withTimeout(5_000) { while (outbox.notOnServerCount() > 0) kotlinx.coroutines.delay(10) }
         assertEquals(1, server.applied.size)
         assertEquals(SessionState.Unlocked, session.state.value)
+    }
+
+    @Test
+    fun aFailureOfAnyKindWhileSigningOutDoesNotLeaveTheButtonStuck() = runBlocking {
+        address.state.value = "not an address"
+        viewModel.signOut()
+        signedOut()
+        assertEquals(false, viewModel.signingOut.value)
+        assertEquals(SessionEnd.ServerNotReached, session.ended.value)
     }
 }
