@@ -881,4 +881,15 @@ class RecordReceiptViewModelTest {
         assertNull(back.sheet.value)
         assertEquals("the other person's keys are dropped too", emptySet<String>(), other.keys())
     }
+
+    @Test
+    fun aPaymentAcrossCurrenciesLooksUpTheStoredRateAgainAfterARestart() {
+        harness.routeRates(mapOf("2026-11-10" to "1.2658227848"))
+        viewModel = model(saved = handle)
+        aPoundReceipt()
+        harness.until { stored() is StoredRate.Found }
+        val back = model(saved = restarted())
+        harness.until { back.sheet.value?.form?.cross?.stored is StoredRate.Found }
+        assertEquals(2, harness.rateLookups().size)
+    }
 }

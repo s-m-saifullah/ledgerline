@@ -766,4 +766,16 @@ class RecordPaymentViewModelTest {
         assertNull(back.sheet.value)
         assertEquals("the other person's keys are dropped too", emptySet<String>(), other.keys())
     }
+
+    @Test
+    fun aPaymentAcrossCurrenciesLooksUpTheStoredRateAgainAfterARestart() {
+        routeRates(mapOf("2026-11-09" to "1.2658227848"))
+        viewModel = model(saved = handle)
+        aPoundPayment()
+        harness.until { stored() is StoredRate.Found }
+        val back = restartedModel()
+        // The answer is not kept (it may be out of date); the restored sheet asks again.
+        harness.until { back.sheet.value?.form?.cross?.stored is StoredRate.Found }
+        assertEquals(2, lookups().size)
+    }
 }

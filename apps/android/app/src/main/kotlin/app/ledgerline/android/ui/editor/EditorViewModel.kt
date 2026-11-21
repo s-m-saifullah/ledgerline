@@ -68,8 +68,8 @@ class EditorViewModel @Inject constructor(
 
     private val draft = Draft(saved, "editor", EditorDraft.serializer())
 
-    /** What was typed before Android ended the app; used once, by the same opening of the editor on the same ledger (WP-18b). */
-    private var restored = draft.load()
+    /** What was typed before Android ended the app; only the same opening of the editor, on the same ledger, takes it back (WP-18b). */
+    private val restored = draft.load()
     private var session: String? = null
     private var loading: Job? = null
     private var ledgerId = ""
@@ -100,7 +100,6 @@ class EditorViewModel @Inject constructor(
         loading = viewModelScope.launch {
             val loaded = load(target)
             val kept = restored?.takeIf { it.session == session && it.ledgerId == ledgerId && loaded.readOnly == null }
-            restored = null
             _state.value = (if (kept != null) stateFor(kept.form, loaded.isNew, loaded.tags, loaded.readOnly, loaded.canDelete) else loaded).copy(session = session)
         }
     }
@@ -119,7 +118,6 @@ class EditorViewModel @Inject constructor(
 
     /** The editor was left (saved, cancelled, or the session ended): nothing typed is kept. */
     fun leave() {
-        restored = null
         draft.save(null)
     }
 

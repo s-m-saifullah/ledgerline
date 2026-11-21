@@ -583,4 +583,16 @@ class EditorViewModelTest {
         val back = editor(restarted()).opened(EditorTarget.Fix(created), "s-fix")
         assertEquals("Cafe, fixed", back.form.payee)
     }
+
+    @Test
+    fun aDraftIsNotLaidOverAnEntryThatCannotBeEditedOnThePhone() = runBlocking {
+        val vm = editor(handle)
+        vm.opened(EditorTarget.Entry(id(10)), "s-same")
+        vm.update { it.copy(payee = "Typed over a split") }
+        draftHolds("Typed over a split")
+        // The entry opened under the same session is a split one: shown as it is, read-only, never with another entry's draft.
+        val back = editor(restarted()).opened(EditorTarget.Entry(id(11)), "s-same")
+        assertEquals(ReadOnly.Split, back.readOnly)
+        assertEquals("Split", back.form.payee)
+    }
 }
