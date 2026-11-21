@@ -55,6 +55,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -198,6 +199,10 @@ fun ListRow(
     trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     subtitleColor: Color = Color.Unspecified,
+    /** The title's color, for a row that is red (it deletes) or muted (it cannot be chosen now). */
+    titleColor: Color = Color.Unspecified,
+    /** A row that cannot be chosen now is drawn and read as disabled, and a tap does nothing. */
+    enabled: Boolean = true,
     /** What a screen reader says for the whole row, when it should be one sentence (the amount's spoken form, not its mask). */
     described: String? = null,
     /** More under the subtitle, such as a row of tags. */
@@ -210,7 +215,7 @@ fun ListRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClickLabel = onClickLabel, onClick = onClick, role = Role.Button) else Modifier)
+            .then(if (onClick != null) Modifier.clickable(enabled = enabled, onClickLabel = onClickLabel, onClick = onClick, role = Role.Button) else Modifier)
             .heightIn(min = RowHeight)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .then(if (described != null) Modifier.clearAndSetSemantics { contentDescription = described } else Modifier),
@@ -221,10 +226,10 @@ fun ListRow(
         val words: @Composable () -> Unit = {
             Column {
                 if (badge == null) {
-                    Text(title, style = MaterialTheme.typography.titleMedium)
+                    Text(title, style = MaterialTheme.typography.titleMedium, color = titleColor)
                 } else {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f, fill = false))
+                        Text(title, style = MaterialTheme.typography.titleMedium, color = titleColor, modifier = Modifier.weight(1f, fill = false))
                         badge()
                     }
                 }
@@ -239,6 +244,12 @@ fun ListRow(
     }
 }
 
+/** The shape of a status pill and every small outlined label (Overdue, a tag, the sync state): 8 dp (ADR 0046). */
+val PillShape = RoundedCornerShape(8.dp)
+
+/** The shape of a chip you tap (a filter, a value, a tag in the editor): 18 dp, a 36 dp pill. */
+val ChipShape = RoundedCornerShape(18.dp)
+
 /** How a [StatusPill] reads: red for what needs attention (overdue), the accent for what is done. */
 enum class PillTone { Danger, Accent }
 
@@ -252,7 +263,7 @@ fun StatusPill(text: String, tone: PillTone = PillTone.Danger) {
         style = MaterialTheme.typography.labelMedium,
         color = color,
         maxLines = 1,
-        modifier = Modifier.border(1.dp, color, RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 2.dp),
+        modifier = Modifier.border(1.dp, color, PillShape).padding(horizontal = 8.dp, vertical = 2.dp),
     )
 }
 
@@ -430,9 +441,9 @@ fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .height(36.dp)
-                .clip(RoundedCornerShape(18.dp))
+                .clip(ChipShape)
                 .background(if (selected) palette.accentSoft else palette.surface)
-                .border(1.dp, if (selected) palette.accent else palette.border, RoundedCornerShape(18.dp))
+                .border(1.dp, if (selected) palette.accent else palette.border, ChipShape)
                 .padding(horizontal = 14.dp),
             contentAlignment = Alignment.Center,
         ) {
@@ -498,5 +509,32 @@ fun SwitchRow(title: String, hint: String, checked: Boolean, onChange: (Boolean)
             Text(hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked = checked, onCheckedChange = null)
+    }
+}
+
+/**
+ * A row that opens and shuts what is under it, as the prototype's `<details>` rows: the title and a chevron (down when
+ * shut, up when open), at least [RowHeight] tall; a screen reader hears it as a button that is expanded or collapsed.
+ */
+@Composable
+fun FoldRow(title: String, open: Boolean, modifier: Modifier = Modifier, onToggle: () -> Unit) {
+    val state = stringResource(if (open) R.string.expanded else R.string.collapsed)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle, role = Role.Button)
+            .semantics { stateDescription = state }
+            .heightIn(min = RowHeight)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+        Icon(
+            painterResource(if (open) R.drawable.ic_chevron_up else R.drawable.ic_chevron_down),
+            contentDescription = null,
+            tint = LocalPalette.current.muted,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }

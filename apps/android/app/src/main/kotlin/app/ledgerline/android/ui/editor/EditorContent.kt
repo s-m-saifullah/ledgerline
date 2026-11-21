@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
@@ -57,13 +56,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.design.ChipShape
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.InputRow
-import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.LinkButton
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.Question
@@ -265,7 +265,7 @@ private fun EditorBody(state: EditorState, newCategory: NewCategory?, actions: E
     }
     picker?.let { which ->
         val close = { picker = null }
-        PickerSheet(close) {
+        LedgerSheet(close) {
             when (which) {
                 Picker.Account -> PickerContent(
                     stringResource(if (isTransfer) R.string.editor_from else R.string.editor_account), state.accounts, form.accountId,
@@ -359,7 +359,7 @@ internal fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = fals
             Box(
                 modifier = Modifier
                     .height(36.dp)
-                    .then(if (dashed) Modifier.border(1.dp, palette.border, RoundedCornerShape(18.dp)) else Modifier.background(palette.border.copy(alpha = 0.5f), RoundedCornerShape(18.dp)))
+                    .then(if (dashed) Modifier.border(1.dp, palette.border, ChipShape) else Modifier.background(palette.border.copy(alpha = 0.5f), ChipShape))
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -370,7 +370,7 @@ internal fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = fals
     }
     Box(modifier = Modifier.heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
         Row(
-            modifier = Modifier.height(36.dp).background(palette.border.copy(alpha = 0.5f), RoundedCornerShape(18.dp)),
+            modifier = Modifier.height(36.dp).background(palette.border.copy(alpha = 0.5f), ChipShape),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -410,7 +410,7 @@ private fun TagsRow(tags: List<Choice>, chosen: List<String>, onRemove: (String)
                 val remove = stringResource(R.string.editor_tag_remove, tag.label)
                 Box(modifier = Modifier.clickable(onClick = { onRemove(tag.id) }, role = Role.Button).heightIn(min = TouchTarget).semantics { contentDescription = remove }, contentAlignment = Alignment.Center) {
                     Row(
-                        modifier = Modifier.height(36.dp).background(palette.accentSoft, RoundedCornerShape(18.dp)).padding(start = 14.dp, end = 10.dp),
+                        modifier = Modifier.height(36.dp).background(palette.accentSoft, ChipShape).padding(start = 14.dp, end = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {

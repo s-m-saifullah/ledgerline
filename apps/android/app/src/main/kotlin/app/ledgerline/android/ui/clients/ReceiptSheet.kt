@@ -3,22 +3,16 @@ package app.ledgerline.android.ui.clients
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -26,12 +20,13 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.InputRow
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
-import app.ledgerline.android.ui.design.PickerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -76,17 +71,9 @@ private val AmountProblems = setOf(
 )
 
 /** The Record payment sheet for a client (ADR 0050, slice 4c); a swipe away or Cancel records nothing. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ReceiptSheet(ui: ReceiptUi, actions: ReceiptActions) {
-    ModalBottomSheet(
-        onDismissRequest = actions.close,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        ReceiptSheetContent(ui, actions)
-    }
+    LedgerSheet(actions.close) { ReceiptSheetContent(ui, actions) }
 }
 
 /**
@@ -209,7 +196,7 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
     }
     picker?.let { which ->
         val close = { picker = null }
-        PickerSheet(close) {
+        LedgerSheet(close) {
             when (which) {
                 ReceiptPicker.Currency -> PickerContent(
                     stringResource(R.string.receipt_currency), ui.currencies.map { Choice(it, it) }, form.currency,

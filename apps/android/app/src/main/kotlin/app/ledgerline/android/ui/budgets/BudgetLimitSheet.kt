@@ -4,32 +4,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.design.FilterChip
-import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
+import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
@@ -61,17 +54,9 @@ private val LimitCopy = WriteCopy(
 )
 
 /** The Set limit sheet (ADR 0046); a swipe away or Cancel leaves the limit as it was. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun LimitSheet(ui: LimitUi, actions: LimitActions) {
-    ModalBottomSheet(
-        onDismissRequest = actions.close,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) {
-        LimitSheetContent(ui, actions)
-    }
+    LedgerSheet(actions.close) { LimitSheetContent(ui, actions) }
 }
 
 /**
@@ -95,14 +80,7 @@ internal fun LimitSheetContent(ui: LimitUi, actions: LimitActions, modifier: Mod
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 56.dp)) {
-            Text(
-                stringResource(if (form.editing) R.string.limit_title_edit else R.string.limit_title_set),
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.weight(1f).semantics { heading() },
-            )
-            LinkButton(stringResource(R.string.cancel), actions.close)
-        }
+        SheetTitle(stringResource(if (form.editing) R.string.limit_title_edit else R.string.limit_title_set), actions.close)
         Text(
             stringResource(R.string.limit_context, target.name, spent.text, monthLabel(target.month)),
             style = MaterialTheme.typography.bodyMedium,

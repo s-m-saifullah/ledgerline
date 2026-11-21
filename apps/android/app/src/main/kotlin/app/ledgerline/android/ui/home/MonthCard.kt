@@ -32,6 +32,7 @@ import app.ledgerline.android.ui.design.HeroCard
 import app.ledgerline.android.ui.design.HeroFigure
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.LimitState
+import app.ledgerline.android.ui.design.PillShape
 import app.ledgerline.android.ui.design.ProportionBar
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.tabular
@@ -108,7 +109,7 @@ private fun CashFlowCard(home: HomeSummary, onOpen: () -> Unit) {
             val netChip: @Composable () -> Unit = {
                 if (netText != null) {
                     Surface(
-                        shape = MaterialTheme.shapes.extraSmall,
+                        shape = PillShape,
                         color = palette.surface,
                         border = BorderStroke(1.dp, palette.border),
                         contentColor = if (flow.state == LimitState.Over) palette.danger else palette.accent,

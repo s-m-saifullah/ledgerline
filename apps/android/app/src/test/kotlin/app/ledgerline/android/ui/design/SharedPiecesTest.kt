@@ -69,6 +69,47 @@ class SharedPiecesTest {
     }
 
     @Test
+    fun onlyLedgerSheetOpensASheetAndWritesTheSheetCorners() {
+        assertEquals(emptyList<String>(), outside("Sheets.kt", Regex("""\bModalBottomSheet\(""")))
+        assertEquals(emptyList<String>(), outside("Sheets.kt", Regex("""topStart = 24\.dp""")))
+    }
+
+    @Test
+    fun oneSheetTitleAndOneFoldRowAndOneActionsSheet() {
+        assertEquals(emptyList<String>(), outside("Pieces.kt", Regex("""\bfun (FoldRow|SheetTitle)\(""")))
+        assertEquals(emptyList<String>(), outside("Sheets.kt", Regex("""\bfun (ActionsSheet|ActionsContent|ActionsButton)\(""")))
+        // A Cancel link beside a title is SheetTitle's; the entry editor's own top row (a centered title and a trash icon) is the one other.
+        val own = sources.filter { it.name !in setOf("Pieces.kt", "EditorContent.kt") && Regex("""LinkButton\(stringResource\(R\.string\.cancel\)""").containsMatchIn(it.readText()) }.map { it.name }
+        assertEquals(emptyList<String>(), own)
+    }
+
+    @Test
+    fun theTwoPillShapesAreTheOnlyOnes() {
+        // A status pill is 8 dp and a chip you tap is 18 dp; nothing else draws a pill of its own.
+        assertEquals(emptyList<String>(), outside("Pieces.kt", Regex("""RoundedCornerShape\(18\.dp\)""")))
+        assertEquals(emptyList<String>(), sources.filter { Regex("""RoundedCornerShape\(percent = 50\)""").containsMatchIn(it.readText()) }.map { it.name })
+        mapOf(
+            "home/TransactionsContent.kt" to """Surface\(shape = PillShape""",
+            "settings/SettingsScreen.kt" to """border\(1\.dp, palette\.border, PillShape\)""",
+            "home/MonthCard.kt" to """shape = PillShape,""",
+        ).forEach { (path, use) -> assertTrue("$path draws its pill without PillShape", Regex(use).containsMatchIn(File(ui, path).readText())) }
+        assertTrue("the editor's chips do not use ChipShape", Regex("""background\(palette\.accentSoft, ChipShape\)""").containsMatchIn(File(ui, "editor/EditorContent.kt").readText()))
+    }
+
+    @Test
+    fun theSheetIsFullHeightFromTheStartWithTheSheetShapeAndSurfaceColor() {
+        val text = File(ui, "design/Sheets.kt").readText()
+        assertTrue(text.contains("skipPartiallyExpanded = true"))
+        assertTrue(text.contains("shape = SheetShape"))
+        assertTrue(text.contains("containerColor = MaterialTheme.colorScheme.surface"))
+    }
+
+    @Test
+    fun deletingACategoryIsTheRedChoiceOfItsActionsSheet() {
+        assertTrue(Regex("""SheetAction\(delete, \{ actions\.askDelete\(row\) \}, danger = true\)""").containsMatchIn(File(ui, "categories/CategorySheets.kt").readText()))
+    }
+
+    @Test
     fun aScreenReadsATextStyleAndNeverWritesASizeOfItsOwn() {
         // Sizes belong to the theme (TypeScaleTest holds the scale); a letter spacing may be written, a font size may not.
         val sizes = sources.filter { "/theme/" !in it.path }.flatMap { file ->

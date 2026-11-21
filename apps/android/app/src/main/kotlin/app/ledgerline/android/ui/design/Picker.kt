@@ -62,18 +62,6 @@ fun pickerChoices(choices: List<Choice>, query: String): List<Choice> {
     return if (term.isEmpty()) choices else choices.filter { it.label.contains(term, ignoreCase = true) }
 }
 
-/** The sheet itself; a swipe away or Cancel chooses nothing. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun PickerSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) { content() }
-}
-
 /**
  * What a picker holds, apart from the sheet, so it can be tested and photographed: a title with Cancel, a search box
  * only from [PickerSearchFrom] choices on (fixed above the list, so it never moves while typing), the choices as 56 dp

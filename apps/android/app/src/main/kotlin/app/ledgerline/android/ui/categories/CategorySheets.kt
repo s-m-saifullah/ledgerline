@@ -1,14 +1,10 @@
 package app.ledgerline.android.ui.categories
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,43 +18,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
+import app.ledgerline.android.ui.design.ActionsContent
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerField
+import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.PrimaryButton
-import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SegmentedControl
-import app.ledgerline.android.ui.theme.LocalPalette
-
-/** The sheet's own look, shared by the two sheets of this screen. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategorySheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-    ) { content() }
-}
+import app.ledgerline.android.ui.design.SheetAction
 
 /** The Add and Edit form as a sheet (ADR 0046); a swipe away or Cancel closes it without saving. */
 @Composable
@@ -70,7 +51,7 @@ internal fun CategoryFormSheet(
     error: CategoryError?,
     actions: CategoriesActions,
 ) {
-    CategorySheet(actions.closeForm) { CategoryFormContent(form, parents, hasSubcategories, saving, error, actions) }
+    LedgerSheet(actions.closeForm) { CategoryFormContent(form, parents, hasSubcategories, saving, error, actions) }
 }
 
 /**
@@ -170,42 +151,25 @@ internal fun CategoryFormContent(
 /** A row's actions as a sheet (ADR 0046): the same actions the web has, Delete in red. */
 @Composable
 internal fun CategoryActionsSheet(row: CategoryRow, items: List<CategoryRow>, actions: CategoriesActions) {
-    CategorySheet(actions.closeMenu) { CategoryActionsContent(row, items, actions) }
+    LedgerSheet(actions.closeMenu) { CategoryActionsContent(row, items, actions) }
 }
 
 /** What the actions sheet holds: Edit, Add subcategory (a main category that is not archived), Archive or Unarchive, Delete. */
 @Composable
 internal fun CategoryActionsContent(row: CategoryRow, items: List<CategoryRow>, actions: CategoriesActions, modifier: Modifier = Modifier) {
-    val palette = LocalPalette.current
     val block = archiveBlock(row, items)
-    Column(modifier = modifier.verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
-        Row(Modifier.padding(horizontal = ScreenMargin)) { SheetTitle(row.name, actions.closeMenu) }
-        ActionRow(stringResource(R.string.category_edit), enabled = true) { actions.edit(row) }
-        if (row.parentId == null && row.archivedAt == null) ActionRow(stringResource(R.string.category_add_sub), enabled = true) { actions.addUnder(row) }
-        if (row.archivedAt == null) {
-            ActionRow(stringResource(if (block == null) R.string.category_archive else R.string.category_block_archive), enabled = block == null) { actions.askArchive(row) }
-        } else {
-            ActionRow(stringResource(if (block == null) R.string.category_unarchive else R.string.category_block_unarchive), enabled = block == null) { actions.unarchive(row) }
-        }
+    val edit = stringResource(R.string.category_edit)
+    val addSub = stringResource(R.string.category_add_sub)
+    val archive = stringResource(if (block == null) R.string.category_archive else R.string.category_block_archive)
+    val unarchive = stringResource(if (block == null) R.string.category_unarchive else R.string.category_block_unarchive)
+    val delete = stringResource(R.string.category_delete)
+    val choices = buildList {
+        add(SheetAction(edit, { actions.edit(row) }))
+        if (row.parentId == null && row.archivedAt == null) add(SheetAction(addSub, { actions.addUnder(row) }))
+        if (row.archivedAt == null) add(SheetAction(archive, { actions.askArchive(row) }, enabled = block == null))
+        else add(SheetAction(unarchive, { actions.unarchive(row) }, enabled = block == null))
         // As on the web the item is always there: the question that follows says what stops a delete, and recommends archiving.
-        ActionRow(stringResource(R.string.category_delete), enabled = true, color = palette.danger) { actions.askDelete(row) }
+        add(SheetAction(delete, { actions.askDelete(row) }, danger = true))
     }
-}
-
-@Composable
-private fun ActionRow(text: String, enabled: Boolean, color: Color = Color.Unspecified, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick, role = Role.Button)
-            .heightIn(min = RowHeight)
-            .padding(horizontal = ScreenMargin + 4.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text,
-            style = MaterialTheme.typography.titleMedium,
-            color = if (!enabled) LocalPalette.current.muted else if (color == Color.Unspecified) MaterialTheme.colorScheme.onSurface else color,
-        )
-    }
+    ActionsContent(row.name, actions.closeMenu, choices, modifier)
 }
