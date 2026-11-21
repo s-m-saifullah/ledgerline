@@ -151,6 +151,15 @@ class OutboxStore @Inject constructor(
     /** Drops a rejected change. */
     suspend fun discard(id: String) = dropSettled(id)
 
+    /**
+     * Drops the rejected change [id] and runs [replacement] (which queues the corrected one) as one step: if the replacement
+     * fails, the rejected change is still there, because it is the only copy of what the owner typed (AND-P5).
+     */
+    suspend fun <T> replaceRejected(id: String, replacement: suspend () -> T): T = database.withTransaction {
+        dropSettled(id)
+        replacement()
+    }
+
     /** Deletes every change not yet settled. Only after the owner confirms it (signing out with unsent changes). */
     suspend fun clearAll() = outbox.clear()
 

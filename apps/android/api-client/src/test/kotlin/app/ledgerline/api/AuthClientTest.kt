@@ -194,6 +194,22 @@ class AuthClientTest {
         assertFalse(clients.auth.signOut())
     }
 
+    private fun failingApi(error: Throwable) = AuthClient(
+        java.lang.reflect.Proxy.newProxyInstance(AuthApi::class.java.classLoader, arrayOf(AuthApi::class.java)) { _, _, _ -> throw error } as AuthApi,
+    )
+
+    @Test
+    fun signOutIsFalseForAnyFailureNotOnlyANetworkOne() = runBlocking {
+        assertFalse(failingApi(IllegalStateException("not a network error")).signOut())
+        assertFalse(failingApi(java.io.IOException("offline")).signOut())
+    }
+
+    @Test
+    fun signOutLetsACancellationPass() {
+        val stopped = runCatching { runBlocking { failingApi(kotlinx.coroutines.CancellationException("stop")).signOut() } }
+        assertTrue(stopped.exceptionOrNull() is kotlinx.coroutines.CancellationException)
+    }
+
     @Test
     fun theTokenIsNeverInAUrlOrAString() {
         token = "tok-secret"

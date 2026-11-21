@@ -4,7 +4,6 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -12,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.AutoLoadMore
+import app.ledgerline.android.ui.design.OnLeaving
 
 /**
  * Loans, opened from More: the list, and a person's screen once one is chosen; Back closes the person, then returns to More.
@@ -29,11 +29,9 @@ fun LoansScreen(
     move: RecordLoanViewModel = hiltViewModel(),
 ) {
     val selected by model.selected.collectAsState()
-    DisposableEffect(Unit) {
-        onDispose {
-            model.close()
-            move.close()
-        }
+    OnLeaving {
+        model.close()
+        move.close()
     }
     // A move went through, or the loan turned out to have changed: read the person and their loans again.
     val moved by move.reread.collectAsState()

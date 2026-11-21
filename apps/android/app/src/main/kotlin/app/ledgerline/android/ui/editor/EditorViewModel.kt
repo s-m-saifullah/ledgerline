@@ -10,6 +10,7 @@ import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.CategoryWrites
 import app.ledgerline.android.online.Written
 import app.ledgerline.android.outbox.OutboxRow
+import app.ledgerline.android.succeeded
 import app.ledgerline.android.outbox.Uuid7
 import app.ledgerline.android.ui.categories.toCategoryError
 import app.ledgerline.api.CreateCategory
@@ -238,8 +239,8 @@ class EditorViewModel @Inject constructor(
         }
         _state.value = now.copy(saving = true, errors = emptySet())
         viewModelScope.launch {
-            val saved = runCatching { write(form, account, currency, minor) }
-            finish(if (saved.isSuccess) {
+            val saved = succeeded { write(form, account, currency, minor) }
+            finish(if (saved) {
                 memory.remember(account.id, form.mode.kind(), form.categoryId)
                 sync.changed()
                 now.copy(saving = false, done = true)
@@ -254,21 +255,25 @@ class EditorViewModel @Inject constructor(
         if (!now.canDelete || now.readOnly != null || now.saving) return
         _state.value = now.copy(saving = true)
         viewModelScope.launch {
-            val deleted = runCatching {
+            val deleted = succeeded {
                 when (val t = target) {
                     is EditorTarget.Entry -> outbox.deleteEntry(ledgerId, t.id)
                     is EditorTarget.Transfer -> outbox.deleteTransfer(ledgerId, t.transferId)
                     else -> error("Only a saved entry or transfer can be deleted.")
                 }
             }
-            if (deleted.isSuccess) sync.changed()
-            finish(now.copy(saving = false, done = deleted.isSuccess, errors = if (deleted.isSuccess) emptySet() else setOf(FormError.CouldNotSave)))
+            if (deleted) sync.changed()
+            finish(now.copy(saving = false, done = deleted, errors = if (deleted) emptySet() else setOf(FormError.CouldNotSave)))
         }
     }
 
+    /** A corrected rejected change replaces it in one step: if the new one cannot be queued, the rejected one stays. */
     private suspend fun write(form: EditorForm, account: AccountRow, currency: String, minor: Long) {
         val fix = fixRow
-        if (fix != null) outbox.discard(fix.id)
+        if (fix == null) queue(form, account, currency, minor, null) else outbox.replaceRejected(fix.id) { queue(form, account, currency, minor, fix) }
+    }
+
+    private suspend fun queue(form: EditorForm, account: AccountRow, currency: String, minor: Long, fix: OutboxRow?) {
         val isTransfer = form.mode == EntryMode.Transfer
         val creating = target is EditorTarget.New || fix?.action == "create"
         val payee = form.payee.trim().ifEmpty { null }

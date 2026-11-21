@@ -1,5 +1,6 @@
 package app.ledgerline.api
 
+import kotlinx.coroutines.CancellationException
 import okhttp3.Headers
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -51,10 +52,12 @@ class AuthClient(private val api: AuthApi) {
             if (backupCode) api.verifyBackupCode(challenge.cookie, body) else api.verifyCode(challenge.cookie, body)
         }
 
-    /** True when the server ended the session; false when it could not be reached or refused. */
+    /** True when the server ended the session; false when it could not be reached or refused, whatever went wrong. */
     suspend fun signOut(): Boolean = try {
         api.signOut(EmptyBody).also { it.release() }.isSuccessful
-    } catch (_: IOException) {
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
         false
     }
 

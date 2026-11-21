@@ -261,4 +261,40 @@ class OutboxStoreTest {
         })
         assertEquals("""{"amount":{"amount":-9007199254740991,"currency":"USD"}}""", rows().single().body)
     }
+
+    private suspend fun rejectedChange(): String {
+        mirrorHolds(10, version = 1)
+        outbox.updateEntry(ledger, id(10), json("payee" to "Bad"))
+        val batch = outbox.takeBatch(ledger)
+        outbox.settle(ledger, batch, listOf(rejected(batch.single().id)))
+        return batch.single().id
+    }
+
+    @Test
+    fun replacingARejectedChangeDropsItAndAddsTheNewOneTogether() = runBlocking {
+        val old = rejectedChange()
+        outbox.replaceRejected(old) { outbox.updateEntry(ledger, id(10), json("payee" to "Good")) }
+        val row = rows().single()
+        assertFalse(row.id == old)
+        assertEquals(json("payee" to "Good"), body(row))
+    }
+
+    @Test
+    fun aReplacementThatFailsLeavesTheRejectedChangeUntouched() = runBlocking {
+        val old = rejectedChange()
+        val failure = runCatching { outbox.replaceRejected(old) { outbox.updateEntry(ledger, "unknown", json("payee" to "x")) } }
+        assertTrue(failure.exceptionOrNull() is IllegalStateException)
+        val kept = rows().single()
+        assertEquals(old, kept.id)
+        assertEquals(OutboxRow.Rejected, kept.state)
+        assertEquals(json("payee" to "Bad"), body(kept))
+    }
+
+    @Test
+    fun replacingNeverDropsAChangeStillToBeSent() = runBlocking {
+        val waiting = outbox.createEntry(ledger, json("payee" to "A"))
+        outbox.replaceRejected(waiting) { outbox.createEntry(ledger, json("payee" to "B")) }
+        assertEquals(2, rows().size)
+        assertTrue(rows().any { it.id == waiting })
+    }
 }
