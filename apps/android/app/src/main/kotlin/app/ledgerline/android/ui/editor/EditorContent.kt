@@ -61,6 +61,7 @@ import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.InputRow
 import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.DatePickerStep
 import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerSheet
@@ -72,6 +73,7 @@ import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SegmentedControl
 import app.ledgerline.android.ui.design.SwitchRow
 import app.ledgerline.android.ui.design.TouchTarget
+import app.ledgerline.android.ui.design.ValuePill
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.theme.LocalPalette
 import java.time.Instant
@@ -347,51 +349,6 @@ internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: ()
     }
 }
 
-/**
- * A tappable value in a pill: 36 dp to look at, 48 dp to touch. With [onClear] a ✕ sits inside the pill, after the value, and
- * clears it; its touch area is 48 dp, a little beyond the pill, and it is named [clearLabel] for a screen reader.
- */
-@Composable
-internal fun ValuePill(text: String, onClick: () -> Unit, dashed: Boolean = false, onClear: (() -> Unit)? = null, clearLabel: String = "") {
-    val palette = LocalPalette.current
-    if (onClear == null) {
-        Box(modifier = Modifier.clickable(onClick = onClick, role = Role.Button).heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
-            Box(
-                modifier = Modifier
-                    .height(36.dp)
-                    .then(if (dashed) Modifier.border(1.dp, palette.border, ChipShape) else Modifier.background(palette.border.copy(alpha = 0.5f), ChipShape))
-                    .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text, style = MaterialTheme.typography.labelLarge, color = if (dashed) palette.muted else palette.text, maxLines = 1)
-            }
-        }
-        return
-    }
-    Box(modifier = Modifier.heightIn(min = TouchTarget), contentAlignment = Alignment.Center) {
-        Row(
-            modifier = Modifier.height(36.dp).background(palette.border.copy(alpha = 0.5f), ChipShape),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier.fillMaxHeight().clickable(onClick = onClick, role = Role.Button).padding(start = 14.dp, end = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text, style = MaterialTheme.typography.labelLarge, color = palette.text, maxLines = 1)
-            }
-            // A 32 dp slot in the pill whose touch area is 48 dp: it reaches past the pill rather than making it taller.
-            Box(modifier = Modifier.width(32.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
-                Box(
-                    modifier = Modifier.requiredSize(TouchTarget).clickable(onClick = onClear, role = Role.Button).semantics { contentDescription = clearLabel },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(painterResource(R.drawable.ic_close), contentDescription = null, tint = palette.muted, modifier = Modifier.size(16.dp))
-                }
-            }
-        }
-    }
-}
-
 /** Tags: a chip for each chosen tag (a tap removes it) and "+ Tag" to add another, up to the most one entry can have. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -432,23 +389,6 @@ private fun TagsRow(tags: List<Choice>, chosen: List<String>, onRemove: (String)
 @Composable
 private fun PendingRow(pending: Boolean, onChange: (Boolean) -> Unit) =
     SwitchRow(stringResource(R.string.editor_pending), stringResource(R.string.editor_pending_hint), pending, onChange)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun DatePickerStep(date: String, onPick: (String) -> Unit, onClose: () -> Unit) {
-    val initial = runCatching { LocalDate.parse(date) }.getOrNull()?.atStartOfDay()?.toInstant(ZoneOffset.UTC)?.toEpochMilli()
-    val picker = rememberDatePickerState(initialSelectedDateMillis = initial)
-    DatePickerDialog(
-        onDismissRequest = onClose,
-        confirmButton = {
-            TextButton(shape = MaterialTheme.shapes.small, onClick = {
-                picker.selectedDateMillis?.let { millis -> onPick(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate().toString()) }
-                onClose()
-            }) { Text(stringResource(R.string.editor_date_ok)) }
-        },
-        dismissButton = { TextButton(shape = MaterialTheme.shapes.small, onClick = onClose) { Text(stringResource(R.string.cancel)) } },
-    ) { DatePicker(state = picker) }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -46,11 +46,12 @@ class SharedPiecesTest {
     }
 
     @Test
-    fun noScreenKeepsItsOwnCancelWord() {
-        // One "Cancel" for every question and sheet; a screen's own copy of the word drifts.
+    fun noScreenKeepsItsOwnCancelOrCloseWord() {
+        // One "Cancel" and one "Close" for every question and sheet; a screen's own copy of the word drifts.
         val strings = File("src/main/res/values/strings.xml").readText()
-        val cancels = Regex("""<string name="(\w*cancel)">Cancel</string>""").findAll(strings).map { it.groupValues[1] }.toList()
-        assertEquals(listOf("cancel"), cancels)
+        fun copies(word: String) = Regex("""<string name="(\w*${word.lowercase()})">$word</string>""").findAll(strings).map { it.groupValues[1] }.toList()
+        assertEquals(listOf("cancel"), copies("Cancel"))
+        assertEquals(listOf("close"), copies("Close"))
     }
 
     @Test
@@ -107,6 +108,33 @@ class SharedPiecesTest {
     @Test
     fun deletingACategoryIsTheRedChoiceOfItsActionsSheet() {
         assertTrue(Regex("""SheetAction\(delete, \{ actions\.askDelete\(row\) \}, danger = true\)""").containsMatchIn(File(ui, "categories/CategorySheets.kt").readText()))
+    }
+
+    @Test
+    fun noScreenBuildsItsOwnTopBarOrButtonOrDatePicker() {
+        assertEquals(emptyList<String>(), outside("Design.kt", Regex("""\bOutlinedButton\(""")))
+        assertEquals(emptyList<String>(), sources.filter { Regex("""\bTopAppBar\(""").containsMatchIn(it.readText()) }.map { it.name })
+        assertEquals(emptyList<String>(), outside("SignedInScreen.kt", Regex("""\bScaffold\(""")))
+        assertEquals(emptyList<String>(), outside("Values.kt", Regex("""\b(DatePickerDialog|DatePicker)\(""")))
+        assertEquals(emptyList<String>(), outside("Values.kt", Regex("""\bfun (ValuePill|DatePickerStep)\(""")))
+    }
+
+    @Test
+    fun theFiltersSheetAppliesAtOnceWithNoDraftAndNoApplyButton() {
+        val text = File(ui, "home/EntryFilterPanel.kt").readText()
+        assertFalse("a draft is held", Regex("""\bdraft\b""").containsMatchIn(text))
+        assertFalse("an Apply button", text.contains("filters_apply"))
+        assertFalse("a Cancel button", Regex("""R\.string\.cancel""").containsMatchIn(text))
+        assertTrue(Regex("""cancelLabel = stringResource\(R\.string\.close\)""").containsMatchIn(text))
+    }
+
+    @Test
+    fun discardingAChangeIsRedAndAsksFirst() {
+        val text = File(ui, "home/Attention.kt").readText()
+        assertTrue(Regex("""SecondaryButton\(stringResource\(R\.string\.attention_discard\)[^\n]*danger = true""").containsMatchIn(text))
+        assertTrue("the button opens the question, it does not discard", Regex("""\{ onAskDiscard\(item\.id\) \}""").containsMatchIn(text))
+        assertFalse("the button discards without asking", Regex("""R\.string\.attention_discard\)[^\n]*actions\.onDiscard""").containsMatchIn(text))
+        assertTrue(Regex("""danger = true,\s*\) \{ Text\(stringResource\(R\.string\.attention_discard_body\)\)""").containsMatchIn(text))
     }
 
     @Test

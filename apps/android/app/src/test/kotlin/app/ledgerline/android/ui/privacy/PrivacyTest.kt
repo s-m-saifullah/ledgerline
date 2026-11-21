@@ -21,6 +21,7 @@ import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.overlay.AttentionItem
 import app.ledgerline.android.overlay.AttentionReason
 import app.ledgerline.android.ui.home.AccountRow
+import app.ledgerline.android.ui.home.AttentionActions
 import app.ledgerline.android.ui.home.AttentionRow
 import app.ledgerline.android.ui.home.EntryRow
 import app.ledgerline.android.ui.home.MonthCard
@@ -110,10 +111,8 @@ class PrivacyTest {
     fun aChangeThatNeedsTheOwnerHidesItsAmount() = check {
         AttentionRow(
             AttentionItem("c", "transaction.update", "Grocer", -123456, "USD", AttentionReason.ChangedElsewhere, null, canKeepMine = true),
-            onFix = {},
-            onDiscard = {},
-            onKeepMine = {},
-            onKeepTheirs = {},
+            AttentionActions(onBack = {}, onFix = {}, onDiscard = {}, onKeepMine = {}, onKeepTheirs = {}),
+            onAskDiscard = {},
         )
     }
 

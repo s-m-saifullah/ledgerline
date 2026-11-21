@@ -468,12 +468,17 @@ fun SectionLabel(text: String) {
     )
 }
 
-/** A sheet's title with a Cancel beside it (the shared look of the Categories and editor sheets). */
+/**
+ * A sheet's title with a Cancel beside it (the shared look of the sheets). A sheet that saves nothing of its own says Close
+ * instead ([cancelLabel]), and may put one more light [action] before it (Reset all); the row is [RowHeight] tall either way,
+ * so a choice that adds or drops the action never makes the sheet grow.
+ */
 @Composable
-fun SheetTitle(title: String, onCancel: () -> Unit) {
+fun SheetTitle(title: String, onCancel: () -> Unit, cancelLabel: String = stringResource(R.string.cancel), action: (@Composable () -> Unit)? = null) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = RowHeight)) {
         Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f).semantics { heading() })
-        LinkButton(stringResource(R.string.cancel), onCancel)
+        action?.invoke()
+        LinkButton(cancelLabel, onCancel)
     }
 }
 

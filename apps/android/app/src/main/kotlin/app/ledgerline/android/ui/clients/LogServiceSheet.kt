@@ -37,14 +37,14 @@ import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.design.DatePickerStep
 import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.LedgerSheet
+import app.ledgerline.android.ui.design.ValuePill
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
-import app.ledgerline.android.ui.editor.DatePickerStep
 import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.TimePickerStep
-import app.ledgerline.android.ui.editor.ValuePill
 import app.ledgerline.android.ui.editor.WhenRow
 import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.format.formatEntryDate
