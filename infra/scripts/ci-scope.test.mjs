@@ -207,12 +207,15 @@ test("only the notes files are documentation under apps/android", () => {
 });
 test("the notes are still validated on every change: the scope job checks them, not only the Android job", () => {
   const workflow = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), "../../.github/workflows/ci.yml"),
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../.github/workflows/ci.yml",
+    ),
     "utf8",
   );
   const job = (name) => {
     const start = workflow.indexOf(`\n  ${name}:\n`);
-    const next = workflow.slice(start + 1).search(/\n  [a-z-]+:\n/);
+    const next = workflow.slice(start + 1).search(/\n {2}[a-z-]+:\n/);
     return workflow.slice(start, next === -1 ? undefined : start + 1 + next);
   };
   assert.match(job("scope"), /android-release-notes\.mjs check-all/);
