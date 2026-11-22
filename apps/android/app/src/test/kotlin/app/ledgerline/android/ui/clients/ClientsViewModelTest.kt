@@ -269,4 +269,47 @@ class ClientsViewModelTest {
         first.close()
         assertNull(ClientsViewModel(harness.reader(), harness.database.reads(), restartedHandle(handle)).selected.value)
     }
+
+    // Coming back to the screen must not read the client again for a payment that was already read (WP-19b).
+    private fun contactReads() = harness.targets.count { it.endsWith("/contacts/northwind-design") }
+
+    @Test
+    fun aSheetsCountReadsTheClientAgainOnceNotEveryTimeTheScreenComesBack() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        model.open("northwind-design")
+        model.client.settled { it is Online.Ready }
+        val before = contactReads()
+        model.rereadFor("payment", 1)
+        harness.until { contactReads() == before + 1 }
+        // The screen was left and came back: it sees the same count again.
+        model.rereadFor("payment", 1)
+        Thread.sleep(400)
+        assertEquals(before + 1, contactReads())
+        // A later payment is news.
+        model.rereadFor("payment", 2)
+        harness.until { contactReads() == before + 2 }
+    }
+
+    @Test
+    fun eachSheetKeepsItsOwnCount() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        model.open("northwind-design")
+        model.client.settled { it is Online.Ready }
+        val before = contactReads()
+        model.rereadFor("payment", 1)
+        harness.until { contactReads() == before + 1 }
+        model.rereadFor("service", 1)
+        harness.until { contactReads() == before + 2 }
+    }
+
+    @Test
+    fun aCountOfNothingReadsNothing() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        model.open("northwind-design")
+        model.client.settled { it is Online.Ready }
+        val before = contactReads()
+        model.rereadFor("payment", 0)
+        Thread.sleep(400)
+        assertEquals(before, contactReads())
+    }
 }

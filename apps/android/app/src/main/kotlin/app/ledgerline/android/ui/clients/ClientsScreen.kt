@@ -41,13 +41,13 @@ fun ClientsScreen(
     }
     // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
     val reread by payment.reread.collectAsState()
-    LaunchedEffect(reread) { if (reread > 0) model.retry() }
+    LaunchedEffect(reread) { model.rereadFor("payment", reread) }
     val receiptReread by receipt.reread.collectAsState()
-    LaunchedEffect(receiptReread) { if (receiptReread > 0) model.retry() }
+    LaunchedEffect(receiptReread) { model.rereadFor("receipt", receiptReread) }
     val logged by logService.reread.collectAsState()
-    LaunchedEffect(logged) { if (logged > 0) model.retry() }
+    LaunchedEffect(logged) { model.rereadFor("service", logged) }
     val deleted by deleteService.reread.collectAsState()
-    LaunchedEffect(deleted) { if (deleted > 0) model.retry() }
+    LaunchedEffect(deleted) { model.rereadFor("delete", deleted) }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
         isRefreshing = refreshing,

@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.YearMonth
 import javax.inject.Inject
+import app.ledgerline.android.online.RereadGate
 
 /**
  * Loans, read online (ADR 0043, slice 5): every person you lend to or borrow from (the screen asks for the pages
@@ -123,6 +124,13 @@ class LoansViewModel @Inject constructor(
 
     fun close() {
         _selected.value = null
+    }
+
+    private val moves = RereadGate()
+
+    /** The Lend, Borrow and Repay counter is at [count]: read the person again only if that is news (see [RereadGate]). */
+    fun rereadFor(count: Int) {
+        if (moves.isNew(count)) retry()
     }
 
     fun loadMorePeople() = list.loadMore()

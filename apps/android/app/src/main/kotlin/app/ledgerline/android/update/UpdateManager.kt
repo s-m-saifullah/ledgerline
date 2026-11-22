@@ -96,8 +96,9 @@ class UpdateManager @Inject constructor(
 
     fun start(scope: CoroutineScope) {
         this.scope = scope
-        // A file left from an earlier run (an install that finished or never started) is not trusted again.
-        files.deleteApk()
+        // A file left from an earlier run (an install that finished or never started) is not trusted again. Cleared by the
+        // scope, not by the caller: the app starts this while it is opening, and a file operation does not belong on that thread.
+        scope.launch { files.deleteApk() }
     }
 
     /** The "Check for updates" button. */
