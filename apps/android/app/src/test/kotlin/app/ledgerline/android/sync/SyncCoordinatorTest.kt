@@ -366,6 +366,18 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun aSavedChangeWhosePullFailedQueuesASendBecauseTheSendCannotBeTrustedToHaveFinished() = runBlocking {
+        val (_, sync) = signedInAndKept()
+        // The push went through, then the pull could not reach the server. The last push result may be left from an
+        // earlier run (a run that stopped early never sends), so only a run that finished both is taken as sent.
+        outbox.createEntry("ledger-a", json("payee" to "Sent but not pulled"))
+        source.respond = { throw IOException("offline") }
+        sync.changed()
+        assertEquals(1, server.applied.size)
+        assertEquals(1, scheduler.sendsQueued)
+    }
+
+    @Test
     fun aServerErrorWhileSendingQueuesASendEvenThoughThePullRan() = runBlocking {
         val (_, sync) = signedInAndKept()
         outbox.createEntry("ledger-a", json("payee" to "Refused"))
