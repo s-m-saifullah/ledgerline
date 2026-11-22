@@ -4,6 +4,8 @@ import kotlinx.coroutines.runBlocking
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
+import okhttp3.ResponseBody.Companion.asResponseBody
+import okio.buffer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -145,6 +147,24 @@ class GithubUpdateSourceTest {
         streamed("a".repeat(5000))
         val failure = assertThrows(UpdateIoException::class.java) { runBlocking { source.hashText(release) } }
         assertFalse(failure.offline)
+    }
+
+    @Test
+    fun theReadStopsSoonAfterTheCapInsteadOfTakingTheWholeAnswer() {
+        val upstream = java.util.concurrent.atomic.AtomicLong()
+        val counting = okhttp3.Interceptor { chain ->
+            val response = chain.proceed(chain.request())
+            val original = response.body
+            val counted = object : okio.ForwardingSource(original.source()) {
+                override fun read(sink: okio.Buffer, byteCount: Long): Long = super.read(sink, byteCount).also { if (it > 0) upstream.addAndGet(it) }
+            }
+            response.newBuilder().body(counted.buffer().asResponseBody(original.contentType(), -1)).build()
+        }
+        val base = server.url("/").toString().trimEnd('/')
+        val counted = GithubUpdateSource(OkHttpClient.Builder().addInterceptor(counting).build(), UpdateConfig("owner/repo", base, base, "own", allowCleartext = true), "Ledgerline-Android/9.9.9", folder.newFolder())
+        streamed("a".repeat(5_000_000))
+        assertThrows(UpdateIoException::class.java) { runBlocking { counted.hashText(release) } }
+        assertTrue("read ${upstream.get()} bytes of a 5,000,000 byte answer", upstream.get() < 200_000)
     }
 
     @Test

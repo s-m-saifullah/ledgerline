@@ -322,7 +322,7 @@ class UpdateManagerTest {
     }
 
     @Test
-    fun cancellingTheButtonCheckIsStillACancellation() = runTest {
+    fun cancellingACheckIsStillACancellation() = runTest {
         source.failure = kotlinx.coroutines.CancellationException("stop")
         val failure = runCatching { manager.checkOnLaunch() }.exceptionOrNull()
         assertTrue(failure is kotlinx.coroutines.CancellationException)
