@@ -31,7 +31,7 @@ class UpdateManagerTest {
     @get:Rule
     val folder = TemporaryFolder()
 
-    private class Source(var list: List<GithubRelease> = emptyList(), var failure: UpdateIoException? = null) : UpdateSource {
+    private class Source(var list: List<GithubRelease> = emptyList(), var failure: Exception? = null) : UpdateSource {
         var calls = 0
 
         override suspend fun releases(): List<GithubRelease> {
@@ -43,7 +43,7 @@ class UpdateManagerTest {
 
     private inner class Files : UpdateFiles {
         val apk: File get() = File(folder.root, "update.apk")
-        var failure: UpdateIoException? = null
+        var failure: Exception? = null
         var content = "pretend apk".toByteArray()
         var hashOverride: String? = null
         var gate: CompletableDeferred<Unit>? = null
@@ -69,7 +69,12 @@ class UpdateManagerTest {
     }
 
     private class Reader(var info: ApkInfo?) : ApkReader {
-        override fun read(file: File) = info
+        var failure: Exception? = null
+
+        override fun read(file: File): ApkInfo? {
+            failure?.let { throw it }
+            return info
+        }
 
         override fun ownSignerSha256() = Pin
     }
@@ -274,6 +279,53 @@ class UpdateManagerTest {
         files.failure = null
         manager.download()
         assertTrue(manager.state.value is UpdateState.Ready)
+    }
+
+    @Test
+    fun aDownloadThatFailsInAnyOtherWayIsAFailureNotACrash() {
+        manager.checkNow()
+        val release = (manager.state.value as UpdateState.Available).release
+        listOf(IllegalStateException("closed"), java.io.UncheckedIOException(java.io.IOException("disk")), ArithmeticException("x")).forEach { problem ->
+            files.failure = problem
+            manager.download()
+            assertEquals(UpdateState.Failed(UpdateProblem.ServerError, release), manager.state.value)
+            assertFalse(files.apk.exists())
+        }
+        files.failure = null
+        manager.download()
+        assertTrue("and the owner can try again", manager.state.value is UpdateState.Ready)
+    }
+
+    @Test
+    fun aFileTheReaderCannotOpenIsAFailureAndIsDeleted() {
+        manager.checkNow()
+        reader.failure = IllegalArgumentException("not a zip")
+        manager.download()
+        assertTrue(manager.state.value is UpdateState.Failed)
+        assertFalse(files.apk.exists())
+    }
+
+    @Test
+    fun anUnexpectedErrorInTheButtonCheckSaysWhy() {
+        source.failure = IllegalStateException("odd")
+        manager.checkNow()
+        assertEquals(UpdateState.Failed(UpdateProblem.ServerError, null), manager.state.value)
+        assertEquals(0L, store.lastCheckMillis)
+    }
+
+    @Test
+    fun anUnexpectedErrorInTheLaunchCheckSaysNothingAndKeepsTheDay() = runTest {
+        source.failure = IllegalStateException("odd")
+        manager.checkOnLaunch()
+        assertEquals(UpdateState.Idle, manager.state.value)
+        assertEquals(0L, store.lastCheckMillis)
+    }
+
+    @Test
+    fun cancellingTheButtonCheckIsStillACancellation() = runTest {
+        source.failure = kotlinx.coroutines.CancellationException("stop")
+        val failure = runCatching { manager.checkOnLaunch() }.exceptionOrNull()
+        assertTrue(failure is kotlinx.coroutines.CancellationException)
     }
 
     @Test

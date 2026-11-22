@@ -136,6 +136,9 @@ class UpdateManager @Inject constructor(
             throw e
         } catch (e: UpdateIoException) {
             _state.value = if (silent) restore(before) else UpdateState.Failed(if (e.offline) UpdateProblem.Offline else UpdateProblem.ServerError, null)
+        } catch (e: Exception) {
+            // Anything else (an answer the reader could not take) is a failed check too: nothing here has a handler above it.
+            _state.value = if (silent) restore(before) else UpdateState.Failed(UpdateProblem.ServerError, null)
         }
     }
 
@@ -171,6 +174,10 @@ class UpdateManager @Inject constructor(
         } catch (e: UpdateIoException) {
             files.deleteApk()
             _state.value = UpdateState.Failed(if (e.offline) UpdateProblem.Offline else UpdateProblem.ServerError, release)
+        } catch (e: Exception) {
+            // The file could not be read or checked in some other way: the same failure, never a crash of the app.
+            files.deleteApk()
+            _state.value = UpdateState.Failed(UpdateProblem.ServerError, release)
         }
     }
 

@@ -137,4 +137,49 @@ class GithubUpdateSourceTest {
         text("a".repeat(5000))
         assertThrows(UpdateIoException::class.java) { runBlocking { source.hashText(release) } }
     }
+
+    private fun streamed(body: String) = server.enqueue(MockResponse.Builder().chunkedBody(body, 8192).build())
+
+    @Test
+    fun aHashFileThatStreamsPastTheCapWithNoLengthIsRefused() {
+        streamed("a".repeat(5000))
+        val failure = assertThrows(UpdateIoException::class.java) { runBlocking { source.hashText(release) } }
+        assertFalse(failure.offline)
+    }
+
+    @Test
+    fun aHashFileExactlyAtTheCapIsRead() = runBlocking {
+        streamed("a".repeat(4096))
+        assertEquals(4096, source.hashText(release).length)
+    }
+
+    @Test
+    fun aHashFileOneByteOverTheCapIsRefusedEvenWithALength() {
+        text("a".repeat(4097))
+        assertThrows(UpdateIoException::class.java) { runBlocking { source.hashText(release) } }
+    }
+
+    @Test
+    fun aReleaseListThatStreamsPastTwoMegabytesWithNoLengthIsRefused() {
+        streamed("[" + """{"tag_name":"android-v0.1.3","assets":[]},""".repeat(70_000) + """{"tag_name":"android-v0.1.3","assets":[]}]""")
+        assertFalse(assertThrows(UpdateIoException::class.java) { runBlocking { source.releases() } }.offline)
+    }
+
+    @Test
+    fun aStreamedReleaseListUnderTheCapIsStillRead() = runBlocking {
+        streamed("""[{"tag_name":"android-v0.1.3","assets":[]}]""")
+        assertEquals("android-v0.1.3", source.releases().single().tagName)
+    }
+
+    @Test
+    fun textIsReadInTheCharsetTheAnswerNames() = runBlocking {
+        server.enqueue(MockResponse.Builder().addHeader("Content-Type", "text/plain; charset=iso-8859-1").body(okio.Buffer().writeString("café", Charsets.ISO_8859_1)).build())
+        assertEquals("café", source.hashText(release))
+    }
+
+    @Test
+    fun textWithNoCharsetIsReadAsUtf8() = runBlocking {
+        server.enqueue(MockResponse.Builder().body(okio.Buffer().writeUtf8("café")).build())
+        assertEquals("café", source.hashText(release))
+    }
 }
