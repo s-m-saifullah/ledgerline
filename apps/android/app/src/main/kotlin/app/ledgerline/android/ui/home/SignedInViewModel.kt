@@ -315,4 +315,3 @@ class SignedInViewModel @Inject constructor(
 
 /** How long typing in the search box pauses before the list is read for it. */
 const val SearchPauseMillis = 250L
-
