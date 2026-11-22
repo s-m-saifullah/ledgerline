@@ -5,10 +5,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.AutoLoadMore
 import app.ledgerline.android.ui.design.OnLeaving
@@ -31,7 +31,7 @@ fun ClientsScreen(
     logService: LogServiceViewModel = hiltViewModel(),
     deleteService: DeleteServiceViewModel = hiltViewModel(),
 ) {
-    val selected by model.selected.collectAsState()
+    val selected by model.selected.collectAsStateWithLifecycle()
     OnLeaving {
         model.close()
         payment.close()
@@ -40,13 +40,13 @@ fun ClientsScreen(
         deleteService.dismiss()
     }
     // A payment went through, or the service turned out to have changed: read the client, its services and payments again.
-    val reread by payment.reread.collectAsState()
+    val reread by payment.reread.collectAsStateWithLifecycle()
     LaunchedEffect(reread) { model.rereadFor("payment", reread) }
-    val receiptReread by receipt.reread.collectAsState()
+    val receiptReread by receipt.reread.collectAsStateWithLifecycle()
     LaunchedEffect(receiptReread) { model.rereadFor("receipt", receiptReread) }
-    val logged by logService.reread.collectAsState()
+    val logged by logService.reread.collectAsStateWithLifecycle()
     LaunchedEffect(logged) { model.rereadFor("service", logged) }
-    val deleted by deleteService.reread.collectAsState()
+    val deleted by deleteService.reread.collectAsStateWithLifecycle()
     LaunchedEffect(deleted) { model.rereadFor("delete", deleted) }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
@@ -58,9 +58,9 @@ fun ClientsScreen(
         modifier = modifier,
     ) {
         if (selected == null) {
-            val text by model.text.collectAsState()
-            val filter by model.filter.collectAsState()
-            val clients by model.clients.collectAsState()
+            val text by model.text.collectAsStateWithLifecycle()
+            val filter by model.filter.collectAsStateWithLifecycle()
+            val clients by model.clients.collectAsStateWithLifecycle()
             AutoLoadMore(clients, model::loadMoreClients)
             ClientsListContent(
                 text,
@@ -69,11 +69,11 @@ fun ClientsScreen(
                 ClientsListActions(onBack, model::search, model::filter, model::open, model::loadMoreClients, model::retry),
             )
         } else {
-            val client by model.client.collectAsState()
-            val services by model.services.collectAsState()
-            val history by model.history.collectAsState()
-            val payments by model.payments.collectAsState()
-            val tab by model.tab.collectAsState()
+            val client by model.client.collectAsStateWithLifecycle()
+            val services by model.services.collectAsStateWithLifecycle()
+            val history by model.history.collectAsStateWithLifecycle()
+            val payments by model.payments.collectAsStateWithLifecycle()
+            val tab by model.tab.collectAsStateWithLifecycle()
             AutoLoadMore(services, model::loadMoreServices)
             AutoLoadMore(history, model::loadMoreHistory)
             ClientContent(
@@ -102,14 +102,14 @@ fun ClientsScreen(
             )
         }
     }
-    val sheet by payment.sheet.collectAsState()
+    val sheet by payment.sheet.collectAsStateWithLifecycle()
     sheet?.let { ui ->
         PaymentSheet(
             ui,
             PaymentActions(edit = payment::edit, save = payment::save, dismissAsk = payment::dismissAsk, confirm = payment::confirm, close = payment::close),
         )
     }
-    val receiptSheet by receipt.sheet.collectAsState()
+    val receiptSheet by receipt.sheet.collectAsStateWithLifecycle()
     receiptSheet?.let { ui ->
         ReceiptSheet(
             ui,
@@ -119,10 +119,10 @@ fun ClientsScreen(
             ),
         )
     }
-    val logSheet by logService.sheet.collectAsState()
+    val logSheet by logService.sheet.collectAsStateWithLifecycle()
     logSheet?.let { ui ->
         LogServiceSheet(ui, LogServiceActions(edit = logService::edit, save = logService::save, close = logService::close))
     }
-    val deleteQuestion by deleteService.question.collectAsState()
+    val deleteQuestion by deleteService.question.collectAsStateWithLifecycle()
     deleteQuestion?.let { ui -> DeleteServiceQuestion(ui, DeleteServiceActions(confirm = deleteService::confirm, dismiss = deleteService::dismiss)) }
 }

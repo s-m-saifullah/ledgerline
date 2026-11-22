@@ -22,6 +22,8 @@ fun currencyDigits(code: String): Int = try {
     2
 }
 
+private val AmountPattern = Regex("^[0-9]*([.,][0-9]*)?$")
+
 /**
  * Turns what the owner typed into minor units, exactly: through BigDecimal, never floating point. A positive number
  * with one decimal separator ("." or ","), and no more decimals than the currency has; a typed amount is never
@@ -30,7 +32,7 @@ fun currencyDigits(code: String): Int = try {
 fun parseAmount(text: String, currency: String): AmountInput {
     val cleaned = text.trim().replace(" ", "").replace(" ", "")
     if (cleaned.isEmpty()) return AmountInput.Missing
-    if (!Regex("^[0-9]*([.,][0-9]*)?$").matches(cleaned) || cleaned == "." || cleaned == ",") return AmountInput.Invalid
+    if (!AmountPattern.matches(cleaned) || cleaned == "." || cleaned == ",") return AmountInput.Invalid
     val value = BigDecimal(cleaned.replace(',', '.').let { if (it.startsWith(".")) "0$it" else it }.trimEnd('.'))
     if (value.signum() == 0) return AmountInput.Zero
     val minor = value.movePointRight(currencyDigits(currency))

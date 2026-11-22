@@ -18,7 +18,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.R
 import app.ledgerline.android.session.SessionEnd
 import app.ledgerline.android.ui.design.CardGap
@@ -61,8 +61,8 @@ class SignInActions(
 /** Email and password, then the authenticator or backup code when the account asks for one. */
 @Composable
 fun SignInScreen(origin: String, onChangeAddress: () -> Unit, viewModel: SignInViewModel = hiltViewModel()) {
-    val state by viewModel.state.collectAsState()
-    val ended by viewModel.ended.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val ended by viewModel.ended.collectAsStateWithLifecycle()
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         SignInContent(
             state,

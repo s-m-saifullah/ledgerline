@@ -5,11 +5,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Categories, opened from More. The system Back gesture closes an open form or actions sheet first, then returns to More.
@@ -25,9 +25,9 @@ fun CategoriesScreen(
     modifier: Modifier = Modifier,
     viewModel: CategoriesViewModel = hiltViewModel(),
 ) {
-    val view by viewModel.view.collectAsState()
-    val groups by viewModel.groups.collectAsState()
-    val items by viewModel.items.collectAsState()
+    val view by viewModel.view.collectAsStateWithLifecycle()
+    val groups by viewModel.groups.collectAsStateWithLifecycle()
+    val items by viewModel.items.collectAsStateWithLifecycle()
     BackHandler { if (view.form != null) viewModel.closeForm() else if (view.menu != null) viewModel.closeMenu() else onBack() }
     PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = modifier) {
         CategoriesContent(

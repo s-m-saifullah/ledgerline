@@ -18,9 +18,11 @@ private val Two = BigInteger.valueOf(2)
 
 private fun pow10(digits: Int): BigInteger = BigInteger.TEN.pow(digits)
 
+private val RatePattern = Regex("^(\\d+)(?:\\.(\\d+))?$")
+
 /** The rate as a whole number of 10^-10 units; [text] is exact decimal text such as "0.0081967213". */
 private fun parseRate(text: String): BigInteger {
-    val match = Regex("^(\\d+)(?:\\.(\\d+))?$").matchEntire(text) ?: throw IllegalArgumentException("Invalid rate")
+    val match = RatePattern.matchEntire(text) ?: throw IllegalArgumentException("Invalid rate")
     val fraction = (match.groupValues[2]).padEnd(RateDecimals, '0')
     require(fraction.length <= RateDecimals) { "Invalid rate" }
     return BigInteger(match.groupValues[1]) * RateScale + BigInteger(fraction)

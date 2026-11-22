@@ -29,7 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.EntryLine
@@ -103,7 +103,7 @@ fun SignedInScreen(
     var tab by rememberSaveable { mutableStateOf(Tab.Home) }
     // Once when the app opens (after the lock screen): the manager applies the switch, the day limit and the connection.
     LaunchedEffect(Unit) { update.checkOnLaunch() }
-    val notice by update.notice.collectAsState()
+    val notice by update.notice.collectAsStateWithLifecycle()
     // A time chosen for the filters may have run out while the app was in the background.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.expireFilters() }
     var showAttention by rememberSaveable { mutableStateOf(false) }
@@ -116,10 +116,10 @@ fun SignedInScreen(
     var filtersOpen by rememberSaveable { mutableStateOf(false) }
     // The currency Home's accounts are narrowed to (null: all), when there are accounts in more than one.
     var currency by rememberSaveable { mutableStateOf<String?>(null) }
-    val line by viewModel.syncLine.collectAsState()
-    val unsent by viewModel.unsent.collectAsState()
-    val attention by viewModel.attention.collectAsState()
-    val confirmSignOut by viewModel.confirmSignOut.collectAsState()
+    val line by viewModel.syncLine.collectAsStateWithLifecycle()
+    val unsent by viewModel.unsent.collectAsStateWithLifecycle()
+    val attention by viewModel.attention.collectAsStateWithLifecycle()
+    val confirmSignOut by viewModel.confirmSignOut.collectAsStateWithLifecycle()
     confirmSignOut?.let { waiting -> SignOutQuestion(waiting, viewModel) }
     editing?.let { opened ->
         // "<session>|<target>": every opening of the editor gets its own session.
@@ -158,8 +158,8 @@ fun SignedInScreen(
                 modifier = inside,
             ) {
                 if (tab == Tab.Home) {
-                    val month by home.month.collectAsState()
-                    val accounts by viewModel.accounts.collectAsState()
+                    val month by home.month.collectAsStateWithLifecycle()
+                    val accounts by viewModel.accounts.collectAsStateWithLifecycle()
                     HomeContent(
                         status, month, accounts, currency, hidden = privacy,
                         actions = HomeActions(
@@ -182,10 +182,10 @@ fun SignedInScreen(
                         },
                     )
                 } else {
-                    val entries by viewModel.entries.collectAsState()
-                    val canShowMore by viewModel.canShowMore.collectAsState()
-                    val filters by viewModel.filters.collectAsState()
-                    val options by viewModel.filterOptions.collectAsState()
+                    val entries by viewModel.entries.collectAsStateWithLifecycle()
+                    val canShowMore by viewModel.canShowMore.collectAsStateWithLifecycle()
+                    val filters by viewModel.filters.collectAsStateWithLifecycle()
+                    val options by viewModel.filterOptions.collectAsStateWithLifecycle()
                     TransactionsContent(
                         status, entries, canShowMore, viewModel::showMoreEntries,
                         filters, options, filtersOpen, { filtersOpen = !filtersOpen }, viewModel::setFilters,
@@ -210,9 +210,9 @@ fun SignedInScreen(
                 modifier = inside,
             ) {
                 // Collecting the budgets is what reads them, so they are read only while this tab is open.
-                val month by budgets.month.collectAsState()
-                val state by budgets.budgets.collectAsState()
-                val limit by budgets.limit.collectAsState()
+                val month by budgets.month.collectAsStateWithLifecycle()
+                val state by budgets.budgets.collectAsStateWithLifecycle()
+                val limit by budgets.limit.collectAsStateWithLifecycle()
                 BudgetsContent(
                     month.toString(),
                     state,
@@ -240,9 +240,9 @@ fun SignedInScreen(
                 },
                 modifier = inside,
             ) {
-                val month by insights.month.collectAsState()
-                val state by insights.insights.collectAsState()
-                val mirrored by viewModel.accounts.collectAsState()
+                val month by insights.month.collectAsStateWithLifecycle()
+                val state by insights.insights.collectAsStateWithLifecycle()
+                val mirrored by viewModel.accounts.collectAsStateWithLifecycle()
                 InsightsContent(
                     month.toString(),
                     state,
@@ -274,8 +274,8 @@ fun SignedInScreen(
                 else -> MoreContent(
                     MoreActions({ moreOpen = "clients" }, { moreOpen = "loans" }, { moreOpen = "categories" }, { moreOpen = "settings" }),
                     moreSummary(
-                        home.month.collectAsState().value,
-                        viewModel.categories.collectAsState().value,
+                        home.month.collectAsStateWithLifecycle().value,
+                        viewModel.categories.collectAsStateWithLifecycle().value,
                         BuildConfig.VERSION_NAME.removeSuffix("-debug"),
                     ),
                     ListBottomSpace,
