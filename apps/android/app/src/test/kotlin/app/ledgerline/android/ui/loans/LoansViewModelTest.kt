@@ -223,4 +223,24 @@ class LoansViewModelTest {
         first.close()
         assertNull(LoansViewModel(harness.reader(), harness.database.reads(), restartedHandle(handle)).selected.value)
     }
+
+    private fun personReads() = harness.targets.count { it.endsWith("/contacts/sam-rivera") }
+
+    @Test
+    fun aMovesCountReadsThePersonAgainOnceNotEveryTimeTheScreenComesBack() {
+        harness.pulled("2026-10-22T10:00:00.000Z")
+        model.open("sam-rivera")
+        model.person.settled { it is Online.Ready }
+        val before = personReads()
+        model.rereadFor(1)
+        harness.until { personReads() == before + 1 }
+        model.rereadFor(1)
+        Thread.sleep(400)
+        assertEquals(before + 1, personReads())
+        model.rereadFor(2)
+        harness.until { personReads() == before + 2 }
+        model.rereadFor(0)
+        Thread.sleep(300)
+        assertEquals(before + 2, personReads())
+    }
 }

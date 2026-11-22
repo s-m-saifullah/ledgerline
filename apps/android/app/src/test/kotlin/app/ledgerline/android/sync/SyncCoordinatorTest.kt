@@ -340,12 +340,20 @@ class SyncCoordinatorTest {
     }
 
     @Test
-    fun aSavedChangeIsSentAtOnceWhenUnlockedAndQueuedForTheNetworkWhenKept() = runBlocking {
+    fun aSavedChangeSentAtOnceQueuesNothingForLaterAndOneThatIsLockedOrCouldNotBeSentIs() = runBlocking {
         val (session, sync) = signedInAndKept()
         outbox.createEntry("ledger-a", json("payee" to "Now"))
         sync.changed()
-        assertEquals(1, scheduler.sendsQueued)
+        // The send in the app finished, so no second send is queued behind it (it would be a second full sync).
+        assertEquals(0, scheduler.sendsQueued)
         assertEquals(1, server.applied.size)
+
+        // No connection: the send did not finish, so one is queued for when there is a network.
+        outbox.createEntry("ledger-a", json("payee" to "Offline"))
+        server.fail = IOException("offline")
+        sync.changed()
+        assertEquals(1, scheduler.sendsQueued)
+        server.fail = null
 
         session.lock()
         sync.onState(session.state.value)
@@ -354,7 +362,29 @@ class SyncCoordinatorTest {
         assertEquals(2, scheduler.sendsQueued)
         assertEquals(1, server.applied.size)
         assertEquals(BackgroundOutcome.Done, sync.backgroundPull(0))
-        assertEquals(2, server.applied.size)
+        assertEquals(3, server.applied.size)
+    }
+
+    @Test
+    fun aSavedChangeWhosePullFailedQueuesASendBecauseTheSendCannotBeTrustedToHaveFinished() = runBlocking {
+        val (_, sync) = signedInAndKept()
+        // The push went through, then the pull could not reach the server. The last push result may be left from an
+        // earlier run (a run that stopped early never sends), so only a run that finished both is taken as sent.
+        outbox.createEntry("ledger-a", json("payee" to "Sent but not pulled"))
+        source.respond = { throw IOException("offline") }
+        sync.changed()
+        assertEquals(1, server.applied.size)
+        assertEquals(1, scheduler.sendsQueued)
+    }
+
+    @Test
+    fun aServerErrorWhileSendingQueuesASendEvenThoughThePullRan() = runBlocking {
+        val (_, sync) = signedInAndKept()
+        outbox.createEntry("ledger-a", json("payee" to "Refused"))
+        server.fail = httpError(500)
+        sync.changed()
+        assertEquals(1, scheduler.sendsQueued)
+        assertEquals(1, outbox.unsentCount())
     }
 
     @Test

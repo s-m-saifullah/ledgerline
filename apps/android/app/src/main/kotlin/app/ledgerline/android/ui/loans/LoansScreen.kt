@@ -35,7 +35,7 @@ fun LoansScreen(
     }
     // A move went through, or the loan turned out to have changed: read the person and their loans again.
     val moved by move.reread.collectAsState()
-    LaunchedEffect(moved) { if (moved > 0) model.retry() }
+    LaunchedEffect(moved) { model.rereadFor(moved) }
     BackHandler { if (selected != null) model.close() else onBack() }
     PullToRefreshBox(
         isRefreshing = refreshing,

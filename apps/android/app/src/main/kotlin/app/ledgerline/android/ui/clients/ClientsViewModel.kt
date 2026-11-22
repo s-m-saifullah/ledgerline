@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import app.ledgerline.android.online.RereadGate
 
 /**
  * Clients, read online (ADR 0043, slice 5): the list, and for the chosen client its details, services and history,
@@ -118,6 +119,13 @@ class ClientsViewModel @Inject constructor(
     fun close() {
         _selected.value = null
         _payments.value = emptyMap()
+    }
+
+    private val rereads = mutableMapOf<String, RereadGate>()
+
+    /** A sheet's "read again" counter [source] is at [count]: read the client again only if that is news (see [RereadGate]). */
+    fun rereadFor(source: String, count: Int) {
+        if (rereads.getOrPut(source) { RereadGate() }.isNew(count)) retry()
     }
 
     fun loadMoreClients() = list.loadMore()

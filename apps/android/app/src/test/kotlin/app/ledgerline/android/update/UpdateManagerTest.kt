@@ -3,6 +3,7 @@ package app.ledgerline.android.update
 import app.ledgerline.android.testing.FakePhoneSettings
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -104,8 +105,12 @@ class UpdateManagerTest {
     private lateinit var scope: TestScope
     private lateinit var manager: UpdateManager
 
-    private fun build(config: UpdateConfig = UpdateConfig("o/r", "https://api.github.com", "https://github.com", Pin, false), installedCode: Int = 102): UpdateManager {
-        scope = TestScope(UnconfinedTestDispatcher())
+    private fun build(
+        config: UpdateConfig = UpdateConfig("o/r", "https://api.github.com", "https://github.com", Pin, false),
+        installedCode: Int = 102,
+        testScope: TestScope = TestScope(UnconfinedTestDispatcher()),
+    ): UpdateManager {
+        scope = testScope
         return UpdateManager(config, source, files, reader, installer, store, settings, { now }, InstalledApp(installedCode, "0.1.2", "app.ledgerline.android")).also {
             it.start(scope)
         }
@@ -360,5 +365,15 @@ class UpdateManagerTest {
         files.apk.writeBytes(byteArrayOf(1))
         build()
         assertFalse(files.apk.exists())
+    }
+
+    @Test
+    fun startingDoesNotTouchTheFileOnTheThreadThatStartsIt() {
+        // The app starts the manager while it is opening, on the main thread: the file is cleared by the scope it is given.
+        val before = files.deletes
+        build(testScope = TestScope(StandardTestDispatcher()))
+        assertEquals("nothing is deleted while starting", before, files.deletes)
+        scope.testScheduler.runCurrent()
+        assertEquals("the file left by an earlier run is cleared, once, in the scope", before + 1, files.deletes)
     }
 }

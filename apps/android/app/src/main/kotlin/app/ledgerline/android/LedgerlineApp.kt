@@ -11,6 +11,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -21,13 +22,15 @@ class LedgerlineApp : Application() {
     @Inject
     lateinit var sync: SyncCoordinator
 
+    // Lazy: the update manager is built, and started, off the main thread while the app is opening.
     @Inject
-    lateinit var update: UpdateManager
+    lateinit var update: dagger.Lazy<UpdateManager>
 
     override fun onCreate() {
         super.onCreate()
         sync.start(CoroutineScope(SupervisorJob() + Dispatchers.Default))
-        update.start(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+        val background = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        background.launch { update.get().start(background) }
         // The whole app going to the background (not a screen change) starts the lock timer.
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {

@@ -2,7 +2,10 @@ package app.ledgerline.android.sync
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.WorkManagerTestInitHelper
@@ -30,14 +33,29 @@ class SyncSchedulerTest {
         WorkManager.getInstance(context).getWorkInfosForUniqueWork(WorkSyncScheduler.WorkName).get()
 
     @Test
-    fun queuesOneJobEvery15MinutesThatNeedsANetworkAndAskingAgainChangesNothing() {
+    fun queuesOneHourlyJobThatNeedsANetworkAndABatteryThatIsNotLowAndAskingAgainChangesNothing() {
         val scheduler = WorkSyncScheduler(context)
         scheduler.schedule()
         scheduler.schedule()
         val job = jobs().single()
         assertEquals(WorkInfo.State.ENQUEUED, job.state)
         assertEquals(NetworkType.CONNECTED, job.constraints.requiredNetworkType)
-        assertEquals(TimeUnit.MINUTES.toMillis(15), job.periodicityInfo?.repeatIntervalMillis)
+        assertTrue(job.constraints.requiresBatteryNotLow())
+        assertEquals(TimeUnit.MINUTES.toMillis(60), job.periodicityInfo?.repeatIntervalMillis)
+    }
+
+    @Test
+    fun aPhoneThatAlreadyHasTheOldFifteenMinuteJobGetsTheHourlyOne() {
+        // What an earlier version left in WorkManager: every 15 minutes, a network and nothing else.
+        val old = PeriodicWorkRequestBuilder<SyncWorker>(15, TimeUnit.MINUTES)
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .build()
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(WorkSyncScheduler.WorkName, ExistingPeriodicWorkPolicy.KEEP, old)
+        assertEquals(TimeUnit.MINUTES.toMillis(15), jobs().single().periodicityInfo?.repeatIntervalMillis)
+        WorkSyncScheduler(context).schedule()
+        val job = jobs().single { it.state == WorkInfo.State.ENQUEUED }
+        assertEquals(TimeUnit.MINUTES.toMillis(60), job.periodicityInfo?.repeatIntervalMillis)
+        assertTrue(job.constraints.requiresBatteryNotLow())
     }
 
     @Test
