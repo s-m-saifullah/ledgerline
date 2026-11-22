@@ -42,7 +42,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -171,19 +170,18 @@ class SignedInViewModel @Inject constructor(
     /**
      * The filters the list is read for. The search box shows each letter at once ([filters]), but the list is read after the
      * typing pauses ([SearchPauseMillis]): a read per letter walked the whole ledger every time. Only typing waits: a chip, a
-     * date, the account or clearing the box applies at once (with the text typed so far), and so does a text that did not change.
+     * date, the account or clearing the box applies at once (with the text typed so far), and so does a filter set from
+     * what was kept.
      */
-    private var searchedText = _filters.value.searchText
     private var previousFilters = _filters.value
 
     @OptIn(FlowPreview::class)
-    private val searched: Flow<EntryFilters> = _filters
-        .debounce { next ->
-            val onlyTyping = next.copy(text = "") == previousFilters.copy(text = "")
-            previousFilters = next
-            if (onlyTyping && next.searchText != null && next.searchText != searchedText) SearchPauseMillis else 0L
-        }
-        .onEach { searchedText = it.searchText }
+    private val searched: Flow<EntryFilters> = _filters.debounce { next ->
+        val onlyTyping = next.copy(text = "") == previousFilters.copy(text = "")
+        val typed = onlyTyping && next.searchText != null && next.searchText != previousFilters.searchText
+        previousFilters = next
+        if (typed) SearchPauseMillis else 0L
+    }
 
     val entries: StateFlow<Mirrored<ShownLine>> = combine(ledger, entryLimit, searched) { id, limit, filters -> Triple(id, limit, filters) }
         .flatMapLatest { (id, limit, filters) ->

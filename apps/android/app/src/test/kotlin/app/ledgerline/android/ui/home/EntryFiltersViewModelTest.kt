@@ -367,4 +367,18 @@ class EntryFiltersViewModelTest {
         assertEquals(listOf("Cinema"), readyWith(1))
         watcher.cancel()
     }
+
+    @Test
+    fun keptFiltersWithATextApplyAtOnceWhenTheAppOpensAgain() = runBlocking {
+        settings.setFilterKeep(keepFor(1, KeepUnit.Days))
+        viewModel.setFilters(EntryFilters(text = "Cinema"))
+        viewModel.viewModelScope.cancel()
+        val reopened = newViewModel()
+        val watcher = launch(Dispatchers.Unconfined) { reopened.entries.collect { } }
+        // No pause is advanced: what was typed before is not typed again.
+        val items = withTimeout(5_000) { (reopened.entries.first { it is Mirrored.Ready && it.items.size == 1 } as Mirrored.Ready).items.map { it.line.payee } }
+        assertEquals(listOf("Cinema"), items)
+        watcher.cancel()
+        reopened.viewModelScope.cancel()
+    }
 }
