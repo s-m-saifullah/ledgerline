@@ -17,7 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.BuildConfig
 import app.ledgerline.android.R
 import app.ledgerline.android.settings.PhoneSettings
@@ -161,17 +161,17 @@ fun SettingsScreen(
     settings: SettingsViewModel = hiltViewModel(),
     update: UpdateViewModel = hiltViewModel(),
 ) {
-    val theme by settings.theme.collectAsState()
-    val hide by settings.privacyMode.collectAsState()
-    val centsFirst by settings.centsFirst.collectAsState()
-    val screenshots by settings.allowScreenshots.collectAsState()
-    val filterKeep by settings.filterKeep.collectAsState()
-    val auto by settings.autoUpdateCheck.collectAsState()
-    val newer by update.newer.collectAsState()
-    val unsent by signedIn.unsent.collectAsState()
-    val attention by signedIn.attention.collectAsState()
-    val signingOut by signedIn.signingOut.collectAsState()
-    val line by signedIn.syncLine.collectAsState()
+    val theme by settings.theme.collectAsStateWithLifecycle()
+    val hide by settings.privacyMode.collectAsStateWithLifecycle()
+    val centsFirst by settings.centsFirst.collectAsStateWithLifecycle()
+    val screenshots by settings.allowScreenshots.collectAsStateWithLifecycle()
+    val filterKeep by settings.filterKeep.collectAsStateWithLifecycle()
+    val auto by settings.autoUpdateCheck.collectAsStateWithLifecycle()
+    val newer by update.newer.collectAsStateWithLifecycle()
+    val unsent by signedIn.unsent.collectAsStateWithLifecycle()
+    val attention by signedIn.attention.collectAsStateWithLifecycle()
+    val signingOut by signedIn.signingOut.collectAsStateWithLifecycle()
+    val line by signedIn.syncLine.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
     SettingsContent(
         SettingsState(theme, hide, centsFirst, screenshots, filterKeep, if (update.enabled) UpdatesInfo(auto, newer?.name) else null, unsent, attention.size, signedIn.canLock, signingOut, syncPill(line, unsent)),

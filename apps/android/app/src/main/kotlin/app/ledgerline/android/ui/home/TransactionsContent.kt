@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -72,6 +73,8 @@ internal fun TransactionsContent(
         // The search, the Filters button and the type chips stay at the top while the list scrolls under them, so
         // a shorter result can never move them and the list needs no blank room at its end (CONTRIBUTING.md).
         EntryFilterBar(filters, onFilters, onToggleFilters)
+        // Grouped once per list, not on every draw of it (a sync line changing or the sheet opening draws it again).
+        val days = remember(entries) { if (entries is Mirrored.Ready) groupDays(entries.items) else emptyList() }
         LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             item { SyncStatusRow(status, onRetrySync) }
             if (status.attention > 0) {
@@ -94,7 +97,7 @@ internal fun TransactionsContent(
                         }
                     }
                     // The list is newest first, so a day's entries are next to each other.
-                    groupDays(entries.items).forEach { day ->
+                    days.forEach { day ->
                         item(key = "day-${day.date}") {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 DayHeader(dayLabel(day.date), day.nets.map { money(it.amount, it.currency).withPlus(it.amount).text }.joinToString(" · ").ifEmpty { null })

@@ -7,6 +7,7 @@ import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okio.Buffer
 import java.io.File
 import java.io.IOException
 
@@ -45,6 +46,8 @@ fun isAllowedUpdateUrl(url: HttpUrl, config: UpdateConfig): Boolean {
 private const val MaxRedirects = 5
 private const val MaxListBytes = 2L * 1024 * 1024
 private const val MaxApkBytes = 200L * 1024 * 1024
+private const val MaxHashBytes = 4096L
+private const val ReadChunk = 8192L
 
 /**
  * Talks to GitHub with nothing but the request itself (ADR 0043): no token, no cookie, no account or device data;
@@ -61,7 +64,7 @@ class GithubUpdateSource(
     private val web = client.newBuilder().followRedirects(false).followSslRedirects(false).build()
 
     override suspend fun releases(): List<GithubRelease> {
-        val text = fetch(config.releasesUrl(), MaxListBytes, accept = "application/vnd.github+json") { it.readText() }
+        val text = fetch(config.releasesUrl(), MaxListBytes, accept = "application/vnd.github+json") { it.readText(MaxListBytes) }
         return try {
             UpdateJson.decodeFromString(ListSerializer(GithubRelease.serializer()), text)
         } catch (e: kotlinx.serialization.SerializationException) {
@@ -70,7 +73,7 @@ class GithubUpdateSource(
     }
 
     override suspend fun hashText(release: Release): String =
-        fetch(config.assetUrl(release.tag, release.hashName), 4096) { it.readText() }
+        fetch(config.assetUrl(release.tag, release.hashName), MaxHashBytes) { it.readText(MaxHashBytes) }
 
     override suspend fun apk(release: Release, onProgress: (Long) -> Unit): File {
         val target = apkFile
@@ -134,5 +137,18 @@ class GithubUpdateSource(
             }
         }
 
-    private fun okhttp3.ResponseBody.readText(): String = string()
+    /**
+     * The text of the answer, read through a counted limit: the check against `Content-Length` in [fetch] cannot see an
+     * answer that streams with no length (chunked), so the bytes are counted as they arrive and the read stops one byte
+     * past [limit].
+     */
+    private fun okhttp3.ResponseBody.readText(limit: Long): String {
+        val received = Buffer()
+        val source = source()
+        while (received.size <= limit) {
+            if (source.read(received, ReadChunk) < 0) break
+        }
+        if (received.size > limit) throw UpdateIoException(false, "The file is too large")
+        return received.readString(contentType()?.charset(Charsets.UTF_8) ?: Charsets.UTF_8)
+    }
 }

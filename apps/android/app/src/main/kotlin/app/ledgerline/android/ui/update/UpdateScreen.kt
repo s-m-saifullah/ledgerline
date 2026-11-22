@@ -14,7 +14,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,6 +22,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.BuildConfig
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.design.CardGap
@@ -52,7 +52,7 @@ class UpdateActions(
 /** The update screen, opened from Settings or a notice. The system Back gesture returns to Settings. */
 @Composable
 fun UpdateScreen(onBack: () -> Unit, bottomSpace: Dp, modifier: Modifier = Modifier, viewModel: UpdateViewModel = hiltViewModel()) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     BackHandler(onBack = onBack)
     UpdateContent(
         installed = BuildConfig.VERSION_NAME.removeSuffix("-debug"),

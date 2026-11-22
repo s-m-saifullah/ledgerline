@@ -9,9 +9,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import app.ledgerline.android.settings.PhoneSettings
 import app.ledgerline.android.ui.editor.LocalCentsFirst
@@ -47,9 +47,9 @@ class MainActivity : FragmentActivity() {
         lifecycleScope.launch { settings.allowScreenshots.collect { window.applyScreenshotRule(it) } }
         enableEdgeToEdge()
         setContent {
-            val privacy by settings.privacyMode.collectAsState()
-            val centsFirst by settings.centsFirst.collectAsState()
-            val choice by settings.theme.collectAsState()
+            val privacy by settings.privacyMode.collectAsStateWithLifecycle()
+            val centsFirst by settings.centsFirst.collectAsStateWithLifecycle()
+            val choice by settings.theme.collectAsStateWithLifecycle()
             val dark = choice.isDark(isSystemInDarkTheme())
             // The system bars' icons follow the app's theme, not only the phone's.
             DisposableEffect(dark) {
@@ -61,7 +61,7 @@ class MainActivity : FragmentActivity() {
             }
             CompositionLocalProvider(LocalPrivacy provides privacy, LocalCentsFirst provides centsFirst) {
                 LedgerlineTheme(darkTheme = dark) {
-                    val state by root.state.collectAsState()
+                    val state by root.state.collectAsStateWithLifecycle()
                     when (val current = state) {
                         RootState.Loading -> Unit
                         is RootState.Address -> AddressScreen(canCancel = current.canCancel, onDone = root::addressDone)

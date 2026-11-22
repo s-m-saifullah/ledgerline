@@ -10,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -21,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.R
 import app.ledgerline.android.overlay.AttentionItem
 import app.ledgerline.android.overlay.AttentionReason
@@ -58,7 +58,7 @@ internal class AttentionActions(
 
 @Composable
 internal fun AttentionScreen(viewModel: SignedInViewModel, onBack: () -> Unit, onFix: (String) -> Unit) {
-    val items by viewModel.attention.collectAsState()
+    val items by viewModel.attention.collectAsStateWithLifecycle()
     val actions = AttentionActions(onBack, onFix, viewModel::discard, viewModel::keepMine, viewModel::keepTheirs)
     AttentionContent(items, actions, Modifier.safeDrawingPadding())
 }

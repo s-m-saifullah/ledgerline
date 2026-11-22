@@ -6,10 +6,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.design.OnLeaving
 
@@ -19,10 +19,10 @@ fun EditorScreen(target: EditorTarget, session: String, onClose: () -> Unit, vie
     LaunchedEffect(session) { viewModel.open(target, session) }
     // Leaving the editor for good forgets what was typed; a rotation or Android ending the app does not.
     OnLeaving { viewModel.leave() }
-    val latest by viewModel.state.collectAsState()
+    val latest by viewModel.state.collectAsStateWithLifecycle()
     // Only this opening's state counts: the view model may still hold the last opening's (for example a finished save).
     val state = latest?.takeIf { it.session == session }
-    val newCategory by viewModel.newCategory.collectAsState()
+    val newCategory by viewModel.newCategory.collectAsStateWithLifecycle()
     BackHandler(onBack = onClose)
     LaunchedEffect(state?.done) { if (state?.done == true) onClose() }
     val title = when {

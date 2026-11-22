@@ -12,30 +12,38 @@ import java.time.format.FormatStyle
 import java.util.Currency
 import java.util.Locale
 
-/**
- * Formats integer minor units for display, exactly (through BigDecimal, never floating point). The number of
- * decimals is the currency's own (on Android from ICU's CLDR data, as the server's `Intl` uses).
- */
-fun formatMoney(amount: Long, code: String, locale: Locale = Locale.getDefault()): String {
+/** How one currency is written in one locale: the formatter, the currency's own decimals and, for an unknown code, its prefix. */
+internal class MoneyStyle(val format: NumberFormat, val digits: Int, val prefix: String)
+
+private fun buildMoneyStyle(code: String, locale: Locale): MoneyStyle {
     val currency = try {
         Currency.getInstance(code)
     } catch (_: IllegalArgumentException) {
         null
     }
     val digits = currency?.defaultFractionDigits?.takeIf { it >= 0 } ?: 2
-    val value = BigDecimal.valueOf(amount, digits)
-    if (currency == null) {
-        val plain = NumberFormat.getNumberInstance(locale).apply {
-            minimumFractionDigits = digits
-            maximumFractionDigits = digits
-        }
-        return "$code ${plain.format(value)}"
-    }
-    return NumberFormat.getCurrencyInstance(locale).apply {
-        this.currency = currency
-        minimumFractionDigits = digits
-        maximumFractionDigits = digits
-    }.format(value)
+    val format = if (currency == null) NumberFormat.getNumberInstance(locale) else NumberFormat.getCurrencyInstance(locale).apply { this.currency = currency }
+    format.minimumFractionDigits = digits
+    format.maximumFractionDigits = digits
+    return MoneyStyle(format, digits, if (currency == null) "$code " else "")
+}
+
+/**
+ * One formatter per locale and currency and per thread, built on first use: building one is the slow part of showing an
+ * amount, and a list shows hundreds. A `NumberFormat` is not safe to share between threads, so each thread keeps its own.
+ */
+private val moneyStyles: ThreadLocal<HashMap<Pair<Locale, String>, MoneyStyle>> = ThreadLocal.withInitial { HashMap() }
+
+internal fun moneyStyle(code: String, locale: Locale): MoneyStyle =
+    moneyStyles.get()!!.getOrPut(locale to code) { buildMoneyStyle(code, locale) }
+
+/**
+ * Formats integer minor units for display, exactly (through BigDecimal, never floating point). The number of
+ * decimals is the currency's own (on Android from ICU's CLDR data, as the server's `Intl` uses).
+ */
+fun formatMoney(amount: Long, code: String, locale: Locale = Locale.getDefault()): String {
+    val style = moneyStyle(code, locale)
+    return style.prefix + style.format.format(BigDecimal.valueOf(amount, style.digits))
 }
 
 /** "10:42" today, otherwise a short date and time, in the phone's time zone. */

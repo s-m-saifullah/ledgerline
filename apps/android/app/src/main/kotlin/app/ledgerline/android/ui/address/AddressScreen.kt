@@ -15,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.ledgerline.android.R
 import app.ledgerline.android.server.AddressProblem
 import app.ledgerline.android.ui.design.CardGap
@@ -38,7 +38,7 @@ class AddressActions(val onInput: (String) -> Unit, val onContinue: () -> Unit, 
 /** Where is your server? One primary action. A back arrow is shown only when an address is already saved. */
 @Composable
 fun AddressScreen(canCancel: Boolean, onDone: () -> Unit, viewModel: AddressViewModel = hiltViewModel()) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         AddressContent(
             state,
