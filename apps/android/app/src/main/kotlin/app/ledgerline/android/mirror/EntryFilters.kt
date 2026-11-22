@@ -1,5 +1,7 @@
 package app.ledgerline.android.mirror
 
+import java.text.Normalizer
+
 /**
  * What the Transactions list is narrowed to, with the web's fields and meanings (ADR 0043, polish PR C). Empty or
  * null means "any". All but the search are written twice, in SQL for the mirror ([MirrorReads]) and in [matches] for
@@ -40,10 +42,16 @@ data class EntryFilters(
     /** The search text as the queries take it: null when blank. */
     val searchText: String? get() = text.trim().ifEmpty { null }
 
-    /** Whether a payee or note contains the search text, ignoring case for every letter; true when there is no search. */
+    /** The search text without accents on Latin letters, folded once for all the rows it is compared with. */
+    private val foldedTerm: String? by lazy { searchText?.withoutAccents() }
+
+    /**
+     * Whether a payee or note contains the search text, ignoring case for every letter and the accents of Latin letters
+     * ("cafe" finds "Café" and "café" finds "cafe"); true when there is no search.
+     */
     fun matchesText(payee: String?, note: String?): Boolean {
-        val term = searchText ?: return true
-        return listOfNotNull(payee, note).any { it.contains(term, ignoreCase = true) }
+        val term = foldedTerm ?: return true
+        return listOfNotNull(payee, note).any { it.withoutAccents().contains(term, ignoreCase = true) }
     }
 
     /**
@@ -75,3 +83,16 @@ data class ShownFilterFields(
     val payee: String?,
     val note: String?,
 )
+
+private val AccentOnLatin = Regex("(?<=\\p{IsLatin})\\p{Mn}+")
+
+/**
+ * The text with the accents taken off Latin letters: "Café" is "Cafe", "Müller" is "Muller". Only a mark that follows a
+ * Latin letter goes, so a Cyrillic "й" stays apart from "и", and the text is put back together afterwards (a Korean
+ * syllable is not split into letters). Plain ASCII, which is most of what is typed, is returned as it is.
+ */
+internal fun String.withoutAccents(): String {
+    if (all { it.code < 128 }) return this
+    val parts = Normalizer.normalize(this, Normalizer.Form.NFD).replace(AccentOnLatin, "")
+    return Normalizer.normalize(parts, Normalizer.Form.NFC)
+}

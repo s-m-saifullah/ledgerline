@@ -53,8 +53,8 @@ class EntrySearchTest {
 
     @Test
     fun capitalAndSmallLettersMatchWhateverTheLanguage() = runBlocking {
-        assertEquals(listOf(10), found("CAFÉ"))
-        assertEquals(listOf(10), found("café"))
+        assertEquals(listOf(14, 10), found("CAFÉ"))
+        assertEquals(listOf(14, 10), found("café"))
         assertEquals(listOf(11), found("éclair"))
         assertEquals(listOf(11), found("Éclair SHOP"))
         assertEquals(listOf(12), found("MÜLLER"))
@@ -67,9 +67,22 @@ class EntrySearchTest {
     }
 
     @Test
-    fun anAccentIsPartOfTheLetterOnlyTheCaseIsIgnored() = runBlocking {
-        // "cafe" finds the English cafe but not "Café": the owner asked about case, not about accents.
-        assertEquals(listOf(14), found("cafe"))
+    fun accentsAreIgnoredOnLatinLettersTooInBothDirections() = runBlocking {
+        // "cafe" finds "Café au lait" as well as the plain "Ordinary Cafe" (newest first), and "café" finds both.
+        assertEquals(listOf(14, 10), found("cafe"))
+        assertEquals(listOf(11), found("eclair"))
+        assertEquals(listOf(12), found("muller"))
+        assertEquals(listOf(12), found("BACKEREI"))
+    }
+
+    @Test
+    fun otherScriptsKeepTheirLettersApart() {
+        // A Cyrillic "й" is not an "и": only marks on Latin letters are folded.
+        assertFalse(EntryFilters(text = "иод").matchesText("Йод", null))
+        assertTrue(EntryFilters(text = "йод").matchesText("Йод", null))
+        // A Korean syllable is not matched by part of its letters.
+        assertFalse(EntryFilters(text = "하").matchesText("한국", null))
+        assertTrue(EntryFilters(text = "한").matchesText("한국", null))
     }
 
     @Test
@@ -77,7 +90,8 @@ class EntrySearchTest {
         val filters = EntryFilters(text = "  ÉCLAIR ")
         assertTrue(filters.matchesText("une éclair", null))
         assertTrue(filters.matchesText(null, "Mon ÉCLAIR"))
-        assertFalse(filters.matchesText("eclair", null))
+        assertTrue("an accent is not part of the match", filters.matchesText("eclair", null))
+        assertFalse(filters.matchesText("another word", null))
         assertTrue(EntryFilters().matchesText(null, null))
         assertFalse(EntryFilters(text = "x").matchesText(null, null))
     }
