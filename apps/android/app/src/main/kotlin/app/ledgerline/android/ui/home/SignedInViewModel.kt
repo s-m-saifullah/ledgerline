@@ -169,16 +169,15 @@ class SignedInViewModel @Inject constructor(
 
     /**
      * The filters the list is read for. The search box shows each letter at once ([filters]), but the list is read after the
-     * typing pauses ([SearchPauseMillis]): a read per letter walked the whole ledger every time. Only typing waits: a chip, a
-     * date, the account or clearing the box applies at once (with the text typed so far), and so does a filter set from
-     * what was kept.
+     * typing pauses ([SearchPauseMillis]): a read per letter walked the whole ledger every time. Only a changed text waits: a
+     * chip, a date, the account or clearing the box applies at once (with the text typed so far), and so does a filter set
+     * from what was kept.
      */
     private var previousFilters = _filters.value
 
     @OptIn(FlowPreview::class)
     private val searched: Flow<EntryFilters> = _filters.debounce { next ->
-        val onlyTyping = next.copy(text = "") == previousFilters.copy(text = "")
-        val typed = onlyTyping && next.searchText != null && next.searchText != previousFilters.searchText
+        val typed = next.searchText != null && next.searchText != previousFilters.searchText
         previousFilters = next
         if (typed) SearchPauseMillis else 0L
     }
