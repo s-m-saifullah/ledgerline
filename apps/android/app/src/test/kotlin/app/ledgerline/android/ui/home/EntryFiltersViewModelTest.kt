@@ -56,6 +56,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -143,6 +145,7 @@ class EntryFiltersViewModelTest {
         assertEquals(EntryFilters(), viewModel.filters.value)
         assertEquals(100, shown().size)
         viewModel.setFilters(EntryFilters(text = "cinema"))
+        scheduler.advanceTimeBy(300)
         assertEquals(listOf("Cinema"), withTimeout(5_000) { (viewModel.entries.first { it is Mirrored.Ready && it.items.size == 1 } as Mirrored.Ready).items.map { it.line.payee } })
         viewModel.clearFilters()
         assertEquals(EntryFilters(), viewModel.filters.value)
@@ -295,5 +298,73 @@ class EntryFiltersViewModelTest {
         viewModel.signOut()
         withTimeout(5_000) { session.state.first { it == SessionState.SignedOut } }
         assertEquals(null, store.saved)
+    }
+
+    // Typing waits for a pause before the list is read (WP-19a): a read per character walked the whole ledger each time.
+    private suspend fun readyWith(count: Int) = withTimeout(5_000) { (viewModel.entries.first { it is Mirrored.Ready && it.items.size == count } as Mirrored.Ready).items.map { it.line.payee } }
+
+    private fun CoroutineScope.watching() = launch(Dispatchers.Unconfined) { viewModel.entries.collect { } }
+
+    @Test
+    fun theBoxShowsEachLetterAtOnceButTheListWaitsForAPause() = runBlocking {
+        val watcher = watching()
+        assertEquals(100, shown().size)
+        "Cin".fold("") { typed, c -> (typed + c).also { viewModel.setFilters(EntryFilters(text = it)) } }
+        assertEquals("the box has what was typed", "Cin", viewModel.filters.value.text)
+        // Real time passes, the app's clock does not: nothing is read for a text still being typed.
+        Thread.sleep(400)
+        assertEquals(100, (viewModel.entries.value as Mirrored.Ready).items.size)
+        scheduler.advanceTimeBy(SearchPauseMillis - 1)
+        Thread.sleep(200)
+        assertEquals(100, (viewModel.entries.value as Mirrored.Ready).items.size)
+        scheduler.advanceTimeBy(2)
+        assertEquals(listOf("Cinema"), readyWith(1))
+        watcher.cancel()
+    }
+
+    @Test
+    fun aLetterTypedBeforeThePauseEndsRestartsIt() = runBlocking {
+        val watcher = watching()
+        assertEquals(100, shown().size)
+        viewModel.setFilters(EntryFilters(text = "Cin"))
+        scheduler.advanceTimeBy(SearchPauseMillis - 50)
+        viewModel.setFilters(EntryFilters(text = "Cine"))
+        scheduler.advanceTimeBy(SearchPauseMillis - 50)
+        Thread.sleep(300)
+        assertEquals("the first pause was cancelled by the next letter", 100, (viewModel.entries.value as Mirrored.Ready).items.size)
+        scheduler.advanceTimeBy(100)
+        assertEquals(listOf("Cinema"), readyWith(1))
+        watcher.cancel()
+    }
+
+    @Test
+    fun aChipOrAnyOtherFilterAppliesAtOnceWithoutAPause() = runBlocking {
+        val watcher = watching()
+        assertEquals(100, shown().size)
+        viewModel.setFilters(EntryFilters(status = "pending"))
+        assertEquals(listOf("Cinema"), readyWith(1))
+        watcher.cancel()
+    }
+
+    @Test
+    fun clearingTheSearchAppliesAtOnce() = runBlocking {
+        val watcher = watching()
+        viewModel.setFilters(EntryFilters(text = "Cinema"))
+        scheduler.advanceTimeBy(SearchPauseMillis + 1)
+        assertEquals(listOf("Cinema"), readyWith(1))
+        viewModel.setFilters(EntryFilters())
+        assertEquals(100, readyWith(100).size)
+        watcher.cancel()
+    }
+
+    @Test
+    fun aFilterChangedWhileASearchWaitsIsNotHeldBackByIt() = runBlocking {
+        val watcher = watching()
+        assertEquals(100, shown().size)
+        viewModel.setFilters(EntryFilters(text = "Cin"))
+        // The owner taps the Pending chip before the pause ends: that applies at once, with the text typed so far.
+        viewModel.setFilters(EntryFilters(text = "Cin", status = "pending"))
+        assertEquals(listOf("Cinema"), readyWith(1))
+        watcher.cancel()
     }
 }

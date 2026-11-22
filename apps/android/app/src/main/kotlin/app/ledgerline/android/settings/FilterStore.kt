@@ -46,7 +46,8 @@ class PrefsFilterStore @Inject constructor(@ApplicationContext context: Context)
         return SavedFilters(filters, prefs.getLong("changedAt", 0))
     }
 
-    override fun save(saved: SavedFilters) = prefs.edit(commit = true) {
+    // In the background: this runs at every letter typed in the search box, and a disk write must not hold up the main thread.
+    override fun save(saved: SavedFilters) = prefs.edit(commit = false) {
         val filters = saved.filters
         putString("text", filters.text)
         putString("accountId", filters.accountId)
@@ -60,6 +61,7 @@ class PrefsFilterStore @Inject constructor(@ApplicationContext context: Context)
         putLong("changedAt", saved.changedAtMillis)
     }
 
+    // Before it returns: a sign-out must leave nothing behind, even if the app ends right after.
     override fun clear() = prefs.edit(commit = true) { clear() }
 }
 
