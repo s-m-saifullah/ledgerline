@@ -32,11 +32,13 @@ interface SyncScheduler {
 @Singleton
 class WorkSyncScheduler @Inject constructor(@ApplicationContext private val context: Context) : SyncScheduler {
     override fun schedule() {
+        // Hourly, and not on a low battery: the app also pulls every time it opens, so little is lost. UPDATE (not KEEP) so a phone
+        // that already holds the earlier every-15-minutes job gets this one; asking again with the same request changes nothing.
         val request = PeriodicWorkRequestBuilder<SyncWorker>(IntervalMinutes, TimeUnit.MINUTES)
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).setRequiresBatteryNotLow(true).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, BackoffMinutes, TimeUnit.MINUTES)
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(WorkName, ExistingPeriodicWorkPolicy.KEEP, request)
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(WorkName, ExistingPeriodicWorkPolicy.UPDATE, request)
     }
 
     override fun sendSoon() {
@@ -55,7 +57,7 @@ class WorkSyncScheduler @Inject constructor(@ApplicationContext private val cont
     companion object {
         const val WorkName = "mirror-pull"
         const val SendName = "outbox-send"
-        const val IntervalMinutes = 15L
+        const val IntervalMinutes = 60L
         const val BackoffMinutes = 5L
     }
 }

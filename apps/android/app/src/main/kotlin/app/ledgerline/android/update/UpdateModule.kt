@@ -38,8 +38,8 @@ abstract class UpdateBindings {
         /** One object is both the list reader and the file fetcher. The User-Agent is the app's name and version, no phone model. */
         @Provides
         @Singleton
-        fun github(config: UpdateConfig, @ApplicationContext context: Context): GithubUpdateSource =
-            GithubUpdateSource(OkHttpClient(), config, "Ledgerline-Android/${BuildConfig.VERSION_NAME}", File(context.cacheDir, "update").apply { mkdirs() })
+        fun github(config: UpdateConfig, @ApplicationContext context: Context, http: OkHttpClient): GithubUpdateSource =
+            GithubUpdateSource(http, config, "Ledgerline-Android/${BuildConfig.VERSION_NAME}", File(context.cacheDir, "update").apply { mkdirs() })
 
         @Provides
         fun source(github: GithubUpdateSource): UpdateSource = github

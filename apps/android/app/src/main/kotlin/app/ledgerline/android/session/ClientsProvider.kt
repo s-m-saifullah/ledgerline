@@ -6,12 +6,19 @@ import app.ledgerline.api.LedgerlineClients
 import app.ledgerline.api.SessionToken
 import app.ledgerline.api.appUserAgent
 import app.ledgerline.api.createClients
+import okhttp3.OkHttpClient
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** The HTTP clients for the saved server address; rebuilt only when the address changes. */
+/**
+ * The HTTP clients for the saved server address; rebuilt only when the address changes. All of them are made from the one
+ * [base] client, so they share its connections instead of opening their own (WP-19b).
+ */
 @Singleton
-class ClientsProvider @Inject constructor(private val session: SessionManager) {
+class ClientsProvider @Inject constructor(
+    private val session: SessionManager,
+    private val base: OkHttpClient = OkHttpClient(),
+) {
     private var cached: Pair<String, LedgerlineClients>? = null
 
     private var cachedSync: Pair<String, LedgerlineClients>? = null
@@ -24,6 +31,7 @@ class ClientsProvider @Inject constructor(private val session: SessionManager) {
             origin = origin,
             userAgent = appUserAgent(BuildConfig.VERSION_NAME, Build.MODEL.orEmpty()),
             token = { session.tokenForSync()?.value },
+            base = base,
         )
         cachedSync = origin to clients
         return clients
@@ -37,6 +45,7 @@ class ClientsProvider @Inject constructor(private val session: SessionManager) {
         origin = origin,
         userAgent = appUserAgent(BuildConfig.VERSION_NAME, Build.MODEL.orEmpty()),
         token = { token.value },
+        base = base,
     )
 
     @Synchronized
@@ -46,6 +55,7 @@ class ClientsProvider @Inject constructor(private val session: SessionManager) {
             origin = origin,
             userAgent = appUserAgent(BuildConfig.VERSION_NAME, Build.MODEL.orEmpty()),
             token = { session.token.value?.value },
+            base = base,
         )
         cached = origin to clients
         return clients

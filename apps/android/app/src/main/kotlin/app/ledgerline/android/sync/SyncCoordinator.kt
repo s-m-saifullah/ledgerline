@@ -4,6 +4,7 @@ import app.ledgerline.android.mirror.PullResult
 import app.ledgerline.android.mirror.SyncEngine
 import app.ledgerline.android.session.Clock
 import app.ledgerline.android.session.SessionEnd
+import app.ledgerline.android.outbox.PushResult
 import app.ledgerline.android.session.SessionManager
 import app.ledgerline.android.session.SessionState
 import kotlinx.coroutines.CoroutineScope
@@ -36,9 +37,10 @@ class SyncCoordinator @Inject constructor(
     private val clock: Clock,
 ) {
     private var scope: CoroutineScope? = null
-    private var previous: SessionState? = null
-    private var needsFullRefresh = false
-    private var lastPullAt: Long? = null
+    // Read and written from the app, the sync worker and the lock timer, so each is seen as the last one wrote it.
+    @Volatile private var previous: SessionState? = null
+    @Volatile private var needsFullRefresh = false
+    @Volatile private var lastPullAt: Long? = null
 
     private val _last = MutableStateFlow<PullResult?>(null)
     private val _running = MutableStateFlow(false)
@@ -95,12 +97,16 @@ class SyncCoordinator @Inject constructor(
     }
 
     /**
-     * A change was saved to the outbox: send it now if the app can, and queue a send for when there is a network
-     * in case it cannot (only a session kept on the phone can send while the app is closed).
+     * A change was saved to the outbox: send it now if the app can. Only when that send did not finish (no connection, a
+     * server error, or the app is locked) is one queued for when there is a network, because a send that finished needs no
+     * second full sync behind it. Only a session kept on the phone can send while the app is closed.
      */
     suspend fun changed() {
+        if (session.state.value == SessionState.Unlocked) {
+            val result = shown { pull(fullRefresh = needsFullRefresh) }
+            if (result is PullResult.Updated && runner.lastPush.value is PushResult.Sent) return
+        }
         if (session.canLock()) scheduler.sendSoon()
-        if (session.state.value == SessionState.Unlocked) shown { pull(fullRefresh = needsFullRefresh) }
     }
 
     /** "Refresh everything". */
