@@ -35,6 +35,7 @@ import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.id
 import app.ledgerline.android.mirror.syncCategory
 import app.ledgerline.android.mirror.toRow
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.more.MoreActions
 import app.ledgerline.android.ui.more.MoreContent
 import org.junit.Assert.assertEquals
@@ -267,13 +268,13 @@ class CategoriesContentTest {
 
     @Test
     fun anErrorOutsideTheFormIsShownOnTheScreenAndAFormsOwnErrorStaysInItsSheet() {
-        show(CategoriesView(error = CategoryError.Offline))
+        show(CategoriesView(error = WriteError.Offline))
         compose.onNodeWithText("needs a connection", substring = true).assertExists()
     }
 
     @Test
     fun aFormsErrorIsShownOnceInItsSheetAndNotAlsoOnTheScreen() {
-        show(CategoriesView(form = CategoryForm.forNew("expense").copy(name = "Pets"), error = CategoryError.Offline))
+        show(CategoriesView(form = CategoryForm.forNew("expense").copy(name = "Pets"), error = WriteError.Offline))
         compose.onAllNodesWithText("needs a connection", substring = true).assertCountEquals(1)
     }
 
@@ -293,13 +294,13 @@ class CategoriesContentTest {
     fun everyErrorIsWordedAndTheServersSentenceIsShownAsItIs() {
         val form = CategoryForm.forNew("expense").copy(name = "Food")
         val cases = mapOf(
-            CategoryError.Offline to "needs a connection",
-            CategoryError.Forbidden to "can't change categories",
-            CategoryError.Failed to "Couldn't save the category",
-            CategoryError.Rejected("A sibling category already has this name.") to "A sibling category already has this name.",
-            CategoryError.Rejected(null) to "didn't accept this change",
+            WriteError.Offline to "needs a connection",
+            WriteError.Forbidden to "can't change categories",
+            WriteError.Failed to "Couldn't save the category",
+            WriteError.Rejected("A sibling category already has this name.") to "A sibling category already has this name.",
+            WriteError.Rejected(null) to "didn't accept this change",
         )
-        var shown by mutableStateOf<CategoryError?>(null)
+        var shown by mutableStateOf<WriteError?>(null)
         compose.setContent {
             CategoryFormContent(form, emptyList(), false, false, shown, Taps().actions(form), Modifier.requiredHeight(3000.dp))
         }
@@ -327,7 +328,7 @@ class CategoriesContentTest {
     /** The form's save button: the sheet's title says the same words, so the button is the one that can be clicked. */
     private fun saveButton(text: String) = compose.onNode(hasText(text) and hasClickAction())
 
-    private fun showForm(form: CategoryForm, parents: List<CategoryRow> = emptyList(), hasSubcategories: Boolean = false, saving: Boolean = false, error: CategoryError? = null, taps: Taps = Taps()): Taps {
+    private fun showForm(form: CategoryForm, parents: List<CategoryRow> = emptyList(), hasSubcategories: Boolean = false, saving: Boolean = false, error: WriteError? = null, taps: Taps = Taps()): Taps {
         compose.setContent { CategoryFormContent(form, parents, hasSubcategories, saving, error, taps.actions(form), Modifier.requiredHeight(3000.dp)) }
         return taps
     }

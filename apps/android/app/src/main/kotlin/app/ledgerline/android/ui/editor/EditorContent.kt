@@ -56,6 +56,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
+import app.ledgerline.android.ui.clients.BaseCurrency
 import app.ledgerline.android.ui.design.ChipShape
 import app.ledgerline.android.ui.design.PickRow
 import app.ledgerline.android.ui.design.InputRow
@@ -196,7 +197,7 @@ private fun EditorBody(state: EditorState, newCategory: NewCategory?, actions: E
                 Modifier.padding(horizontal = ScreenMargin),
             )
         }
-        val currency = state.accounts.find { it.id == form.accountId }?.currency?.ifEmpty { null } ?: "USD"
+        val currency = state.accounts.find { it.id == form.accountId }?.currency?.ifEmpty { null } ?: BaseCurrency
         val amountError = amountError(state.errors)
         Column(Modifier.padding(horizontal = ScreenMargin), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(currency, style = MaterialTheme.typography.labelLarge, color = LocalPalette.current.muted)

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.design.ActionsContent
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.GroupedListCard
@@ -48,7 +49,7 @@ internal fun CategoryFormSheet(
     parents: List<CategoryRow>,
     hasSubcategories: Boolean,
     saving: Boolean,
-    error: CategoryError?,
+    error: WriteError?,
     actions: CategoriesActions,
 ) {
     LedgerSheet(actions.closeForm) { CategoryFormContent(form, parents, hasSubcategories, saving, error, actions) }
@@ -65,7 +66,7 @@ internal fun CategoryFormContent(
     /** An edited main category with subcategories (archived ones too) cannot be given a parent. */
     hasSubcategories: Boolean,
     saving: Boolean,
-    error: CategoryError?,
+    error: WriteError?,
     actions: CategoriesActions,
     modifier: Modifier = Modifier,
 ) {

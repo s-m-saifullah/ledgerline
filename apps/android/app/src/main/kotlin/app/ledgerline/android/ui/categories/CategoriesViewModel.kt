@@ -5,14 +5,18 @@ import androidx.lifecycle.viewModelScope
 import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.CategoryWrites
+import app.ledgerline.android.online.WriteError
+import app.ledgerline.android.online.WriteKeys
 import app.ledgerline.android.online.Written
-import app.ledgerline.android.outbox.Uuid7
+import app.ledgerline.android.online.isStale
+import app.ledgerline.android.online.toWriteError
 import app.ledgerline.android.sync.SyncCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -20,27 +24,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-/** Why a write did not go through, for the screen to word. */
-sealed interface CategoryError {
-    data object Offline : CategoryError
-
-    data object Forbidden : CategoryError
-
-    data object Failed : CategoryError
-
-    /** The server's own sentence (a duplicate name, two levels only, ...); null when it gave none. */
-    data class Rejected(val detail: String?) : CategoryError
-}
-
-/** The error a write ended with, or null when it was done. */
-internal fun Written<*>.toCategoryError(): CategoryError? = when (this) {
-    is Written.Done -> null
-    Written.Offline -> CategoryError.Offline
-    Written.Forbidden -> CategoryError.Forbidden
-    Written.Failed -> CategoryError.Failed
-    is Written.Rejected -> CategoryError.Rejected(detail)
-}
 
 /** What just worked, said once under the toolbar. */
 enum class CategoryNotice { Added, Updated, Archived, Unarchived, Deleted }
@@ -58,7 +41,7 @@ data class CategoriesView(
     val search: String = "",
     val form: CategoryForm? = null,
     val saving: Boolean = false,
-    val error: CategoryError? = null,
+    val error: WriteError? = null,
     val notice: CategoryNotice? = null,
     val ask: ArchiveAsk? = null,
     val deleteAsk: DeleteAsk? = null,
@@ -82,9 +65,9 @@ class CategoriesViewModel @Inject constructor(
 ) : ViewModel() {
     private val ledger: StateFlow<String?> = reads.mirroredLedger().stateIn(viewModelScope, SharingStarted.Eagerly, null)
     private val _view = MutableStateFlow(CategoriesView())
-    private val keys = mutableMapOf<String, String>()
+    private val keys = WriteKeys("cat")
 
-    val view: StateFlow<CategoriesView> = _view
+    val view: StateFlow<CategoriesView> = _view.asStateFlow()
     val items: StateFlow<List<CategoryRow>?> = ledger
         .flatMapLatest { id -> if (id == null) flowOf(null) else reads.liveCategories(id) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -148,10 +131,11 @@ class CategoriesViewModel @Inject constructor(
 
     /** Deletes the category the question is about, when nothing stopped it. */
     fun confirmDelete() {
+        if (_view.value.saving) return
         val ask = _view.value.deleteAsk ?: return
         if (ask.block != null) return
         val ledgerId = ledger.value ?: return
-        val key = keyFor("delete|${ask.category.id}|${ask.category.version}")
+        val key = keys.keyFor("delete|${ask.category.id}|${ask.category.version}")
         _view.update { it.copy(deleteAsk = null) }
         run(ledgerId, CategoryNotice.Deleted, closeForm = false) { writes.delete(ledgerId, ask.category, key) }
     }
@@ -173,7 +157,7 @@ class CategoriesViewModel @Inject constructor(
         val ledgerId = ledger.value ?: return
         if (!form.changed) return closeForm()
         val editing = form.editing
-        val key = keyFor(if (editing == null) "create|${form.trimmedName}|${form.kind}|${form.parentId}" else "update|${editing.id}|${editing.version}|${form.trimmedName}|${form.parentId}")
+        val key = keys.keyFor(if (editing == null) "create|${form.trimmedName}|${form.kind}|${form.parentId}" else "update|${editing.id}|${editing.version}|${form.trimmedName}|${form.parentId}")
         // A new subcategory opens its main category, so the owner sees it land.
         run(ledgerId, if (editing == null) CategoryNotice.Added else CategoryNotice.Updated, closeForm = true, expand = form.parentId.takeIf { editing == null }) {
             if (editing == null) writes.create(ledgerId, key, form.toCreate()) else writes.update(ledgerId, editing.id, key, form.toUpdate())
@@ -182,21 +166,21 @@ class CategoriesViewModel @Inject constructor(
 
     /** Archives the category the question is about. */
     fun confirmArchive() {
+        if (_view.value.saving) return
         val row = _view.value.ask?.category ?: return
         val ledgerId = ledger.value ?: return
-        val key = keyFor("archive|${row.id}|${row.version}")
+        val key = keys.keyFor("archive|${row.id}|${row.version}")
         _view.update { it.copy(ask = null) }
         run(ledgerId, CategoryNotice.Archived, closeForm = false) { writes.archive(ledgerId, row.id, key, row.version) }
     }
 
     fun unarchive(row: CategoryRow) {
+        if (_view.value.saving) return
         val ledgerId = ledger.value ?: return
-        val key = keyFor("unarchive|${row.id}|${row.version}")
+        val key = keys.keyFor("unarchive|${row.id}|${row.version}")
         _view.update { it.copy(menu = null) }
         run(ledgerId, CategoryNotice.Unarchived, closeForm = false) { writes.unarchive(ledgerId, row.id, key, row.version) }
     }
-
-    private fun keyFor(change: String) = keys.getOrPut(change) { "cat-${Uuid7.next()}" }
 
     private fun run(ledgerId: String, done: CategoryNotice, closeForm: Boolean, expand: String? = null, call: suspend () -> Written<*>) {
         _view.update { it.copy(saving = true, error = null, notice = null) }
@@ -207,11 +191,11 @@ class CategoriesViewModel @Inject constructor(
                     keys.clear()
                     v.copy(saving = false, notice = done, form = if (closeForm) null else v.form, expanded = if (expand != null) v.expanded + expand else v.expanded)
                 } else {
-                    v.copy(saving = false, error = result.toCategoryError())
+                    v.copy(saving = false, error = result.toWriteError())
                 }
             }
             // A version that moved on (an edit on the web, say) is answered with 409, a category already gone with 404; bring this phone up to date.
-            if (result is Written.Rejected && (result.status == 409 || result.status == 404)) sync.pullNow()
+            if (result.isStale()) sync.pullNow()
         }
     }
 
