@@ -1,8 +1,10 @@
 package app.ledgerline.android.ui.clients
 
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.AmountIssue
 import app.ledgerline.android.ui.editor.convertMinor
 import app.ledgerline.android.ui.editor.deriveRate
+import app.ledgerline.android.ui.editor.issue
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.android.ui.editor.rateFromTyped
 import app.ledgerline.android.ui.editor.rateSentence
@@ -42,18 +44,6 @@ data class RateAnswer(val key: RateKey, val stored: StoredRate) {
 }
 
 internal fun RateAnswer?.storedFor(wanted: RateKey): StoredRate = this?.storedFor(wanted) ?: StoredRate.Looking
-
-/** What is wrong with a typed amount; each form says it next to its own field. */
-enum class AmountIssue { Missing, Invalid, TooPrecise, Zero, TooLarge }
-
-internal fun AmountInput.issue(): AmountIssue? = when (this) {
-    AmountInput.Missing -> AmountIssue.Missing
-    AmountInput.Invalid -> AmountIssue.Invalid
-    AmountInput.TooPrecise -> AmountIssue.TooPrecise
-    AmountInput.Zero -> AmountIssue.Zero
-    AmountInput.TooLarge -> AmountIssue.TooLarge
-    is AmountInput.Valid -> null
-}
 
 /** The rate two amounts fix, with the currency it is for: shown as "1 USD = 0.92 EUR" so a typo in the amount received stands out. */
 data class CrossRate(val foreign: String, val rate: String) {

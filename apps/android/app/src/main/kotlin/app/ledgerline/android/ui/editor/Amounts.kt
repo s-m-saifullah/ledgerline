@@ -22,6 +22,9 @@ fun currencyDigits(code: String): Int = try {
     2
 }
 
+/** A typed decimal read as meant (a typed field is not strict): ".8" is 0.8 and "8." is 8. [text] has its separator as ".". */
+internal fun readTypedDecimal(text: String): String = text.let { if (it.startsWith(".")) "0$it" else it }.trimEnd('.')
+
 private val AmountPattern = Regex("^[0-9]*([.,][0-9]*)?$")
 
 /**
@@ -33,7 +36,7 @@ fun parseAmount(text: String, currency: String): AmountInput {
     val cleaned = text.trim().replace(" ", "").replace(" ", "")
     if (cleaned.isEmpty()) return AmountInput.Missing
     if (!AmountPattern.matches(cleaned) || cleaned == "." || cleaned == ",") return AmountInput.Invalid
-    val value = BigDecimal(cleaned.replace(',', '.').let { if (it.startsWith(".")) "0$it" else it }.trimEnd('.'))
+    val value = BigDecimal(readTypedDecimal(cleaned.replace(',', '.')))
     if (value.signum() == 0) return AmountInput.Zero
     val minor = value.movePointRight(currencyDigits(currency))
     if (minor.stripTrailingZeros().scale() > 0) return AmountInput.TooPrecise

@@ -34,10 +34,12 @@ import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
+import app.ledgerline.android.ui.editor.AmountIssue
 import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.TimePickerStep
 import app.ledgerline.android.ui.editor.WhenRow
 import app.ledgerline.android.ui.editor.currencyDigits
+import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.android.ui.theme.LocalPalette

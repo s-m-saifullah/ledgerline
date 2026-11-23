@@ -3,6 +3,7 @@ package app.ledgerline.android.ui.clients
 import app.ledgerline.android.ui.editor.AmountInput
 import app.ledgerline.android.ui.editor.MaxMinor
 import app.ledgerline.android.ui.editor.parseAmount
+import app.ledgerline.android.ui.editor.readTypedDecimal
 import java.math.BigInteger
 
 /*
@@ -23,7 +24,7 @@ fun hoursToHundredths(text: String): Int? {
 /** What a person types for hours: the web's reader, but ".5", "2." and "1,5" are accepted as meant (a typed field is not strict). */
 fun hoursFromTyped(text: String): Int? {
     val cleaned = text.trim().replace(',', '.')
-    return hoursToHundredths(cleaned.let { if (it.startsWith(".")) "0$it" else it }.trimEnd('.'))
+    return hoursToHundredths(readTypedDecimal(cleaned))
 }
 
 /**

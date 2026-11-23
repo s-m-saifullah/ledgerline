@@ -47,6 +47,7 @@ import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.TimePickerStep
 import app.ledgerline.android.ui.editor.WhenRow
 import app.ledgerline.android.ui.editor.currencyDigits
+import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money

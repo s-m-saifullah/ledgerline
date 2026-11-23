@@ -256,6 +256,26 @@ class EditorViewModelTest {
     }
 
     @Test
+    fun everyWayAnAmountCanBeWrongIsSaidAndNothingIsSaved() = runBlocking {
+        memory.categories["expense"] = id(20)
+        val vm = editor()
+        vm.opened(EditorTarget.New())
+        vm.update { it.copy(accountId = id(3), categoryId = id(20)) }
+        mapOf(
+            "" to FormError.AmountMissing,
+            "12abc" to FormError.AmountInvalid,
+            "12.5" to FormError.AmountTooPrecise,
+            "0" to FormError.AmountZero,
+            "99999999999999999" to FormError.AmountTooLarge,
+        ).forEach { (typed, problem) ->
+            vm.update { it.copy(amount = typed) }
+            vm.save()
+            assertEquals("for \"$typed\"", setOf(problem), vm.saved().errors)
+        }
+        assertTrue(rows().isEmpty())
+    }
+
+    @Test
     fun mistakesAreShownAndNothingIsSaved() = runBlocking {
         memory.categories["expense"] = id(20)
         val vm = editor()

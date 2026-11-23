@@ -230,8 +230,8 @@ private fun SingleLine(event: HistoryEvent) {
         stringResource(R.string.history_left, shown(open)),
         waived?.let { stringResource(R.string.history_waived, shown(it)) },
     ))
-    val change = before?.let { stringResource(R.string.history_change, it.text, money(payment?.amount?.amount ?: 0, payment?.amount?.currency ?: "USD").text) }
-    val changeSpoken = before?.let { stringResource(R.string.history_change, it.spoken, money(payment?.amount?.amount ?: 0, payment?.amount?.currency ?: "USD").spoken) }
+    val change = before?.let { stringResource(R.string.history_change, it.text, money(payment?.amount?.amount ?: 0, payment?.amount?.currency ?: BaseCurrency).text) }
+    val changeSpoken = before?.let { stringResource(R.string.history_change, it.spoken, money(payment?.amount?.amount ?: 0, payment?.amount?.currency ?: BaseCurrency).spoken) }
     val hint = parts({ it.text }, change).joinToString(" · ")
     val spokenHint = parts({ it.spoken }, changeSpoken).joinToString(" · ")
     ListRow(
