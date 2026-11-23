@@ -11,7 +11,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
-import app.ledgerline.android.ui.categories.CategoryError
+import app.ledgerline.android.online.WriteError
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -63,14 +63,14 @@ class NewCategoryBoxTest {
 
     @Test
     fun everyErrorIsWordedAndTheServersSentenceIsShownAsItIs() {
-        var shown by mutableStateOf<CategoryError?>(CategoryError.Offline)
+        var shown by mutableStateOf<WriteError?>(WriteError.Offline)
         compose.setContent { NewCategoryFields(NewCategory("Food", error = shown), {}, {}) }
         val cases = listOf(
-            CategoryError.Offline to "needs a connection",
-            CategoryError.Forbidden to "can't change categories",
-            CategoryError.Failed to "Couldn't save the category",
-            CategoryError.Rejected("A sibling category already has this name.") to "A sibling category already has this name.",
-            CategoryError.Rejected(null) to "didn't accept this change",
+            WriteError.Offline to "needs a connection",
+            WriteError.Forbidden to "can't change categories",
+            WriteError.Failed to "Couldn't save the category",
+            WriteError.Rejected("A sibling category already has this name.") to "A sibling category already has this name.",
+            WriteError.Rejected(null) to "didn't accept this change",
         )
         for ((error, text) in cases) {
             compose.runOnIdle { shown = error }

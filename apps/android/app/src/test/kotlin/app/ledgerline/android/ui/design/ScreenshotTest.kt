@@ -11,6 +11,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.online.Online
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.overlay.ShownLine
 import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.budgets.BudgetsContent
@@ -800,7 +801,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         app.ledgerline.android.ui.categories.CategoryFormContent(
             app.ledgerline.android.ui.categories.CategoryForm.forEdit(categoryItems[1]).copy(name = "Dining out"),
             listOf(categoryItems[0], categoryItems[3]), false, false,
-            app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
+            app.ledgerline.android.online.WriteError.Rejected("A sibling category already has this name, including archived categories."),
             categoryActions,
         )
     }
@@ -934,7 +935,7 @@ class ScreenshotTest(private val width: Int, private val dark: Boolean, private 
         app.ledgerline.android.ui.editor.NewCategorySheetContent(
             app.ledgerline.android.ui.editor.NewCategory(
                 "Food",
-                error = app.ledgerline.android.ui.categories.CategoryError.Rejected("A sibling category already has this name, including archived categories."),
+                error = app.ledgerline.android.online.WriteError.Rejected("A sibling category already has this name, including archived categories."),
             ),
             {}, {}, {},
         )

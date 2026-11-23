@@ -27,8 +27,11 @@ import app.ledgerline.android.ui.design.WriteCopy
 import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.editor.AmountField
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.AmountIssue
 import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.currencyDigits
+import app.ledgerline.android.ui.editor.issue
+import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.format.formatMoney
 import app.ledgerline.android.ui.format.monthLabel
 import app.ledgerline.android.ui.privacy.money
@@ -69,13 +72,7 @@ internal fun LimitSheetContent(ui: LimitUi, actions: LimitActions, modifier: Mod
     val form = ui.form
     val target = form.target
     val spent = money(target.spent, target.currency)
-    val problem = when (form.parsed) {
-        AmountInput.Missing, is AmountInput.Valid -> null
-        AmountInput.Invalid -> R.string.editor_error_amount_invalid
-        AmountInput.TooPrecise -> R.string.editor_error_amount_precise
-        AmountInput.Zero -> R.string.editor_error_amount_zero
-        AmountInput.TooLarge -> R.string.editor_error_amount_large
-    }
+    val problem = form.parsed.issue()?.takeIf { it != AmountIssue.Missing }?.messageRes()
     Column(
         modifier = modifier.verticalScroll(rememberScrollState()).padding(horizontal = ScreenMargin).padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -1,6 +1,7 @@
 package app.ledgerline.android.ui.clients
 
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.amountProblem
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.android.ui.format.formatMoney
@@ -59,14 +60,9 @@ data class ServiceForm(
 
     fun problems(): List<ServiceProblem> = buildList {
         if (description.isBlank()) add(ServiceProblem.DescriptionMissing)
-        when (parsed) {
-            AmountInput.Missing -> add(ServiceProblem.AmountMissing)
-            AmountInput.Invalid -> add(ServiceProblem.AmountInvalid)
-            AmountInput.TooPrecise -> add(ServiceProblem.AmountTooPrecise)
-            AmountInput.Zero -> add(ServiceProblem.AmountZero)
-            AmountInput.TooLarge -> add(ServiceProblem.AmountTooLarge)
-            is AmountInput.Valid -> if (editing != null && (parsed as AmountInput.Valid).minor < editing.received) add(ServiceProblem.AmountBelowReceived)
-        }
+        val input = parsed
+        input.amountProblem<ServiceProblem>()?.let { add(it) }
+        if (input is AmountInput.Valid && editing != null && input.minor < editing.received) add(ServiceProblem.AmountBelowReceived)
     }
 
     /** The body to send, or null while anything is wrong. A time and a due date that were not given are left out. */

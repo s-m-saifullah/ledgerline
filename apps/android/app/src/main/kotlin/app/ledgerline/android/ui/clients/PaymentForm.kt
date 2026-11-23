@@ -1,6 +1,8 @@
 package app.ledgerline.android.ui.clients
 
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.AmountIssue
+import app.ledgerline.android.ui.editor.amountProblem
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.CreatePayment
@@ -118,14 +120,7 @@ data class PaymentForm(
     val tipMinor: Long get() = cross?.tipMinor ?: (split?.tip ?: 0)
 
     fun problems(): List<PaymentProblem> = buildList {
-        when (parsed) {
-            AmountInput.Missing -> add(PaymentProblem.AmountMissing)
-            AmountInput.Invalid -> add(PaymentProblem.AmountInvalid)
-            AmountInput.TooPrecise -> add(PaymentProblem.AmountTooPrecise)
-            AmountInput.Zero -> add(PaymentProblem.AmountZero)
-            AmountInput.TooLarge -> add(PaymentProblem.AmountTooLarge)
-            is AmountInput.Valid -> Unit
-        }
+        parsed.amountProblem<PaymentProblem>()?.let { add(it) }
         cross?.let { c ->
             c.receivedIssue?.let { add(it.receivedProblem()) }
             if (c.tipIssue != null) add(PaymentProblem.TipInvalid)

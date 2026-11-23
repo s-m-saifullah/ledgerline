@@ -1,6 +1,8 @@
 package app.ledgerline.android.ui.clients
 
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.AmountIssue
+import app.ledgerline.android.ui.editor.amountProblem
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.CreateReceipt
@@ -131,14 +133,7 @@ data class ReceiptForm(
     fun payInFull(): ReceiptForm = copy(amount = amountText(outstanding, currency))
 
     fun problems(): List<ReceiptProblem> = buildList {
-        when (parsed) {
-            AmountInput.Missing -> add(ReceiptProblem.AmountMissing)
-            AmountInput.Invalid -> add(ReceiptProblem.AmountInvalid)
-            AmountInput.TooPrecise -> add(ReceiptProblem.AmountTooPrecise)
-            AmountInput.Zero -> add(ReceiptProblem.AmountZero)
-            AmountInput.TooLarge -> add(ReceiptProblem.AmountTooLarge)
-            is AmountInput.Valid -> Unit
-        }
+        parsed.amountProblem<ReceiptProblem>()?.let { add(it) }
         cross?.let { c ->
             c.receivedIssue?.let { add(it.receivedReceiptProblem()) }
             if (c.tipIssue != null) add(ReceiptProblem.TipInvalid)
@@ -180,7 +175,7 @@ data class ReceiptForm(
         /** The form for [target], in the first currency they owe in, with nothing typed or chosen. */
         fun forClient(target: ReceiptTarget, today: String) = ReceiptForm(
             target = target,
-            currency = target.owed.firstOrNull()?.currency ?: "USD",
+            currency = target.owed.firstOrNull()?.currency ?: BaseCurrency,
             amount = "",
             accountId = null,
             categoryId = null,

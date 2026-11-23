@@ -188,8 +188,8 @@ internal class OwedText(val lines: List<String>, val note: String?, val spoken: 
 @Composable
 internal fun balances(client: Contact): OwedText {
     val none = client.openBalances.isEmpty()
-    val amounts = if (none) listOf(money(0, "USD")) else client.openBalances.map { money(it.amount, it.currency) }
-    val foreign = client.openBalances.any { it.currency != "USD" }
+    val amounts = if (none) listOf(money(0, BaseCurrency)) else client.openBalances.map { money(it.amount, it.currency) }
+    val foreign = client.openBalances.any { it.currency != BaseCurrency }
     val total = money(client.openBalance.amount, client.openBalance.currency)
     val note = if (!foreign) null else if (client.unconvertedCurrencies.isNotEmpty()) {
         stringResource(R.string.client_balance_note_missing, total.text, client.unconvertedCurrencies.joinToString(", "))

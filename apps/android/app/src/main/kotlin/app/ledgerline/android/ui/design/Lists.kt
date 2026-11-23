@@ -53,12 +53,6 @@ fun LoadMore(label: String, loading: Boolean, failed: Boolean, onClick: () -> Un
     }
 }
 
-/** A borderless block of a muted line (a label's note, an empty list's hint) between cards. */
-@Composable
-fun MutedLine(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = ScreenMargin))
-}
-
 /**
  * Room at the end of a list that is being narrowed by a search or a filter: as tall as the visible area, so a shorter
  * result never leaves the list shorter than the scroll position needs. Without it, filtering while scrolled (the

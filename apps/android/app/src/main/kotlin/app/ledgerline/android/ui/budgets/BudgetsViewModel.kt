@@ -17,6 +17,7 @@ import app.ledgerline.api.BudgetMonth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -49,7 +50,7 @@ class BudgetsViewModel @Inject constructor(
     private val keys = WriteKeys("bud")
 
     /** The Set limit sheet while it is open (null otherwise). */
-    val limit: StateFlow<LimitUi?> = _limit
+    val limit: StateFlow<LimitUi?> = _limit.asStateFlow()
 
     /** Opens the sheet for [line] in the month on screen; an archived category has none. */
     fun openLimit(line: BudgetLine) {

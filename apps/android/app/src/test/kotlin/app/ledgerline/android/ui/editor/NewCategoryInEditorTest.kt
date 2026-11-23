@@ -25,7 +25,7 @@ import app.ledgerline.android.sync.SyncCoordinator
 import app.ledgerline.android.sync.SyncRunner
 import app.ledgerline.android.testing.FakeClock
 import app.ledgerline.android.testing.OnlineHarness
-import app.ledgerline.android.ui.categories.CategoryError
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.api.ApiJson
 import app.ledgerline.api.Category
 import kotlinx.coroutines.flow.first
@@ -205,7 +205,7 @@ class NewCategoryInEditorTest {
         editor.finished()
         val box = editor.newCategory.value!!
         assertEquals("Pets", box.name)
-        assertEquals(CategoryError.Offline, box.error)
+        assertEquals(WriteError.Offline, box.error)
         assertFalse(box.creating)
         assertNull(editor.state.value!!.form.categoryId?.takeIf { it == id(30) })
     }
@@ -218,7 +218,7 @@ class NewCategoryInEditorTest {
         editor.type("Food")
         editor.createCategory()
         editor.finished()
-        assertEquals(CategoryError.Rejected("A sibling category already has this name, including archived categories."), editor.newCategory.value!!.error)
+        assertEquals(WriteError.Rejected("A sibling category already has this name, including archived categories."), editor.newCategory.value!!.error)
         assertEquals("Food", editor.newCategory.value!!.name)
         editor.setNewCategoryName("Food and drink")
         assertNull(editor.newCategory.value!!.error)
@@ -242,7 +242,7 @@ class NewCategoryInEditorTest {
         val keys = harness.recorded.map { it.idempotencyKey }
         assertEquals(keys[0], keys[1])
         assertNotEquals(keys[1], keys[2])
-        assertEquals(CategoryError.Failed, editor.newCategory.value!!.error)
+        assertEquals(WriteError.Failed, editor.newCategory.value!!.error)
     }
 
     @Test

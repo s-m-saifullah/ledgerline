@@ -25,9 +25,11 @@ import app.ledgerline.android.ui.design.InputRow
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.editor.AmountField
+import app.ledgerline.android.ui.editor.AmountIssue
 import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.editor.invertRate
+import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.privacy.money
 
 /*
@@ -36,14 +38,6 @@ import app.ledgerline.android.ui.privacy.money
  * currency, the rate the ledger stores and a way to set it by hand), and an optional tip in the account's currency. They
  * are only drawn when the account's currency differs from the service's.
  */
-
-internal fun AmountIssue.messageRes() = when (this) {
-    AmountIssue.Missing -> R.string.editor_error_amount_missing
-    AmountIssue.Invalid -> R.string.editor_error_amount_invalid
-    AmountIssue.TooPrecise -> R.string.editor_error_amount_precise
-    AmountIssue.Zero -> R.string.editor_error_amount_zero
-    AmountIssue.TooLarge -> R.string.editor_error_amount_large
-}
 
 /** What arrived in the account (its own currency's decimals), with the rate sentence under it once both amounts are valid. */
 @Composable

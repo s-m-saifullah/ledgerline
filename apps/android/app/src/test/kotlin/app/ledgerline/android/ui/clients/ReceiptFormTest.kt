@@ -91,6 +91,11 @@ class ReceiptFormTest {
     }
 
     @Test
+    fun anAmountBeyondWhatTheServerStoresIsSaid() {
+        assertEquals(listOf(ReceiptProblem.AmountTooLarge), form(amount = "99999999999999999").problems())
+    }
+
+    @Test
     fun everyProblemIsFoundAtOnce() {
         assertEquals(listOf(ReceiptProblem.AmountMissing, ReceiptProblem.AccountMissing, ReceiptProblem.CategoryMissing), form(amount = "", accountId = null, categoryId = null).problems())
         assertEquals(listOf(ReceiptProblem.AmountInvalid), form(amount = "1.2.3").problems())

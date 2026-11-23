@@ -3,6 +3,7 @@ package app.ledgerline.android.ui.editor
 import android.content.Context
 import androidx.core.content.edit
 import app.ledgerline.android.mirror.CategoryRow
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.design.Choice
 import dagger.Binds
 import dagger.Module
@@ -124,7 +125,7 @@ data class EditorState(
 data class NewCategory(
     val name: String = "",
     val creating: Boolean = false,
-    val error: app.ledgerline.android.ui.categories.CategoryError? = null,
+    val error: WriteError? = null,
 ) {
     /** The name the API takes: something in it, and no more than 100 characters. */
     val valid: Boolean get() = name.trim().let { it.isNotEmpty() && it.length <= app.ledgerline.android.ui.categories.MaxCategoryName }

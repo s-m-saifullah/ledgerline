@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.CategoryRow
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.design.ActionsButton
 import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.CardGap
@@ -197,11 +198,11 @@ private fun CategoryNotice.text() = when (this) {
 }
 
 @Composable
-internal fun errorText(error: CategoryError): String = when (error) {
-    CategoryError.Offline -> stringResource(R.string.category_error_offline)
-    CategoryError.Forbidden -> stringResource(R.string.category_error_forbidden)
-    CategoryError.Failed -> stringResource(R.string.category_error_failed)
-    is CategoryError.Rejected -> error.detail ?: stringResource(R.string.category_error_rejected)
+internal fun errorText(error: WriteError): String = when (error) {
+    WriteError.Offline -> stringResource(R.string.category_error_offline)
+    WriteError.Forbidden -> stringResource(R.string.category_error_forbidden)
+    WriteError.Failed -> stringResource(R.string.category_error_failed)
+    is WriteError.Rejected -> error.detail ?: stringResource(R.string.category_error_rejected)
 }
 
 /** One main category with, when open, its subcategories underneath. */

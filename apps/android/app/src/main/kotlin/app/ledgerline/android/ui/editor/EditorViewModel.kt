@@ -9,17 +9,18 @@ import app.ledgerline.android.mirror.CategoryRow
 import app.ledgerline.android.mirror.MirrorDao
 import app.ledgerline.android.mirror.MirrorReads
 import app.ledgerline.android.online.CategoryWrites
+import app.ledgerline.android.online.WriteKeys
 import app.ledgerline.android.online.Written
+import app.ledgerline.android.online.toWriteError
 import app.ledgerline.android.outbox.OutboxRow
 import app.ledgerline.android.outbox.OutboxStore
-import app.ledgerline.android.outbox.Uuid7
 import app.ledgerline.android.outbox.WallClock
 import app.ledgerline.android.overlay.LedgerView
 import app.ledgerline.android.overlay.Overlay
 import app.ledgerline.android.overlay.ShownEntry
 import app.ledgerline.android.succeeded
 import app.ledgerline.android.sync.SyncCoordinator
-import app.ledgerline.android.ui.categories.toCategoryError
+import app.ledgerline.android.ui.clients.BaseCurrency
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.api.CreateCategory
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -58,7 +59,7 @@ class EditorViewModel @Inject constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow<EditorState?>(null)
     private val _newCategory = MutableStateFlow<NewCategory?>(null)
-    private val categoryKeys = mutableMapOf<String, String>()
+    private val categoryKeys = WriteKeys("cat")
 
     /** The inline "New category" box: null while closed. */
     val newCategory: StateFlow<NewCategory?> = _newCategory.asStateFlow()
@@ -228,7 +229,7 @@ class EditorViewModel @Inject constructor(
         if (box.creating || !box.valid || now.readOnly != null || now.saving || now.form.mode == EntryMode.Transfer) return
         val kind = now.form.mode.kind()
         val name = box.name.trim()
-        val key = categoryKeys.getOrPut("$kind|$name") { "cat-${Uuid7.next()}" }
+        val key = categoryKeys.keyFor("$kind|$name")
         val opening = session
         _newCategory.value = box.copy(creating = true, error = null)
         viewModelScope.launch {
@@ -241,7 +242,7 @@ class EditorViewModel @Inject constructor(
                 update { it.copy(categoryId = result.value.id) }
                 _newCategory.value = null
             } else {
-                _newCategory.value = _newCategory.value?.copy(creating = false, error = result.toCategoryError())
+                _newCategory.value = _newCategory.value?.copy(creating = false, error = result.toWriteError())
             }
         }
     }
@@ -253,15 +254,10 @@ class EditorViewModel @Inject constructor(
         val account = accounts.find { it.id == form.accountId }
         val errors = mutableSetOf<FormError>()
         if (account == null) errors += FormError.AccountMissing
-        val currency = current?.currency?.takeIf { !now.isNew && target !is EditorTarget.Fix } ?: account?.currency ?: "USD"
-        val minor = when (val parsed = parseAmount(form.amount, currency)) {
-            is AmountInput.Valid -> parsed.minor
-            AmountInput.Missing -> null.also { errors += FormError.AmountMissing }
-            AmountInput.Invalid -> null.also { errors += FormError.AmountInvalid }
-            AmountInput.TooPrecise -> null.also { errors += FormError.AmountTooPrecise }
-            AmountInput.Zero -> null.also { errors += FormError.AmountZero }
-            AmountInput.TooLarge -> null.also { errors += FormError.AmountTooLarge }
-        }
+        val currency = current?.currency?.takeIf { !now.isNew && target !is EditorTarget.Fix } ?: account?.currency ?: BaseCurrency
+        val parsed = parseAmount(form.amount, currency)
+        parsed.amountProblem<FormError>()?.let { errors += it }
+        val minor = (parsed as? AmountInput.Valid)?.minor
         // As on the web, an expense or income needs a category.
         if (form.mode != EntryMode.Transfer && form.categoryId == null) errors += FormError.CategoryMissing
         if (form.mode == EntryMode.Transfer) {

@@ -2,6 +2,7 @@ package app.ledgerline.android.ui.loans
 
 import app.ledgerline.android.ui.clients.BaseCurrency
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.amountProblem
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.LoanMove
 import app.ledgerline.api.Money
@@ -82,14 +83,9 @@ data class LoanForm(
     fun withCurrency(code: String) = copy(chosenCurrency = code, accountId = null)
 
     fun problems(): List<LoanProblem> = buildList {
-        when (val input = parsed) {
-            AmountInput.Missing -> add(LoanProblem.AmountMissing)
-            AmountInput.Invalid -> add(LoanProblem.AmountInvalid)
-            AmountInput.TooPrecise -> add(LoanProblem.AmountTooPrecise)
-            AmountInput.Zero -> add(LoanProblem.AmountZero)
-            AmountInput.TooLarge -> add(LoanProblem.AmountTooLarge)
-            is AmountInput.Valid -> if (kind == LoanKind.Repay && input.minor > abs(balance)) add(LoanProblem.MoreThanOpen)
-        }
+        val input = parsed
+        input.amountProblem<LoanProblem>()?.let { add(it) }
+        if (input is AmountInput.Valid && kind == LoanKind.Repay && input.minor > abs(balance)) add(LoanProblem.MoreThanOpen)
         if (account == null) add(LoanProblem.AccountMissing)
     }
 

@@ -12,6 +12,7 @@ import app.ledgerline.android.mirror.page
 import app.ledgerline.android.mirror.syncCategory
 import app.ledgerline.android.mirror.toRows
 import app.ledgerline.android.online.CategoryWrites
+import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.outbox.PushEngine
 import app.ledgerline.android.outbox.FakeServer
 import app.ledgerline.android.outbox.outboxFor
@@ -246,7 +247,7 @@ class CategoriesViewModelTest {
         val keys = harness.recorded.map { it.idempotencyKey }
         assertEquals(keys[0], keys[1])
         assertNotEquals(keys[1], keys[2])
-        assertEquals(CategoryError.Failed, viewModel.view.value.error)
+        assertEquals(WriteError.Failed, viewModel.view.value.error)
         assertEquals("Pets and vets", viewModel.view.value.form?.name)
     }
 
@@ -277,7 +278,7 @@ class CategoriesViewModelTest {
         offline.edit { it.copy(name = "Pets") }
         offline.save()
         harness.until { !offline.view.value.saving }
-        assertEquals(CategoryError.Offline, offline.view.value.error)
+        assertEquals(WriteError.Offline, offline.view.value.error)
         assertEquals("Pets", offline.view.value.form?.name)
         assertNull(offline.view.value.notice)
         job.cancel()
@@ -299,7 +300,7 @@ class CategoriesViewModelTest {
     fun theServersSentenceIsShownAndAStaleVersionBringsThePhoneUpToDate() {
         harness.route("/api/v1/ledgers/ledger-a/categories") { problem(409, "A sibling category already has this name, including archived categories.") }
         typeAndSave("Food")
-        assertEquals(CategoryError.Rejected("A sibling category already has this name, including archived categories."), viewModel.view.value.error)
+        assertEquals(WriteError.Rejected("A sibling category already has this name, including archived categories."), viewModel.view.value.error)
         harness.until { pulls.get() >= 1 }
     }
 
@@ -307,7 +308,7 @@ class CategoriesViewModelTest {
     fun aBadRequestWithoutASentenceIsShownWithoutOneAndDoesNotPull() {
         harness.route("/api/v1/ledgers/ledger-a/categories") { harness.json(422, "<html>") }
         typeAndSave("Pets")
-        assertEquals(CategoryError.Rejected(null), viewModel.view.value.error)
+        assertEquals(WriteError.Rejected(null), viewModel.view.value.error)
         assertEquals(0, pulls.get())
     }
 
@@ -315,11 +316,11 @@ class CategoriesViewModelTest {
     fun anAccountThatMayNotWriteSeesThatAndARefusedTokenSignsOut() {
         harness.route("/api/v1/ledgers/ledger-a/categories") { problem(403, "No.") }
         typeAndSave("Pets")
-        assertEquals(CategoryError.Forbidden, viewModel.view.value.error)
+        assertEquals(WriteError.Forbidden, viewModel.view.value.error)
         harness.route("/api/v1/ledgers/ledger-a/categories") { problem(401, "Sign in.") }
         viewModel.save()
         harness.until { !viewModel.view.value.saving && harness.session.state.value != SessionState.Unlocked }
-        assertEquals(CategoryError.Failed, viewModel.view.value.error)
+        assertEquals(WriteError.Failed, viewModel.view.value.error)
     }
 
     @Test
@@ -511,7 +512,7 @@ class CategoriesViewModelTest {
         ask(3)
         viewModel.confirmDelete()
         harness.until { !viewModel.view.value.saving && viewModel.view.value.error != null }
-        assertEquals(CategoryError.Rejected("Delete the connected transactions first, or archive this item to keep its history."), viewModel.view.value.error)
+        assertEquals(WriteError.Rejected("Delete the connected transactions first, or archive this item to keep its history."), viewModel.view.value.error)
         harness.until { pulls.get() >= 1 }
         assertTrue(viewModel.items.value!!.any { it.id == id(3) })
     }
@@ -522,7 +523,7 @@ class CategoriesViewModelTest {
         ask(3)
         viewModel.confirmDelete()
         harness.until { !viewModel.view.value.saving && viewModel.view.value.error != null }
-        assertEquals(CategoryError.Rejected("Category not found."), viewModel.view.value.error)
+        assertEquals(WriteError.Rejected("Category not found."), viewModel.view.value.error)
         assertNull(viewModel.view.value.notice)
         harness.until { pulls.get() >= 1 }
     }
@@ -533,7 +534,7 @@ class CategoriesViewModelTest {
         ask(3)
         viewModel.confirmDelete()
         harness.until { !viewModel.view.value.saving && viewModel.view.value.error != null }
-        assertEquals(CategoryError.Forbidden, viewModel.view.value.error)
+        assertEquals(WriteError.Forbidden, viewModel.view.value.error)
         assertTrue(viewModel.items.value!!.any { it.id == id(3) })
     }
 
@@ -547,7 +548,7 @@ class CategoriesViewModelTest {
         }
         val keys = harness.recorded.map { it.idempotencyKey }
         assertEquals(keys[0], keys[1])
-        assertEquals(CategoryError.Failed, viewModel.view.value.error)
+        assertEquals(WriteError.Failed, viewModel.view.value.error)
     }
 
     @Test
@@ -556,5 +557,51 @@ class CategoriesViewModelTest {
         viewModel.dismissDeleteAsk()
         assertNull(viewModel.view.value.deleteAsk)
         assertTrue(harness.recorded.isEmpty())
+    }
+
+    // ---- One write at a time: a second tap on a question's button while a write is being sent does nothing.
+
+    /** An add of "Pets" that stays in flight for a moment, so the tap under test comes while it is being sent. */
+    private fun addInFlight() {
+        harness.route("/api/v1/ledgers/ledger-a/categories") { answer(category(10, "Pets")) }
+        harness.delayMillis = 1_500
+        viewModel.startAdd()
+        viewModel.edit { it.copy(name = "Pets") }
+        viewModel.save()
+        assertTrue(viewModel.view.value.saving)
+    }
+
+    private fun assertOnlyTheAddWasSent() {
+        Thread.sleep(400)
+        assertEquals(listOf("POST"), harness.recorded.map { it.method })
+        harness.until { !viewModel.view.value.saving }
+    }
+
+    @Test
+    fun archivingDuringAWriteSendsNothingAndKeepsTheQuestion() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}/archive") { answer(category(3, "Transport", version = 2, archived = true)) }
+        viewModel.askArchive(row(3))
+        addInFlight()
+        viewModel.confirmArchive()
+        assertNotNull(viewModel.view.value.ask)
+        assertOnlyTheAddWasSent()
+    }
+
+    @Test
+    fun unarchivingDuringAWriteSendsNothing() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}/unarchive") { answer(category(3, "Transport", version = 3)) }
+        addInFlight()
+        viewModel.unarchive(row(3))
+        assertOnlyTheAddWasSent()
+    }
+
+    @Test
+    fun deletingDuringAWriteSendsNothingAndKeepsTheQuestion() {
+        harness.route("/api/v1/ledgers/ledger-a/categories/${id(3)}") { harness.json(204, "") }
+        ask(3)
+        addInFlight()
+        viewModel.confirmDelete()
+        assertNotNull(viewModel.view.value.deleteAsk)
+        assertOnlyTheAddWasSent()
     }
 }
