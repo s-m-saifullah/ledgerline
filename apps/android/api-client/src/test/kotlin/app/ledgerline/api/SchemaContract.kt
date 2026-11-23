@@ -27,6 +27,9 @@ object SchemaContract {
         Json.parseToJsonElement(File(path).readText()).jsonObject
     }
 
+    /** Every path of the document, each with its operations by verb. */
+    val paths: JsonObject get() = document["paths"]!!.jsonObject
+
     /** The JSON schema of a response of one operation, for example ("/api/v1/ledgers", "get", "200"). */
     fun response(path: String, method: String, status: String): JsonObject {
         val paths = document["paths"]!!.jsonObject
