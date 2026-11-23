@@ -68,12 +68,12 @@ object CentsFirst {
         return pasted(inserted, digits) ?: previous
     }
 
-    /** A typed or stored amount as whole minor units, or null when it is not a plain decimal. */
+    /** A typed or stored amount as whole minor units, or null when it is not a plain decimal or is beyond [MaxMinor] (as the web's reader). */
     private fun minorOf(text: String, digits: Int): BigInteger? {
         val cleaned = clean(text)
         val pattern = if (digits == 0) Regex("^\\d+$") else Regex("^\\d+(?:\\.\\d{1,$digits})?$")
         if (!pattern.matches(cleaned)) return null
-        return BigDecimal(cleaned).movePointRight(digits).toBigIntegerExact()
+        return BigDecimal(cleaned).movePointRight(digits).toBigIntegerExact().takeIf { it <= safeMax }
     }
 
     private fun show(minor: BigInteger, digits: Int): String = BigDecimal(minor).movePointLeft(digits).toPlainString()

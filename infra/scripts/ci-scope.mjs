@@ -50,9 +50,18 @@ export function affectsAndroid(path) {
   );
 }
 
+// The Android fixtures built from the shared and web code (`packages/shared/src/android-parity.test.ts` and
+// `apps/web/src/components/android-parity.test.ts` fail when a committed file differs from what that code gives). The
+// web suites check them, so a change to one of these files runs them although it sits under apps/android.
+const parityFixture =
+  /^apps\/android\/app\/src\/test\/resources\/[a-z-]+-parity\.json$/;
+
 // The web, API and browser suites cannot be affected by documentation or by files that only the Android build uses.
 export function affectsWebOrApi(path) {
-  return !isDocumentation(path) && !path.startsWith("apps/android/");
+  return (
+    !isDocumentation(path) &&
+    (!path.startsWith("apps/android/") || parityFixture.test(path))
+  );
 }
 
 export function classifyChanges({

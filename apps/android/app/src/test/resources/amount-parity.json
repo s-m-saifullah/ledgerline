@@ -1,0 +1,6829 @@
+{
+  "note": "Generated from apps/web/src/components/amount-entry.ts (centsFirstValue, pastedValue, amountPlaceholder) and lib/amount-input.ts (amountMinor) by android-parity.test.ts; synthetic numbers.",
+  "cents": [
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "120",
+      "digits": 0,
+      "value": "120"
+    },
+    {
+      "previous": "120",
+      "next": "1203",
+      "digits": 0,
+      "value": "1203"
+    },
+    {
+      "previous": "1203",
+      "next": "12030",
+      "digits": 0,
+      "value": "12030"
+    },
+    {
+      "previous": "12030",
+      "next": "120304",
+      "digits": 0,
+      "value": "120304"
+    },
+    {
+      "previous": "120304",
+      "next": "1203045",
+      "digits": 0,
+      "value": "1203045"
+    },
+    {
+      "previous": "1203045",
+      "next": "12030459",
+      "digits": 0,
+      "value": "12030459"
+    },
+    {
+      "previous": "12030459",
+      "next": "120304596",
+      "digits": 0,
+      "value": "120304596"
+    },
+    {
+      "previous": "120304596",
+      "next": "1203045960",
+      "digits": 0,
+      "value": "1203045960"
+    },
+    {
+      "previous": "1203045960",
+      "next": "120304596",
+      "digits": 0,
+      "value": "120304596"
+    },
+    {
+      "previous": "120304596",
+      "next": "12030459",
+      "digits": 0,
+      "value": "12030459"
+    },
+    {
+      "previous": "12030459",
+      "next": "1203045",
+      "digits": 0,
+      "value": "1203045"
+    },
+    {
+      "previous": "1203045",
+      "next": "120304",
+      "digits": 0,
+      "value": "120304"
+    },
+    {
+      "previous": "120304",
+      "next": "12030",
+      "digits": 0,
+      "value": "12030"
+    },
+    {
+      "previous": "12030",
+      "next": "1203",
+      "digits": 0,
+      "value": "1203"
+    },
+    {
+      "previous": "1203",
+      "next": "120",
+      "digits": 0,
+      "value": "120"
+    },
+    {
+      "previous": "120",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "0",
+      "next": "01",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "120",
+      "digits": 0,
+      "value": "120"
+    },
+    {
+      "previous": "120",
+      "next": "1203",
+      "digits": 0,
+      "value": "1203"
+    },
+    {
+      "previous": "1203",
+      "next": "12030",
+      "digits": 0,
+      "value": "12030"
+    },
+    {
+      "previous": "12030",
+      "next": "120304",
+      "digits": 0,
+      "value": "120304"
+    },
+    {
+      "previous": "120304",
+      "next": "1203045",
+      "digits": 0,
+      "value": "1203045"
+    },
+    {
+      "previous": "1203045",
+      "next": "12030459",
+      "digits": 0,
+      "value": "12030459"
+    },
+    {
+      "previous": "12030459",
+      "next": "120304596",
+      "digits": 0,
+      "value": "120304596"
+    },
+    {
+      "previous": "120304596",
+      "next": "1203045960",
+      "digits": 0,
+      "value": "1203045960"
+    },
+    {
+      "previous": "1203045960",
+      "next": "120304596",
+      "digits": 0,
+      "value": "120304596"
+    },
+    {
+      "previous": "120304596",
+      "next": "12030459",
+      "digits": 0,
+      "value": "12030459"
+    },
+    {
+      "previous": "12030459",
+      "next": "1203045",
+      "digits": 0,
+      "value": "1203045"
+    },
+    {
+      "previous": "1203045",
+      "next": "120304",
+      "digits": 0,
+      "value": "120304"
+    },
+    {
+      "previous": "120304",
+      "next": "12030",
+      "digits": 0,
+      "value": "12030"
+    },
+    {
+      "previous": "12030",
+      "next": "1203",
+      "digits": 0,
+      "value": "1203"
+    },
+    {
+      "previous": "1203",
+      "next": "120",
+      "digits": 0,
+      "value": "120"
+    },
+    {
+      "previous": "120",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "12.5",
+      "next": "12.51",
+      "digits": 0,
+      "value": "1251"
+    },
+    {
+      "previous": "1251",
+      "next": "12512",
+      "digits": 0,
+      "value": "12512"
+    },
+    {
+      "previous": "12512",
+      "next": "125120",
+      "digits": 0,
+      "value": "125120"
+    },
+    {
+      "previous": "125120",
+      "next": "1251203",
+      "digits": 0,
+      "value": "1251203"
+    },
+    {
+      "previous": "1251203",
+      "next": "12512030",
+      "digits": 0,
+      "value": "12512030"
+    },
+    {
+      "previous": "12512030",
+      "next": "125120304",
+      "digits": 0,
+      "value": "125120304"
+    },
+    {
+      "previous": "125120304",
+      "next": "1251203045",
+      "digits": 0,
+      "value": "1251203045"
+    },
+    {
+      "previous": "1251203045",
+      "next": "12512030459",
+      "digits": 0,
+      "value": "12512030459"
+    },
+    {
+      "previous": "12512030459",
+      "next": "125120304596",
+      "digits": 0,
+      "value": "125120304596"
+    },
+    {
+      "previous": "125120304596",
+      "next": "1251203045960",
+      "digits": 0,
+      "value": "1251203045960"
+    },
+    {
+      "previous": "1251203045960",
+      "next": "125120304596",
+      "digits": 0,
+      "value": "125120304596"
+    },
+    {
+      "previous": "125120304596",
+      "next": "12512030459",
+      "digits": 0,
+      "value": "12512030459"
+    },
+    {
+      "previous": "12512030459",
+      "next": "1251203045",
+      "digits": 0,
+      "value": "1251203045"
+    },
+    {
+      "previous": "1251203045",
+      "next": "125120304",
+      "digits": 0,
+      "value": "125120304"
+    },
+    {
+      "previous": "125120304",
+      "next": "12512030",
+      "digits": 0,
+      "value": "12512030"
+    },
+    {
+      "previous": "12512030",
+      "next": "1251203",
+      "digits": 0,
+      "value": "1251203"
+    },
+    {
+      "previous": "1251203",
+      "next": "125120",
+      "digits": 0,
+      "value": "125120"
+    },
+    {
+      "previous": "125120",
+      "next": "12512",
+      "digits": 0,
+      "value": "12512"
+    },
+    {
+      "previous": "12512",
+      "next": "1251",
+      "digits": 0,
+      "value": "1251"
+    },
+    {
+      "previous": "1251",
+      "next": "125",
+      "digits": 0,
+      "value": "125"
+    },
+    {
+      "previous": "125",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "100",
+      "next": "1001",
+      "digits": 0,
+      "value": "1001"
+    },
+    {
+      "previous": "1001",
+      "next": "10012",
+      "digits": 0,
+      "value": "10012"
+    },
+    {
+      "previous": "10012",
+      "next": "100120",
+      "digits": 0,
+      "value": "100120"
+    },
+    {
+      "previous": "100120",
+      "next": "1001203",
+      "digits": 0,
+      "value": "1001203"
+    },
+    {
+      "previous": "1001203",
+      "next": "10012030",
+      "digits": 0,
+      "value": "10012030"
+    },
+    {
+      "previous": "10012030",
+      "next": "100120304",
+      "digits": 0,
+      "value": "100120304"
+    },
+    {
+      "previous": "100120304",
+      "next": "1001203045",
+      "digits": 0,
+      "value": "1001203045"
+    },
+    {
+      "previous": "1001203045",
+      "next": "10012030459",
+      "digits": 0,
+      "value": "10012030459"
+    },
+    {
+      "previous": "10012030459",
+      "next": "100120304596",
+      "digits": 0,
+      "value": "100120304596"
+    },
+    {
+      "previous": "100120304596",
+      "next": "1001203045960",
+      "digits": 0,
+      "value": "1001203045960"
+    },
+    {
+      "previous": "1001203045960",
+      "next": "100120304596",
+      "digits": 0,
+      "value": "100120304596"
+    },
+    {
+      "previous": "100120304596",
+      "next": "10012030459",
+      "digits": 0,
+      "value": "10012030459"
+    },
+    {
+      "previous": "10012030459",
+      "next": "1001203045",
+      "digits": 0,
+      "value": "1001203045"
+    },
+    {
+      "previous": "1001203045",
+      "next": "100120304",
+      "digits": 0,
+      "value": "100120304"
+    },
+    {
+      "previous": "100120304",
+      "next": "10012030",
+      "digits": 0,
+      "value": "10012030"
+    },
+    {
+      "previous": "10012030",
+      "next": "1001203",
+      "digits": 0,
+      "value": "1001203"
+    },
+    {
+      "previous": "1001203",
+      "next": "100120",
+      "digits": 0,
+      "value": "100120"
+    },
+    {
+      "previous": "100120",
+      "next": "10012",
+      "digits": 0,
+      "value": "10012"
+    },
+    {
+      "previous": "10012",
+      "next": "1001",
+      "digits": 0,
+      "value": "1001"
+    },
+    {
+      "previous": "1001",
+      "next": "100",
+      "digits": 0,
+      "value": "100"
+    },
+    {
+      "previous": "100",
+      "next": "10",
+      "digits": 0,
+      "value": "10"
+    },
+    {
+      "previous": "10",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "7",
+      "next": "71",
+      "digits": 0,
+      "value": "71"
+    },
+    {
+      "previous": "71",
+      "next": "712",
+      "digits": 0,
+      "value": "712"
+    },
+    {
+      "previous": "712",
+      "next": "7120",
+      "digits": 0,
+      "value": "7120"
+    },
+    {
+      "previous": "7120",
+      "next": "71203",
+      "digits": 0,
+      "value": "71203"
+    },
+    {
+      "previous": "71203",
+      "next": "712030",
+      "digits": 0,
+      "value": "712030"
+    },
+    {
+      "previous": "712030",
+      "next": "7120304",
+      "digits": 0,
+      "value": "7120304"
+    },
+    {
+      "previous": "7120304",
+      "next": "71203045",
+      "digits": 0,
+      "value": "71203045"
+    },
+    {
+      "previous": "71203045",
+      "next": "712030459",
+      "digits": 0,
+      "value": "712030459"
+    },
+    {
+      "previous": "712030459",
+      "next": "7120304596",
+      "digits": 0,
+      "value": "7120304596"
+    },
+    {
+      "previous": "7120304596",
+      "next": "71203045960",
+      "digits": 0,
+      "value": "71203045960"
+    },
+    {
+      "previous": "71203045960",
+      "next": "7120304596",
+      "digits": 0,
+      "value": "7120304596"
+    },
+    {
+      "previous": "7120304596",
+      "next": "712030459",
+      "digits": 0,
+      "value": "712030459"
+    },
+    {
+      "previous": "712030459",
+      "next": "71203045",
+      "digits": 0,
+      "value": "71203045"
+    },
+    {
+      "previous": "71203045",
+      "next": "7120304",
+      "digits": 0,
+      "value": "7120304"
+    },
+    {
+      "previous": "7120304",
+      "next": "712030",
+      "digits": 0,
+      "value": "712030"
+    },
+    {
+      "previous": "712030",
+      "next": "71203",
+      "digits": 0,
+      "value": "71203"
+    },
+    {
+      "previous": "71203",
+      "next": "7120",
+      "digits": 0,
+      "value": "7120"
+    },
+    {
+      "previous": "7120",
+      "next": "712",
+      "digits": 0,
+      "value": "712"
+    },
+    {
+      "previous": "712",
+      "next": "71",
+      "digits": 0,
+      "value": "71"
+    },
+    {
+      "previous": "71",
+      "next": "7",
+      "digits": 0,
+      "value": "7"
+    },
+    {
+      "previous": "7",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "12.34",
+      "next": "12.341",
+      "digits": 0,
+      "value": "12341"
+    },
+    {
+      "previous": "12341",
+      "next": "123412",
+      "digits": 0,
+      "value": "123412"
+    },
+    {
+      "previous": "123412",
+      "next": "1234120",
+      "digits": 0,
+      "value": "1234120"
+    },
+    {
+      "previous": "1234120",
+      "next": "12341203",
+      "digits": 0,
+      "value": "12341203"
+    },
+    {
+      "previous": "12341203",
+      "next": "123412030",
+      "digits": 0,
+      "value": "123412030"
+    },
+    {
+      "previous": "123412030",
+      "next": "1234120304",
+      "digits": 0,
+      "value": "1234120304"
+    },
+    {
+      "previous": "1234120304",
+      "next": "12341203045",
+      "digits": 0,
+      "value": "12341203045"
+    },
+    {
+      "previous": "12341203045",
+      "next": "123412030459",
+      "digits": 0,
+      "value": "123412030459"
+    },
+    {
+      "previous": "123412030459",
+      "next": "1234120304596",
+      "digits": 0,
+      "value": "1234120304596"
+    },
+    {
+      "previous": "1234120304596",
+      "next": "12341203045960",
+      "digits": 0,
+      "value": "12341203045960"
+    },
+    {
+      "previous": "12341203045960",
+      "next": "1234120304596",
+      "digits": 0,
+      "value": "1234120304596"
+    },
+    {
+      "previous": "1234120304596",
+      "next": "123412030459",
+      "digits": 0,
+      "value": "123412030459"
+    },
+    {
+      "previous": "123412030459",
+      "next": "12341203045",
+      "digits": 0,
+      "value": "12341203045"
+    },
+    {
+      "previous": "12341203045",
+      "next": "1234120304",
+      "digits": 0,
+      "value": "1234120304"
+    },
+    {
+      "previous": "1234120304",
+      "next": "123412030",
+      "digits": 0,
+      "value": "123412030"
+    },
+    {
+      "previous": "123412030",
+      "next": "12341203",
+      "digits": 0,
+      "value": "12341203"
+    },
+    {
+      "previous": "12341203",
+      "next": "1234120",
+      "digits": 0,
+      "value": "1234120"
+    },
+    {
+      "previous": "1234120",
+      "next": "123412",
+      "digits": 0,
+      "value": "123412"
+    },
+    {
+      "previous": "123412",
+      "next": "12341",
+      "digits": 0,
+      "value": "12341"
+    },
+    {
+      "previous": "12341",
+      "next": "1234",
+      "digits": 0,
+      "value": "1234"
+    },
+    {
+      "previous": "1234",
+      "next": "123",
+      "digits": 0,
+      "value": "123"
+    },
+    {
+      "previous": "123",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "0.05",
+      "next": "0.051",
+      "digits": 0,
+      "value": "51"
+    },
+    {
+      "previous": "51",
+      "next": "512",
+      "digits": 0,
+      "value": "512"
+    },
+    {
+      "previous": "512",
+      "next": "5120",
+      "digits": 0,
+      "value": "5120"
+    },
+    {
+      "previous": "5120",
+      "next": "51203",
+      "digits": 0,
+      "value": "51203"
+    },
+    {
+      "previous": "51203",
+      "next": "512030",
+      "digits": 0,
+      "value": "512030"
+    },
+    {
+      "previous": "512030",
+      "next": "5120304",
+      "digits": 0,
+      "value": "5120304"
+    },
+    {
+      "previous": "5120304",
+      "next": "51203045",
+      "digits": 0,
+      "value": "51203045"
+    },
+    {
+      "previous": "51203045",
+      "next": "512030459",
+      "digits": 0,
+      "value": "512030459"
+    },
+    {
+      "previous": "512030459",
+      "next": "5120304596",
+      "digits": 0,
+      "value": "5120304596"
+    },
+    {
+      "previous": "5120304596",
+      "next": "51203045960",
+      "digits": 0,
+      "value": "51203045960"
+    },
+    {
+      "previous": "51203045960",
+      "next": "5120304596",
+      "digits": 0,
+      "value": "5120304596"
+    },
+    {
+      "previous": "5120304596",
+      "next": "512030459",
+      "digits": 0,
+      "value": "512030459"
+    },
+    {
+      "previous": "512030459",
+      "next": "51203045",
+      "digits": 0,
+      "value": "51203045"
+    },
+    {
+      "previous": "51203045",
+      "next": "5120304",
+      "digits": 0,
+      "value": "5120304"
+    },
+    {
+      "previous": "5120304",
+      "next": "512030",
+      "digits": 0,
+      "value": "512030"
+    },
+    {
+      "previous": "512030",
+      "next": "51203",
+      "digits": 0,
+      "value": "51203"
+    },
+    {
+      "previous": "51203",
+      "next": "5120",
+      "digits": 0,
+      "value": "5120"
+    },
+    {
+      "previous": "5120",
+      "next": "512",
+      "digits": 0,
+      "value": "512"
+    },
+    {
+      "previous": "512",
+      "next": "51",
+      "digits": 0,
+      "value": "51"
+    },
+    {
+      "previous": "51",
+      "next": "5",
+      "digits": 0,
+      "value": "5"
+    },
+    {
+      "previous": "5",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.012",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.120",
+      "digits": 2,
+      "value": "1.20"
+    },
+    {
+      "previous": "1.20",
+      "next": "1.203",
+      "digits": 2,
+      "value": "12.03"
+    },
+    {
+      "previous": "12.03",
+      "next": "12.030",
+      "digits": 2,
+      "value": "120.30"
+    },
+    {
+      "previous": "120.30",
+      "next": "120.304",
+      "digits": 2,
+      "value": "1203.04"
+    },
+    {
+      "previous": "1203.04",
+      "next": "1203.045",
+      "digits": 2,
+      "value": "12030.45"
+    },
+    {
+      "previous": "12030.45",
+      "next": "12030.459",
+      "digits": 2,
+      "value": "120304.59"
+    },
+    {
+      "previous": "120304.59",
+      "next": "120304.596",
+      "digits": 2,
+      "value": "1203045.96"
+    },
+    {
+      "previous": "1203045.96",
+      "next": "1203045.960",
+      "digits": 2,
+      "value": "12030459.60"
+    },
+    {
+      "previous": "12030459.60",
+      "next": "12030459.6",
+      "digits": 2,
+      "value": "1203045.96"
+    },
+    {
+      "previous": "1203045.96",
+      "next": "1203045.9",
+      "digits": 2,
+      "value": "120304.59"
+    },
+    {
+      "previous": "120304.59",
+      "next": "120304.5",
+      "digits": 2,
+      "value": "12030.45"
+    },
+    {
+      "previous": "12030.45",
+      "next": "12030.4",
+      "digits": 2,
+      "value": "1203.04"
+    },
+    {
+      "previous": "1203.04",
+      "next": "1203.0",
+      "digits": 2,
+      "value": "120.30"
+    },
+    {
+      "previous": "120.30",
+      "next": "120.3",
+      "digits": 2,
+      "value": "12.03"
+    },
+    {
+      "previous": "12.03",
+      "next": "12.0",
+      "digits": 2,
+      "value": "1.20"
+    },
+    {
+      "previous": "1.20",
+      "next": "1.2",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "0",
+      "next": "01",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.012",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.120",
+      "digits": 2,
+      "value": "1.20"
+    },
+    {
+      "previous": "1.20",
+      "next": "1.203",
+      "digits": 2,
+      "value": "12.03"
+    },
+    {
+      "previous": "12.03",
+      "next": "12.030",
+      "digits": 2,
+      "value": "120.30"
+    },
+    {
+      "previous": "120.30",
+      "next": "120.304",
+      "digits": 2,
+      "value": "1203.04"
+    },
+    {
+      "previous": "1203.04",
+      "next": "1203.045",
+      "digits": 2,
+      "value": "12030.45"
+    },
+    {
+      "previous": "12030.45",
+      "next": "12030.459",
+      "digits": 2,
+      "value": "120304.59"
+    },
+    {
+      "previous": "120304.59",
+      "next": "120304.596",
+      "digits": 2,
+      "value": "1203045.96"
+    },
+    {
+      "previous": "1203045.96",
+      "next": "1203045.960",
+      "digits": 2,
+      "value": "12030459.60"
+    },
+    {
+      "previous": "12030459.60",
+      "next": "12030459.6",
+      "digits": 2,
+      "value": "1203045.96"
+    },
+    {
+      "previous": "1203045.96",
+      "next": "1203045.9",
+      "digits": 2,
+      "value": "120304.59"
+    },
+    {
+      "previous": "120304.59",
+      "next": "120304.5",
+      "digits": 2,
+      "value": "12030.45"
+    },
+    {
+      "previous": "12030.45",
+      "next": "12030.4",
+      "digits": 2,
+      "value": "1203.04"
+    },
+    {
+      "previous": "1203.04",
+      "next": "1203.0",
+      "digits": 2,
+      "value": "120.30"
+    },
+    {
+      "previous": "120.30",
+      "next": "120.3",
+      "digits": 2,
+      "value": "12.03"
+    },
+    {
+      "previous": "12.03",
+      "next": "12.0",
+      "digits": 2,
+      "value": "1.20"
+    },
+    {
+      "previous": "1.20",
+      "next": "1.2",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "12.5",
+      "next": "12.51",
+      "digits": 2,
+      "value": "125.01"
+    },
+    {
+      "previous": "125.01",
+      "next": "125.012",
+      "digits": 2,
+      "value": "1250.12"
+    },
+    {
+      "previous": "1250.12",
+      "next": "1250.120",
+      "digits": 2,
+      "value": "12501.20"
+    },
+    {
+      "previous": "12501.20",
+      "next": "12501.203",
+      "digits": 2,
+      "value": "125012.03"
+    },
+    {
+      "previous": "125012.03",
+      "next": "125012.030",
+      "digits": 2,
+      "value": "1250120.30"
+    },
+    {
+      "previous": "1250120.30",
+      "next": "1250120.304",
+      "digits": 2,
+      "value": "12501203.04"
+    },
+    {
+      "previous": "12501203.04",
+      "next": "12501203.045",
+      "digits": 2,
+      "value": "125012030.45"
+    },
+    {
+      "previous": "125012030.45",
+      "next": "125012030.459",
+      "digits": 2,
+      "value": "1250120304.59"
+    },
+    {
+      "previous": "1250120304.59",
+      "next": "1250120304.596",
+      "digits": 2,
+      "value": "12501203045.96"
+    },
+    {
+      "previous": "12501203045.96",
+      "next": "12501203045.960",
+      "digits": 2,
+      "value": "125012030459.60"
+    },
+    {
+      "previous": "125012030459.60",
+      "next": "125012030459.6",
+      "digits": 2,
+      "value": "12501203045.96"
+    },
+    {
+      "previous": "12501203045.96",
+      "next": "12501203045.9",
+      "digits": 2,
+      "value": "1250120304.59"
+    },
+    {
+      "previous": "1250120304.59",
+      "next": "1250120304.5",
+      "digits": 2,
+      "value": "125012030.45"
+    },
+    {
+      "previous": "125012030.45",
+      "next": "125012030.4",
+      "digits": 2,
+      "value": "12501203.04"
+    },
+    {
+      "previous": "12501203.04",
+      "next": "12501203.0",
+      "digits": 2,
+      "value": "1250120.30"
+    },
+    {
+      "previous": "1250120.30",
+      "next": "1250120.3",
+      "digits": 2,
+      "value": "125012.03"
+    },
+    {
+      "previous": "125012.03",
+      "next": "125012.0",
+      "digits": 2,
+      "value": "12501.20"
+    },
+    {
+      "previous": "12501.20",
+      "next": "12501.2",
+      "digits": 2,
+      "value": "1250.12"
+    },
+    {
+      "previous": "1250.12",
+      "next": "1250.1",
+      "digits": 2,
+      "value": "125.01"
+    },
+    {
+      "previous": "125.01",
+      "next": "125.0",
+      "digits": 2,
+      "value": "12.50"
+    },
+    {
+      "previous": "12.50",
+      "next": "12.5",
+      "digits": 2,
+      "value": "1.25"
+    },
+    {
+      "previous": "1.25",
+      "next": "1.2",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "100",
+      "next": "1001",
+      "digits": 2,
+      "value": "1000.01"
+    },
+    {
+      "previous": "1000.01",
+      "next": "1000.012",
+      "digits": 2,
+      "value": "10000.12"
+    },
+    {
+      "previous": "10000.12",
+      "next": "10000.120",
+      "digits": 2,
+      "value": "100001.20"
+    },
+    {
+      "previous": "100001.20",
+      "next": "100001.203",
+      "digits": 2,
+      "value": "1000012.03"
+    },
+    {
+      "previous": "1000012.03",
+      "next": "1000012.030",
+      "digits": 2,
+      "value": "10000120.30"
+    },
+    {
+      "previous": "10000120.30",
+      "next": "10000120.304",
+      "digits": 2,
+      "value": "100001203.04"
+    },
+    {
+      "previous": "100001203.04",
+      "next": "100001203.045",
+      "digits": 2,
+      "value": "1000012030.45"
+    },
+    {
+      "previous": "1000012030.45",
+      "next": "1000012030.459",
+      "digits": 2,
+      "value": "10000120304.59"
+    },
+    {
+      "previous": "10000120304.59",
+      "next": "10000120304.596",
+      "digits": 2,
+      "value": "100001203045.96"
+    },
+    {
+      "previous": "100001203045.96",
+      "next": "100001203045.960",
+      "digits": 2,
+      "value": "1000012030459.60"
+    },
+    {
+      "previous": "1000012030459.60",
+      "next": "1000012030459.6",
+      "digits": 2,
+      "value": "100001203045.96"
+    },
+    {
+      "previous": "100001203045.96",
+      "next": "100001203045.9",
+      "digits": 2,
+      "value": "10000120304.59"
+    },
+    {
+      "previous": "10000120304.59",
+      "next": "10000120304.5",
+      "digits": 2,
+      "value": "1000012030.45"
+    },
+    {
+      "previous": "1000012030.45",
+      "next": "1000012030.4",
+      "digits": 2,
+      "value": "100001203.04"
+    },
+    {
+      "previous": "100001203.04",
+      "next": "100001203.0",
+      "digits": 2,
+      "value": "10000120.30"
+    },
+    {
+      "previous": "10000120.30",
+      "next": "10000120.3",
+      "digits": 2,
+      "value": "1000012.03"
+    },
+    {
+      "previous": "1000012.03",
+      "next": "1000012.0",
+      "digits": 2,
+      "value": "100001.20"
+    },
+    {
+      "previous": "100001.20",
+      "next": "100001.2",
+      "digits": 2,
+      "value": "10000.12"
+    },
+    {
+      "previous": "10000.12",
+      "next": "10000.1",
+      "digits": 2,
+      "value": "1000.01"
+    },
+    {
+      "previous": "1000.01",
+      "next": "1000.0",
+      "digits": 2,
+      "value": "100.00"
+    },
+    {
+      "previous": "100.00",
+      "next": "100.0",
+      "digits": 2,
+      "value": "10.00"
+    },
+    {
+      "previous": "10.00",
+      "next": "10.0",
+      "digits": 2,
+      "value": "1.00"
+    },
+    {
+      "previous": "1.00",
+      "next": "1.0",
+      "digits": 2,
+      "value": "0.10"
+    },
+    {
+      "previous": "0.10",
+      "next": "0.1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "7",
+      "next": "71",
+      "digits": 2,
+      "value": "70.01"
+    },
+    {
+      "previous": "70.01",
+      "next": "70.012",
+      "digits": 2,
+      "value": "700.12"
+    },
+    {
+      "previous": "700.12",
+      "next": "700.120",
+      "digits": 2,
+      "value": "7001.20"
+    },
+    {
+      "previous": "7001.20",
+      "next": "7001.203",
+      "digits": 2,
+      "value": "70012.03"
+    },
+    {
+      "previous": "70012.03",
+      "next": "70012.030",
+      "digits": 2,
+      "value": "700120.30"
+    },
+    {
+      "previous": "700120.30",
+      "next": "700120.304",
+      "digits": 2,
+      "value": "7001203.04"
+    },
+    {
+      "previous": "7001203.04",
+      "next": "7001203.045",
+      "digits": 2,
+      "value": "70012030.45"
+    },
+    {
+      "previous": "70012030.45",
+      "next": "70012030.459",
+      "digits": 2,
+      "value": "700120304.59"
+    },
+    {
+      "previous": "700120304.59",
+      "next": "700120304.596",
+      "digits": 2,
+      "value": "7001203045.96"
+    },
+    {
+      "previous": "7001203045.96",
+      "next": "7001203045.960",
+      "digits": 2,
+      "value": "70012030459.60"
+    },
+    {
+      "previous": "70012030459.60",
+      "next": "70012030459.6",
+      "digits": 2,
+      "value": "7001203045.96"
+    },
+    {
+      "previous": "7001203045.96",
+      "next": "7001203045.9",
+      "digits": 2,
+      "value": "700120304.59"
+    },
+    {
+      "previous": "700120304.59",
+      "next": "700120304.5",
+      "digits": 2,
+      "value": "70012030.45"
+    },
+    {
+      "previous": "70012030.45",
+      "next": "70012030.4",
+      "digits": 2,
+      "value": "7001203.04"
+    },
+    {
+      "previous": "7001203.04",
+      "next": "7001203.0",
+      "digits": 2,
+      "value": "700120.30"
+    },
+    {
+      "previous": "700120.30",
+      "next": "700120.3",
+      "digits": 2,
+      "value": "70012.03"
+    },
+    {
+      "previous": "70012.03",
+      "next": "70012.0",
+      "digits": 2,
+      "value": "7001.20"
+    },
+    {
+      "previous": "7001.20",
+      "next": "7001.2",
+      "digits": 2,
+      "value": "700.12"
+    },
+    {
+      "previous": "700.12",
+      "next": "700.1",
+      "digits": 2,
+      "value": "70.01"
+    },
+    {
+      "previous": "70.01",
+      "next": "70.0",
+      "digits": 2,
+      "value": "7.00"
+    },
+    {
+      "previous": "7.00",
+      "next": "7.0",
+      "digits": 2,
+      "value": "0.70"
+    },
+    {
+      "previous": "0.70",
+      "next": "0.7",
+      "digits": 2,
+      "value": "0.07"
+    },
+    {
+      "previous": "0.07",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "12.34",
+      "next": "12.341",
+      "digits": 2,
+      "value": "123.41"
+    },
+    {
+      "previous": "123.41",
+      "next": "123.412",
+      "digits": 2,
+      "value": "1234.12"
+    },
+    {
+      "previous": "1234.12",
+      "next": "1234.120",
+      "digits": 2,
+      "value": "12341.20"
+    },
+    {
+      "previous": "12341.20",
+      "next": "12341.203",
+      "digits": 2,
+      "value": "123412.03"
+    },
+    {
+      "previous": "123412.03",
+      "next": "123412.030",
+      "digits": 2,
+      "value": "1234120.30"
+    },
+    {
+      "previous": "1234120.30",
+      "next": "1234120.304",
+      "digits": 2,
+      "value": "12341203.04"
+    },
+    {
+      "previous": "12341203.04",
+      "next": "12341203.045",
+      "digits": 2,
+      "value": "123412030.45"
+    },
+    {
+      "previous": "123412030.45",
+      "next": "123412030.459",
+      "digits": 2,
+      "value": "1234120304.59"
+    },
+    {
+      "previous": "1234120304.59",
+      "next": "1234120304.596",
+      "digits": 2,
+      "value": "12341203045.96"
+    },
+    {
+      "previous": "12341203045.96",
+      "next": "12341203045.960",
+      "digits": 2,
+      "value": "123412030459.60"
+    },
+    {
+      "previous": "123412030459.60",
+      "next": "123412030459.6",
+      "digits": 2,
+      "value": "12341203045.96"
+    },
+    {
+      "previous": "12341203045.96",
+      "next": "12341203045.9",
+      "digits": 2,
+      "value": "1234120304.59"
+    },
+    {
+      "previous": "1234120304.59",
+      "next": "1234120304.5",
+      "digits": 2,
+      "value": "123412030.45"
+    },
+    {
+      "previous": "123412030.45",
+      "next": "123412030.4",
+      "digits": 2,
+      "value": "12341203.04"
+    },
+    {
+      "previous": "12341203.04",
+      "next": "12341203.0",
+      "digits": 2,
+      "value": "1234120.30"
+    },
+    {
+      "previous": "1234120.30",
+      "next": "1234120.3",
+      "digits": 2,
+      "value": "123412.03"
+    },
+    {
+      "previous": "123412.03",
+      "next": "123412.0",
+      "digits": 2,
+      "value": "12341.20"
+    },
+    {
+      "previous": "12341.20",
+      "next": "12341.2",
+      "digits": 2,
+      "value": "1234.12"
+    },
+    {
+      "previous": "1234.12",
+      "next": "1234.1",
+      "digits": 2,
+      "value": "123.41"
+    },
+    {
+      "previous": "123.41",
+      "next": "123.4",
+      "digits": 2,
+      "value": "12.34"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.3",
+      "digits": 2,
+      "value": "1.23"
+    },
+    {
+      "previous": "1.23",
+      "next": "1.2",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "0.05",
+      "next": "0.051",
+      "digits": 2,
+      "value": "0.51"
+    },
+    {
+      "previous": "0.51",
+      "next": "0.512",
+      "digits": 2,
+      "value": "5.12"
+    },
+    {
+      "previous": "5.12",
+      "next": "5.120",
+      "digits": 2,
+      "value": "51.20"
+    },
+    {
+      "previous": "51.20",
+      "next": "51.203",
+      "digits": 2,
+      "value": "512.03"
+    },
+    {
+      "previous": "512.03",
+      "next": "512.030",
+      "digits": 2,
+      "value": "5120.30"
+    },
+    {
+      "previous": "5120.30",
+      "next": "5120.304",
+      "digits": 2,
+      "value": "51203.04"
+    },
+    {
+      "previous": "51203.04",
+      "next": "51203.045",
+      "digits": 2,
+      "value": "512030.45"
+    },
+    {
+      "previous": "512030.45",
+      "next": "512030.459",
+      "digits": 2,
+      "value": "5120304.59"
+    },
+    {
+      "previous": "5120304.59",
+      "next": "5120304.596",
+      "digits": 2,
+      "value": "51203045.96"
+    },
+    {
+      "previous": "51203045.96",
+      "next": "51203045.960",
+      "digits": 2,
+      "value": "512030459.60"
+    },
+    {
+      "previous": "512030459.60",
+      "next": "512030459.6",
+      "digits": 2,
+      "value": "51203045.96"
+    },
+    {
+      "previous": "51203045.96",
+      "next": "51203045.9",
+      "digits": 2,
+      "value": "5120304.59"
+    },
+    {
+      "previous": "5120304.59",
+      "next": "5120304.5",
+      "digits": 2,
+      "value": "512030.45"
+    },
+    {
+      "previous": "512030.45",
+      "next": "512030.4",
+      "digits": 2,
+      "value": "51203.04"
+    },
+    {
+      "previous": "51203.04",
+      "next": "51203.0",
+      "digits": 2,
+      "value": "5120.30"
+    },
+    {
+      "previous": "5120.30",
+      "next": "5120.3",
+      "digits": 2,
+      "value": "512.03"
+    },
+    {
+      "previous": "512.03",
+      "next": "512.0",
+      "digits": 2,
+      "value": "51.20"
+    },
+    {
+      "previous": "51.20",
+      "next": "51.2",
+      "digits": 2,
+      "value": "5.12"
+    },
+    {
+      "previous": "5.12",
+      "next": "5.1",
+      "digits": 2,
+      "value": "0.51"
+    },
+    {
+      "previous": "0.51",
+      "next": "0.5",
+      "digits": 2,
+      "value": "0.05"
+    },
+    {
+      "previous": "0.05",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.0012",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "0.012",
+      "next": "0.0120",
+      "digits": 3,
+      "value": "0.120"
+    },
+    {
+      "previous": "0.120",
+      "next": "0.1203",
+      "digits": 3,
+      "value": "1.203"
+    },
+    {
+      "previous": "1.203",
+      "next": "1.2030",
+      "digits": 3,
+      "value": "12.030"
+    },
+    {
+      "previous": "12.030",
+      "next": "12.0304",
+      "digits": 3,
+      "value": "120.304"
+    },
+    {
+      "previous": "120.304",
+      "next": "120.3045",
+      "digits": 3,
+      "value": "1203.045"
+    },
+    {
+      "previous": "1203.045",
+      "next": "1203.0459",
+      "digits": 3,
+      "value": "12030.459"
+    },
+    {
+      "previous": "12030.459",
+      "next": "12030.4596",
+      "digits": 3,
+      "value": "120304.596"
+    },
+    {
+      "previous": "120304.596",
+      "next": "120304.5960",
+      "digits": 3,
+      "value": "1203045.960"
+    },
+    {
+      "previous": "1203045.960",
+      "next": "1203045.96",
+      "digits": 3,
+      "value": "120304.596"
+    },
+    {
+      "previous": "120304.596",
+      "next": "120304.59",
+      "digits": 3,
+      "value": "12030.459"
+    },
+    {
+      "previous": "12030.459",
+      "next": "12030.45",
+      "digits": 3,
+      "value": "1203.045"
+    },
+    {
+      "previous": "1203.045",
+      "next": "1203.04",
+      "digits": 3,
+      "value": "120.304"
+    },
+    {
+      "previous": "120.304",
+      "next": "120.30",
+      "digits": 3,
+      "value": "12.030"
+    },
+    {
+      "previous": "12.030",
+      "next": "12.03",
+      "digits": 3,
+      "value": "1.203"
+    },
+    {
+      "previous": "1.203",
+      "next": "1.20",
+      "digits": 3,
+      "value": "0.120"
+    },
+    {
+      "previous": "0.120",
+      "next": "0.12",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "0.012",
+      "next": "0.01",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "0",
+      "next": "01",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.0012",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "0.012",
+      "next": "0.0120",
+      "digits": 3,
+      "value": "0.120"
+    },
+    {
+      "previous": "0.120",
+      "next": "0.1203",
+      "digits": 3,
+      "value": "1.203"
+    },
+    {
+      "previous": "1.203",
+      "next": "1.2030",
+      "digits": 3,
+      "value": "12.030"
+    },
+    {
+      "previous": "12.030",
+      "next": "12.0304",
+      "digits": 3,
+      "value": "120.304"
+    },
+    {
+      "previous": "120.304",
+      "next": "120.3045",
+      "digits": 3,
+      "value": "1203.045"
+    },
+    {
+      "previous": "1203.045",
+      "next": "1203.0459",
+      "digits": 3,
+      "value": "12030.459"
+    },
+    {
+      "previous": "12030.459",
+      "next": "12030.4596",
+      "digits": 3,
+      "value": "120304.596"
+    },
+    {
+      "previous": "120304.596",
+      "next": "120304.5960",
+      "digits": 3,
+      "value": "1203045.960"
+    },
+    {
+      "previous": "1203045.960",
+      "next": "1203045.96",
+      "digits": 3,
+      "value": "120304.596"
+    },
+    {
+      "previous": "120304.596",
+      "next": "120304.59",
+      "digits": 3,
+      "value": "12030.459"
+    },
+    {
+      "previous": "12030.459",
+      "next": "12030.45",
+      "digits": 3,
+      "value": "1203.045"
+    },
+    {
+      "previous": "1203.045",
+      "next": "1203.04",
+      "digits": 3,
+      "value": "120.304"
+    },
+    {
+      "previous": "120.304",
+      "next": "120.30",
+      "digits": 3,
+      "value": "12.030"
+    },
+    {
+      "previous": "12.030",
+      "next": "12.03",
+      "digits": 3,
+      "value": "1.203"
+    },
+    {
+      "previous": "1.203",
+      "next": "1.20",
+      "digits": 3,
+      "value": "0.120"
+    },
+    {
+      "previous": "0.120",
+      "next": "0.12",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "0.012",
+      "next": "0.01",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "12.5",
+      "next": "12.51",
+      "digits": 3,
+      "value": "125.001"
+    },
+    {
+      "previous": "125.001",
+      "next": "125.0012",
+      "digits": 3,
+      "value": "1250.012"
+    },
+    {
+      "previous": "1250.012",
+      "next": "1250.0120",
+      "digits": 3,
+      "value": "12500.120"
+    },
+    {
+      "previous": "12500.120",
+      "next": "12500.1203",
+      "digits": 3,
+      "value": "125001.203"
+    },
+    {
+      "previous": "125001.203",
+      "next": "125001.2030",
+      "digits": 3,
+      "value": "1250012.030"
+    },
+    {
+      "previous": "1250012.030",
+      "next": "1250012.0304",
+      "digits": 3,
+      "value": "12500120.304"
+    },
+    {
+      "previous": "12500120.304",
+      "next": "12500120.3045",
+      "digits": 3,
+      "value": "125001203.045"
+    },
+    {
+      "previous": "125001203.045",
+      "next": "125001203.0459",
+      "digits": 3,
+      "value": "1250012030.459"
+    },
+    {
+      "previous": "1250012030.459",
+      "next": "1250012030.4596",
+      "digits": 3,
+      "value": "12500120304.596"
+    },
+    {
+      "previous": "12500120304.596",
+      "next": "12500120304.5960",
+      "digits": 3,
+      "value": "125001203045.960"
+    },
+    {
+      "previous": "125001203045.960",
+      "next": "125001203045.96",
+      "digits": 3,
+      "value": "12500120304.596"
+    },
+    {
+      "previous": "12500120304.596",
+      "next": "12500120304.59",
+      "digits": 3,
+      "value": "1250012030.459"
+    },
+    {
+      "previous": "1250012030.459",
+      "next": "1250012030.45",
+      "digits": 3,
+      "value": "125001203.045"
+    },
+    {
+      "previous": "125001203.045",
+      "next": "125001203.04",
+      "digits": 3,
+      "value": "12500120.304"
+    },
+    {
+      "previous": "12500120.304",
+      "next": "12500120.30",
+      "digits": 3,
+      "value": "1250012.030"
+    },
+    {
+      "previous": "1250012.030",
+      "next": "1250012.03",
+      "digits": 3,
+      "value": "125001.203"
+    },
+    {
+      "previous": "125001.203",
+      "next": "125001.20",
+      "digits": 3,
+      "value": "12500.120"
+    },
+    {
+      "previous": "12500.120",
+      "next": "12500.12",
+      "digits": 3,
+      "value": "1250.012"
+    },
+    {
+      "previous": "1250.012",
+      "next": "1250.01",
+      "digits": 3,
+      "value": "125.001"
+    },
+    {
+      "previous": "125.001",
+      "next": "125.00",
+      "digits": 3,
+      "value": "12.500"
+    },
+    {
+      "previous": "12.500",
+      "next": "12.50",
+      "digits": 3,
+      "value": "1.250"
+    },
+    {
+      "previous": "1.250",
+      "next": "1.25",
+      "digits": 3,
+      "value": "0.125"
+    },
+    {
+      "previous": "0.125",
+      "next": "0.12",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "0.012",
+      "next": "0.01",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "100",
+      "next": "1001",
+      "digits": 3,
+      "value": "1000.001"
+    },
+    {
+      "previous": "1000.001",
+      "next": "1000.0012",
+      "digits": 3,
+      "value": "10000.012"
+    },
+    {
+      "previous": "10000.012",
+      "next": "10000.0120",
+      "digits": 3,
+      "value": "100000.120"
+    },
+    {
+      "previous": "100000.120",
+      "next": "100000.1203",
+      "digits": 3,
+      "value": "1000001.203"
+    },
+    {
+      "previous": "1000001.203",
+      "next": "1000001.2030",
+      "digits": 3,
+      "value": "10000012.030"
+    },
+    {
+      "previous": "10000012.030",
+      "next": "10000012.0304",
+      "digits": 3,
+      "value": "100000120.304"
+    },
+    {
+      "previous": "100000120.304",
+      "next": "100000120.3045",
+      "digits": 3,
+      "value": "1000001203.045"
+    },
+    {
+      "previous": "1000001203.045",
+      "next": "1000001203.0459",
+      "digits": 3,
+      "value": "10000012030.459"
+    },
+    {
+      "previous": "10000012030.459",
+      "next": "10000012030.4596",
+      "digits": 3,
+      "value": "100000120304.596"
+    },
+    {
+      "previous": "100000120304.596",
+      "next": "100000120304.5960",
+      "digits": 3,
+      "value": "1000001203045.960"
+    },
+    {
+      "previous": "1000001203045.960",
+      "next": "1000001203045.96",
+      "digits": 3,
+      "value": "100000120304.596"
+    },
+    {
+      "previous": "100000120304.596",
+      "next": "100000120304.59",
+      "digits": 3,
+      "value": "10000012030.459"
+    },
+    {
+      "previous": "10000012030.459",
+      "next": "10000012030.45",
+      "digits": 3,
+      "value": "1000001203.045"
+    },
+    {
+      "previous": "1000001203.045",
+      "next": "1000001203.04",
+      "digits": 3,
+      "value": "100000120.304"
+    },
+    {
+      "previous": "100000120.304",
+      "next": "100000120.30",
+      "digits": 3,
+      "value": "10000012.030"
+    },
+    {
+      "previous": "10000012.030",
+      "next": "10000012.03",
+      "digits": 3,
+      "value": "1000001.203"
+    },
+    {
+      "previous": "1000001.203",
+      "next": "1000001.20",
+      "digits": 3,
+      "value": "100000.120"
+    },
+    {
+      "previous": "100000.120",
+      "next": "100000.12",
+      "digits": 3,
+      "value": "10000.012"
+    },
+    {
+      "previous": "10000.012",
+      "next": "10000.01",
+      "digits": 3,
+      "value": "1000.001"
+    },
+    {
+      "previous": "1000.001",
+      "next": "1000.00",
+      "digits": 3,
+      "value": "100.000"
+    },
+    {
+      "previous": "100.000",
+      "next": "100.00",
+      "digits": 3,
+      "value": "10.000"
+    },
+    {
+      "previous": "10.000",
+      "next": "10.00",
+      "digits": 3,
+      "value": "1.000"
+    },
+    {
+      "previous": "1.000",
+      "next": "1.00",
+      "digits": 3,
+      "value": "0.100"
+    },
+    {
+      "previous": "0.100",
+      "next": "0.10",
+      "digits": 3,
+      "value": "0.010"
+    },
+    {
+      "previous": "0.010",
+      "next": "0.01",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "7",
+      "next": "71",
+      "digits": 3,
+      "value": "70.001"
+    },
+    {
+      "previous": "70.001",
+      "next": "70.0012",
+      "digits": 3,
+      "value": "700.012"
+    },
+    {
+      "previous": "700.012",
+      "next": "700.0120",
+      "digits": 3,
+      "value": "7000.120"
+    },
+    {
+      "previous": "7000.120",
+      "next": "7000.1203",
+      "digits": 3,
+      "value": "70001.203"
+    },
+    {
+      "previous": "70001.203",
+      "next": "70001.2030",
+      "digits": 3,
+      "value": "700012.030"
+    },
+    {
+      "previous": "700012.030",
+      "next": "700012.0304",
+      "digits": 3,
+      "value": "7000120.304"
+    },
+    {
+      "previous": "7000120.304",
+      "next": "7000120.3045",
+      "digits": 3,
+      "value": "70001203.045"
+    },
+    {
+      "previous": "70001203.045",
+      "next": "70001203.0459",
+      "digits": 3,
+      "value": "700012030.459"
+    },
+    {
+      "previous": "700012030.459",
+      "next": "700012030.4596",
+      "digits": 3,
+      "value": "7000120304.596"
+    },
+    {
+      "previous": "7000120304.596",
+      "next": "7000120304.5960",
+      "digits": 3,
+      "value": "70001203045.960"
+    },
+    {
+      "previous": "70001203045.960",
+      "next": "70001203045.96",
+      "digits": 3,
+      "value": "7000120304.596"
+    },
+    {
+      "previous": "7000120304.596",
+      "next": "7000120304.59",
+      "digits": 3,
+      "value": "700012030.459"
+    },
+    {
+      "previous": "700012030.459",
+      "next": "700012030.45",
+      "digits": 3,
+      "value": "70001203.045"
+    },
+    {
+      "previous": "70001203.045",
+      "next": "70001203.04",
+      "digits": 3,
+      "value": "7000120.304"
+    },
+    {
+      "previous": "7000120.304",
+      "next": "7000120.30",
+      "digits": 3,
+      "value": "700012.030"
+    },
+    {
+      "previous": "700012.030",
+      "next": "700012.03",
+      "digits": 3,
+      "value": "70001.203"
+    },
+    {
+      "previous": "70001.203",
+      "next": "70001.20",
+      "digits": 3,
+      "value": "7000.120"
+    },
+    {
+      "previous": "7000.120",
+      "next": "7000.12",
+      "digits": 3,
+      "value": "700.012"
+    },
+    {
+      "previous": "700.012",
+      "next": "700.01",
+      "digits": 3,
+      "value": "70.001"
+    },
+    {
+      "previous": "70.001",
+      "next": "70.00",
+      "digits": 3,
+      "value": "7.000"
+    },
+    {
+      "previous": "7.000",
+      "next": "7.00",
+      "digits": 3,
+      "value": "0.700"
+    },
+    {
+      "previous": "0.700",
+      "next": "0.70",
+      "digits": 3,
+      "value": "0.070"
+    },
+    {
+      "previous": "0.070",
+      "next": "0.07",
+      "digits": 3,
+      "value": "0.007"
+    },
+    {
+      "previous": "0.007",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "12.34",
+      "next": "12.341",
+      "digits": 3,
+      "value": "123.401"
+    },
+    {
+      "previous": "123.401",
+      "next": "123.4012",
+      "digits": 3,
+      "value": "1234.012"
+    },
+    {
+      "previous": "1234.012",
+      "next": "1234.0120",
+      "digits": 3,
+      "value": "12340.120"
+    },
+    {
+      "previous": "12340.120",
+      "next": "12340.1203",
+      "digits": 3,
+      "value": "123401.203"
+    },
+    {
+      "previous": "123401.203",
+      "next": "123401.2030",
+      "digits": 3,
+      "value": "1234012.030"
+    },
+    {
+      "previous": "1234012.030",
+      "next": "1234012.0304",
+      "digits": 3,
+      "value": "12340120.304"
+    },
+    {
+      "previous": "12340120.304",
+      "next": "12340120.3045",
+      "digits": 3,
+      "value": "123401203.045"
+    },
+    {
+      "previous": "123401203.045",
+      "next": "123401203.0459",
+      "digits": 3,
+      "value": "1234012030.459"
+    },
+    {
+      "previous": "1234012030.459",
+      "next": "1234012030.4596",
+      "digits": 3,
+      "value": "12340120304.596"
+    },
+    {
+      "previous": "12340120304.596",
+      "next": "12340120304.5960",
+      "digits": 3,
+      "value": "123401203045.960"
+    },
+    {
+      "previous": "123401203045.960",
+      "next": "123401203045.96",
+      "digits": 3,
+      "value": "12340120304.596"
+    },
+    {
+      "previous": "12340120304.596",
+      "next": "12340120304.59",
+      "digits": 3,
+      "value": "1234012030.459"
+    },
+    {
+      "previous": "1234012030.459",
+      "next": "1234012030.45",
+      "digits": 3,
+      "value": "123401203.045"
+    },
+    {
+      "previous": "123401203.045",
+      "next": "123401203.04",
+      "digits": 3,
+      "value": "12340120.304"
+    },
+    {
+      "previous": "12340120.304",
+      "next": "12340120.30",
+      "digits": 3,
+      "value": "1234012.030"
+    },
+    {
+      "previous": "1234012.030",
+      "next": "1234012.03",
+      "digits": 3,
+      "value": "123401.203"
+    },
+    {
+      "previous": "123401.203",
+      "next": "123401.20",
+      "digits": 3,
+      "value": "12340.120"
+    },
+    {
+      "previous": "12340.120",
+      "next": "12340.12",
+      "digits": 3,
+      "value": "1234.012"
+    },
+    {
+      "previous": "1234.012",
+      "next": "1234.01",
+      "digits": 3,
+      "value": "123.401"
+    },
+    {
+      "previous": "123.401",
+      "next": "123.40",
+      "digits": 3,
+      "value": "12.340"
+    },
+    {
+      "previous": "12.340",
+      "next": "12.34",
+      "digits": 3,
+      "value": "1.234"
+    },
+    {
+      "previous": "1.234",
+      "next": "1.23",
+      "digits": 3,
+      "value": "0.123"
+    },
+    {
+      "previous": "0.123",
+      "next": "0.12",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "0.012",
+      "next": "0.01",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.001",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "0.05",
+      "next": "0.051",
+      "digits": 3,
+      "value": "0.501"
+    },
+    {
+      "previous": "0.501",
+      "next": "0.5012",
+      "digits": 3,
+      "value": "5.012"
+    },
+    {
+      "previous": "5.012",
+      "next": "5.0120",
+      "digits": 3,
+      "value": "50.120"
+    },
+    {
+      "previous": "50.120",
+      "next": "50.1203",
+      "digits": 3,
+      "value": "501.203"
+    },
+    {
+      "previous": "501.203",
+      "next": "501.2030",
+      "digits": 3,
+      "value": "5012.030"
+    },
+    {
+      "previous": "5012.030",
+      "next": "5012.0304",
+      "digits": 3,
+      "value": "50120.304"
+    },
+    {
+      "previous": "50120.304",
+      "next": "50120.3045",
+      "digits": 3,
+      "value": "501203.045"
+    },
+    {
+      "previous": "501203.045",
+      "next": "501203.0459",
+      "digits": 3,
+      "value": "5012030.459"
+    },
+    {
+      "previous": "5012030.459",
+      "next": "5012030.4596",
+      "digits": 3,
+      "value": "50120304.596"
+    },
+    {
+      "previous": "50120304.596",
+      "next": "50120304.5960",
+      "digits": 3,
+      "value": "501203045.960"
+    },
+    {
+      "previous": "501203045.960",
+      "next": "501203045.96",
+      "digits": 3,
+      "value": "50120304.596"
+    },
+    {
+      "previous": "50120304.596",
+      "next": "50120304.59",
+      "digits": 3,
+      "value": "5012030.459"
+    },
+    {
+      "previous": "5012030.459",
+      "next": "5012030.45",
+      "digits": 3,
+      "value": "501203.045"
+    },
+    {
+      "previous": "501203.045",
+      "next": "501203.04",
+      "digits": 3,
+      "value": "50120.304"
+    },
+    {
+      "previous": "50120.304",
+      "next": "50120.30",
+      "digits": 3,
+      "value": "5012.030"
+    },
+    {
+      "previous": "5012.030",
+      "next": "5012.03",
+      "digits": 3,
+      "value": "501.203"
+    },
+    {
+      "previous": "501.203",
+      "next": "501.20",
+      "digits": 3,
+      "value": "50.120"
+    },
+    {
+      "previous": "50.120",
+      "next": "50.12",
+      "digits": 3,
+      "value": "5.012"
+    },
+    {
+      "previous": "5.012",
+      "next": "5.01",
+      "digits": 3,
+      "value": "0.501"
+    },
+    {
+      "previous": "0.501",
+      "next": "0.50",
+      "digits": 3,
+      "value": "0.050"
+    },
+    {
+      "previous": "0.050",
+      "next": "0.05",
+      "digits": 3,
+      "value": "0.005"
+    },
+    {
+      "previous": "0.005",
+      "next": "0.00",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "6",
+      "digits": 2,
+      "value": "0.06"
+    },
+    {
+      "previous": "0.06",
+      "next": "0.067",
+      "digits": 2,
+      "value": "0.67"
+    },
+    {
+      "previous": "0.67",
+      "next": "0.675",
+      "digits": 2,
+      "value": "6.75"
+    },
+    {
+      "previous": "6.75",
+      "next": "6.757",
+      "digits": 2,
+      "value": "67.57"
+    },
+    {
+      "previous": "67.57",
+      "next": "67.572",
+      "digits": 2,
+      "value": "675.72"
+    },
+    {
+      "previous": "",
+      "next": "5",
+      "digits": 2,
+      "value": "0.05"
+    },
+    {
+      "previous": "0.05",
+      "next": "0.055",
+      "digits": 2,
+      "value": "0.55"
+    },
+    {
+      "previous": "0.55",
+      "next": "0.556",
+      "digits": 2,
+      "value": "5.56"
+    },
+    {
+      "previous": "5.56",
+      "next": "5.563",
+      "digits": 2,
+      "value": "55.63"
+    },
+    {
+      "previous": "55.63",
+      "next": "55.638",
+      "digits": 2,
+      "value": "556.38"
+    },
+    {
+      "previous": "556.38",
+      "next": "556.387",
+      "digits": 2,
+      "value": "5563.87"
+    },
+    {
+      "previous": "5563.87",
+      "next": "5563.877",
+      "digits": 2,
+      "value": "55638.77"
+    },
+    {
+      "previous": "55638.77",
+      "next": "55638.778",
+      "digits": 2,
+      "value": "556387.78"
+    },
+    {
+      "previous": "556387.78",
+      "next": "556387.786",
+      "digits": 2,
+      "value": "5563877.86"
+    },
+    {
+      "previous": "5563877.86",
+      "next": "5563877.865",
+      "digits": 2,
+      "value": "55638778.65"
+    },
+    {
+      "previous": "55638778.65",
+      "next": "55638778.651",
+      "digits": 2,
+      "value": "556387786.51"
+    },
+    {
+      "previous": "556387786.51",
+      "next": "556387786.512",
+      "digits": 2,
+      "value": "5563877865.12"
+    },
+    {
+      "previous": "5563877865.12",
+      "next": "5563877865.122",
+      "digits": 2,
+      "value": "55638778651.22"
+    },
+    {
+      "previous": "",
+      "next": "5",
+      "digits": 3,
+      "value": "0.005"
+    },
+    {
+      "previous": "0.005",
+      "next": "0.0055",
+      "digits": 3,
+      "value": "0.055"
+    },
+    {
+      "previous": "0.055",
+      "next": "0.0553",
+      "digits": 3,
+      "value": "0.553"
+    },
+    {
+      "previous": "0.553",
+      "next": "0.5533",
+      "digits": 3,
+      "value": "5.533"
+    },
+    {
+      "previous": "5.533",
+      "next": "5.5335",
+      "digits": 3,
+      "value": "55.335"
+    },
+    {
+      "previous": "55.335",
+      "next": "55.3359",
+      "digits": 3,
+      "value": "553.359"
+    },
+    {
+      "previous": "553.359",
+      "next": "553.3598",
+      "digits": 3,
+      "value": "5533.598"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 0,
+      "value": "8"
+    },
+    {
+      "previous": "8",
+      "next": "86",
+      "digits": 0,
+      "value": "86"
+    },
+    {
+      "previous": "86",
+      "next": "866",
+      "digits": 0,
+      "value": "866"
+    },
+    {
+      "previous": "866",
+      "next": "8667",
+      "digits": 0,
+      "value": "8667"
+    },
+    {
+      "previous": "8667",
+      "next": "86670",
+      "digits": 0,
+      "value": "86670"
+    },
+    {
+      "previous": "86670",
+      "next": "866700",
+      "digits": 0,
+      "value": "866700"
+    },
+    {
+      "previous": "866700",
+      "next": "8667007",
+      "digits": 0,
+      "value": "8667007"
+    },
+    {
+      "previous": "8667007",
+      "next": "86670074",
+      "digits": 0,
+      "value": "86670074"
+    },
+    {
+      "previous": "86670074",
+      "next": "866700747",
+      "digits": 0,
+      "value": "866700747"
+    },
+    {
+      "previous": "866700747",
+      "next": "8667007474",
+      "digits": 0,
+      "value": "8667007474"
+    },
+    {
+      "previous": "8667007474",
+      "next": "86670074742",
+      "digits": 0,
+      "value": "86670074742"
+    },
+    {
+      "previous": "86670074742",
+      "next": "866700747420",
+      "digits": 0,
+      "value": "866700747420"
+    },
+    {
+      "previous": "",
+      "next": "7",
+      "digits": 0,
+      "value": "7"
+    },
+    {
+      "previous": "7",
+      "next": "72",
+      "digits": 0,
+      "value": "72"
+    },
+    {
+      "previous": "72",
+      "next": "728",
+      "digits": 0,
+      "value": "728"
+    },
+    {
+      "previous": "728",
+      "next": "7281",
+      "digits": 0,
+      "value": "7281"
+    },
+    {
+      "previous": "",
+      "next": "7",
+      "digits": 3,
+      "value": "0.007"
+    },
+    {
+      "previous": "0.007",
+      "next": "0.0079",
+      "digits": 3,
+      "value": "0.079"
+    },
+    {
+      "previous": "0.079",
+      "next": "0.0797",
+      "digits": 3,
+      "value": "0.797"
+    },
+    {
+      "previous": "0.797",
+      "next": "0.7975",
+      "digits": 3,
+      "value": "7.975"
+    },
+    {
+      "previous": "7.975",
+      "next": "7.9753",
+      "digits": 3,
+      "value": "79.753"
+    },
+    {
+      "previous": "79.753",
+      "next": "79.7538",
+      "digits": 3,
+      "value": "797.538"
+    },
+    {
+      "previous": "797.538",
+      "next": "797.5386",
+      "digits": 3,
+      "value": "7975.386"
+    },
+    {
+      "previous": "",
+      "next": "4",
+      "digits": 0,
+      "value": "4"
+    },
+    {
+      "previous": "4",
+      "next": "46",
+      "digits": 0,
+      "value": "46"
+    },
+    {
+      "previous": "46",
+      "next": "464",
+      "digits": 0,
+      "value": "464"
+    },
+    {
+      "previous": "464",
+      "next": "4640",
+      "digits": 0,
+      "value": "4640"
+    },
+    {
+      "previous": "4640",
+      "next": "46407",
+      "digits": 0,
+      "value": "46407"
+    },
+    {
+      "previous": "46407",
+      "next": "464079",
+      "digits": 0,
+      "value": "464079"
+    },
+    {
+      "previous": "464079",
+      "next": "4640794",
+      "digits": 0,
+      "value": "4640794"
+    },
+    {
+      "previous": "4640794",
+      "next": "46407948",
+      "digits": 0,
+      "value": "46407948"
+    },
+    {
+      "previous": "",
+      "next": "2",
+      "digits": 2,
+      "value": "0.02"
+    },
+    {
+      "previous": "0.02",
+      "next": "0.020",
+      "digits": 2,
+      "value": "0.20"
+    },
+    {
+      "previous": "0.20",
+      "next": "0.202",
+      "digits": 2,
+      "value": "2.02"
+    },
+    {
+      "previous": "2.02",
+      "next": "2.022",
+      "digits": 2,
+      "value": "20.22"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 2,
+      "value": "0.08"
+    },
+    {
+      "previous": "0.08",
+      "next": "0.088",
+      "digits": 2,
+      "value": "0.88"
+    },
+    {
+      "previous": "0.88",
+      "next": "0.880",
+      "digits": 2,
+      "value": "8.80"
+    },
+    {
+      "previous": "8.80",
+      "next": "8.805",
+      "digits": 2,
+      "value": "88.05"
+    },
+    {
+      "previous": "88.05",
+      "next": "88.058",
+      "digits": 2,
+      "value": "880.58"
+    },
+    {
+      "previous": "880.58",
+      "next": "880.587",
+      "digits": 2,
+      "value": "8805.87"
+    },
+    {
+      "previous": "8805.87",
+      "next": "8805.873",
+      "digits": 2,
+      "value": "88058.73"
+    },
+    {
+      "previous": "88058.73",
+      "next": "88058.738",
+      "digits": 2,
+      "value": "880587.38"
+    },
+    {
+      "previous": "880587.38",
+      "next": "880587.381",
+      "digits": 2,
+      "value": "8805873.81"
+    },
+    {
+      "previous": "8805873.81",
+      "next": "8805873.818",
+      "digits": 2,
+      "value": "88058738.18"
+    },
+    {
+      "previous": "",
+      "next": "0",
+      "digits": 3,
+      "value": "0.000"
+    },
+    {
+      "previous": "0.000",
+      "next": "0.0003",
+      "digits": 3,
+      "value": "0.003"
+    },
+    {
+      "previous": "0.003",
+      "next": "0.0033",
+      "digits": 3,
+      "value": "0.033"
+    },
+    {
+      "previous": "0.033",
+      "next": "0.0334",
+      "digits": 3,
+      "value": "0.334"
+    },
+    {
+      "previous": "0.334",
+      "next": "0.3343",
+      "digits": 3,
+      "value": "3.343"
+    },
+    {
+      "previous": "3.343",
+      "next": "3.3434",
+      "digits": 3,
+      "value": "33.434"
+    },
+    {
+      "previous": "",
+      "next": "6",
+      "digits": 0,
+      "value": "6"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 0,
+      "value": "8"
+    },
+    {
+      "previous": "8",
+      "next": "88",
+      "digits": 0,
+      "value": "88"
+    },
+    {
+      "previous": "88",
+      "next": "881",
+      "digits": 0,
+      "value": "881"
+    },
+    {
+      "previous": "881",
+      "next": "8810",
+      "digits": 0,
+      "value": "8810"
+    },
+    {
+      "previous": "8810",
+      "next": "88100",
+      "digits": 0,
+      "value": "88100"
+    },
+    {
+      "previous": "88100",
+      "next": "881006",
+      "digits": 0,
+      "value": "881006"
+    },
+    {
+      "previous": "881006",
+      "next": "8810069",
+      "digits": 0,
+      "value": "8810069"
+    },
+    {
+      "previous": "8810069",
+      "next": "88100694",
+      "digits": 0,
+      "value": "88100694"
+    },
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.018",
+      "digits": 2,
+      "value": "0.18"
+    },
+    {
+      "previous": "0.18",
+      "next": "0.189",
+      "digits": 2,
+      "value": "1.89"
+    },
+    {
+      "previous": "1.89",
+      "next": "1.892",
+      "digits": 2,
+      "value": "18.92"
+    },
+    {
+      "previous": "18.92",
+      "next": "18.923",
+      "digits": 2,
+      "value": "189.23"
+    },
+    {
+      "previous": "189.23",
+      "next": "189.238",
+      "digits": 2,
+      "value": "1892.38"
+    },
+    {
+      "previous": "1892.38",
+      "next": "1892.385",
+      "digits": 2,
+      "value": "18923.85"
+    },
+    {
+      "previous": "18923.85",
+      "next": "18923.859",
+      "digits": 2,
+      "value": "189238.59"
+    },
+    {
+      "previous": "189238.59",
+      "next": "189238.593",
+      "digits": 2,
+      "value": "1892385.93"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 2,
+      "value": "0.08"
+    },
+    {
+      "previous": "0.08",
+      "next": "0.085",
+      "digits": 2,
+      "value": "0.85"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 2,
+      "value": "0.08"
+    },
+    {
+      "previous": "0.08",
+      "next": "0.083",
+      "digits": 2,
+      "value": "0.83"
+    },
+    {
+      "previous": "0.83",
+      "next": "0.836",
+      "digits": 2,
+      "value": "8.36"
+    },
+    {
+      "previous": "8.36",
+      "next": "8.368",
+      "digits": 2,
+      "value": "83.68"
+    },
+    {
+      "previous": "",
+      "next": "3",
+      "digits": 2,
+      "value": "0.03"
+    },
+    {
+      "previous": "0.03",
+      "next": "0.034",
+      "digits": 2,
+      "value": "0.34"
+    },
+    {
+      "previous": "",
+      "next": "2",
+      "digits": 2,
+      "value": "0.02"
+    },
+    {
+      "previous": "",
+      "next": "9",
+      "digits": 2,
+      "value": "0.09"
+    },
+    {
+      "previous": "0.09",
+      "next": "0.097",
+      "digits": 2,
+      "value": "0.97"
+    },
+    {
+      "previous": "0.97",
+      "next": "0.972",
+      "digits": 2,
+      "value": "9.72"
+    },
+    {
+      "previous": "9.72",
+      "next": "9.724",
+      "digits": 2,
+      "value": "97.24"
+    },
+    {
+      "previous": "97.24",
+      "next": "97.245",
+      "digits": 2,
+      "value": "972.45"
+    },
+    {
+      "previous": "972.45",
+      "next": "972.458",
+      "digits": 2,
+      "value": "9724.58"
+    },
+    {
+      "previous": "9724.58",
+      "next": "9724.584",
+      "digits": 2,
+      "value": "97245.84"
+    },
+    {
+      "previous": "97245.84",
+      "next": "97245.840",
+      "digits": 2,
+      "value": "972458.40"
+    },
+    {
+      "previous": "972458.40",
+      "next": "972458.401",
+      "digits": 2,
+      "value": "9724584.01"
+    },
+    {
+      "previous": "9724584.01",
+      "next": "9724584.014",
+      "digits": 2,
+      "value": "97245840.14"
+    },
+    {
+      "previous": "",
+      "next": "2",
+      "digits": 2,
+      "value": "0.02"
+    },
+    {
+      "previous": "0.02",
+      "next": "0.029",
+      "digits": 2,
+      "value": "0.29"
+    },
+    {
+      "previous": "0.29",
+      "next": "0.295",
+      "digits": 2,
+      "value": "2.95"
+    },
+    {
+      "previous": "2.95",
+      "next": "2.952",
+      "digits": 2,
+      "value": "29.52"
+    },
+    {
+      "previous": "29.52",
+      "next": "29.521",
+      "digits": 2,
+      "value": "295.21"
+    },
+    {
+      "previous": "295.21",
+      "next": "295.219",
+      "digits": 2,
+      "value": "2952.19"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 2,
+      "value": "0.08"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 3,
+      "value": "0.008"
+    },
+    {
+      "previous": "0.008",
+      "next": "0.0085",
+      "digits": 3,
+      "value": "0.085"
+    },
+    {
+      "previous": "0.085",
+      "next": "0.0858",
+      "digits": 3,
+      "value": "0.858"
+    },
+    {
+      "previous": "0.858",
+      "next": "0.8588",
+      "digits": 3,
+      "value": "8.588"
+    },
+    {
+      "previous": "8.588",
+      "next": "8.5882",
+      "digits": 3,
+      "value": "85.882"
+    },
+    {
+      "previous": "85.882",
+      "next": "85.8829",
+      "digits": 3,
+      "value": "858.829"
+    },
+    {
+      "previous": "858.829",
+      "next": "858.8293",
+      "digits": 3,
+      "value": "8588.293"
+    },
+    {
+      "previous": "8588.293",
+      "next": "8588.2938",
+      "digits": 3,
+      "value": "85882.938"
+    },
+    {
+      "previous": "",
+      "next": "4",
+      "digits": 0,
+      "value": "4"
+    },
+    {
+      "previous": "4",
+      "next": "48",
+      "digits": 0,
+      "value": "48"
+    },
+    {
+      "previous": "48",
+      "next": "489",
+      "digits": 0,
+      "value": "489"
+    },
+    {
+      "previous": "489",
+      "next": "4890",
+      "digits": 0,
+      "value": "4890"
+    },
+    {
+      "previous": "4890",
+      "next": "48905",
+      "digits": 0,
+      "value": "48905"
+    },
+    {
+      "previous": "48905",
+      "next": "489055",
+      "digits": 0,
+      "value": "489055"
+    },
+    {
+      "previous": "489055",
+      "next": "4890558",
+      "digits": 0,
+      "value": "4890558"
+    },
+    {
+      "previous": "4890558",
+      "next": "48905588",
+      "digits": 0,
+      "value": "48905588"
+    },
+    {
+      "previous": "48905588",
+      "next": "489055881",
+      "digits": 0,
+      "value": "489055881"
+    },
+    {
+      "previous": "489055881",
+      "next": "4890558817",
+      "digits": 0,
+      "value": "4890558817"
+    },
+    {
+      "previous": "4890558817",
+      "next": "48905588176",
+      "digits": 0,
+      "value": "48905588176"
+    },
+    {
+      "previous": "48905588176",
+      "next": "489055881769",
+      "digits": 0,
+      "value": "489055881769"
+    },
+    {
+      "previous": "489055881769",
+      "next": "4890558817699",
+      "digits": 0,
+      "value": "4890558817699"
+    },
+    {
+      "previous": "",
+      "next": "7",
+      "digits": 0,
+      "value": "7"
+    },
+    {
+      "previous": "7",
+      "next": "77",
+      "digits": 0,
+      "value": "77"
+    },
+    {
+      "previous": "77",
+      "next": "772",
+      "digits": 0,
+      "value": "772"
+    },
+    {
+      "previous": "772",
+      "next": "7727",
+      "digits": 0,
+      "value": "7727"
+    },
+    {
+      "previous": "7727",
+      "next": "77278",
+      "digits": 0,
+      "value": "77278"
+    },
+    {
+      "previous": "77278",
+      "next": "772785",
+      "digits": 0,
+      "value": "772785"
+    },
+    {
+      "previous": "772785",
+      "next": "7727854",
+      "digits": 0,
+      "value": "7727854"
+    },
+    {
+      "previous": "7727854",
+      "next": "77278548",
+      "digits": 0,
+      "value": "77278548"
+    },
+    {
+      "previous": "77278548",
+      "next": "772785486",
+      "digits": 0,
+      "value": "772785486"
+    },
+    {
+      "previous": "772785486",
+      "next": "7727854869",
+      "digits": 0,
+      "value": "7727854869"
+    },
+    {
+      "previous": "7727854869",
+      "next": "77278548691",
+      "digits": 0,
+      "value": "77278548691"
+    },
+    {
+      "previous": "77278548691",
+      "next": "772785486912",
+      "digits": 0,
+      "value": "772785486912"
+    },
+    {
+      "previous": "772785486912",
+      "next": "7727854869121",
+      "digits": 0,
+      "value": "7727854869121"
+    },
+    {
+      "previous": "7727854869121",
+      "next": "77278548691216",
+      "digits": 0,
+      "value": "77278548691216"
+    },
+    {
+      "previous": "",
+      "next": "9",
+      "digits": 0,
+      "value": "9"
+    },
+    {
+      "previous": "9",
+      "next": "96",
+      "digits": 0,
+      "value": "96"
+    },
+    {
+      "previous": "96",
+      "next": "963",
+      "digits": 0,
+      "value": "963"
+    },
+    {
+      "previous": "963",
+      "next": "9636",
+      "digits": 0,
+      "value": "9636"
+    },
+    {
+      "previous": "9636",
+      "next": "96364",
+      "digits": 0,
+      "value": "96364"
+    },
+    {
+      "previous": "96364",
+      "next": "963645",
+      "digits": 0,
+      "value": "963645"
+    },
+    {
+      "previous": "963645",
+      "next": "9636456",
+      "digits": 0,
+      "value": "9636456"
+    },
+    {
+      "previous": "9636456",
+      "next": "96364563",
+      "digits": 0,
+      "value": "96364563"
+    },
+    {
+      "previous": "",
+      "next": "5",
+      "digits": 2,
+      "value": "0.05"
+    },
+    {
+      "previous": "0.05",
+      "next": "0.059",
+      "digits": 2,
+      "value": "0.59"
+    },
+    {
+      "previous": "0.59",
+      "next": "0.595",
+      "digits": 2,
+      "value": "5.95"
+    },
+    {
+      "previous": "5.95",
+      "next": "5.959",
+      "digits": 2,
+      "value": "59.59"
+    },
+    {
+      "previous": "59.59",
+      "next": "59.599",
+      "digits": 2,
+      "value": "595.99"
+    },
+    {
+      "previous": "595.99",
+      "next": "595.994",
+      "digits": 2,
+      "value": "5959.94"
+    },
+    {
+      "previous": "5959.94",
+      "next": "5959.947",
+      "digits": 2,
+      "value": "59599.47"
+    },
+    {
+      "previous": "59599.47",
+      "next": "59599.474",
+      "digits": 2,
+      "value": "595994.74"
+    },
+    {
+      "previous": "595994.74",
+      "next": "595994.748",
+      "digits": 2,
+      "value": "5959947.48"
+    },
+    {
+      "previous": "5959947.48",
+      "next": "5959947.484",
+      "digits": 2,
+      "value": "59599474.84"
+    },
+    {
+      "previous": "59599474.84",
+      "next": "59599474.847",
+      "digits": 2,
+      "value": "595994748.47"
+    },
+    {
+      "previous": "595994748.47",
+      "next": "595994748.479",
+      "digits": 2,
+      "value": "5959947484.79"
+    },
+    {
+      "previous": "5959947484.79",
+      "next": "5959947484.798",
+      "digits": 2,
+      "value": "59599474847.98"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 2,
+      "value": "0.08"
+    },
+    {
+      "previous": "0.08",
+      "next": "0.082",
+      "digits": 2,
+      "value": "0.82"
+    },
+    {
+      "previous": "0.82",
+      "next": "0.826",
+      "digits": 2,
+      "value": "8.26"
+    },
+    {
+      "previous": "8.26",
+      "next": "8.267",
+      "digits": 2,
+      "value": "82.67"
+    },
+    {
+      "previous": "82.67",
+      "next": "82.672",
+      "digits": 2,
+      "value": "826.72"
+    },
+    {
+      "previous": "826.72",
+      "next": "826.722",
+      "digits": 2,
+      "value": "8267.22"
+    },
+    {
+      "previous": "8267.22",
+      "next": "8267.222",
+      "digits": 2,
+      "value": "82672.22"
+    },
+    {
+      "previous": "82672.22",
+      "next": "82672.229",
+      "digits": 2,
+      "value": "826722.29"
+    },
+    {
+      "previous": "826722.29",
+      "next": "826722.298",
+      "digits": 2,
+      "value": "8267222.98"
+    },
+    {
+      "previous": "",
+      "next": "5",
+      "digits": 2,
+      "value": "0.05"
+    },
+    {
+      "previous": "0.05",
+      "next": "0.052",
+      "digits": 2,
+      "value": "0.52"
+    },
+    {
+      "previous": "0.52",
+      "next": "0.524",
+      "digits": 2,
+      "value": "5.24"
+    },
+    {
+      "previous": "5.24",
+      "next": "5.241",
+      "digits": 2,
+      "value": "52.41"
+    },
+    {
+      "previous": "52.41",
+      "next": "52.410",
+      "digits": 2,
+      "value": "524.10"
+    },
+    {
+      "previous": "524.10",
+      "next": "524.109",
+      "digits": 2,
+      "value": "5241.09"
+    },
+    {
+      "previous": "5241.09",
+      "next": "5241.099",
+      "digits": 2,
+      "value": "52410.99"
+    },
+    {
+      "previous": "52410.99",
+      "next": "52410.992",
+      "digits": 2,
+      "value": "524109.92"
+    },
+    {
+      "previous": "524109.92",
+      "next": "524109.923",
+      "digits": 2,
+      "value": "5241099.23"
+    },
+    {
+      "previous": "5241099.23",
+      "next": "5241099.234",
+      "digits": 2,
+      "value": "52410992.34"
+    },
+    {
+      "previous": "52410992.34",
+      "next": "52410992.346",
+      "digits": 2,
+      "value": "524109923.46"
+    },
+    {
+      "previous": "",
+      "next": "8",
+      "digits": 0,
+      "value": "8"
+    },
+    {
+      "previous": "8",
+      "next": "82",
+      "digits": 0,
+      "value": "82"
+    },
+    {
+      "previous": "",
+      "next": "7",
+      "digits": 2,
+      "value": "0.07"
+    },
+    {
+      "previous": "0.07",
+      "next": "0.071",
+      "digits": 2,
+      "value": "0.71"
+    },
+    {
+      "previous": "",
+      "next": "6",
+      "digits": 2,
+      "value": "0.06"
+    },
+    {
+      "previous": "",
+      "next": "9",
+      "digits": 3,
+      "value": "0.009"
+    },
+    {
+      "previous": "0.009",
+      "next": "0.0093",
+      "digits": 3,
+      "value": "0.093"
+    },
+    {
+      "previous": "0.093",
+      "next": "0.0930",
+      "digits": 3,
+      "value": "0.930"
+    },
+    {
+      "previous": "0.930",
+      "next": "0.9307",
+      "digits": 3,
+      "value": "9.307"
+    },
+    {
+      "previous": "9.307",
+      "next": "9.3076",
+      "digits": 3,
+      "value": "93.076"
+    },
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.012",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "0.12",
+      "next": "0.121",
+      "digits": 2,
+      "value": "1.21"
+    },
+    {
+      "previous": "1.21",
+      "next": "1.216",
+      "digits": 2,
+      "value": "12.16"
+    },
+    {
+      "previous": "12.16",
+      "next": "12.161",
+      "digits": 2,
+      "value": "121.61"
+    },
+    {
+      "previous": "121.61",
+      "next": "121.610",
+      "digits": 2,
+      "value": "1216.10"
+    },
+    {
+      "previous": "1216.10",
+      "next": "1216.105",
+      "digits": 2,
+      "value": "12161.05"
+    },
+    {
+      "previous": "12161.05",
+      "next": "12161.055",
+      "digits": 2,
+      "value": "121610.55"
+    },
+    {
+      "previous": "121610.55",
+      "next": "121610.554",
+      "digits": 2,
+      "value": "1216105.54"
+    },
+    {
+      "previous": "1216105.54",
+      "next": "1216105.541",
+      "digits": 2,
+      "value": "12161055.41"
+    },
+    {
+      "previous": "12161055.41",
+      "next": "12161055.415",
+      "digits": 2,
+      "value": "121610554.15"
+    },
+    {
+      "previous": "121610554.15",
+      "next": "121610554.156",
+      "digits": 2,
+      "value": "1216105541.56"
+    },
+    {
+      "previous": "",
+      "next": "5",
+      "digits": 3,
+      "value": "0.005"
+    },
+    {
+      "previous": "0.005",
+      "next": "0.0051",
+      "digits": 3,
+      "value": "0.051"
+    },
+    {
+      "previous": "0.051",
+      "next": "0.0512",
+      "digits": 3,
+      "value": "0.512"
+    },
+    {
+      "previous": "0.512",
+      "next": "0.5126",
+      "digits": 3,
+      "value": "5.126"
+    },
+    {
+      "previous": "5.126",
+      "next": "5.1260",
+      "digits": 3,
+      "value": "51.260"
+    },
+    {
+      "previous": "51.260",
+      "next": "51.2607",
+      "digits": 3,
+      "value": "512.607"
+    },
+    {
+      "previous": "512.607",
+      "next": "512.6071",
+      "digits": 3,
+      "value": "5126.071"
+    },
+    {
+      "previous": "5126.071",
+      "next": "5126.0716",
+      "digits": 3,
+      "value": "51260.716"
+    },
+    {
+      "previous": "51260.716",
+      "next": "51260.7168",
+      "digits": 3,
+      "value": "512607.168"
+    },
+    {
+      "previous": "",
+      "next": "7",
+      "digits": 2,
+      "value": "0.07"
+    },
+    {
+      "previous": "0.07",
+      "next": "0.077",
+      "digits": 2,
+      "value": "0.77"
+    },
+    {
+      "previous": "0.77",
+      "next": "0.777",
+      "digits": 2,
+      "value": "7.77"
+    },
+    {
+      "previous": "7.77",
+      "next": "7.776",
+      "digits": 2,
+      "value": "77.76"
+    },
+    {
+      "previous": "77.76",
+      "next": "77.763",
+      "digits": 2,
+      "value": "777.63"
+    },
+    {
+      "previous": "777.63",
+      "next": "777.637",
+      "digits": 2,
+      "value": "7776.37"
+    },
+    {
+      "previous": "7776.37",
+      "next": "7776.379",
+      "digits": 2,
+      "value": "77763.79"
+    },
+    {
+      "previous": "77763.79",
+      "next": "77763.796",
+      "digits": 2,
+      "value": "777637.96"
+    },
+    {
+      "previous": "777637.96",
+      "next": "777637.962",
+      "digits": 2,
+      "value": "7776379.62"
+    },
+    {
+      "previous": "7776379.62",
+      "next": "7776379.623",
+      "digits": 2,
+      "value": "77763796.23"
+    },
+    {
+      "previous": "77763796.23",
+      "next": "77763796.239",
+      "digits": 2,
+      "value": "777637962.39"
+    },
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "",
+      "next": "2",
+      "digits": 3,
+      "value": "0.002"
+    },
+    {
+      "previous": "0.002",
+      "next": "0.0024",
+      "digits": 3,
+      "value": "0.024"
+    },
+    {
+      "previous": "0.024",
+      "next": "0.0246",
+      "digits": 3,
+      "value": "0.246"
+    },
+    {
+      "previous": "0.246",
+      "next": "0.2466",
+      "digits": 3,
+      "value": "2.466"
+    },
+    {
+      "previous": "2.466",
+      "next": "2.4665",
+      "digits": 3,
+      "value": "24.665"
+    },
+    {
+      "previous": "24.665",
+      "next": "24.6656",
+      "digits": 3,
+      "value": "246.656"
+    },
+    {
+      "previous": "246.656",
+      "next": "246.6561",
+      "digits": 3,
+      "value": "2466.561"
+    },
+    {
+      "previous": "2466.561",
+      "next": "2466.5612",
+      "digits": 3,
+      "value": "24665.612"
+    },
+    {
+      "previous": "24665.612",
+      "next": "24665.6125",
+      "digits": 3,
+      "value": "246656.125"
+    },
+    {
+      "previous": "246656.125",
+      "next": "246656.1252",
+      "digits": 3,
+      "value": "2466561.252"
+    },
+    {
+      "previous": "2466561.252",
+      "next": "2466561.2521",
+      "digits": 3,
+      "value": "24665612.521"
+    },
+    {
+      "previous": "",
+      "next": "7",
+      "digits": 0,
+      "value": "7"
+    },
+    {
+      "previous": "7",
+      "next": "74",
+      "digits": 0,
+      "value": "74"
+    },
+    {
+      "previous": "74",
+      "next": "745",
+      "digits": 0,
+      "value": "745"
+    },
+    {
+      "previous": "745",
+      "next": "7452",
+      "digits": 0,
+      "value": "7452"
+    },
+    {
+      "previous": "",
+      "next": "3",
+      "digits": 2,
+      "value": "0.03"
+    },
+    {
+      "previous": "0.03",
+      "next": "0.039",
+      "digits": 2,
+      "value": "0.39"
+    },
+    {
+      "previous": "0.39",
+      "next": "0.398",
+      "digits": 2,
+      "value": "3.98"
+    },
+    {
+      "previous": "",
+      "next": "1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "1",
+      "next": "12",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12",
+      "next": "121",
+      "digits": 0,
+      "value": "121"
+    },
+    {
+      "previous": "121",
+      "next": "1213",
+      "digits": 0,
+      "value": "1213"
+    },
+    {
+      "previous": "1213",
+      "next": "12136",
+      "digits": 0,
+      "value": "12136"
+    },
+    {
+      "previous": "12136",
+      "next": "121362",
+      "digits": 0,
+      "value": "121362"
+    },
+    {
+      "previous": "121362",
+      "next": "1213622",
+      "digits": 0,
+      "value": "1213622"
+    },
+    {
+      "previous": "1213622",
+      "next": "12136226",
+      "digits": 0,
+      "value": "12136226"
+    },
+    {
+      "previous": "12136226",
+      "next": "121362263",
+      "digits": 0,
+      "value": "121362263"
+    },
+    {
+      "previous": "121362263",
+      "next": "1213622633",
+      "digits": 0,
+      "value": "1213622633"
+    },
+    {
+      "previous": "1213622633",
+      "next": "12136226330",
+      "digits": 0,
+      "value": "12136226330"
+    },
+    {
+      "previous": "",
+      "next": "0",
+      "digits": 0,
+      "value": "0"
+    },
+    {
+      "previous": "0",
+      "next": "07",
+      "digits": 0,
+      "value": "7"
+    },
+    {
+      "previous": "12.34",
+      "next": "5",
+      "digits": 0,
+      "value": "5"
+    },
+    {
+      "previous": "12.34",
+      "next": "99",
+      "digits": 0,
+      "value": "99"
+    },
+    {
+      "previous": "12.34",
+      "next": "1x2",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "previous": "12.34",
+      "next": "x",
+      "digits": 0,
+      "value": "12.34"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.3",
+      "digits": 0,
+      "value": "123"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.345",
+      "digits": 0,
+      "value": "12345"
+    },
+    {
+      "previous": "12.34",
+      "next": "2.34",
+      "digits": 0,
+      "value": "234"
+    },
+    {
+      "previous": "12.34",
+      "next": "1.34",
+      "digits": 0,
+      "value": "134"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.4",
+      "digits": 0,
+      "value": "124"
+    },
+    {
+      "previous": "12.34",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "  ",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "abc",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "1.5",
+      "digits": 0,
+      "value": "15"
+    },
+    {
+      "previous": "",
+      "next": "0.00",
+      "digits": 0,
+      "value": "0"
+    },
+    {
+      "previous": "1",
+      "next": "1 ",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.34a",
+      "digits": 0,
+      "value": "1234"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.34 5",
+      "digits": 0,
+      "value": "12345"
+    },
+    {
+      "previous": "abc",
+      "next": "abc1",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "abc",
+      "next": "ab",
+      "digits": 0,
+      "value": "abc"
+    },
+    {
+      "previous": "1.2.3",
+      "next": "1.2.34",
+      "digits": 0,
+      "value": "1234"
+    },
+    {
+      "previous": "90071992547409.91",
+      "next": "90071992547409.911",
+      "digits": 0,
+      "value": "90071992547409.91"
+    },
+    {
+      "previous": "90071992547409.90",
+      "next": "90071992547409.901",
+      "digits": 0,
+      "value": "90071992547409.90"
+    },
+    {
+      "previous": "9007199254740991",
+      "next": "90071992547409910",
+      "digits": 0,
+      "value": "9007199254740991"
+    },
+    {
+      "previous": "9007199254740990",
+      "next": "90071992547409901",
+      "digits": 0,
+      "value": "9007199254740990"
+    },
+    {
+      "previous": "9007199254740",
+      "next": "90071992547409",
+      "digits": 0,
+      "value": "90071992547409"
+    },
+    {
+      "previous": "0.00",
+      "next": "0.001",
+      "digits": 0,
+      "value": "1"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 0,
+      "value": "0"
+    },
+    {
+      "previous": "0.01",
+      "next": "",
+      "digits": 0,
+      "value": ""
+    },
+    {
+      "previous": "5",
+      "next": "50",
+      "digits": 0,
+      "value": "50"
+    },
+    {
+      "previous": "50",
+      "next": "5",
+      "digits": 0,
+      "value": "5"
+    },
+    {
+      "previous": "12.34",
+      "next": "5",
+      "digits": 2,
+      "value": "0.05"
+    },
+    {
+      "previous": "12.34",
+      "next": "99",
+      "digits": 2,
+      "value": "0.99"
+    },
+    {
+      "previous": "12.34",
+      "next": "1x2",
+      "digits": 2,
+      "value": "0.12"
+    },
+    {
+      "previous": "12.34",
+      "next": "x",
+      "digits": 2,
+      "value": "12.34"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.3",
+      "digits": 2,
+      "value": "1.23"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.345",
+      "digits": 2,
+      "value": "123.45"
+    },
+    {
+      "previous": "12.34",
+      "next": "2.34",
+      "digits": 2,
+      "value": "2.34"
+    },
+    {
+      "previous": "12.34",
+      "next": "1.34",
+      "digits": 2,
+      "value": "1.34"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.4",
+      "digits": 2,
+      "value": "1.24"
+    },
+    {
+      "previous": "12.34",
+      "next": "",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "  ",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "abc",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "1.5",
+      "digits": 2,
+      "value": "0.15"
+    },
+    {
+      "previous": "",
+      "next": "0.00",
+      "digits": 2,
+      "value": "0.00"
+    },
+    {
+      "previous": "1",
+      "next": "1 ",
+      "digits": 2,
+      "value": "1.00"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.34a",
+      "digits": 2,
+      "value": "12.34"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.34 5",
+      "digits": 2,
+      "value": "123.45"
+    },
+    {
+      "previous": "abc",
+      "next": "abc1",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "abc",
+      "next": "ab",
+      "digits": 2,
+      "value": "abc"
+    },
+    {
+      "previous": "1.2.3",
+      "next": "1.2.34",
+      "digits": 2,
+      "value": "12.34"
+    },
+    {
+      "previous": "90071992547409.91",
+      "next": "90071992547409.911",
+      "digits": 2,
+      "value": "90071992547409.91"
+    },
+    {
+      "previous": "90071992547409.90",
+      "next": "90071992547409.901",
+      "digits": 2,
+      "value": "90071992547409.90"
+    },
+    {
+      "previous": "9007199254740991",
+      "next": "90071992547409910",
+      "digits": 2,
+      "value": "9007199254740991"
+    },
+    {
+      "previous": "9007199254740990",
+      "next": "90071992547409901",
+      "digits": 2,
+      "value": "9007199254740990"
+    },
+    {
+      "previous": "9007199254740",
+      "next": "90071992547409",
+      "digits": 2,
+      "value": "90071992547400.09"
+    },
+    {
+      "previous": "0.00",
+      "next": "0.001",
+      "digits": 2,
+      "value": "0.01"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "0.01",
+      "next": "",
+      "digits": 2,
+      "value": ""
+    },
+    {
+      "previous": "5",
+      "next": "50",
+      "digits": 2,
+      "value": "50.00"
+    },
+    {
+      "previous": "50",
+      "next": "5",
+      "digits": 2,
+      "value": "5.00"
+    },
+    {
+      "previous": "12.34",
+      "next": "5",
+      "digits": 3,
+      "value": "0.005"
+    },
+    {
+      "previous": "12.34",
+      "next": "99",
+      "digits": 3,
+      "value": "0.099"
+    },
+    {
+      "previous": "12.34",
+      "next": "1x2",
+      "digits": 3,
+      "value": "0.012"
+    },
+    {
+      "previous": "12.34",
+      "next": "x",
+      "digits": 3,
+      "value": "12.340"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.3",
+      "digits": 3,
+      "value": "1.234"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.345",
+      "digits": 3,
+      "value": "123.405"
+    },
+    {
+      "previous": "12.34",
+      "next": "2.34",
+      "digits": 3,
+      "value": "0.234"
+    },
+    {
+      "previous": "12.34",
+      "next": "1.34",
+      "digits": 3,
+      "value": "0.134"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.4",
+      "digits": 3,
+      "value": "0.124"
+    },
+    {
+      "previous": "12.34",
+      "next": "",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "  ",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "abc",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "",
+      "next": "1.5",
+      "digits": 3,
+      "value": "0.015"
+    },
+    {
+      "previous": "",
+      "next": "0.00",
+      "digits": 3,
+      "value": "0.000"
+    },
+    {
+      "previous": "1",
+      "next": "1 ",
+      "digits": 3,
+      "value": "1.000"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.34a",
+      "digits": 3,
+      "value": "12.340"
+    },
+    {
+      "previous": "12.34",
+      "next": "12.34 5",
+      "digits": 3,
+      "value": "123.405"
+    },
+    {
+      "previous": "abc",
+      "next": "abc1",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "abc",
+      "next": "ab",
+      "digits": 3,
+      "value": "abc"
+    },
+    {
+      "previous": "1.2.3",
+      "next": "1.2.34",
+      "digits": 3,
+      "value": "1.234"
+    },
+    {
+      "previous": "90071992547409.91",
+      "next": "90071992547409.911",
+      "digits": 3,
+      "value": "90071992547409.91"
+    },
+    {
+      "previous": "90071992547409.90",
+      "next": "90071992547409.901",
+      "digits": 3,
+      "value": "90071992547409.90"
+    },
+    {
+      "previous": "9007199254740991",
+      "next": "90071992547409910",
+      "digits": 3,
+      "value": "9007199254740991"
+    },
+    {
+      "previous": "9007199254740990",
+      "next": "90071992547409901",
+      "digits": 3,
+      "value": "9007199254740990"
+    },
+    {
+      "previous": "9007199254740",
+      "next": "90071992547409",
+      "digits": 3,
+      "value": "9007199254740.000"
+    },
+    {
+      "previous": "0.00",
+      "next": "0.001",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.01",
+      "next": "0.0",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "previous": "0.01",
+      "next": "",
+      "digits": 3,
+      "value": ""
+    },
+    {
+      "previous": "5",
+      "next": "50",
+      "digits": 3,
+      "value": "50.000"
+    },
+    {
+      "previous": "50",
+      "next": "5",
+      "digits": 3,
+      "value": "5.000"
+    }
+  ],
+  "pasted": [
+    {
+      "text": "12.50",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1250",
+      "digits": 0,
+      "value": "1250"
+    },
+    {
+      "text": "$1,200.50",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1,200",
+      "digits": 0,
+      "value": "1200"
+    },
+    {
+      "text": "1,200.5",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": " 12.5 ",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "12.",
+      "digits": 0,
+      "value": "12"
+    },
+    {
+      "text": ".5",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "0",
+      "digits": 0,
+      "value": "0"
+    },
+    {
+      "text": "0.0",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "abc",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1e3",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "-5",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1.2.3",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "12,5",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "$ 5",
+      "digits": 0,
+      "value": "5"
+    },
+    {
+      "text": "$5.5",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1 000",
+      "digits": 0,
+      "value": "1000"
+    },
+    {
+      "text": "1,23",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1,2345",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "00012.50",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "9007199254740991",
+      "digits": 0,
+      "value": "9007199254740991"
+    },
+    {
+      "text": "90071992547409.91",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "90071992547409.92",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "9007199254740992",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "0.001",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1.234",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "1.2345",
+      "digits": 0,
+      "value": null
+    },
+    {
+      "text": "12.50",
+      "digits": 2,
+      "value": "12.50"
+    },
+    {
+      "text": "1250",
+      "digits": 2,
+      "value": "1250.00"
+    },
+    {
+      "text": "$1,200.50",
+      "digits": 2,
+      "value": "1200.50"
+    },
+    {
+      "text": "1,200",
+      "digits": 2,
+      "value": "1200.00"
+    },
+    {
+      "text": "1,200.5",
+      "digits": 2,
+      "value": "1200.50"
+    },
+    {
+      "text": " 12.5 ",
+      "digits": 2,
+      "value": "12.50"
+    },
+    {
+      "text": "12.",
+      "digits": 2,
+      "value": "12.00"
+    },
+    {
+      "text": ".5",
+      "digits": 2,
+      "value": "0.50"
+    },
+    {
+      "text": "0",
+      "digits": 2,
+      "value": "0.00"
+    },
+    {
+      "text": "0.0",
+      "digits": 2,
+      "value": "0.00"
+    },
+    {
+      "text": "",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "abc",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "1e3",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "-5",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "1.2.3",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "12,5",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "$ 5",
+      "digits": 2,
+      "value": "5.00"
+    },
+    {
+      "text": "$5.5",
+      "digits": 2,
+      "value": "5.50"
+    },
+    {
+      "text": "1 000",
+      "digits": 2,
+      "value": "1000.00"
+    },
+    {
+      "text": "1,23",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "1,2345",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "00012.50",
+      "digits": 2,
+      "value": "12.50"
+    },
+    {
+      "text": "9007199254740991",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "90071992547409.91",
+      "digits": 2,
+      "value": "90071992547409.91"
+    },
+    {
+      "text": "90071992547409.92",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "9007199254740992",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "0.001",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "1.234",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "1.2345",
+      "digits": 2,
+      "value": null
+    },
+    {
+      "text": "12.50",
+      "digits": 3,
+      "value": "12.500"
+    },
+    {
+      "text": "1250",
+      "digits": 3,
+      "value": "1250.000"
+    },
+    {
+      "text": "$1,200.50",
+      "digits": 3,
+      "value": "1200.500"
+    },
+    {
+      "text": "1,200",
+      "digits": 3,
+      "value": "1200.000"
+    },
+    {
+      "text": "1,200.5",
+      "digits": 3,
+      "value": "1200.500"
+    },
+    {
+      "text": " 12.5 ",
+      "digits": 3,
+      "value": "12.500"
+    },
+    {
+      "text": "12.",
+      "digits": 3,
+      "value": "12.000"
+    },
+    {
+      "text": ".5",
+      "digits": 3,
+      "value": "0.500"
+    },
+    {
+      "text": "0",
+      "digits": 3,
+      "value": "0.000"
+    },
+    {
+      "text": "0.0",
+      "digits": 3,
+      "value": "0.000"
+    },
+    {
+      "text": "",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "abc",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "1e3",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "-5",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "1.2.3",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "12,5",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "$ 5",
+      "digits": 3,
+      "value": "5.000"
+    },
+    {
+      "text": "$5.5",
+      "digits": 3,
+      "value": "5.500"
+    },
+    {
+      "text": "1 000",
+      "digits": 3,
+      "value": "1000.000"
+    },
+    {
+      "text": "1,23",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "1,2345",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "00012.50",
+      "digits": 3,
+      "value": "12.500"
+    },
+    {
+      "text": "9007199254740991",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "90071992547409.91",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "90071992547409.92",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "9007199254740992",
+      "digits": 3,
+      "value": null
+    },
+    {
+      "text": "0.001",
+      "digits": 3,
+      "value": "0.001"
+    },
+    {
+      "text": "1.234",
+      "digits": 3,
+      "value": "1.234"
+    },
+    {
+      "text": "1.2345",
+      "digits": 3,
+      "value": null
+    }
+  ],
+  "placeholder": [
+    {
+      "digits": 0,
+      "text": "0"
+    },
+    {
+      "digits": 2,
+      "text": "0.00"
+    },
+    {
+      "digits": 3,
+      "text": "0.000"
+    }
+  ],
+  "typed": [
+    {
+      "text": "12.5",
+      "currency": "USD",
+      "minor": 1250
+    },
+    {
+      "text": "12.50",
+      "currency": "USD",
+      "minor": 1250
+    },
+    {
+      "text": "0.5",
+      "currency": "USD",
+      "minor": 50
+    },
+    {
+      "text": ".5",
+      "currency": "USD",
+      "minor": 50
+    },
+    {
+      "text": "5.",
+      "currency": "USD",
+      "minor": 500
+    },
+    {
+      "text": "5",
+      "currency": "USD",
+      "minor": 500
+    },
+    {
+      "text": "0",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "0.0",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "00",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "0.00",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "0.001",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "1.234",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "1.2345",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "12.345",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": " 12.5 ",
+      "currency": "USD",
+      "minor": 1250
+    },
+    {
+      "text": "",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": " ",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": ".",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "abc",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "-1",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "+1",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "1e3",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "1..2",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "1.2.3",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "007",
+      "currency": "USD",
+      "minor": 700
+    },
+    {
+      "text": "0012.5",
+      "currency": "USD",
+      "minor": 1250
+    },
+    {
+      "text": "100000",
+      "currency": "USD",
+      "minor": 10000000
+    },
+    {
+      "text": "9999999",
+      "currency": "USD",
+      "minor": 999999900
+    },
+    {
+      "text": "99999999999",
+      "currency": "USD",
+      "minor": 9999999999900
+    },
+    {
+      "text": "90071992547409.91",
+      "currency": "USD",
+      "minor": 9007199254740991
+    },
+    {
+      "text": "90071992547409.92",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "9007199254740991",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "9007199254740992",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "9007199254740990.5",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "123456789.123",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "0.01",
+      "currency": "USD",
+      "minor": 1
+    },
+    {
+      "text": "0.1",
+      "currency": "USD",
+      "minor": 10
+    },
+    {
+      "text": "1.0",
+      "currency": "USD",
+      "minor": 100
+    },
+    {
+      "text": "1.",
+      "currency": "USD",
+      "minor": 100
+    },
+    {
+      "text": "0.999",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "999.999",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "7.5",
+      "currency": "USD",
+      "minor": 750
+    },
+    {
+      "text": "12.",
+      "currency": "USD",
+      "minor": 1200
+    },
+    {
+      "text": "0.",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": ".05",
+      "currency": "USD",
+      "minor": 5
+    },
+    {
+      "text": ".005",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "1 234.56",
+      "currency": "USD",
+      "minor": 123456
+    },
+    {
+      "text": "1 234.56",
+      "currency": "USD",
+      "minor": 123456
+    },
+    {
+      "text": "12 .5",
+      "currency": "USD",
+      "minor": 1250
+    },
+    {
+      "text": "1 2",
+      "currency": "USD",
+      "minor": 1200
+    },
+    {
+      "text": "12.5",
+      "currency": "EUR",
+      "minor": 1250
+    },
+    {
+      "text": "12.50",
+      "currency": "EUR",
+      "minor": 1250
+    },
+    {
+      "text": "0.5",
+      "currency": "EUR",
+      "minor": 50
+    },
+    {
+      "text": ".5",
+      "currency": "EUR",
+      "minor": 50
+    },
+    {
+      "text": "5.",
+      "currency": "EUR",
+      "minor": 500
+    },
+    {
+      "text": "5",
+      "currency": "EUR",
+      "minor": 500
+    },
+    {
+      "text": "0",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "0.0",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "00",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "0.00",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "0.001",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "1.234",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "1.2345",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "12.345",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": " 12.5 ",
+      "currency": "EUR",
+      "minor": 1250
+    },
+    {
+      "text": "",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": " ",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": ".",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "abc",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "-1",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "+1",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "1e3",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "1..2",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "1.2.3",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "007",
+      "currency": "EUR",
+      "minor": 700
+    },
+    {
+      "text": "0012.5",
+      "currency": "EUR",
+      "minor": 1250
+    },
+    {
+      "text": "100000",
+      "currency": "EUR",
+      "minor": 10000000
+    },
+    {
+      "text": "9999999",
+      "currency": "EUR",
+      "minor": 999999900
+    },
+    {
+      "text": "99999999999",
+      "currency": "EUR",
+      "minor": 9999999999900
+    },
+    {
+      "text": "90071992547409.91",
+      "currency": "EUR",
+      "minor": 9007199254740991
+    },
+    {
+      "text": "90071992547409.92",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "9007199254740991",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "9007199254740992",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "9007199254740990.5",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "123456789.123",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "0.01",
+      "currency": "EUR",
+      "minor": 1
+    },
+    {
+      "text": "0.1",
+      "currency": "EUR",
+      "minor": 10
+    },
+    {
+      "text": "1.0",
+      "currency": "EUR",
+      "minor": 100
+    },
+    {
+      "text": "1.",
+      "currency": "EUR",
+      "minor": 100
+    },
+    {
+      "text": "0.999",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "999.999",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "7.5",
+      "currency": "EUR",
+      "minor": 750
+    },
+    {
+      "text": "12.",
+      "currency": "EUR",
+      "minor": 1200
+    },
+    {
+      "text": "0.",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": ".05",
+      "currency": "EUR",
+      "minor": 5
+    },
+    {
+      "text": ".005",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "1 234.56",
+      "currency": "EUR",
+      "minor": 123456
+    },
+    {
+      "text": "1 234.56",
+      "currency": "EUR",
+      "minor": 123456
+    },
+    {
+      "text": "12 .5",
+      "currency": "EUR",
+      "minor": 1250
+    },
+    {
+      "text": "1 2",
+      "currency": "EUR",
+      "minor": 1200
+    },
+    {
+      "text": "12.5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "12.50",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "0.5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": ".5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "5.",
+      "currency": "JPY",
+      "minor": 5
+    },
+    {
+      "text": "5",
+      "currency": "JPY",
+      "minor": 5
+    },
+    {
+      "text": "0",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "00",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "0.001",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1.234",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1.2345",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "12.345",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": " 12.5 ",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": " ",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": ".",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "abc",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "-1",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "+1",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1e3",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1..2",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1.2.3",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "007",
+      "currency": "JPY",
+      "minor": 7
+    },
+    {
+      "text": "0012.5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "100000",
+      "currency": "JPY",
+      "minor": 100000
+    },
+    {
+      "text": "9999999",
+      "currency": "JPY",
+      "minor": 9999999
+    },
+    {
+      "text": "99999999999",
+      "currency": "JPY",
+      "minor": 99999999999
+    },
+    {
+      "text": "90071992547409.91",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "90071992547409.92",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "9007199254740991",
+      "currency": "JPY",
+      "minor": 9007199254740991
+    },
+    {
+      "text": "9007199254740992",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "9007199254740990.5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "123456789.123",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "0.01",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "0.1",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1.",
+      "currency": "JPY",
+      "minor": 1
+    },
+    {
+      "text": "0.999",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "999.999",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "7.5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "12.",
+      "currency": "JPY",
+      "minor": 12
+    },
+    {
+      "text": "0.",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": ".05",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": ".005",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1 234.56",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1 234.56",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "12 .5",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "1 2",
+      "currency": "JPY",
+      "minor": 12
+    },
+    {
+      "text": "12.5",
+      "currency": "BHD",
+      "minor": 12500
+    },
+    {
+      "text": "12.50",
+      "currency": "BHD",
+      "minor": 12500
+    },
+    {
+      "text": "0.5",
+      "currency": "BHD",
+      "minor": 500
+    },
+    {
+      "text": ".5",
+      "currency": "BHD",
+      "minor": 500
+    },
+    {
+      "text": "5.",
+      "currency": "BHD",
+      "minor": 5000
+    },
+    {
+      "text": "5",
+      "currency": "BHD",
+      "minor": 5000
+    },
+    {
+      "text": "0",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "0.0",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "00",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "0.00",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "0.001",
+      "currency": "BHD",
+      "minor": 1
+    },
+    {
+      "text": "1.234",
+      "currency": "BHD",
+      "minor": 1234
+    },
+    {
+      "text": "1.2345",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "12.345",
+      "currency": "BHD",
+      "minor": 12345
+    },
+    {
+      "text": " 12.5 ",
+      "currency": "BHD",
+      "minor": 12500
+    },
+    {
+      "text": "",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": " ",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": ".",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "abc",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "-1",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "+1",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "1e3",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "1..2",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "1.2.3",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "007",
+      "currency": "BHD",
+      "minor": 7000
+    },
+    {
+      "text": "0012.5",
+      "currency": "BHD",
+      "minor": 12500
+    },
+    {
+      "text": "100000",
+      "currency": "BHD",
+      "minor": 100000000
+    },
+    {
+      "text": "9999999",
+      "currency": "BHD",
+      "minor": 9999999000
+    },
+    {
+      "text": "99999999999",
+      "currency": "BHD",
+      "minor": 99999999999000
+    },
+    {
+      "text": "90071992547409.91",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "90071992547409.92",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "9007199254740991",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "9007199254740992",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "9007199254740990.5",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "123456789.123",
+      "currency": "BHD",
+      "minor": 123456789123
+    },
+    {
+      "text": "0.01",
+      "currency": "BHD",
+      "minor": 10
+    },
+    {
+      "text": "0.1",
+      "currency": "BHD",
+      "minor": 100
+    },
+    {
+      "text": "1.0",
+      "currency": "BHD",
+      "minor": 1000
+    },
+    {
+      "text": "1.",
+      "currency": "BHD",
+      "minor": 1000
+    },
+    {
+      "text": "0.999",
+      "currency": "BHD",
+      "minor": 999
+    },
+    {
+      "text": "999.999",
+      "currency": "BHD",
+      "minor": 999999
+    },
+    {
+      "text": "1000.000",
+      "currency": "BHD",
+      "minor": 1000000
+    },
+    {
+      "text": "7.5",
+      "currency": "BHD",
+      "minor": 7500
+    },
+    {
+      "text": "12.",
+      "currency": "BHD",
+      "minor": 12000
+    },
+    {
+      "text": "0.",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": ".05",
+      "currency": "BHD",
+      "minor": 50
+    },
+    {
+      "text": ".005",
+      "currency": "BHD",
+      "minor": 5
+    },
+    {
+      "text": "1 234.56",
+      "currency": "BHD",
+      "minor": 1234560
+    },
+    {
+      "text": "1 234.56",
+      "currency": "BHD",
+      "minor": 1234560
+    },
+    {
+      "text": "12 .5",
+      "currency": "BHD",
+      "minor": 12500
+    },
+    {
+      "text": "1 2",
+      "currency": "BHD",
+      "minor": 12000
+    },
+    {
+      "text": "214032.11",
+      "currency": "USD",
+      "minor": 21403211
+    },
+    {
+      "text": "35366519",
+      "currency": "BHD",
+      "minor": 35366519000
+    },
+    {
+      "text": "9709519255",
+      "currency": "BHD",
+      "minor": 9709519255000
+    },
+    {
+      "text": "2058.598",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "6434971426",
+      "currency": "BHD",
+      "minor": 6434971426000
+    },
+    {
+      "text": "6276437455",
+      "currency": "EUR",
+      "minor": 627643745500
+    },
+    {
+      "text": "518858698672.37",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "2864.8808",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "53657.7",
+      "currency": "EUR",
+      "minor": 5365770
+    },
+    {
+      "text": "81658.57",
+      "currency": "USD",
+      "minor": 8165857
+    },
+    {
+      "text": "8007691.370",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "126673518.3",
+      "currency": "USD",
+      "minor": 12667351830
+    },
+    {
+      "text": "652443744861",
+      "currency": "BHD",
+      "minor": 652443744861000
+    },
+    {
+      "text": "7166585.6",
+      "currency": "BHD",
+      "minor": 7166585600
+    },
+    {
+      "text": "6286756",
+      "currency": "JPY",
+      "minor": 6286756
+    },
+    {
+      "text": "217779056.6",
+      "currency": "USD",
+      "minor": 21777905660
+    },
+    {
+      "text": "3",
+      "currency": "EUR",
+      "minor": 300
+    },
+    {
+      "text": "7054410250.378",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "26808.5274",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "470.191",
+      "currency": "BHD",
+      "minor": 470191
+    },
+    {
+      "text": "733548.43",
+      "currency": "USD",
+      "minor": 73354843
+    },
+    {
+      "text": "835",
+      "currency": "JPY",
+      "minor": 835
+    },
+    {
+      "text": "78",
+      "currency": "USD",
+      "minor": 7800
+    },
+    {
+      "text": "128451775.1435",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "73162443.7",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "286659091311.6266",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "73515079398.6",
+      "currency": "EUR",
+      "minor": 7351507939860
+    },
+    {
+      "text": "90336037",
+      "currency": "JPY",
+      "minor": 90336037
+    },
+    {
+      "text": "0.5286",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "526927664312.0452",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "953.080",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "9135868326.7359",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "5267982.7692",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "25743597.8",
+      "currency": "BHD",
+      "minor": 25743597800
+    },
+    {
+      "text": "41.930",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "312324246.203",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "927189691818.15",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "6068605870.92",
+      "currency": "BHD",
+      "minor": 6068605870920
+    },
+    {
+      "text": "890947613.5430",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "9946432789",
+      "currency": "EUR",
+      "minor": 994643278900
+    },
+    {
+      "text": "39782201259.2150",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "2921.1",
+      "currency": "EUR",
+      "minor": 292110
+    },
+    {
+      "text": "654418997515.572",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "7759396707",
+      "currency": "EUR",
+      "minor": 775939670700
+    },
+    {
+      "text": "736.1",
+      "currency": "EUR",
+      "minor": 73610
+    },
+    {
+      "text": "90801575502.572",
+      "currency": "BHD",
+      "minor": 90801575502572
+    },
+    {
+      "text": "556.07",
+      "currency": "BHD",
+      "minor": 556070
+    },
+    {
+      "text": "6525804494.98",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "8538858030.3459",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "562.5",
+      "currency": "BHD",
+      "minor": 562500
+    },
+    {
+      "text": "547711913742.80",
+      "currency": "BHD",
+      "minor": 547711913742800
+    },
+    {
+      "text": "65.1026",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "33987.2555",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "819657499.76",
+      "currency": "BHD",
+      "minor": 819657499760
+    },
+    {
+      "text": "796156",
+      "currency": "BHD",
+      "minor": 796156000
+    },
+    {
+      "text": "87753",
+      "currency": "BHD",
+      "minor": 87753000
+    },
+    {
+      "text": "2847.9919",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "770826133.5",
+      "currency": "EUR",
+      "minor": 77082613350
+    },
+    {
+      "text": "5297027961.4643",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "4268457380.50",
+      "currency": "BHD",
+      "minor": 4268457380500
+    },
+    {
+      "text": "60094632.22",
+      "currency": "BHD",
+      "minor": 60094632220
+    },
+    {
+      "text": "35584.350",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "31586534292.8645",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "326932575074",
+      "currency": "USD",
+      "minor": 32693257507400
+    },
+    {
+      "text": "755981.876",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "8505.140",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "201218.358",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "69.47",
+      "currency": "EUR",
+      "minor": 6947
+    },
+    {
+      "text": "3340381.746",
+      "currency": "EUR",
+      "minor": null
+    },
+    {
+      "text": "55.66",
+      "currency": "EUR",
+      "minor": 5566
+    },
+    {
+      "text": "3801605004",
+      "currency": "EUR",
+      "minor": 380160500400
+    },
+    {
+      "text": "79007.10",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "47494176388.995",
+      "currency": "USD",
+      "minor": null
+    },
+    {
+      "text": "28873882.7801",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "65237307.047",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "908885443305.51",
+      "currency": "USD",
+      "minor": 90888544330551
+    },
+    {
+      "text": "3482774463.9",
+      "currency": "JPY",
+      "minor": null
+    },
+    {
+      "text": "9865.8651",
+      "currency": "BHD",
+      "minor": null
+    },
+    {
+      "text": "917.8",
+      "currency": "EUR",
+      "minor": 91780
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "note": "Generated from packages/shared/src/currency.ts (deriveRate with base USD, invertRate, rateFromInverse, convertMinor); synthetic numbers.",
+  "note": "Generated from packages/shared/src/currency.ts (deriveRate with base USD, invertRate, rateFromInverse, convertMinor) and typed.ts (rateFromTyped) by android-parity.test.ts; synthetic numbers.",
   "derive": [
     {
       "base": 10000,
