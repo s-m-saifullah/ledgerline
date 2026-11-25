@@ -2,7 +2,8 @@ import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance } from "fastify";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { problem } from "../../lib/problem";
+import { ApiProblem, problem } from "../../lib/problem";
+import { requireAppOrigin } from "../../lib/route-helpers";
 import { mayReceiveDeviceToken } from "./device-token";
 import type { Auth } from "./service";
 import { isSignInStopped } from "./sign-in-stopped";
@@ -41,40 +42,22 @@ export async function authProxyRoutes(
             ...twoFactorPaths,
           ].includes(path));
       if (!allowed)
-        return reply
-          .code(404)
-          .type("application/problem+json")
-          .send(
-            problem(
-              404,
-              "Not found",
-              "This authentication endpoint is disabled.",
-            ),
-          );
-      if (
-        request.method === "POST" &&
-        request.headers.origin !== new URL(config.APP_URL).origin
-      ) {
-        return reply
-          .code(403)
-          .type("application/problem+json")
-          .send(problem(403, "Forbidden", "Request origin is not allowed."));
-      }
+        throw new ApiProblem(
+          404,
+          "Not found",
+          "This authentication endpoint is disabled.",
+        );
+      if (request.method === "POST") requireAppOrigin(request, config.APP_URL);
       // A person whose sign-in was stopped gets the same answer as a wrong password (ADR 0048).
       if (
         path === "/api/v1/auth/sign-in/email" &&
         (await isSignInStopped(db, request.body))
       )
-        return reply
-          .code(401)
-          .type("application/problem+json")
-          .send(
-            problem(
-              401,
-              "Authentication failed",
-              "Check your credentials and try again.",
-            ),
-          );
+        throw new ApiProblem(
+          401,
+          "Authentication failed",
+          "Check your credentials and try again.",
+        );
       const response = await auth.handler(
         new Request(new URL(request.url, config.APP_URL), {
           method: request.method,
