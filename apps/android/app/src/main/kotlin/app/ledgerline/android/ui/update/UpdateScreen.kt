@@ -122,7 +122,7 @@ private fun UpdateList(installed: String, state: UpdateState, release: Release?,
                         Line(stringResource(problemText(state.problem)), error = true)
                         Buttons {
                             // With a release the failure is the download or install, so retrying means downloading again.
-                            SecondaryButton(stringResource(R.string.updates_try_again), if (state.release != null) actions.download else actions.check)
+                            SecondaryButton(stringResource(R.string.try_again), if (state.release != null) actions.download else actions.check)
                         }
                     }
                 }

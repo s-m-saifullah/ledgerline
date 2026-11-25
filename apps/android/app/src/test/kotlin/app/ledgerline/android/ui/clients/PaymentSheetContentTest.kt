@@ -227,8 +227,8 @@ class PaymentSheetContentTest {
         val sentences = mapOf<WriteError, String>(
             WriteError.Offline to "Needs a connection. What you entered is kept.",
             WriteError.Forbidden to "Your account can't record payments in this ledger.",
-            WriteError.Failed to "Couldn't record the payment. Try again.",
-            WriteError.Rejected(null) to "The server didn't accept this payment.",
+            WriteError.Failed to "Couldn't save this. Try again.",
+            WriteError.Rejected(null) to "The server didn't accept this.",
             WriteError.Rejected("This service changed. Reload and try again.") to "This service changed. Reload and try again.",
         )
         var shown by mutableStateOf<WriteError>(WriteError.Failed)

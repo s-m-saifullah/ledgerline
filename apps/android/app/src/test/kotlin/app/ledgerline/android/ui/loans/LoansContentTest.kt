@@ -224,7 +224,7 @@ class LoansContentTest {
     @Test
     fun noPeopleAtAllSaysSo() {
         list(rows = emptyList())
-        compose.onNodeWithText("No loans yet. Add them in the web app.").assertExists()
+        compose.onNodeWithText("No loans yet. Add them on the web.").assertExists()
     }
 
     @Test

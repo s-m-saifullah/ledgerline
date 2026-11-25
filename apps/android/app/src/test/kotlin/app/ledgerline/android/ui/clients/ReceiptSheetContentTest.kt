@@ -226,13 +226,13 @@ class ReceiptSheetContentTest {
     @Test
     fun aReadThatFailedSaysSaveTriesAgain() {
         show(ui(chosen, read = Online.Offline))
-        compose.onNodeWithText("Could not check which services this pays. Save tries again.").assertExists()
+        compose.onNodeWithText("Couldn't check which services this pays. Save tries again.").assertExists()
     }
 
     @Test
     fun aReadThatFailedWithAnErrorSaysTheSame() {
         show(ui(chosen, read = Online.Failed))
-        compose.onNodeWithText("Could not check which services this pays. Save tries again.").assertExists()
+        compose.onNodeWithText("Couldn't check which services this pays. Save tries again.").assertExists()
     }
 
     @Test
@@ -335,8 +335,8 @@ class ReceiptSheetContentTest {
         val sentences = mapOf<WriteError, String>(
             WriteError.Offline to "Needs a connection. What you entered is kept.",
             WriteError.Forbidden to "Your account can't record payments in this ledger.",
-            WriteError.Failed to "Couldn't record the payment. Try again.",
-            WriteError.Rejected(null) to "The server didn't accept this payment.",
+            WriteError.Failed to "Couldn't save this. Try again.",
+            WriteError.Rejected(null) to "The server didn't accept this.",
             WriteError.Rejected("A service changed. Reload and try again.") to "A service changed. Reload and try again.",
         )
         var shown by mutableStateOf<WriteError>(WriteError.Failed)

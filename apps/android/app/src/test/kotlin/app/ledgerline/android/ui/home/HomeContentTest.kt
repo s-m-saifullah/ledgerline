@@ -222,7 +222,7 @@ class HomeContentTest {
             actions = noHomeActions.copy(onOpenAttention = { attention++ }, onOpenPending = { pending++ }),
         )
         compose.onNodeWithText("1 change needs your attention").performClick()
-        compose.onNodeWithText("3 pending entries aren't counted yet.").performClick()
+        compose.onNodeWithText("3 pending transactions aren't counted yet.").performClick()
         assertEquals(1, attention)
         assertEquals(1, pending)
     }
@@ -230,7 +230,7 @@ class HomeContentTest {
     @Test
     fun withoutAnyAccountsHomeSaysSo() {
         show(accounts = emptyList())
-        compose.onNodeWithText("No accounts yet. Add them in the web app.").assertExists()
+        compose.onNodeWithText("No accounts yet. Add them on the web.").assertExists()
     }
 
     @Test

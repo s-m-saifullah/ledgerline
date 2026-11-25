@@ -48,6 +48,8 @@ import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.SegmentedControl
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.TouchTarget
+import app.ledgerline.android.ui.design.WriteCopy
+import app.ledgerline.android.ui.design.text
 import app.ledgerline.android.ui.home.Muted
 import app.ledgerline.android.ui.theme.LocalPalette
 
@@ -197,13 +199,11 @@ private fun CategoryNotice.text() = when (this) {
     CategoryNotice.Deleted -> R.string.category_notice_deleted
 }
 
+/** Add, change, archive and delete share these sentences; nothing is typed in the last two, so offline does not say it is kept. */
+private val CategoryCopy = WriteCopy(forbidden = R.string.category_error_forbidden, offline = R.string.write_error_offline)
+
 @Composable
-internal fun errorText(error: WriteError): String = when (error) {
-    WriteError.Offline -> stringResource(R.string.category_error_offline)
-    WriteError.Forbidden -> stringResource(R.string.category_error_forbidden)
-    WriteError.Failed -> stringResource(R.string.category_error_failed)
-    is WriteError.Rejected -> error.detail ?: stringResource(R.string.category_error_rejected)
-}
+internal fun errorText(error: WriteError): String = error.text(CategoryCopy)
 
 /** One main category with, when open, its subcategories underneath. */
 @Composable

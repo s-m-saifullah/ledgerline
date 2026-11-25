@@ -197,7 +197,7 @@ class SettingsContentTest {
     fun theThemeHintAndEachSwitchSentenceStayAsRowSubtitles() {
         compose.setContent { SettingsContent(state, Taps().actions(), 0.dp, Modifier.requiredHeight(3000.dp)) }
         compose.onNodeWithText("Follows your phone").assertExists()
-        compose.onNodeWithText("Show amounts as dots").assertExists()
+        compose.onNodeWithText("Hides every amount on screen").assertExists()
         compose.onNodeWithText("Show the app in screenshots and recent apps").assertExists()
     }
 

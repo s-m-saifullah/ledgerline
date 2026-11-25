@@ -186,7 +186,7 @@ class ClientsContentTest {
     @Test
     fun noClientsAtAllSaysSo() {
         list(rows = emptyList())
-        compose.onNodeWithText("No clients yet. Add them in the web app.").assertExists()
+        compose.onNodeWithText("No clients yet. Add them on the web.").assertExists()
     }
 
     @Test
@@ -296,7 +296,7 @@ class ClientsContentTest {
     @Test
     fun theBalanceCardShowsWhatTheyOweAndHowToReachThem() {
         client()
-        compose.onNodeWithText("Open balance").assertExists()
+        compose.onNodeWithText("Owes you").assertExists()
         compose.onNodeWithText("555-0101").assertExists()
     }
 

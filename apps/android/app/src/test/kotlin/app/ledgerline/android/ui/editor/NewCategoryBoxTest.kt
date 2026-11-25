@@ -66,11 +66,11 @@ class NewCategoryBoxTest {
         var shown by mutableStateOf<WriteError?>(WriteError.Offline)
         compose.setContent { NewCategoryFields(NewCategory("Food", error = shown), {}, {}) }
         val cases = listOf(
-            WriteError.Offline to "needs a connection",
+            WriteError.Offline to "Needs a connection.",
             WriteError.Forbidden to "can't change categories",
-            WriteError.Failed to "Couldn't save the category",
+            WriteError.Failed to "Couldn't save this. Try again.",
             WriteError.Rejected("A sibling category already has this name.") to "A sibling category already has this name.",
-            WriteError.Rejected(null) to "didn't accept this change",
+            WriteError.Rejected(null) to "The server didn't accept this.",
         )
         for ((error, text) in cases) {
             compose.runOnIdle { shown = error }

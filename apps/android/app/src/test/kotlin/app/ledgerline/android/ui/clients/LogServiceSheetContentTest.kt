@@ -308,7 +308,7 @@ class LogServiceSheetContentTest {
     fun aViewerIsToldTheyCannotAddServices() = endsWith(WriteError.Forbidden, "Your account can't add services in this ledger.")
 
     @Test
-    fun aFailureIsSaidWithATryAgain() = endsWith(WriteError.Failed, "Couldn't save the service. Try again.")
+    fun aFailureIsSaidWithATryAgain() = endsWith(WriteError.Failed, "Couldn't save this. Try again.")
 
     @Test
     fun theServersOwnSentenceIsShown() = endsWith(WriteError.Rejected("This client was archived."), "This client was archived.")

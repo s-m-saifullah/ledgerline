@@ -307,7 +307,7 @@ class EditorContentTest {
     @Test
     fun aSaveThatFailedSaysSo() {
         show(state(errors = setOf(FormError.CouldNotSave)))
-        compose.onNodeWithText("This could not be saved. Try again.").assertExists()
+        compose.onNodeWithText("Couldn't save this. Try again.").assertExists()
     }
 
     @Test
@@ -320,7 +320,7 @@ class EditorContentTest {
     fun deletingAnExistingEntryAsksAndReportsTheAnswer() {
         val taps = show(state(isNew = false))
         compose.onNodeWithContentDescription("Delete").performClick()
-        compose.onNodeWithText("Delete this entry?").assertExists()
+        compose.onNodeWithText("Delete this transaction?").assertExists()
         assertEquals(emptyList<String>(), taps.log)
         compose.onNode(hasText("Delete") and hasClickAction()).performClick()
         assertEquals(listOf("delete"), taps.log)
@@ -336,7 +336,7 @@ class EditorContentTest {
     @Test
     fun aReadOnlyEntryShowsTheReasonAndBackAndNoFormOrSave() {
         val taps = show(state(isNew = false, readOnly = ReadOnly.Split))
-        compose.onNodeWithText("Split entries are edited in the web app.").assertExists()
+        compose.onNodeWithText("Split transactions are edited on the web.").assertExists()
         compose.onNodeWithText("Payee").assertDoesNotExist()
         compose.onNode(hasText("Save") and hasClickAction()).assertDoesNotExist()
         compose.onNodeWithContentDescription("Delete").assertDoesNotExist()
