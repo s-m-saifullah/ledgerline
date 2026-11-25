@@ -21,6 +21,7 @@
     "db:up": "docker compose --env-file .env -f infra/compose/docker-compose.dev.yml up -d --wait",
     "db:down": "docker compose --env-file .env -f infra/compose/docker-compose.dev.yml down",
     "openapi": "pnpm --filter @ledgerline/api openapi",
+    "parity:update": "UPDATE_PARITY=1 pnpm --filter @ledgerline/shared exec vitest run android-parity && UPDATE_PARITY=1 pnpm --filter @ledgerline/web exec vitest run android-parity && biome format --write apps/android/app/src/test/resources",
     "setup": "node infra/scripts/setup.mjs"
   },
   "devDependencies": {

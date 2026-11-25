@@ -162,6 +162,20 @@ test("the web and API suites run unless only documentation or Android files chan
   assert.equal(classify(["apps/android/x.kt", "apps/web/a.ts"]).web, true);
   assert.equal(affectsWebOrApi("apps/android/README.md"), false);
 });
+test("the Android parity fixtures run the web suites that check them, other Android test files do not", () => {
+  for (const name of ["rate", "hourly", "amount"]) {
+    const path = `apps/android/app/src/test/resources/${name}-parity.json`;
+    assert.equal(affectsWebOrApi(path), true, path);
+    assert.equal(classify([path]).web, true, path);
+    assert.equal(classify([path]).android, true, path);
+  }
+  for (const path of [
+    "apps/android/app/src/test/resources/robolectric.properties",
+    "apps/android/app/src/test/resources/other/rate-parity.json",
+    "apps/android/app/src/test/kotlin/app/ledgerline/android/ui/editor/AmountParityTest.kt",
+  ])
+    assert.equal(affectsWebOrApi(path), false, path);
+});
 test("when the changed paths are unknown the web and API suites run too", () => {
   assert.equal(classify([]).web, true);
   assert.equal(classify(["README.md"], { forceFull: true }).web, true);

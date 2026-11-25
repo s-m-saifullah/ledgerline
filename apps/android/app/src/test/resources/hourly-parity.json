@@ -1,5 +1,5 @@
 {
-  "note": "Generated from packages/shared/src/receivables.ts (hoursToHundredths, hourlyTotal); synthetic numbers.",
+  "note": "Generated from packages/shared/src/receivables.ts (hoursToHundredths, hourlyTotal) and typed.ts (hoursFromTyped) by android-parity.test.ts; synthetic numbers.",
   "hours": [
     {
       "text": "3.5",
