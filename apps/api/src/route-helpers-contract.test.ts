@@ -65,6 +65,20 @@ describe("the route helpers", () => {
     );
   });
 
+  it("leave the sign-in routes to one file of their own", () => {
+    expect(readFileSync(join(root, "app.ts"), "utf8")).not.toMatch(
+      /\/api\/v1\/auth|auth\.handler\(|twoFactorPaths/,
+    );
+    expect(
+      offenders(/\bauth\.handler\(/, sources, [
+        "modules/auth/proxy-routes.ts",
+      ]).filter((path) => !path.endsWith(".test.ts")),
+    ).toEqual([]);
+    expect(
+      readFileSync(join(root, "modules/auth/proxy-routes.ts"), "utf8"),
+    ).toContain("auth.handler(");
+  });
+
   it("are not skipped by a test file that builds its own database guard", () => {
     expect(
       offenders(/endsWith\("\/ledgerline_test"\)/, sources, [
