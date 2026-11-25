@@ -702,6 +702,33 @@ describe("needs attention", () => {
     expect((await rule(saved.id)).needsAttention).toBe(0);
   });
 
+  it("cannot skip another ledger's occurrence, even with its real id", async () => {
+    const saved = await make(transfer({ startDate: "2026-11-01" }));
+    await db
+      .update(accounts)
+      .set({ archivedAt: new Date() })
+      .where(eq(accounts.id, ids.savings));
+    at("2026-11-01T12:00:00Z");
+    await run();
+    const [item] = await runsOf(saved.id);
+    const refused = await send(
+      "POST",
+      `/recurring-runs/${item?.id}/skip`,
+      { expectedVersion: item?.version ?? 0 },
+      cookies[0],
+      foreignLedger,
+    );
+    expect(refused.statusCode).toBe(404);
+    expect((await runsOf(saved.id))[0]).toMatchObject({
+      status: item?.status,
+      version: item?.version,
+    });
+    await db
+      .update(accounts)
+      .set({ archivedAt: null })
+      .where(eq(accounts.id, ids.savings));
+  });
+
   it("does not try a skipped occurrence again", async () => {
     const saved = await make(transfer({ startDate: "2026-11-01" }));
     await db

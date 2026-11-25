@@ -385,6 +385,15 @@ describe("rate preview for entries", () => {
       url: `${root(ledger)}/exchange-rates/lookup?${query}`,
       headers: { cookie },
     });
+  it("is not offered for a ledger that is not yours, whatever its currencies", async () => {
+    await db
+      .insert(currencies)
+      .values({ ledgerId: foreignLedger, code: "EUR" })
+      .onConflictDoNothing();
+    expect(
+      (await preview("code=EUR&date=2026-10-02", foreignLedger)).statusCode,
+    ).toBe(404);
+  });
   it("gives the rate an entry would be saved with, without failing when none exists", async () => {
     await pin("EUR");
     await setRate("EUR", "2026-10-02", "1.1217");
