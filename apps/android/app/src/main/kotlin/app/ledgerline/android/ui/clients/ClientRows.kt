@@ -1,8 +1,8 @@
 package app.ledgerline.android.ui.clients
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -22,10 +22,10 @@ import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.StatusPill
 import app.ledgerline.android.ui.design.tabular
-import app.ledgerline.android.ui.format.formatEntryDate
-import app.ledgerline.android.ui.format.formatMomentShort
-import app.ledgerline.android.ui.format.formatServiceTime
-import app.ledgerline.android.ui.format.formatShortDate
+import app.ledgerline.android.ui.format.dayClock
+import app.ledgerline.android.ui.format.formatClock
+import app.ledgerline.android.ui.format.formatDay
+import app.ledgerline.android.ui.format.formatServerMoment
 import app.ledgerline.android.ui.home.Muted
 import app.ledgerline.android.ui.home.withPlus
 import app.ledgerline.android.ui.privacy.LocalPrivacy
@@ -60,7 +60,7 @@ internal fun ServiceRow(
     val shown = if (unpaid) service.outstanding else service.amount
     val amount = money(shown.amount, shown.currency)
     val received = money(service.received.amount, service.received.currency)
-    val moment = whenOf(service)
+    val moment = whenOf(service, dayClock())
     val hint = if (unpaid) stringResource(R.string.service_hint, moment, received.text) else moment
     val spokenHint = if (unpaid) stringResource(R.string.service_hint, moment, received.spoken) else moment
     val overdue = isOverdue(service, today)
@@ -140,7 +140,8 @@ private fun Retry(text: String, onRetry: () -> Unit) {
 @Composable
 private fun Payment(payment: ServicePayment) {
     val entry = payment.transaction
-    val whenText = formatEntryDate(entry.date) + (entry.time?.let { " · ${formatServiceTime(it)}" } ?: "")
+    val clock = dayClock()
+    val whenText = formatDay(entry.date, clock.today) + (entry.time?.let { " · ${formatClock(it, clock.is24Hour)}" } ?: "")
     val amount = money(payment.amount.amount, payment.amount.currency)
     val tip = payment.tip?.takeIf { it.deletedAt == null }?.let { money(it.amount.amount, it.amount.currency) }
     val shownTip = tip?.let { stringResource(R.string.payment_tip, it.text) }
@@ -211,7 +212,8 @@ private fun SingleLine(event: HistoryEvent) {
     val open = money(after.service.outstanding.amount, after.service.outstanding.currency)
     val tip = after.tip?.takeIf { it.deletedAt == null }?.let { money(it.amount.amount, it.amount.currency) }
     val waived = after.service.writtenOffAmount?.let { money(it.amount, it.currency) }
-    val moment = formatMomentShort(event.createdAt)
+    val clock = dayClock()
+    val moment = formatServerMoment(event.createdAt, clock.today, clock.is24Hour)
     val description = after.service.description
     val title = when {
         isPaymentEvent(action) && tip != null -> stringResource(R.string.history_with, label, stringResource(R.string.history_tip_inline, tip.text))
@@ -255,10 +257,11 @@ private fun BatchLine(batch: HistoryLine.Batch) {
     val sign = historySign(batch.action)
     val total = signedMoney(batch.total, batch.currency, sign)
     val each = batch.events.map { money(amountOf(it), batch.currency) }
+    val clock = dayClock()
     val lead = if (payments) {
-        formatMomentShort(batch.events.first().createdAt)
+        formatServerMoment(batch.events.first().createdAt, clock.today, clock.is24Hour)
     } else {
-        serviceDateRange(batch.events).let { (from, to) -> if (from == to) formatShortDate(from) else "${formatShortDate(from)}–${formatShortDate(to)}" }
+        serviceDateRange(batch.events).let { (from, to) -> if (from == to) formatDay(from, clock.today) else "${formatDay(from, clock.today)}–${formatDay(to, clock.today)}" }
     }
     val hint = stringResource(R.string.history_hint_amounts, lead, each.joinToString(" + ") { it.text })
     val spokenHint = stringResource(R.string.history_hint_amounts, lead, each.joinToString(" + ") { it.spoken })

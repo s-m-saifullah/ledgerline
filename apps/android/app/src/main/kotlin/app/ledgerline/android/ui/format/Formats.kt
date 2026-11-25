@@ -46,32 +46,66 @@ fun formatMoney(amount: Long, code: String, locale: Locale = Locale.getDefault()
     return style.prefix + style.format.format(BigDecimal.valueOf(amount, style.digits))
 }
 
-/** "10:42" today, otherwise a short date and time, in the phone's time zone. */
-fun formatUpdated(serverTime: String, zone: ZoneId = ZoneId.systemDefault(), today: LocalDate = LocalDate.now(zone), locale: Locale = Locale.getDefault()): String {
-    val at = Instant.parse(serverTime).atZone(zone)
-    val style = if (at.toLocalDate() == today) {
-        DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
-    } else {
-        DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
+/**
+ * A date or time pattern in the phone's language and order, built from a skeleton ("MMMd", "yMMMEd", "Hm") by the phone's
+ * own date library, so a UK phone writes "22 Oct", a German one "22. Okt." and a Japanese one "10月22日". One formatter per
+ * locale and skeleton: building one is the slow part, and a list shows hundreds of dates. A `DateTimeFormatter` is
+ * immutable, so it is shared between threads.
+ */
+private val formatters = java.util.concurrent.ConcurrentHashMap<Pair<Locale, String>, DateTimeFormatter>()
+
+internal fun formatterFor(locale: Locale, skeleton: String): DateTimeFormatter = formatters.getOrPut(locale to skeleton) {
+    val pattern = android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton)
+    try {
+        DateTimeFormatter.ofPattern(pattern, locale)
+    } catch (_: IllegalArgumentException) {
+        // A letter the pattern uses that java.time does not know: the language's own medium style instead.
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
     }
-    return at.format(style.withLocale(locale))
 }
 
-/** An entry's date ("2026-10-20") as a medium date. */
+private fun clockSkeleton(is24Hour: Boolean) = if (is24Hour) "Hm" else "hm"
+
+/**
+ * "10:42" today, otherwise the day and time: "Oct 21, 5:42 AM", with the year when it is not this year; the time follows
+ * the phone's 24-hour setting.
+ */
+fun formatUpdated(
+    serverTime: String,
+    zone: ZoneId = ZoneId.systemDefault(),
+    today: LocalDate = LocalDate.now(zone),
+    is24Hour: Boolean = false,
+    locale: Locale = Locale.getDefault(),
+): String {
+    val at = Instant.parse(serverTime).atZone(zone)
+    if (at.toLocalDate() == today) return at.format(formatterFor(locale, clockSkeleton(is24Hour)))
+    return formatServerMoment(serverTime, today, is24Hour, zone, locale)
+}
+
+/** A picked date ("2026-10-20") as a medium date, always with its year: what a date pill or a rate's date shows. */
 fun formatEntryDate(date: String, locale: Locale = Locale.getDefault()): String =
     LocalDate.parse(date).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale))
 
-/** "Oct 12" for "2026-10-12", in the phone's language: a date in a row's hint, where the year is left out. */
-fun formatShortDate(date: String, locale: Locale = Locale.getDefault()): String =
-    LocalDate.parse(date).format(DateTimeFormatter.ofPattern("MMM d", locale))
+/**
+ * A day as every row hint writes it, as the web does: "Oct 12" for this year, "Dec 31, 2025" (the year) for another, in the
+ * phone's language and order. [today] decides what this year is.
+ */
+fun formatDay(date: String, today: LocalDate, locale: Locale = Locale.getDefault()): String {
+    val day = LocalDate.parse(date)
+    return day.format(formatterFor(locale, if (day.year == today.year) "MMMd" else "yMMMd"))
+}
 
-/** "October 2026" for "2026-10", in the phone's language. */
+/** A day heading, with its weekday and always its year: "Thu, Oct 22, 2026", in the phone's language and order. */
+fun formatDayHead(date: String, locale: Locale = Locale.getDefault()): String =
+    LocalDate.parse(date).format(formatterFor(locale, "yMMMEd"))
+
+/** "October 2026" for "2026-10", in the phone's language and order. */
 fun monthLabel(month: String, locale: Locale = Locale.getDefault()): String =
-    YearMonth.parse(month).format(DateTimeFormatter.ofPattern("LLLL yyyy", locale))
+    YearMonth.parse(month).format(formatterFor(locale, "yMMMM"))
 
 /** "Oct" for "2026-10", in the phone's language: the label under a month in a chart. */
 fun shortMonth(month: String, locale: Locale = Locale.getDefault()): String =
-    YearMonth.parse(month).format(DateTimeFormatter.ofPattern("LLL", locale))
+    YearMonth.parse(month).format(formatterFor(locale, "MMM"))
 
 /** "23.7%" for a part of a whole in minor units, one decimal as on the web; "0.0%" when there is no whole. */
 fun sharePercent(part: Long, whole: Long, locale: Locale = Locale.getDefault()): String {
@@ -84,12 +118,22 @@ fun sharePercent(part: Long, whole: Long, locale: Locale = Locale.getDefault()):
     return format.format(BigDecimal.valueOf(part).divide(BigDecimal.valueOf(whole), 3, RoundingMode.HALF_UP))
 }
 
-/** "2:30 PM" (or "14:30", by the phone's language) for a service's `HH:mm` time. */
-fun formatServiceTime(time: String, locale: Locale = Locale.getDefault()): String =
-    java.time.LocalTime.parse(time).format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+/** A time of day (`HH:mm`) as the phone shows times: "15:05" with the 24-hour setting, "3:05 PM" without, in the phone's language. */
+fun formatClock(time: String, is24Hour: Boolean, locale: Locale = Locale.getDefault()): String =
+    java.time.LocalTime.parse(time).format(formatterFor(locale, clockSkeleton(is24Hour)))
 
-/** "Oct 23, 4:01 PM": a moment from the server in the phone's time zone, without the year, for a row's hint. */
-fun formatMomentShort(serverTime: String, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
+/**
+ * "Oct 23, 4:01 PM": a moment from the server in the phone's time zone, with the year when it is not this year, and the
+ * time by the phone's 24-hour setting.
+ */
+fun formatServerMoment(
+    serverTime: String,
+    today: LocalDate,
+    is24Hour: Boolean,
+    zone: ZoneId = ZoneId.systemDefault(),
+    locale: Locale = Locale.getDefault(),
+): String {
     val at = Instant.parse(serverTime).atZone(zone)
-    return at.format(DateTimeFormatter.ofPattern("MMM d, ", locale)) + at.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale))
+    val year = if (at.year == today.year) "" else "y"
+    return at.format(formatterFor(locale, year + "MMMd" + clockSkeleton(is24Hour)))
 }

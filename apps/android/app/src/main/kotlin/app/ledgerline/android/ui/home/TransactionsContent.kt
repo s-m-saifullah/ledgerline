@@ -35,17 +35,16 @@ import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.tabular
+import app.ledgerline.android.ui.format.formatDayHead
 import app.ledgerline.android.ui.privacy.AmountMask
 import app.ledgerline.android.ui.privacy.ShownMoney
 import app.ledgerline.android.ui.privacy.money
 import app.ledgerline.android.ui.theme.LocalPalette
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** "Thu, Oct 22, 2026", as the web's day headings. */
-fun dayLabel(date: String, locale: Locale = Locale.getDefault()): String =
-    LocalDate.parse(date).format(DateTimeFormatter.ofPattern("EEE, MMM d, yyyy", locale))
+/** "Thu, Oct 22, 2026", as the web's day headings, in the phone's language and order. */
+fun dayLabel(date: String, locale: Locale = Locale.getDefault()): String = formatDayHead(date, locale)
 
 /**
  * Transactions (ADR 0046): a fixed top bar with the search box, the Filters button and the type chips under it (its

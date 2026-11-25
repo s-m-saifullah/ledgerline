@@ -41,9 +41,6 @@ import app.ledgerline.android.online.Paged
 import app.ledgerline.android.ui.design.ActionsButton
 import app.ledgerline.android.ui.design.ActionsSheet
 import app.ledgerline.android.ui.design.Avatar
-import app.ledgerline.android.ui.design.PrimaryButton
-import app.ledgerline.android.ui.design.SheetTitle
-import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.FilterChip
@@ -51,14 +48,18 @@ import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
+import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.SectionLabel
 import app.ledgerline.android.ui.design.SheetAction
+import app.ledgerline.android.ui.design.SheetTitle
 import app.ledgerline.android.ui.design.TopBar
+import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.tabular
-import app.ledgerline.android.ui.format.formatEntryDate
+import app.ledgerline.android.ui.format.dayClock
+import app.ledgerline.android.ui.format.formatDay
 import app.ledgerline.android.ui.home.ListBottomSpace
 import app.ledgerline.android.ui.home.Muted
 import app.ledgerline.android.ui.home.withPlus
@@ -414,8 +415,9 @@ private fun PersonMenuSheet(name: String, onLend: (() -> Unit)?, onBorrow: (() -
 @Composable
 private fun MovementRow(line: EntryLine) {
     val sent = isSent(line)
+    val clock = dayClock()
     val title = stringResource(if (sent) R.string.loans_sent else R.string.loans_received)
-    val hint = listOfNotNull(line.payee?.takeIf { it.isNotBlank() } ?: line.note?.takeIf { it.isNotBlank() }, formatEntryDate(line.date)).joinToString(" · ")
+    val hint = listOfNotNull(line.payee?.takeIf { it.isNotBlank() } ?: line.note?.takeIf { it.isNotBlank() }, formatDay(line.date, clock.today)).joinToString(" · ")
     val amount = money(line.amount, line.currency).withPlus(line.amount)
     ListRow(
         title = title,

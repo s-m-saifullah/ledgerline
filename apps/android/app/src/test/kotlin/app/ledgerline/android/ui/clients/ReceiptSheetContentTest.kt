@@ -509,7 +509,7 @@ class ReceiptSheetContentTest {
     @Test
     fun aRateFromAnEarlierDayAndOneSetByHandSaySo() {
         show(ui(pounds(StoredRate.Found("1.2658227848", "2026-11-07")), target = euroTarget, accounts = withPound))
-        compose.onNodeWithText("(rate from 2026-11-07)", substring = true).assertExists()
+        compose.onNodeWithText("(rate from Nov 7, 2026)", substring = true).assertExists()
     }
 
     @Test

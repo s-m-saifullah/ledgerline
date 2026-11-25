@@ -11,7 +11,6 @@ import app.ledgerline.android.session.SessionState
 import app.ledgerline.android.testing.FakeClock
 import app.ledgerline.android.testing.FakeServerAddressStore
 import app.ledgerline.android.testing.FakeTokenProtector
-import app.ledgerline.android.ui.format.monthLabel
 import app.ledgerline.api.ApiJson
 import app.ledgerline.api.HomeGroup
 import app.ledgerline.api.HomeLoans
@@ -44,7 +43,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.YearMonth
-import java.util.Locale
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
@@ -170,12 +168,6 @@ class HomeViewModelTest {
         model.retry()
         assertEquals(homeSummary(), settled { (it as? Online.Ready)?.value })
         assertEquals(SessionState.Unlocked, session.state.value)
-    }
-
-    @Test
-    fun theMonthIsNamedInThePhonesLanguage() {
-        assertEquals("October 2026", monthLabel("2026-10", Locale.US))
-        assertEquals("octubre 2026", monthLabel("2026-10", Locale.forLanguageTag("es")))
     }
 
     @Test

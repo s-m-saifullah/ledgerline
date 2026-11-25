@@ -52,12 +52,6 @@ class BodiesTest {
     }
 
     @Test
-    fun theTimeShowsAsThePhoneShowsTimes() {
-        assertEquals("15:05", formatTime("15:05", is24Hour = true, java.util.Locale.US))
-        assertEquals("3:05 PM", formatTime("15:05", is24Hour = false, java.util.Locale.US))
-    }
-
-    @Test
     fun aTransferSendsEveryField() {
         assertEquals(
             """{"fromAccountId":"a1","toAccountId":"a2","amount":{"amount":5000,"currency":"USD"},"date":"2026-10-22","time":null,"note":"rent"}""",

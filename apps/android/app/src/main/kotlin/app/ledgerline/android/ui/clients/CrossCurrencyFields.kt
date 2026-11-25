@@ -30,6 +30,7 @@ import app.ledgerline.android.ui.editor.LocalCentsFirst
 import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.editor.invertRate
 import app.ledgerline.android.ui.editor.messageRes
+import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.privacy.money
 
 /*
@@ -93,7 +94,7 @@ internal fun AccountRate(cross: CrossCurrency, date: String, onTyped: (String) -
         rate != null -> {
             val source = when {
                 cross.manualRate != null -> stringResource(R.string.payment_rate_source_manual)
-                stored is StoredRate.Found && stored.rateDate != null && stored.rateDate != date -> stringResource(R.string.payment_rate_source_dated, stored.rateDate)
+                stored is StoredRate.Found && stored.rateDate != null && stored.rateDate != date -> stringResource(R.string.payment_rate_source_dated, formatEntryDate(stored.rateDate))
                 else -> null
             }
             val sentence = CrossRate(account, rate).sentence + (source?.let { " ($it)" } ?: "")

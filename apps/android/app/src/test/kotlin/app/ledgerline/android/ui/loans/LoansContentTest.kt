@@ -5,10 +5,9 @@ import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasText
@@ -17,6 +16,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
@@ -28,10 +28,13 @@ import app.ledgerline.android.ui.clients.homeLoans
 import app.ledgerline.android.ui.clients.loan
 import app.ledgerline.android.ui.clients.movement
 import app.ledgerline.android.ui.clients.person
+import app.ledgerline.android.ui.format.DayClock
+import app.ledgerline.android.ui.format.LocalDayClock
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.api.HomeLoans
 import app.ledgerline.api.LoanBalance
 import app.ledgerline.api.LoanPerson
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -259,8 +262,9 @@ class LoansContentTest {
         back: IntArray = IntArray(1),
         person: Online<app.ledgerline.api.Contact> = Online.Ready(contact(name, origin = "loan")),
         moves: MoneyTaps? = null,
+        clock: DayClock = DayClock(LocalDate.of(2026, 10, 23), is24Hour = false),
     ) = compose.setContent {
-        CompositionLocalProvider(LocalPrivacy provides private) {
+        CompositionLocalProvider(LocalPrivacy provides private, LocalDayClock provides clock) {
             PersonContent(
                 person, loans, movements,
                 PersonActions({ back[0]++ }, {}, {}, onRepay = moves?.let { { it.log += "repay" } }, onLend = moves?.let { { it.log += "lend" } }, onBorrow = moves?.let { { it.log += "borrow" } }),
@@ -339,16 +343,25 @@ class LoansContentTest {
     }
 
     @Test
+    fun aMoveFromAnotherYearHasItsYear() {
+        showPerson(
+            loans = Online.Ready(listOf(loan("USD", 20000))),
+            movements = listOf(movement("a", "2025-12-31", 2500, payee = "Rent")),
+        )
+        compose.onNodeWithText("Rent · Dec 31, 2025").assertExists()
+    }
+
+    @Test
     fun aMoveOutIsSentAndAMoveInIsReceivedWithWhoAndWhen() {
         showPerson(
             loans = Online.Ready(listOf(loan("USD", 20000))),
             movements = listOf(movement("a", "2026-10-20", 2500, payee = "Birthday dinner"), movement("b", "2026-10-02", -1000, note = "Flights")),
         )
         compose.onNodeWithText("Sent").assertExists()
-        compose.onNodeWithText("Birthday dinner · Oct 20, 2026").assertExists()
+        compose.onNodeWithText("Birthday dinner · Oct 20").assertExists()
         compose.onNodeWithText("+$25.00").assertExists()
         compose.onNodeWithText("Received").assertExists()
-        compose.onNodeWithText("Flights · Oct 2, 2026").assertExists()
+        compose.onNodeWithText("Flights · Oct 2").assertExists()
         compose.onNodeWithText("-$10.00").assertExists()
     }
 

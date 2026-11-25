@@ -15,12 +15,15 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.online.Paged
+import app.ledgerline.android.ui.format.DayClock
+import app.ledgerline.android.ui.format.LocalDayClock
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.api.Contact
 import app.ledgerline.api.HistoryEvent
 import app.ledgerline.api.Money
 import app.ledgerline.api.Service
 import app.ledgerline.api.ServicePayment
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -28,7 +31,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.time.LocalDate
 
 /** Clients (ADR 0046): the list with its chips and total, and one client with unpaid services, Paid and History. */
 @RunWith(RobolectricTestRunner::class)
@@ -268,8 +270,9 @@ class ClientsContentTest {
         receipts: Boolean = false,
         logging: Boolean = false,
         changing: Boolean = false,
+        clock: DayClock = DayClock(LocalDate.of(2026, 10, 23), is24Hour = false),
     ) = compose.setContent {
-        CompositionLocalProvider(LocalPrivacy provides private) {
+        CompositionLocalProvider(LocalPrivacy provides private, LocalDayClock provides clock) {
             ClientContent(
                 Online.Ready(who), services, history, payments, "2026-10-23", tab,
                 ClientActions(
@@ -331,8 +334,50 @@ class ClientsContentTest {
     @Test
     fun anUnpaidServiceShowsWhenAndWhatWasReceived() {
         client()
+        compose.onNodeWithText("Oct 23 · 3:00 PM · Received $0.00").assertExists()
+        compose.onNodeWithText("Oct 20 · Received $10.00").assertExists()
+    }
+
+    @Test
+    fun aServiceFromAnotherYearHasItsYear() {
+        client(clock = DayClock(LocalDate.of(2027, 1, 5), is24Hour = false))
         compose.onNodeWithText("Oct 23, 2026 · 3:00 PM · Received $0.00").assertExists()
         compose.onNodeWithText("Oct 20, 2026 · Received $10.00").assertExists()
+    }
+
+    private fun showPayment(is24Hour: Boolean) {
+        val sales = service("Sales Service", 7200, id = "notdue")
+        client(
+            payments = mapOf("notdue" to Online.Ready(listOf(payment(sales, 1000, date = "2026-10-20", time = "15:05")))),
+            clock = DayClock(LocalDate.of(2026, 10, 23), is24Hour),
+        )
+    }
+
+    @Test
+    fun aPaymentsTimeIsShownByThe12HourSetting() {
+        showPayment(is24Hour = false)
+        compose.onNodeWithText("Oct 20 · 3:05 PM", substring = true, useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun aPaymentsTimeFollowsThePhones24HourSetting() {
+        showPayment(is24Hour = true)
+        compose.onNodeWithText("Oct 20 · 15:05", substring = true, useUnmergedTree = true).assertExists()
+        compose.onNodeWithText("3:05 PM", substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aServicesTimeFollowsThePhones24HourSetting() {
+        client(clock = DayClock(LocalDate.of(2026, 10, 23), is24Hour = true))
+        compose.onNodeWithText("Oct 23 · 15:00 · Received $0.00").assertExists()
+        compose.onNodeWithText("3:00 PM", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aUnpaidServiceDatedAfterTodayIsStillWrittenAsADate() {
+        list(rows = listOf(ada.copy(oldestOpenServiceDate = "2026-10-30")))
+        compose.onNodeWithText("Oldest unpaid: Oct 30").assertExists()
+        compose.onNodeWithText("2026-10-30", substring = true).assertDoesNotExist()
     }
 
     @Test
