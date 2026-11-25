@@ -285,7 +285,7 @@ class EntryFiltersPanelTest {
                 )
             }
         }
-        compose.onNodeWithText("No matching entries").assertExists()
+        compose.onNodeWithText("No matching transactions").assertExists()
         compose.onNodeWithText("Try another search or clear the filters.").assertExists()
     }
 
@@ -295,7 +295,7 @@ class EntryFiltersPanelTest {
             TransactionsContent(quietSync, Mirrored.Ready(emptyList()), false, {}, EntryFilters(), options, false, {}, {}, {}, {}, onOpen = {})
         }
         compose.onNodeWithText("No transactions yet.").assertExists()
-        compose.onNodeWithText("No matching entries").assertDoesNotExist()
+        compose.onNodeWithText("No matching transactions").assertDoesNotExist()
     }
 
     @Test
@@ -304,7 +304,7 @@ class EntryFiltersPanelTest {
             TransactionsContent(quietSync, Mirrored.Ready(emptyList()), false, {}, EntryFilters(from = "2026-10-31", to = "2026-10-01"), options, false, {}, {}, {}, {}, onOpen = {})
         }
         compose.onNodeWithText("Choose an end date on or after the start date.").assertExists()
-        compose.onNodeWithText("No matching entries").assertDoesNotExist()
+        compose.onNodeWithText("No matching transactions").assertDoesNotExist()
         compose.onNodeWithText("No transactions yet.").assertDoesNotExist()
     }
 
@@ -317,7 +317,7 @@ class EntryFiltersPanelTest {
                 noHomeActions.copy(onOpenPending = { opened++ }), Modifier.requiredHeight(3000.dp),
             )
         }
-        compose.onNodeWithText("2 pending entries aren't counted yet.").performClick()
+        compose.onNodeWithText("2 pending transactions aren't counted yet.").performClick()
         assertEquals(1, opened)
     }
 

@@ -187,7 +187,7 @@ class BudgetsContentTest {
     fun failedOffersTryAgain() {
         val taps = Taps()
         show(Online.Failed, taps)
-        compose.onNodeWithText("Your budgets could not be loaded.").assertExists()
+        compose.onNodeWithText("Couldn't load your budgets.").assertExists()
         compose.onNodeWithText("Try again").performClick()
         assertEquals(1, taps.retry)
     }

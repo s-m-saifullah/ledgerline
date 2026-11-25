@@ -68,7 +68,7 @@ internal fun ServiceRow(
     val status = when {
         unpaid -> null
         service.status == "writtenOff" -> stringResource(R.string.service_written_off)
-        else -> stringResource(R.string.service_paid_in_full)
+        else -> stringResource(R.string.paid_in_full)
     }
     Column {
         ListRow(

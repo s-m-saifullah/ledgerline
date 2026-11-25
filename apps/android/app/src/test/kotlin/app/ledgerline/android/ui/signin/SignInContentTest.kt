@@ -133,7 +133,7 @@ class SignInContentTest {
     fun anExpiredSessionIsSaidAndDismissReports() = endedNotice(SessionEnd.Expired, "Your session ended")
 
     @Test
-    fun aServerThatCouldNotBeReachedIsSaidWithWhatToDoNext() = endedNotice(SessionEnd.ServerNotReached, "Remove this phone under Settings")
+    fun aServerThatCouldNotBeReachedIsSaidWithWhatToDoNext() = endedNotice(SessionEnd.ServerNotReached, "Remove this phone on the web, under Settings")
 
     @Test
     fun aChangedScreenLockIsSaidWithWhereTheOldSignInStays() = endedNotice(SessionEnd.KeyLost, "screen lock or fingerprints changed")

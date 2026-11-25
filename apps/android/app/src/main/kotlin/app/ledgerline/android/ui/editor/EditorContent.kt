@@ -165,7 +165,7 @@ private fun SaveBar(state: EditorState, actions: EditorActions) {
         HorizontalDivider(color = LocalPalette.current.border)
         Column(Modifier.padding(ScreenMargin), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (FormError.CouldNotSave in state.errors) {
-                Text(stringResource(R.string.editor_error_save), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.write_error_failed), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
             }
             PrimaryButton(stringResource(R.string.editor_save), actions.save, Modifier.fillMaxWidth(), enabled = !state.saving)
         }

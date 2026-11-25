@@ -54,10 +54,7 @@ class PaymentActions(
 )
 
 private val PaymentCopy = WriteCopy(
-    offline = R.string.payment_error_offline,
     forbidden = R.string.payment_error_forbidden,
-    failed = R.string.payment_error_failed,
-    rejected = R.string.payment_error_rejected,
 )
 
 private enum class PaymentPicker { Account, Category, TipCategory }

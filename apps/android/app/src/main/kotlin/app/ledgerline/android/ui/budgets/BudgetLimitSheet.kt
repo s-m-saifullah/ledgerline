@@ -50,10 +50,7 @@ class LimitActions(
 )
 
 private val LimitCopy = WriteCopy(
-    offline = R.string.limit_error_offline,
     forbidden = R.string.limit_error_forbidden,
-    failed = R.string.limit_error_failed,
-    rejected = R.string.limit_error_rejected,
 )
 
 /** The Set limit sheet (ADR 0046); a swipe away or Cancel leaves the limit as it was. */

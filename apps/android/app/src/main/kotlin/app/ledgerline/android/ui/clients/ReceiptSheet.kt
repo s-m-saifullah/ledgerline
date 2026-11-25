@@ -60,10 +60,7 @@ class ReceiptActions(
 )
 
 private val ReceiptCopy = WriteCopy(
-    offline = R.string.payment_error_offline,
     forbidden = R.string.payment_error_forbidden,
-    failed = R.string.payment_error_failed,
-    rejected = R.string.payment_error_rejected,
 )
 
 private enum class ReceiptPicker { Currency, Account, Category, TipCategory }
@@ -256,7 +253,7 @@ private fun PreviewRows(preview: ReceiptPreview, currency: String) {
                 preview.allocations.forEach { a ->
                     row {
                         val applied = money(a.applied.amount, currency)
-                        val hint = if (a.remainingAfter.amount == 0L) stringResource(R.string.receipt_paid_full) else stringResource(R.string.receipt_left, money(a.remainingAfter.amount, currency).text)
+                        val hint = if (a.remainingAfter.amount == 0L) stringResource(R.string.paid_in_full) else stringResource(R.string.receipt_left, money(a.remainingAfter.amount, currency).text)
                         ListRow(
                             title = a.description,
                             subtitle = hint,

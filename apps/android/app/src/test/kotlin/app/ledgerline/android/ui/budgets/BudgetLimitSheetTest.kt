@@ -149,9 +149,9 @@ class BudgetLimitSheetTest {
     @Test
     fun eachErrorHasItsOwnSentence() {
         val sentences = mapOf<WriteError, String>(
-            WriteError.Offline to "Needs a connection. Your amount is kept.",
+            WriteError.Offline to "Needs a connection. What you entered is kept.",
             WriteError.Forbidden to "Your account can't change budgets.",
-            WriteError.Failed to "Couldn't save. Try again.",
+            WriteError.Failed to "Couldn't save this. Try again.",
             WriteError.Rejected(null) to "The server didn't accept this.",
             WriteError.Rejected("This budget changed. Reload and edit it.") to "This budget changed. Reload and edit it.",
         )

@@ -7,6 +7,14 @@
     <string name="back">Back</string>
     <string name="dismiss">Dismiss</string>
     <string name="try_again">Try again</string>
+    <string name="paid_in_full">Paid in full</string>
+
+    <!-- How a write can end, said the same on every screen (only "Your account can\'t..." belongs to a screen). -->
+    <string name="write_error_offline">Needs a connection.</string>
+    <string name="write_error_offline_kept">Needs a connection. What you entered is kept.</string>
+    <string name="write_error_failed">Couldn\'t save this. Try again.</string>
+    <string name="write_error_failed_delete">Couldn\'t delete this. Try again.</string>
+    <string name="write_error_rejected">The server didn\'t accept this.</string>
 
     <string name="address_title">Connect to your ledger</string>
     <string name="address_intro">Nothing leaves your phone until you sign in.</string>
@@ -27,14 +35,14 @@
     <string name="signin_working">Signing in…</string>
     <string name="signin_server">Server</string>
     <string name="signin_notice_expired">Your session ended, so please sign in again.</string>
-    <string name="signin_notice_server_not_reached">Signed out here, but the server could not be reached. Remove this phone under Settings, Signed-in devices.</string>
-    <string name="signin_notice_key_lost">Your screen lock or fingerprints changed, so you were signed out here. Sign in again; the old sign-in stays listed under Settings, Signed-in devices.</string>
+    <string name="signin_notice_server_not_reached">Signed out here, but the server couldn\'t be reached. Remove this phone on the web, under Settings, Signed-in devices.</string>
+    <string name="signin_notice_key_lost">Your screen lock or fingerprints changed, so you were signed out here. Sign in again; the old sign-in stays listed on the web, under Settings, Signed-in devices.</string>
     <string name="signin_error_missing">Enter your email and password.</string>
     <string name="signin_error_credentials">The email or password is not right.</string>
     <string name="signin_error_rate_limited">Too many attempts. Wait a minute and try again.</string>
     <string name="signin_error_address">The server did not accept this address. Check that it is exactly the address you use for the web app.</string>
     <string name="signin_error_server">The server had a problem. Try again in a moment.</string>
-    <string name="signin_error_network">Could not reach the server. Check your connection and the address.</string>
+    <string name="signin_error_network">Couldn\'t reach the server. Check your connection and the address.</string>
     <string name="signin_error_unexpected">Something unexpected came back from the server. Check the address and try again.</string>
     <string name="signin_error_password_change">Choose a new password on the web, then sign in here again.</string>
 
@@ -56,19 +64,19 @@
     <string name="amount_hidden">Amount hidden</string>
     <string name="settings_privacy">Privacy and input</string>
     <string name="privacy_mode">Hide amounts</string>
-    <string name="privacy_mode_detail">Show amounts as dots</string>
+    <string name="privacy_mode_detail">Hides every amount on screen</string>
     <string name="allow_screenshots">Allow screenshots</string>
     <string name="allow_screenshots_detail">Show the app in screenshots and recent apps</string>
     <string name="settings_sync">Sync</string>
     <string name="all_sent">All changes sent</string>
     <string name="settings_session">Account</string>
-    <string name="settings_about">Updates and About</string>
+    <string name="settings_about">Updates and about</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_api">Built for API %1$s</string>
 
     <string name="budgets_loading">Loading your budgets…</string>
     <string name="budgets_offline">Budgets need a connection.</string>
-    <string name="budgets_failed">Your budgets could not be loaded.</string>
+    <string name="budgets_failed">Couldn\'t load your budgets.</string>
     <string name="month_previous">Previous month</string>
     <string name="month_next">Next month</string>
     <string name="budgets_left_this_month">Left this month</string>
@@ -81,7 +89,7 @@
     <string name="collapsed">Collapsed</string>
     <string name="insights_loading">Loading your insights…</string>
     <string name="insights_offline">Insights need a connection.</string>
-    <string name="insights_failed">Your insights could not be loaded.</string>
+    <string name="insights_failed">Couldn\'t load your insights.</string>
     <string name="insights_spent">Spent</string>
     <string name="insights_kept">Kept</string>
     <string name="insights_detail">%1$s · %2$s</string>
@@ -123,7 +131,7 @@
 
     <string name="loading">Loading…</string>
     <string name="clear_search">Clear search</string>
-    <string name="home_show_pending">Show the pending entries</string>
+    <string name="home_show_pending">Show the pending transactions</string>
     <string name="load_more_failed">Couldn\'t load more. Try again.</string>
     <string name="more_clients_title">Clients</string>
     <string name="more_clients_detail">Who owes you</string>
@@ -159,7 +167,7 @@
     <string name="filters_keep_invalid">Enter a whole number from 1 to 999.</string>
     <string name="filters_keep_detail">Search and filters clear when the time is up.</string>
     <string name="cents_first">Type amounts from the cents</string>
-    <string name="cents_first_detail">Typing 1, 2, 3 gives 1.23</string>
+    <string name="cents_first_detail">1, 2, 3 reads 1.23</string>
     <string name="clients_title">Clients</string>
     <string name="clients_search">Search clients</string>
     <string name="clients_loading">Loading clients…</string>
@@ -171,7 +179,7 @@
     <string name="client_filter_all">All</string>
     <string name="client_total_label">Owed to you</string>
     <string name="client_total_missing">Not counting %1$s (no rate yet)</string>
-    <string name="clients_empty">No clients yet. Add them in the web app.</string>
+    <string name="clients_empty">No clients yet. Add them on the web.</string>
     <string name="clients_nobody_owes">Nobody owes you right now.</string>
     <string name="clients_no_settled">No settled clients yet.</string>
     <string name="client_unpaid_since">Oldest unpaid %1$s · %2$s</string>
@@ -185,7 +193,6 @@
         <item quantity="other">%1$d services overdue · due %2$s</item>
     </plurals>
     <string name="service_hint">%1$s · Received %2$s</string>
-    <string name="service_paid_in_full">Paid in full</string>
     <plurals name="history_batch_payments">
         <item quantity="one">%d payment received</item>
         <item quantity="other">%d payments received</item>
@@ -204,7 +211,7 @@
     <string name="client_balance_note">About %1$s at today\'s rates</string>
     <string name="client_balance_note_missing">About %1$s at today\'s rates, not counting %2$s (no rate yet)</string>
     <string name="load_more_clients">Load more clients</string>
-    <string name="client_open_balance">Open balance</string>
+    <string name="client_open_balance">Owes you</string>
     <string name="client_failed">Couldn\'t load this client.</string>
     <string name="services_loading">Loading services…</string>
     <string name="services_failed">Couldn\'t load services.</string>
@@ -257,7 +264,7 @@
     </plurals>
     <string name="loans_debt_free">Debt-free</string>
     <string name="loans_standing_both">Owes you and you owe</string>
-    <string name="loans_empty">No loans yet. Add them in the web app.</string>
+    <string name="loans_empty">No loans yet. Add them on the web.</string>
     <string name="loans_no_archived">No archived people.</string>
     <string name="loans_history">History</string>
     <string name="loans_sent">Sent</string>
@@ -297,10 +304,7 @@
     <string name="loan_save_repay">Record repayment</string>
     <string name="loan_error_account">Choose one of your accounts.</string>
     <string name="loan_error_more">That is more than what is open.</string>
-    <string name="loan_error_offline">Needs a connection. What you entered is kept.</string>
     <string name="loan_error_forbidden">Your account can\'t change loans in this ledger.</string>
-    <string name="loan_error_failed">Couldn\'t save this. Try again.</string>
-    <string name="loan_error_rejected">The server didn\'t accept this.</string>
     <string name="loan_ask_title_lend">Lend money?</string>
     <string name="loan_ask_title_borrow">Borrow money?</string>
     <string name="loan_ask_title_repay">Record repayment?</string>
@@ -314,15 +318,15 @@
 
     <string name="home_loading">Loading this month…</string>
     <string name="home_offline">This month needs a connection.</string>
-    <string name="home_failed">This month could not be loaded.</string>
+    <string name="home_failed">Couldn\'t load this month.</string>
     <string name="home_in_hand">In hand</string>
     <plurals name="home_unconverted">
         <item quantity="one">%1$s has no exchange rate yet, so that account is left out of these totals.</item>
         <item quantity="other">%1$s have no exchange rate yet, so those accounts are left out of these totals.</item>
     </plurals>
     <plurals name="home_pending">
-        <item quantity="one">%d pending entry isn\'t counted yet.</item>
-        <item quantity="other">%d pending entries aren\'t counted yet.</item>
+        <item quantity="one">%d pending transaction isn\'t counted yet.</item>
+        <item quantity="other">%d pending transactions aren\'t counted yet.</item>
     </plurals>
     <string name="home_this_month">This month</string>
     <string name="home_money_in">Money in</string>
@@ -333,7 +337,7 @@
     <string name="accounts_cash">Cash and banking</string>
     <string name="accounts_debt">Cards and loans</string>
     <string name="home_owed">Owed to you</string>
-    <string name="home_owed_rates">At today\'s rates.</string>
+    <string name="home_owed_rates">At today\'s rates</string>
     <string name="home_owed_rates_missing">At today\'s rates. Not counting %1$s until it has a rate.</string>
     <string name="home_lent">Lent out</string>
         <string name="home_borrowed">You owe</string>
@@ -348,16 +352,16 @@
     <string name="kind_expense">Expense</string>
     <string name="kind_income">Income</string>
     <string name="kind_transfer">Transfer</string>
-    <string name="accounts_empty">No accounts yet. Add them in the web app.</string>
+    <string name="accounts_empty">No accounts yet. Add them on the web.</string>
     <string name="accounts_archived">Archived</string>
     <plurals name="accounts_pending_plural">
-        <item quantity="one">%d pending entry not counted</item>
-        <item quantity="other">%d pending entries not counted</item>
+        <item quantity="one">%d pending transaction not counted</item>
+        <item quantity="other">%d pending transactions not counted</item>
     </plurals>
     <string name="entries_title">Transactions</string>
     <string name="entries_empty">No transactions yet.</string>
     <string name="entries_show_more">Show more</string>
-    <string name="entries_no_match_title">No matching entries</string>
+    <string name="entries_no_match_title">No matching transactions</string>
     <string name="entries_no_match">Try another search or clear the filters.</string>
     <string name="filters_search">Search payer, payee or note</string>
     <string name="chip_all">All</string>
@@ -389,20 +393,20 @@
     <string name="entry_transfer">Transfer</string>
     <string name="transfer_title">%1$s → %2$s</string>
     <string name="entry_split">Split</string>
-    <string name="entry_untitled">Entry</string>
+    <string name="entry_untitled">Transaction</string>
     <string name="entry_pending">Pending</string>
     <string name="mirror_waiting">Getting your ledger…</string>
     <string name="sync_updated">Updated %1$s</string>
     <string name="sync_running">Updating…</string>
     <string name="sync_offline">Offline. Nothing is saved on this phone yet.</string>
     <string name="sync_offline_saved">Offline. Showing what was saved: %1$s</string>
-    <string name="sync_failed">Could not update. Showing what was saved.</string>
+    <string name="sync_failed">Couldn\'t update. Showing what was saved.</string>
     <string name="refresh_everything">Refresh everything</string>
     <string name="entry_not_sent">Not sent yet</string>
     <string name="add">Add</string>
     <string name="attention_edit">Edit</string>
-    <string name="editor_title_new">New entry</string>
-    <string name="editor_title_entry">Edit entry</string>
+    <string name="editor_title_new">Add transaction</string>
+    <string name="editor_title_entry">Edit transaction</string>
     <string name="editor_title_transfer">Edit transfer</string>
     <string name="editor_title_fix">Correct and send again</string>
     <string name="editor_mode_expense">Expense</string>
@@ -437,7 +441,7 @@
     <string name="editor_pick_search">Search</string>
     <string name="editor_pick_selected">Chosen</string>
     <string name="editor_delete">Delete</string>
-    <string name="editor_delete_entry_title">Delete this entry?</string>
+    <string name="editor_delete_entry_title">Delete this transaction?</string>
     <string name="editor_delete_transfer_title">Delete this transfer?</string>
     <string name="editor_delete_body">It is removed from this phone now, and from your ledger when the change is sent.</string>
     <string name="editor_no_to_accounts">No other account in this currency.</string>
@@ -449,10 +453,9 @@
     <string name="editor_error_account">Choose an account.</string>
     <string name="editor_error_to">Choose the account the money goes to.</string>
     <string name="editor_error_same">Choose two different accounts.</string>
-    <string name="editor_error_save">This could not be saved. Try again.</string>
-    <string name="editor_readonly_split">Split entries are edited in the web app.</string>
-    <string name="editor_readonly_linked">This entry belongs to a client payment, a loan, a tip, a transfer fee or a bonus, so it is edited in the web app.</string>
-    <string name="editor_readonly_transfer">Transfers with a fee, a bonus or two currencies are edited in the web app.</string>
+    <string name="editor_readonly_split">Split transactions are edited on the web.</string>
+    <string name="editor_readonly_linked">This transaction belongs to a client payment, a loan, a tip, a transfer fee or a bonus, so it is edited on the web.</string>
+    <string name="editor_readonly_transfer">Transfers with a fee, a bonus or two currencies are edited on the web.</string>
     <string name="editor_readonly_gone">This is no longer on your phone. It may have been deleted on another device.</string>
     <plurals name="unsent_count">
         <item quantity="one">%d change not sent yet</item>
@@ -472,7 +475,7 @@
     <string name="attention_discard">Discard</string>
     <string name="attention_discard_title">Discard this change?</string>
     <string name="attention_discard_body">It has not reached the server, so discarding it deletes it for good.</string>
-    <string name="change_new_entry">New entry</string>
+    <string name="change_new_entry">New transaction</string>
     <string name="change_edit_entry">Edit</string>
     <string name="change_delete_entry">Delete</string>
     <string name="change_new_transfer">New transfer</string>
@@ -527,9 +530,8 @@
     <string name="updates_install">Install</string>
     <string name="updates_needs_permission">Android has to allow installs from Ledgerline first. Turn on the switch on the next screen, come back and tap Install.</string>
     <string name="updates_installing">Waiting for Android. Confirm the update when it asks.</string>
-    <string name="updates_try_again">Try again</string>
     <string name="updates_offline">There is no connection. Try again when the phone is online.</string>
-    <string name="updates_server_error">GitHub could not be reached or did not answer as expected. Try again later.</string>
+    <string name="updates_server_error">GitHub couldn\'t be reached or didn\'t answer as expected. Try again later.</string>
     <string name="updates_refused_damaged">The downloaded file does not match the release, so it was deleted and will not be installed.</string>
     <string name="updates_refused_old">The downloaded file is not a newer version of Ledgerline, so it was deleted and will not be installed.</string>
     <string name="updates_refused_key">The downloaded file is not signed with Ledgerline\'s key, so it was deleted and will not be installed.</string>
@@ -572,10 +574,7 @@
     <string name="category_notice_updated">Category updated.</string>
     <string name="category_notice_archived">Category archived.</string>
     <string name="category_notice_unarchived">Category unarchived.</string>
-    <string name="category_error_offline">Adding or changing categories needs a connection. Try again when the phone is online.</string>
     <string name="category_error_forbidden">Your account can\'t change categories in this ledger.</string>
-    <string name="category_error_failed">Couldn\'t save the category. Try again.</string>
-    <string name="category_error_rejected">The server didn\'t accept this change.</string>
     <string name="category_form_add_title">New category</string>
     <string name="category_form_edit_title">Edit category</string>
     <string name="category_name">Category name</string>
@@ -587,8 +586,8 @@
     <string name="category_save_add">Add category</string>
     <string name="category_save_edit">Save changes</string>
     <string name="category_saving">Saving…</string>
-    <string name="category_archive_title">Archive category</string>
-    <string name="category_archive_body">Archive %1$s? Its label and history are kept, and it stops being offered for new entries.</string>
+    <string name="category_archive_title">Archive this category?</string>
+    <string name="category_archive_body">Archive %1$s? Its label and history are kept, and it stops being offered for new transactions.</string>
     <string name="category_archive_confirm">Archive</string>
 
     <string name="editor_new_category">New category</string>
@@ -599,14 +598,14 @@
 
     <string name="category_delete">Delete category</string>
     <string name="category_notice_deleted">Category deleted.</string>
-    <string name="category_delete_title">Delete category?</string>
+    <string name="category_delete_title">Delete this category?</string>
     <string name="category_delete_body">Delete %1$s? This category has no Undo; archive it to keep it instead.</string>
     <string name="category_delete_confirm">Delete</string>
     <string name="category_delete_blocked_title">This category can\'t be deleted</string>
     <string name="category_delete_blocked_subcategories">%1$s has subcategories. Delete or move them first, including archived ones.</string>
     <plurals name="category_delete_blocked_entries">
-        <item quantity="one">%1$s is used by %2$d entry, so it can\'t be deleted. Archive it to keep its history: it leaves the pickers for new entries and stays on past entries.</item>
-        <item quantity="other">%1$s is used by %2$d entries, so it can\'t be deleted. Archive it to keep its history: it leaves the pickers for new entries and stays on past entries.</item>
+        <item quantity="one">%1$s is used by %2$d transaction, so it can\'t be deleted. Archive it to keep its history: it leaves the pickers for new transactions and stays on past transactions.</item>
+        <item quantity="other">%1$s is used by %2$d transactions, so it can\'t be deleted. Archive it to keep its history: it leaves the pickers for new transactions and stays on past transactions.</item>
     </plurals>
     <string name="category_delete_blocked_archive_first">To archive it, archive its subcategories first.</string>
     <string name="category_delete_archive_instead">Archive instead</string>
@@ -663,10 +662,7 @@
     <string name="limit_remove_title">Remove this limit?</string>
     <string name="limit_remove_body">%1$s will have no limit for %2$s. What was spent stays.</string>
     <string name="limit_remove_confirm">Remove</string>
-    <string name="limit_error_offline">Needs a connection. Your amount is kept.</string>
     <string name="limit_error_forbidden">Your account can\'t change budgets.</string>
-    <string name="limit_error_failed">Couldn\'t save. Try again.</string>
-    <string name="limit_error_rejected">The server didn\'t accept this.</string>
     <string name="budget_set_limit">+ Set limit</string>
     <string name="budget_set_limit_action">Set limit</string>
     <string name="budget_edit_limit_action">Edit limit</string>
@@ -704,10 +700,7 @@
     <string name="payment_ask_body">Record %1$s from %2$s into %3$s.</string>
     <string name="payment_ask_tip">%1$s of it is saved as a tip.</string>
     <string name="payment_ask_confirm">Record</string>
-    <string name="payment_error_offline">Needs a connection. What you entered is kept.</string>
     <string name="payment_error_forbidden">Your account can\'t record payments in this ledger.</string>
-    <string name="payment_error_failed">Couldn\'t record the payment. Try again.</string>
-    <string name="payment_error_rejected">The server didn\'t accept this payment.</string>
 
     <string name="client_log_service">Log service</string>
     <string name="service_title">Log service</string>
@@ -732,23 +725,16 @@
     <string name="service_error_below_received">The amount can\'t be less than what was received (%1$s).</string>
     <string name="service_edit">Edit service</string>
     <string name="service_delete">Delete service</string>
-    <string name="service_delete_title">Delete service?</string>
+    <string name="service_delete_title">Delete this service?</string>
     <string name="service_delete_body">Delete a service only after its payments are deleted.</string>
     <string name="service_delete_confirm">Delete</string>
-    <string name="service_delete_error_offline">Needs a connection.</string>
     <string name="service_delete_error_forbidden">Your account can\'t delete services in this ledger.</string>
-    <string name="service_delete_error_failed">Couldn\'t delete the service. Try again.</string>
-    <string name="service_delete_error_rejected">The server didn\'t accept this.</string>
     <string name="service_save">Save service</string>
-    <string name="service_error_offline">Needs a connection. What you entered is kept.</string>
     <string name="service_error_forbidden">Your account can\'t add services in this ledger.</string>
-    <string name="service_error_failed">Couldn\'t save the service. Try again.</string>
-    <string name="service_error_rejected">The server didn\'t accept this service.</string>
     <string name="receipt_open_balance">Open balance %1$s</string>
     <string name="receipt_pay_full">Pay full balance</string>
     <string name="receipt_currency">Currency</string>
     <string name="receipt_pays_label">Pays, oldest first</string>
-    <string name="receipt_paid_full">Paid in full</string>
     <string name="receipt_left">%1$s left</string>
     <plurals name="receipt_pays_full">
         <item quantity="one">Pays %1$d service in full.</item>
@@ -760,7 +746,7 @@
     </plurals>
     <string name="receipt_pays_part">Pays part of one service.</string>
     <string name="receipt_checking">Checking open services…</string>
-    <string name="receipt_preview_failed">Could not check which services this pays. Save tries again.</string>
+    <string name="receipt_preview_failed">Couldn\'t check which services this pays. Save tries again.</string>
     <string name="receipt_over">That is more than the open balance of %1$s.</string>
     <string name="receipt_too_many">This would cover more than 100 services. Record a smaller payment first.</string>
     <string name="receipt_wait">Wait for the services above to match the amount.</string>

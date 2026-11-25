@@ -37,7 +37,7 @@ class DeleteServiceQuestionTest {
     @Test
     fun theQuestionNamesTheServiceAndSaysWhenItCanBeDeleted() {
         show(ask)
-        compose.onNode(inDialog("Delete service?")).assertExists()
+        compose.onNode(inDialog("Delete this service?")).assertExists()
         compose.onNode(inDialog("Logo refresh")).assertExists()
         compose.onNode(inDialog("Delete a service only after its payments are deleted.")).assertExists()
     }
@@ -80,7 +80,7 @@ class DeleteServiceQuestionTest {
     fun aViewerIsToldTheyCannotDelete() = refused(WriteError.Forbidden, "Your account can't delete services in this ledger.")
 
     @Test
-    fun aFailureIsSaidWithATryAgain() = refused(WriteError.Failed, "Couldn't delete the service. Try again.")
+    fun aFailureIsSaidWithATryAgain() = refused(WriteError.Failed, "Couldn't delete this. Try again.")
 
     @Test
     fun noErrorLineShowsWithoutAnError() {

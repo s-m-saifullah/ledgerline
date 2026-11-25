@@ -61,10 +61,7 @@ class LogServiceActions(
 )
 
 private val ServiceCopy = WriteCopy(
-    offline = R.string.service_error_offline,
     forbidden = R.string.service_error_forbidden,
-    failed = R.string.service_error_failed,
-    rejected = R.string.service_error_rejected,
 )
 
 private val AmountProblems = setOf(

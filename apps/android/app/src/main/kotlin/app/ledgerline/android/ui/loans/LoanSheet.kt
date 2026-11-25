@@ -58,10 +58,7 @@ class LoanActions(
 )
 
 private val LoanCopy = WriteCopy(
-    offline = R.string.loan_error_offline,
     forbidden = R.string.loan_error_forbidden,
-    failed = R.string.loan_error_failed,
-    rejected = R.string.loan_error_rejected,
 )
 
 private enum class LoanPicker { Account, Currency }

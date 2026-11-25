@@ -19,10 +19,9 @@ import app.ledgerline.android.ui.theme.LocalPalette
 class DeleteServiceActions(val confirm: () -> Unit, val dismiss: () -> Unit)
 
 private val DeleteCopy = WriteCopy(
-    offline = R.string.service_delete_error_offline,
     forbidden = R.string.service_delete_error_forbidden,
-    failed = R.string.service_delete_error_failed,
-    rejected = R.string.service_delete_error_rejected,
+    offline = R.string.write_error_offline,
+    failed = R.string.write_error_failed_delete,
 )
 
 /**

@@ -269,13 +269,20 @@ class CategoriesContentTest {
     @Test
     fun anErrorOutsideTheFormIsShownOnTheScreenAndAFormsOwnErrorStaysInItsSheet() {
         show(CategoriesView(error = WriteError.Offline))
-        compose.onNodeWithText("needs a connection", substring = true).assertExists()
+        compose.onNodeWithText("Needs a connection.", substring = true).assertExists()
+    }
+
+    @Test
+    fun offlineDoesNotClaimAnythingIsKeptBecauseArchiveAndDeleteTypeNothing() {
+        show(CategoriesView(error = WriteError.Offline))
+        compose.onNodeWithText("Needs a connection.").assertExists()
+        compose.onNodeWithText("is kept", substring = true).assertDoesNotExist()
     }
 
     @Test
     fun aFormsErrorIsShownOnceInItsSheetAndNotAlsoOnTheScreen() {
         show(CategoriesView(form = CategoryForm.forNew("expense").copy(name = "Pets"), error = WriteError.Offline))
-        compose.onAllNodesWithText("needs a connection", substring = true).assertCountEquals(1)
+        compose.onAllNodesWithText("Needs a connection.", substring = true).assertCountEquals(1)
     }
 
     @Test
@@ -294,11 +301,11 @@ class CategoriesContentTest {
     fun everyErrorIsWordedAndTheServersSentenceIsShownAsItIs() {
         val form = CategoryForm.forNew("expense").copy(name = "Food")
         val cases = mapOf(
-            WriteError.Offline to "needs a connection",
+            WriteError.Offline to "Needs a connection.",
             WriteError.Forbidden to "can't change categories",
-            WriteError.Failed to "Couldn't save the category",
+            WriteError.Failed to "Couldn't save this. Try again.",
             WriteError.Rejected("A sibling category already has this name.") to "A sibling category already has this name.",
-            WriteError.Rejected(null) to "didn't accept this change",
+            WriteError.Rejected(null) to "The server didn't accept this.",
         )
         var shown by mutableStateOf<WriteError?>(null)
         compose.setContent {
@@ -486,7 +493,7 @@ class CategoriesContentTest {
     @Test
     fun theDeleteQuestionNamesTheCategoryMentionsNoUndoAndReportsTheAnswer() {
         val taps = show(CategoriesView(deleteAsk = DeleteAsk(groceries, block = null, canArchiveInstead = true)))
-        compose.onNodeWithText("Delete category?").assertExists()
+        compose.onNodeWithText("Delete this category?").assertExists()
         compose.onNodeWithText("Delete Groceries? This category has no Undo; archive it to keep it instead.").assertExists()
         compose.onNodeWithText("Delete").performClick()
         assertEquals(listOf("confirmDelete"), taps.log)
@@ -503,7 +510,7 @@ class CategoriesContentTest {
     fun aCategoryInUseCannotBeDeletedAndTheQuestionRecommendsArchiving() {
         val taps = show(CategoriesView(deleteAsk = DeleteAsk(groceries, DeleteBlock.UsedByEntries(3), canArchiveInstead = true)))
         compose.onNodeWithText("This category can't be deleted").assertExists()
-        compose.onNodeWithText("Groceries is used by 3 entries", substring = true).assertExists()
+        compose.onNodeWithText("Groceries is used by 3 transactions", substring = true).assertExists()
         compose.onNodeWithText("Archive it to keep its history", substring = true).assertExists()
         compose.onNodeWithText("Delete").assertDoesNotExist()
         compose.onNodeWithText("Archive instead").performClick()
@@ -511,9 +518,9 @@ class CategoriesContentTest {
     }
 
     @Test
-    fun oneEntryIsSaidInTheSingular() {
+    fun oneTransactionIsSaidInTheSingular() {
         show(CategoriesView(deleteAsk = DeleteAsk(groceries, DeleteBlock.UsedByEntries(1), canArchiveInstead = true)))
-        compose.onNodeWithText("Groceries is used by 1 entry,", substring = true).assertExists()
+        compose.onNodeWithText("Groceries is used by 1 transaction,", substring = true).assertExists()
     }
 
     @Test
