@@ -383,12 +383,26 @@ class ReceiptSheetContentTest {
     }
 
     @Test
-    fun theSheetHidesEveryAmountInPrivacyMode() {
+    fun theQuestionShowsWhatWasTypedEvenInPrivacyModeAndTheSheetBehindItStaysMasked() {
         show(ui(chosen.copy(amount = "650.00"), read = preview(), asking = true), private = true)
-        compose.onNodeWithText("$600.00", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("$450.00", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("$50.00", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("Northwind Design", substring = true).assertExists()
+        compose.onNode(hasText("Record $650.00 from Northwind Design", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("$50.00 of it is saved as a tip.") and hasAnyAncestor(isDialog())).assertExists()
+        listOf("$600.00", "$450.00", "$50.00", "$650.00").forEach {
+            compose.onNode(hasText(it, substring = true) and !hasAnyAncestor(isDialog())).assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun theSentencesThatStayMaskedAreReadWithTheirSpokenForm() {
+        show(ui(chosen.copy(amount = "650.00"), read = preview(allocations = listOf(allocation("Brand refresh", 30_000, 15_000)))), private = true)
+        compose.onNode(hasContentDescription("This settles Amount hidden. The extra Amount hidden is saved as a tip.")).assertExists()
+        compose.onNode(hasContentDescription("Brand refresh, Amount hidden left, Amount hidden"), useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun theOverBalanceSentenceIsReadWithItsSpokenForm() {
+        show(ui(chosen.copy(amount = "650.00"), read = preview(exceeds = true)), private = true)
+        compose.onNode(hasContentDescription("That is more than the open balance of Amount hidden.")).assertExists()
     }
 
     // ---- an account in another currency (ADR 0050, slice 4b-1)
@@ -472,10 +486,12 @@ class ReceiptSheetContentTest {
     }
 
     @Test
-    fun theQuestionAcrossCurrenciesHidesEveryAmountInPrivacyMode() {
+    fun theQuestionAcrossCurrenciesShowsWhatWasTypedEvenInPrivacyMode() {
         show(ui(across, accounts = withEuro, read = preview(), asking = true), private = true)
-        compose.onNodeWithText("€550.00", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("$600.00", substring = true).assertDoesNotExist()
+        compose.onNode(hasText("€550.00", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("$600.00", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("€550.00", substring = true) and !hasAnyAncestor(isDialog())).assertDoesNotExist()
+        compose.onNode(hasText("$600.00", substring = true) and !hasAnyAncestor(isDialog())).assertDoesNotExist()
     }
 
     // ---- neither side the base currency (ADR 0050, slice 4b-2)

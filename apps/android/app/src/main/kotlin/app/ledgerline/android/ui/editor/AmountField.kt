@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import app.ledgerline.android.ui.design.LedgerField
 import app.ledgerline.android.ui.design.TouchTarget
+import app.ledgerline.android.ui.privacy.spokenWhenPrivate
 import app.ledgerline.android.ui.theme.LocalPalette
 
 /** Whether the owner typed amounts from the cents (More, Settings), provided once by the activity like privacy mode. */
@@ -49,6 +50,8 @@ fun AmountField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     supportingText: String? = null,
+    /** What a screen reader says for [supportingText] when it holds a masked amount. */
+    supportingSpoken: String? = null,
     /** The editor's big, borderless amount: centred, the amount size, the error under it in words. */
     hero: Boolean = false,
 ) {
@@ -104,7 +107,7 @@ fun AmountField(
         keyboardOptions = keyboard,
         singleLine = true,
         isError = isError,
-        supportingText = supportingText?.let { { Text(it) } },
+        supportingText = supportingText?.let { { Text(it, modifier = if (supportingSpoken != null) Modifier.spokenWhenPrivate(supportingSpoken) else Modifier) } },
         modifier = modifier,
     )
 }

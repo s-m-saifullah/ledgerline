@@ -51,7 +51,7 @@ class BudgetLimitFormTest {
     fun eachWrongAmountHasItsOwnProblemAndNothingToSend() {
         mapOf(
             "" to AmountInput.Missing, "abc" to AmountInput.Invalid, "12.345" to AmountInput.TooPrecise,
-            "0" to AmountInput.Zero, "0.00" to AmountInput.Zero, "99999999999999999" to AmountInput.TooLarge,
+            "99999999999999999" to AmountInput.TooLarge,
         ).forEach { (text, problem) ->
             val f = form(null, text)!!
             assertEquals(text, problem, f.parsed)
@@ -62,9 +62,39 @@ class BudgetLimitFormTest {
     }
 
     @Test
-    fun zeroIsNeverALimit() {
-        assertFalse(form(null, "0")!!.canSave)
-        assertFalse(form(10000, "0.00")!!.canSave)
+    fun zeroIsALimitLikeOnTheWeb() {
+        assertTrue(form(null, "0")!!.canSave)
+        assertEquals(0L, form(null, "0")!!.minor)
+        assertNull(form(null, "0")!!.problem)
+        assertTrue(form(10000, "0.00")!!.canSave)
+        assertEquals(0L, form(10000, "0.00")!!.request()!!.amount.amount)
+    }
+
+    @Test
+    fun eachProblemIsTheWebsOrTheSharedOne() {
+        mapOf(
+            "" to LimitProblem.Missing, "-5" to LimitProblem.Negative, "-5.50" to LimitProblem.Negative,
+            "abc" to LimitProblem.Invalid, "-abc" to LimitProblem.Invalid, "12.345" to LimitProblem.TooPrecise,
+            "99999999999999999" to LimitProblem.TooLarge,
+        ).forEach { (text, problem) -> assertEquals(text, problem, form(null, text)!!.problem) }
+        listOf("0", "0.00", "250", "250.50", ".8", "8.").forEach { assertNull(it, form(null, it)!!.problem) }
+    }
+
+    @Test
+    fun aChangeOfTheSwitchAloneCanBeSaved() {
+        assertFalse(form(10000)!!.canSave)
+        assertTrue(form(10000)!!.copy(rollover = true).canSave)
+        assertFalse(form(10000, rollover = true)!!.canSave)
+        assertTrue(form(10000, rollover = true)!!.copy(rollover = false).canSave)
+        // A new limit needs an amount whatever the switch says.
+        assertFalse(form(null)!!.copy(rollover = true).canSave)
+    }
+
+    @Test
+    fun theSwitchStartsWhereTheSavedLimitIs() {
+        assertFalse(form(null)!!.rollover)
+        assertFalse(form(10000)!!.rollover)
+        assertTrue(form(10000, rollover = true)!!.rollover)
     }
 
     @Test
@@ -87,12 +117,15 @@ class BudgetLimitFormTest {
     }
 
     @Test
-    fun anEditSendsTheVersionItHoldsAndKeepsTheRolloverTheWebChose() {
+    fun anEditSendsTheVersionItHoldsAndTheSwitchAsChosen() {
         val request = form(10000, "150", rollover = true)!!.request()!!
         assertEquals(1, request.expectedVersion)
         assertTrue(request.rollover)
         val off = form(10000, "150")!!.request()!!
         assertFalse(off.rollover)
+        assertTrue(form(10000, "150")!!.copy(rollover = true).request()!!.rollover)
+        assertFalse(form(10000, "150", rollover = true)!!.copy(rollover = false).request()!!.rollover)
+        assertTrue(form(null, "150")!!.copy(rollover = true).request()!!.rollover)
     }
 
     @Test

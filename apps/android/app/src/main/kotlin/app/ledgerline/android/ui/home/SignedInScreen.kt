@@ -225,6 +225,7 @@ fun SignedInScreen(
                         open = budgets::openLimit,
                         edit = budgets::editLimit,
                         preset = budgets::pickPreset,
+                        carryOver = budgets::setCarryOver,
                         save = budgets::saveLimit,
                         close = budgets::closeLimit,
                         askRemove = budgets::askRemove,

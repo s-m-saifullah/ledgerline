@@ -655,9 +655,12 @@
     <string name="budget_over_plain">%1$s over</string>
     <string name="budget_share_of_spend">%1$s%% of %2$s spend</string>
     <string name="limit_title_set">Set limit</string>
-    <string name="limit_title_edit">Edit limit</string>
     <string name="limit_context">%1$s · Spent %2$s in %3$s</string>
-    <string name="limit_amount">Monthly limit (%1$s)</string>
+    <string name="limit_amount">Budget for the month (%1$s)</string>
+    <string name="limit_carry_over">Carry over what is left</string>
+    <string name="limit_error_missing">Enter a budget amount.</string>
+    <string name="limit_error_negative">A budget cannot be negative.</string>
+    <string name="limit_error_invalid">Use an amount such as 250 or 250.50.</string>
     <string name="limit_save">Save</string>
     <string name="limit_remove">Remove limit</string>
     <string name="limit_remove_title">Remove this limit?</string>

@@ -112,7 +112,7 @@ class BudgetLimitsViewModelTest {
     }
 
     @Test
-    fun anEditSendsTheVersionAndKeepsRollover() {
+    fun anEditSendsTheVersionAndTheSwitchAsChosen() {
         harness.route("""^/api/v1/ledgers/ledger-a/budgets$""") { harness.json(200, saved(2, 15000)) }
         model.openLimit(food)
         type("150")
@@ -124,8 +124,50 @@ class BudgetLimitsViewModelTest {
     }
 
     @Test
+    fun theSwitchIsSentAndASwitchChangeAloneIsSaved() {
+        harness.route("""^/api/v1/ledgers/ledger-a/budgets$""") { harness.json(200, saved(2, 10000, rollover = true)) }
+        model.openLimit(food)
+        assertFalse(model.limit.value!!.form.rollover)
+        model.setCarryOver(true)
+        assertTrue(model.limit.value!!.form.rollover)
+        save()
+        val body = writes().single().body
+        assertTrue(body, body.contains(""""rollover":true"""))
+        assertTrue(body, body.contains(""""expectedVersion":1"""))
+        assertNull(model.limit.value)
+    }
+
+    @Test
+    fun aNewLimitCanCarryOver() {
+        harness.route("""^/api/v1/ledgers/ledger-a/budgets$""") { harness.json(201, saved(1, 7500, rollover = true)) }
+        model.openLimit(fun_)
+        type("75")
+        model.setCarryOver(true)
+        save()
+        assertTrue(writes().single().body.contains(""""rollover":true"""))
+    }
+
+    @Test
+    fun zeroIsSentAsALimit() {
+        harness.route("""^/api/v1/ledgers/ledger-a/budgets$""") { harness.json(201, saved(1, 0)) }
+        model.openLimit(fun_)
+        type("0")
+        save()
+        assertTrue(writes().single().body.contains(""""amount":{"amount":0,"currency":"USD"}"""))
+    }
+
+    @Test
+    fun theSwitchStartsFromTheSavedChoiceAgainWhenTheSheetIsReopened() {
+        model.openLimit(food)
+        model.setCarryOver(true)
+        model.closeLimit()
+        model.openLimit(food)
+        assertFalse(model.limit.value!!.form.rollover)
+    }
+
+    @Test
     fun nothingIsSentForAZeroABlankAnInvalidOrAnUnchangedAmount() {
-        for (text in listOf("0", "", "abc", "100")) {
+        for (text in listOf("", "abc", "-5", "100")) {
             model.openLimit(food)
             type(text)
             model.saveLimit()
@@ -171,6 +213,22 @@ class BudgetLimitsViewModelTest {
         assertEquals(3, keys.size)
         assertEquals(keys[0], keys[1])
         assertNotEquals(keys[1], keys[2])
+    }
+
+    @Test
+    fun aChangedSwitchGetsANewKeyBecauseItIsADifferentRequest() {
+        harness.route("""^/api/v1/ledgers/ledger-a/budgets$""") { problem(500, "x") }
+        model.openLimit(fun_)
+        type("75")
+        save()
+        model.setCarryOver(true)
+        save()
+        model.setCarryOver(false)
+        save()
+        val keys = writes().map { it.idempotencyKey }
+        assertEquals(3, keys.size)
+        assertNotEquals(keys[0], keys[1])
+        assertEquals(keys[0], keys[2])
     }
 
     @Test

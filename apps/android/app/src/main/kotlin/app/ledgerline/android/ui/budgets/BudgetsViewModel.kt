@@ -61,6 +61,8 @@ class BudgetsViewModel @Inject constructor(
 
     fun editLimit(text: String) = _limit.update { ui -> ui?.copy(form = ui.form.copy(text = text), error = null) }
 
+    fun setCarryOver(on: Boolean) = _limit.update { ui -> ui?.copy(form = ui.form.copy(rollover = on), error = null) }
+
     fun pickPreset(minor: Long) = _limit.value?.let { editLimit(amountText(minor, it.form.target.currency)) } ?: Unit
 
     fun closeLimit() {
@@ -78,7 +80,7 @@ class BudgetsViewModel @Inject constructor(
         val ui = _limit.value ?: return
         val request = ui.form.request() ?: return
         if (ui.saving || !ui.form.canSave) return
-        val key = keys.keyFor("set|${request.categoryId}|${request.month}|${request.amount.amount}|${request.expectedVersion}")
+        val key = keys.keyFor("set|${request.categoryId}|${request.month}|${request.amount.amount}|${request.rollover}|${request.expectedVersion}")
         send { ledger -> writes.set(ledger, key, request) }
     }
 

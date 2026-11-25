@@ -279,6 +279,7 @@ class LogServiceSheetContentTest {
         compose.onNodeWithText("Paid by the hour? Work out the amount").performClick()
         compose.onNodeWithText("3.5 h at $40.00/h = $140.00").assertDoesNotExist()
         compose.onNodeWithText("Use this total").assertExists()
+        compose.onNode(hasContentDescription("3.5 h at Amount hidden/h = Amount hidden")).assertExists()
     }
 
     @Test
@@ -377,6 +378,7 @@ class LogServiceSheetContentTest {
         show(ui(edit.copy(amount = "50.00")), private = true)
         compose.onNodeWithText("$100.00", substring = true).assertDoesNotExist()
         compose.onNodeWithText("The amount can't be less than what was received", substring = true).assertExists()
+        compose.onNode(hasContentDescription("The amount can't be less than what was received (Amount hidden)."), useUnmergedTree = true).assertExists()
     }
 
     @Test

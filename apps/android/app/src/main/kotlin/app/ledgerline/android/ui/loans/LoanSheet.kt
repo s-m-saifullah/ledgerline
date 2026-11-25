@@ -45,6 +45,7 @@ import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
+import app.ledgerline.android.ui.privacy.typedMoney
 import app.ledgerline.android.ui.theme.LocalPalette
 import kotlin.math.abs
 
@@ -196,7 +197,8 @@ private fun DateRow(date: String, onDate: () -> Unit) {
 private fun LoanQuestion(ui: LoanUi, actions: LoanActions) {
     val form = ui.form
     val request = form.request() ?: return
-    val amount = money(request.amount.amount, request.amount.currency).text
+    // What was just typed is shown in full, even with Hide amounts on: it is what is being confirmed (SEC-7).
+    val amount = typedMoney(request.amount.amount, request.amount.currency)
     val name = form.who.name
     val account = form.account?.name.orEmpty()
     Question(

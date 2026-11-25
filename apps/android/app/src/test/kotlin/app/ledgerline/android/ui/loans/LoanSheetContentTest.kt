@@ -328,10 +328,15 @@ class LoanSheetContentTest {
     }
 
     @Test
-    fun theQuestionHidesTheAmountsInPrivacyMode() {
+    fun theQuestionShowsWhatWasTypedEvenInPrivacyMode() {
         asked(typed(lend, "50"), private = true)
-        compose.onNodeWithText("$50.00", substring = true).assertDoesNotExist()
-        compose.onNode(hasText("Sam Rivera", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("Lend $50.00 to Sam Rivera from", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+    }
+
+    @Test
+    fun theQuestionShowsWhatWasTypedForABorrowAndARepaymentToo() {
+        asked(typed(borrow, "75"), private = true)
+        compose.onNode(hasText("Borrow $75.00 from Sam Rivera", substring = true) and hasAnyAncestor(isDialog())).assertExists()
     }
 
     @Test
