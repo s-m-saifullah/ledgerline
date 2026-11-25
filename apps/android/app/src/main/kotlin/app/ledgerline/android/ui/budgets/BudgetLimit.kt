@@ -2,8 +2,10 @@ package app.ledgerline.android.ui.budgets
 
 import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.AmountIssue
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.ui.editor.currencyDigits
+import app.ledgerline.android.ui.editor.issue
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.Budget
 import app.ledgerline.api.BudgetLine
@@ -38,12 +40,12 @@ data class LimitForm(val target: LimitTarget, val text: String, val rollover: Bo
     }
 
     /** What is wrong with the amount, or null while it is a limit. */
-    val problem: LimitProblem? get() = when (parsed) {
-        AmountInput.Missing -> LimitProblem.Missing
-        AmountInput.Invalid -> if (isNegative()) LimitProblem.Negative else LimitProblem.Invalid
-        AmountInput.TooPrecise -> LimitProblem.TooPrecise
-        AmountInput.TooLarge -> LimitProblem.TooLarge
-        AmountInput.Zero, is AmountInput.Valid -> null
+    val problem: LimitProblem? get() = when (parsed.issue()) {
+        AmountIssue.Missing -> LimitProblem.Missing
+        AmountIssue.Invalid -> if (isNegative()) LimitProblem.Negative else LimitProblem.Invalid
+        AmountIssue.TooPrecise -> LimitProblem.TooPrecise
+        AmountIssue.TooLarge -> LimitProblem.TooLarge
+        AmountIssue.Zero, null -> null
     }
 
     /** A minus sign before an amount that would otherwise be fine (the web's "A budget cannot be negative."). */
