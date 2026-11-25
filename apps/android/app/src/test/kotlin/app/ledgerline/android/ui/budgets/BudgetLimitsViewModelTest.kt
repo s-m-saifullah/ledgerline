@@ -279,6 +279,36 @@ class BudgetLimitsViewModelTest {
     }
 
     @Test
+    fun theSheetsTapsAreWiredToTheirOwnCalls() {
+        harness.route("""^/api/v1/ledgers/ledger-a/budgets$""") { harness.json(200, saved(2, 15000, rollover = true)) }
+        harness.route("""^/api/v1/ledgers/ledger-a/budgets/.*""") { harness.json(204, "") }
+        val taps = model.limitActions()
+        taps.open(food)
+        assertEquals("100.00", model.limit.value!!.form.text)
+        taps.edit("120")
+        assertEquals("120", model.limit.value!!.form.text)
+        taps.preset(15000)
+        assertEquals("150.00", model.limit.value!!.form.text)
+        taps.carryOver(true)
+        assertTrue(model.limit.value!!.form.rollover)
+        taps.askRemove()
+        assertTrue(model.limit.value!!.askRemove)
+        taps.dismissRemove()
+        assertFalse(model.limit.value!!.askRemove)
+        taps.save()
+        harness.until { model.limit.value == null }
+        assertTrue(writes().single().body.contains(""""rollover":true"""))
+        taps.open(food)
+        taps.close()
+        assertNull(model.limit.value)
+        taps.open(food)
+        taps.askRemove()
+        taps.confirmRemove()
+        harness.until { model.limit.value == null }
+        assertEquals("DELETE", writes().last().method)
+    }
+
+    @Test
     fun removingAskedFirstSendsNothingUntilConfirmedThenDeletesWithTheVersion() {
         harness.route("""^/api/v1/ledgers/ledger-a/budgets/.*""") { harness.json(204, "") }
         model.openLimit(food)

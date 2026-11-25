@@ -110,3 +110,16 @@ class BudgetsViewModel @Inject constructor(
         }
     }
 }
+
+/** The Set limit sheet's taps, each wired to the view model's own call; one place, so a test can check every one. */
+fun BudgetsViewModel.limitActions() = LimitActions(
+    open = ::openLimit,
+    edit = ::editLimit,
+    preset = ::pickPreset,
+    carryOver = ::setCarryOver,
+    save = ::saveLimit,
+    close = ::closeLimit,
+    askRemove = ::askRemove,
+    dismissRemove = ::dismissRemove,
+    confirmRemove = ::confirmRemove,
+)

@@ -50,7 +50,7 @@ import app.ledgerline.android.mirror.EntryFilters
 import app.ledgerline.android.mirror.EntryLine
 import app.ledgerline.android.ui.budgets.BudgetsContent
 import app.ledgerline.android.ui.budgets.BudgetsViewModel
-import app.ledgerline.android.ui.budgets.LimitActions
+import app.ledgerline.android.ui.budgets.limitActions
 import app.ledgerline.android.ui.categories.CategoriesScreen
 import app.ledgerline.android.ui.clients.ClientsScreen
 import app.ledgerline.android.ui.design.LinkButton
@@ -221,17 +221,7 @@ fun SignedInScreen(
                     budgets::next,
                     budgets::retry,
                     limit = limit,
-                    limitActions = LimitActions(
-                        open = budgets::openLimit,
-                        edit = budgets::editLimit,
-                        preset = budgets::pickPreset,
-                        carryOver = budgets::setCarryOver,
-                        save = budgets::saveLimit,
-                        close = budgets::closeLimit,
-                        askRemove = budgets::askRemove,
-                        dismissRemove = budgets::dismissRemove,
-                        confirmRemove = budgets::confirmRemove,
-                    ),
+                    limitActions = budgets.limitActions(),
                 )
             }
             Tab.Insights -> PullToRefreshBox(
