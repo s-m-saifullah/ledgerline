@@ -34,6 +34,7 @@ import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.FoldRow
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.MonthControl
 import app.ledgerline.android.ui.design.ProportionBar
 import app.ledgerline.android.ui.design.RetryNote
@@ -85,7 +86,7 @@ internal fun BudgetsContent(
         Row(modifier = Modifier.padding(start = 4.dp)) { MonthControl(month, onPrevious, onNext) }
         LazyColumn(contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             when (state) {
-                Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.budgets_loading)) } }
+                Online.Loading -> item { LoadingNote(stringResource(R.string.budgets_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.budgets_offline), onRetry) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.budgets_failed), onRetry) }
                 is Online.Ready -> monthItems(state.value, today, limitActions)

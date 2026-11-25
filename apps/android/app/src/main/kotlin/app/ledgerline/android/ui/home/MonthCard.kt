@@ -16,8 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -32,6 +32,7 @@ import app.ledgerline.android.ui.design.HeroCard
 import app.ledgerline.android.ui.design.HeroFigure
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.LimitState
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.PillShape
 import app.ledgerline.android.ui.design.ProportionBar
 import app.ledgerline.android.ui.design.RetryNote
@@ -44,7 +45,7 @@ import app.ledgerline.api.HomeSummary
 @Composable
 internal fun MonthCard(state: Online<HomeSummary>, onRetry: () -> Unit, onOpenInsights: () -> Unit) {
     when (state) {
-        Online.Loading -> LedgerCard { Muted(stringResource(R.string.home_loading)) }
+        Online.Loading -> LoadingNote(stringResource(R.string.home_loading))
         Online.Offline -> RetryNote(stringResource(R.string.home_offline), onRetry)
         Online.Failed -> RetryNote(stringResource(R.string.home_failed), onRetry)
         is Online.Ready -> if (state.value.setup.hasActiveAccount) Month(state.value, onOpenInsights)

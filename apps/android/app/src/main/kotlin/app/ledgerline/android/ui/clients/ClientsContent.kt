@@ -31,6 +31,7 @@ import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -38,6 +39,7 @@ import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.SectionLabel
 import app.ledgerline.android.ui.design.SegmentedControl
+import app.ledgerline.android.ui.design.SummaryFigure
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.tabular
 import app.ledgerline.android.ui.format.DayClock
@@ -92,7 +94,7 @@ internal fun ClientsListContent(
         }
         LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             when (state) {
-                Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.clients_loading)) } }
+                Online.Loading -> item { LoadingNote(stringResource(R.string.clients_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetry) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.clients_failed), actions.onRetry) }
                 is Online.Ready -> clientItems(state.value, text, filter, actions, today)
@@ -138,12 +140,7 @@ private fun TotalCard(total: ClientsTotal) {
         modifier = if (owed.spoken != owed.text) Modifier.clearAndSetSemantics { contentDescription = spoken } else Modifier,
         padding = PaddingValues(16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(owed.text, style = MaterialTheme.typography.displaySmall.tabular(), maxLines = 1, softWrap = false)
-            Text(count, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (missing != null) Text(missing, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        SummaryFigure(label, owed.text, listOfNotNull(count, missing))
     }
 }
 
@@ -264,7 +261,7 @@ internal fun ClientContent(
         LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             val loadedServices = (services as? Online.Ready)?.value?.items.orEmpty()
             when (client) {
-                Online.Loading -> Unit
+                Online.Loading -> item { LoadingNote(stringResource(R.string.client_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryClient) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.client_failed), actions.onRetryClient) }
                 is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today), LocalDate.parse(today), actions.onRecordReceipt?.takeIf { canRecordReceipt(client.value) }, logService) }
@@ -302,7 +299,7 @@ internal fun ClientContent(
 
 private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List<Service>, payments: Map<String, Online<List<ServicePayment>>>, today: String, actions: ClientActions, logService: (() -> Unit)?) {
     when (services) {
-        Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.services_loading)) } }
+        Online.Loading -> item { LoadingNote(stringResource(R.string.services_loading)) }
         Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryServices) }
         Online.Failed -> item { RetryNote(stringResource(R.string.services_failed), actions.onRetryServices) }
         is Online.Ready -> {
@@ -320,7 +317,7 @@ private fun LazyListScope.paidItems(services: Online<Paged<Service>>, paid: List
 
 private fun LazyListScope.historyItems(history: Online<Paged<HistoryEvent>>, actions: ClientActions) {
     when (history) {
-        Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.history_loading)) } }
+        Online.Loading -> item { LoadingNote(stringResource(R.string.history_loading)) }
         Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryHistory) }
         Online.Failed -> item { RetryNote(stringResource(R.string.history_failed), actions.onRetryHistory) }
         is Online.Ready -> {

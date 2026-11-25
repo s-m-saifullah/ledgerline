@@ -267,6 +267,7 @@ class ClientsContentTest {
         private: Boolean = false,
         payments: Map<String, Online<List<ServicePayment>>> = emptyMap(),
         who: app.ledgerline.api.Contact = client,
+        read: Online<app.ledgerline.api.Contact>? = null,
         receipts: Boolean = false,
         logging: Boolean = false,
         changing: Boolean = false,
@@ -274,7 +275,7 @@ class ClientsContentTest {
     ) = compose.setContent {
         CompositionLocalProvider(LocalPrivacy provides private, LocalDayClock provides clock) {
             ClientContent(
-                Online.Ready(who), services, history, payments, "2026-10-23", tab,
+                read ?: Online.Ready(who), services, history, payments, "2026-10-23", tab,
                 ClientActions(
                     { taps.back++ }, { taps.tabs += it }, {}, {}, { taps.payments += it }, {}, {}, {}, {}, { taps.recordings += it.id },
                     onRecordReceipt = if (receipts) ({ taps.receipts++ }) else null,
@@ -336,6 +337,12 @@ class ClientsContentTest {
         client()
         compose.onNodeWithText("Oct 23 · 3:00 PM · Received $0.00").assertExists()
         compose.onNodeWithText("Oct 20 · Received $10.00").assertExists()
+    }
+
+    @Test
+    fun aClientStillLoadingSaysSoInsteadOfShowingNothing() {
+        client(read = Online.Loading)
+        compose.onNodeWithText("Loading this client…").assertExists()
     }
 
     @Test

@@ -335,7 +335,7 @@ fun SearchBox(label: String, value: String, onChange: (String) -> Unit, modifier
                 leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null, tint = palette.muted, modifier = Modifier.size(20.dp)) },
                 trailingIcon = if (value.isEmpty()) null else {
                     {
-                        IconButton(onClick = { onChange("") }) {
+                        IconButton(onClick = { onChange("") }, modifier = Modifier.size(TouchTarget)) {
                             Icon(painterResource(R.drawable.ic_close), contentDescription = clear, modifier = Modifier.size(20.dp))
                         }
                     }
@@ -492,6 +492,34 @@ fun EmptyState(text: String, action: Pair<String, () -> Unit>? = null) {
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         if (action != null) SecondaryButton(action.first, action.second)
+    }
+}
+
+/** A read in progress ("Loading your budgets…"): one muted line in a card, the same on every screen. */
+@Composable
+fun LoadingNote(text: String) {
+    LedgerCard { Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+}
+
+/**
+ * One figure of a summary card (Clients' total, Loans' two sides): a sentence-case label, the amount in large tabular figures
+ * and, under it, one or two small hints. A screen chooses the colors (the label is muted unless a side means something, the
+ * amount plain unless it is money that must stand out) but never the type.
+ */
+@Composable
+fun SummaryFigure(
+    label: String,
+    amount: String,
+    hints: List<String>,
+    modifier: Modifier = Modifier,
+    labelColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    amountColor: Color = Color.Unspecified,
+    hintColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = labelColor, maxLines = 2)
+        Text(amount, style = MaterialTheme.typography.displaySmall.tabular(), color = amountColor, maxLines = 1, softWrap = false)
+        hints.forEach { Text(it, style = MaterialTheme.typography.bodySmall, color = hintColor) }
     }
 }
 

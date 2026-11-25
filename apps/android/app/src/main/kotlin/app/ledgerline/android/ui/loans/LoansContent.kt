@@ -48,6 +48,7 @@ import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -55,6 +56,7 @@ import app.ledgerline.android.ui.design.SearchBox
 import app.ledgerline.android.ui.design.SectionLabel
 import app.ledgerline.android.ui.design.SheetAction
 import app.ledgerline.android.ui.design.SheetTitle
+import app.ledgerline.android.ui.design.SummaryFigure
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.tabular
@@ -116,7 +118,7 @@ internal fun LoansListContent(
         LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             if (totals is Online.Ready) item { SummaryCard(totals.value, loaded) }
             when (state) {
-                Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.loans_loading)) } }
+                Online.Loading -> item { LoadingNote(stringResource(R.string.loans_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.loans_offline), actions.onRetry) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.loans_failed), actions.onRetry) }
                 is Online.Ready -> peopleItems(state.value, text, shown, actions)
@@ -178,12 +180,12 @@ private fun SummaryCard(totals: HomeLoans, people: List<LoanPerson>) {
         BoxWithConstraints {
             val side = summaryInColumns(maxWidth.value, LocalDensity.current.fontScale, maxOf(lent.text.length, borrowed.text.length))
             val left = @Composable { modifier: Modifier ->
-                SummaryBlock(lentLabel, lent.text, owedHint, palette.accent, MaterialTheme.colorScheme.onSurface, muted, modifier)
+                SummaryFigure(lentLabel, lent.text, listOfNotNull(owedHint), modifier, labelColor = palette.accent, amountColor = MaterialTheme.colorScheme.onSurface, hintColor = muted)
             }
             val right = @Composable { modifier: Modifier ->
-                SummaryBlock(
-                    borrowedLabel, borrowed.text, owingHint?.let { if (debtFree) "✓ $it" else it },
-                    muted, if (debtFree) muted else MaterialTheme.colorScheme.onSurface, if (debtFree) palette.accent else muted, modifier,
+                SummaryFigure(
+                    borrowedLabel, borrowed.text, listOfNotNull(owingHint), modifier,
+                    labelColor = muted, amountColor = if (debtFree) muted else MaterialTheme.colorScheme.onSurface, hintColor = if (debtFree) palette.accent else muted,
                 )
             }
             if (side) {
@@ -199,16 +201,6 @@ private fun SummaryCard(totals: HomeLoans, people: List<LoanPerson>) {
                 }
             }
         }
-    }
-}
-
-/** A capital label, an amount, and a hint under it. */
-@Composable
-private fun SummaryBlock(label: String, amount: String, hint: String?, labelColor: Color, amountColor: Color, hintColor: Color, modifier: Modifier) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = labelColor, maxLines = 2)
-        Text(amount, style = MaterialTheme.typography.displaySmall.tabular(), color = amountColor, maxLines = 1, softWrap = false)
-        if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = hintColor)
     }
 }
 
@@ -291,13 +283,14 @@ internal fun PersonContent(
         TopBar(name ?: stringResource(R.string.loans_title), onBack = actions.onBack)
         LazyColumn(contentPadding = PaddingValues(top = CardGap, bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             when (person) {
-                Online.Loading -> Unit
+                Online.Loading -> item { LoadingNote(stringResource(R.string.loans_person_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.loans_offline), actions.onRetryPerson) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.loans_person_failed), actions.onRetryPerson) }
                 is Online.Ready -> Unit
             }
             when (loans) {
-                Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.loans_loading)) } }
+                // One note while the person's screen loads: the balances' own line waits until the person is there.
+                Online.Loading -> if (person !is Online.Loading) item { LoadingNote(stringResource(R.string.loans_person_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.loans_offline), actions.onRetryLoans) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.loans_balance_failed), actions.onRetryLoans) }
                 is Online.Ready -> {
