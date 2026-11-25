@@ -50,6 +50,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -133,7 +134,7 @@ private fun EditorTopBar(title: String, canDelete: Boolean, transfer: Boolean, a
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+            modifier = Modifier.weight(1f).padding(horizontal = 4.dp).semantics { heading() },
         )
         if (canDelete) {
             val delete = stringResource(R.string.editor_delete)

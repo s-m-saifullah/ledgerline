@@ -26,10 +26,12 @@ import app.ledgerline.android.overlay.ShownLine
 import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.CardGap
 import app.ledgerline.android.ui.design.DayHeader
+import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.IconAvatar
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.PillShape
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SecondaryButton
@@ -80,18 +82,14 @@ internal fun TransactionsContent(
                 item { Note(pluralStringResource(R.plurals.attention_banner, status.attention, status.attention), onOpenAttention) }
             }
             when (entries) {
-                Mirrored.Waiting -> item { LedgerCard { Muted(stringResource(R.string.mirror_waiting)) } }
+                Mirrored.Waiting -> item { LoadingNote(stringResource(R.string.mirror_waiting)) }
                 is Mirrored.Ready -> {
                     if (entries.items.isEmpty() && !filters.rangeInvalid) {
                         item {
-                            LedgerCard {
-                                if (filters.applied) {
-                                    Text(stringResource(R.string.entries_no_match_title), style = MaterialTheme.typography.titleMedium)
-                                    Muted(stringResource(R.string.entries_no_match))
-                                    SecondaryButton(stringResource(R.string.filters_clear), { onFilters(EntryFilters()) }, modifier = Modifier.padding(top = 12.dp))
-                                } else {
-                                    Muted(stringResource(R.string.entries_empty))
-                                }
+                            if (filters.applied) {
+                                EmptyState(stringResource(R.string.entries_no_match_title), stringResource(R.string.filters_clear) to { onFilters(EntryFilters()) })
+                            } else {
+                                EmptyState(stringResource(R.string.entries_empty))
                             }
                         }
                     }

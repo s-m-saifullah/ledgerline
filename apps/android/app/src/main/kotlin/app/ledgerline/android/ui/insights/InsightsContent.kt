@@ -36,9 +36,11 @@ import app.ledgerline.android.R
 import app.ledgerline.android.online.Online
 import app.ledgerline.android.ui.design.Avatar
 import app.ledgerline.android.ui.design.CardGap
+import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.LimitState
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.MonthControl
 import app.ledgerline.android.ui.design.ProportionBar
 import app.ledgerline.android.ui.design.RetryNote
@@ -89,7 +91,7 @@ internal fun InsightsContent(
         Row(modifier = Modifier.padding(start = 4.dp)) { MonthControl(month, onPrevious, onNext) }
         LazyColumn(contentPadding = PaddingValues(bottom = ListBottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             when (state) {
-                Online.Loading -> item { LedgerCard { Muted(stringResource(R.string.insights_loading)) } }
+                Online.Loading -> item { LoadingNote(stringResource(R.string.insights_loading)) }
                 Online.Offline -> item { RetryNote(stringResource(R.string.insights_offline), onRetry) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.insights_failed), onRetry) }
                 is Online.Ready -> ready(state.value, snapshot, open, onToggle, onOpenCategory)
@@ -103,7 +105,7 @@ private fun LazyListScope.ready(insights: Insights, snapshot: WorthSnapshot?, op
     val month = spending.month
     item { Summary(insights) }
     if (spending.categories.isEmpty()) {
-        item { Line(stringResource(R.string.insights_no_spending, monthLabel(month))) }
+        item { EmptyState(stringResource(R.string.insights_no_spending, monthLabel(month))) }
     } else {
         item { Categories(insights, open, onToggle, onOpenCategory) }
     }
@@ -338,8 +340,3 @@ private fun SnapshotLine(name: String, amount: String) {
 
 @Composable
 private fun named(name: String, archived: Boolean) = if (archived) stringResource(R.string.insights_archived, name) else name
-
-@Composable
-private fun Line(text: String) {
-    Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = ScreenMargin))
-}

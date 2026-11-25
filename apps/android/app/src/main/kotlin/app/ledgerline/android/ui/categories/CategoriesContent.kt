@@ -20,15 +20,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
@@ -41,6 +41,7 @@ import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.FilterChip
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
 import app.ledgerline.android.ui.design.ScreenMargin
@@ -140,7 +141,7 @@ fun CategoriesContent(
         LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(top = CardGap, bottom = bottomSpace), verticalArrangement = Arrangement.spacedBy(CardGap)) {
             message?.let { (text, isError) -> item { Message(text, isError) } }
             when {
-                groups == null -> item { Box(Modifier.padding(horizontal = ScreenMargin)) { Muted(stringResource(R.string.categories_opening)) } }
+                groups == null -> item { LoadingNote(stringResource(R.string.categories_opening)) }
                 groups.isEmpty() -> item {
                     val none = items.none { it.deletedAt == null && it.kind == view.kind } && status == CategoryStatus.All && view.search.isBlank()
                     EmptyState(stringResource(if (none) R.string.categories_empty else R.string.categories_none_match))

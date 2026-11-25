@@ -213,6 +213,7 @@
     <string name="load_more_clients">Load more clients</string>
     <string name="client_open_balance">Owes you</string>
     <string name="client_failed">Couldn\'t load this client.</string>
+    <string name="client_loading">Loading this client…</string>
     <string name="services_loading">Loading services…</string>
     <string name="services_failed">Couldn\'t load services.</string>
     <string name="services_empty">No services yet.</string>
@@ -278,6 +279,7 @@
     <string name="loans_you_owe">You owe</string>
     <string name="load_more_people">Load more people</string>
     <string name="loans_person_failed">Couldn\'t load this person.</string>
+    <string name="loans_person_loading">Loading this person…</string>
     <string name="loans_balance_failed">Couldn\'t load the balance.</string>
     <string name="loans_line_settled">Settled (%1$s)</string>
 
@@ -362,7 +364,6 @@
     <string name="entries_empty">No transactions yet.</string>
     <string name="entries_show_more">Show more</string>
     <string name="entries_no_match_title">No matching transactions</string>
-    <string name="entries_no_match">Try another search or clear the filters.</string>
     <string name="filters_search">Search payer, payee or note</string>
     <string name="chip_all">All</string>
     <string name="filters_chip">Filters</string>

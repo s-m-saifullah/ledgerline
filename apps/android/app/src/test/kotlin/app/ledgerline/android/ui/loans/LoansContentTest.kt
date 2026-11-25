@@ -122,7 +122,7 @@ class LoansContentTest {
     @Test
     fun withNothingBorrowedTheSummarySaysDebtFree() {
         list(totals = Online.Ready(homeLoans(20000, 0)))
-        compose.onNodeWithText("✓ Debt-free").assertExists()
+        compose.onNodeWithText("Debt-free").assertExists()
     }
 
     @Test
@@ -340,6 +340,13 @@ class LoansContentTest {
         showPerson(loans = Online.Ready(listOf(loan("USD", 20000))))
         compose.onNodeWithText("Opening balance").assertDoesNotExist()
         compose.onNodeWithText("History", ignoreCase = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun aPersonStillLoadingSaysSoOnceInsteadOfShowingNothing() {
+        showPerson(person = Online.Loading, loans = Online.Loading)
+        compose.onAllNodesWithText("Loading this person…").assertCountEquals(1)
+        compose.onNodeWithText("Loading people…").assertDoesNotExist()
     }
 
     @Test

@@ -286,7 +286,7 @@ class EntryFiltersPanelTest {
             }
         }
         compose.onNodeWithText("No matching transactions").assertExists()
-        compose.onNodeWithText("Try another search or clear the filters.").assertExists()
+        compose.onNodeWithText("Clear filters").assertExists()
     }
 
     @Test

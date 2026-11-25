@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.design.LedgerCard
+import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.theme.LocalPalette
 
 /**
@@ -58,7 +59,7 @@ fun UpdateNotice(version: String, onOpen: () -> Unit, onDismiss: () -> Unit, mod
                 }
             }
             // A 48 dp target; Material's IconButton is exactly that.
-            IconButton(onClick = onDismiss) {
+            IconButton(onClick = onDismiss, modifier = Modifier.size(TouchTarget)) {
                 Icon(
                     painterResource(R.drawable.ic_close),
                     contentDescription = stringResource(R.string.updates_notice_dismiss),

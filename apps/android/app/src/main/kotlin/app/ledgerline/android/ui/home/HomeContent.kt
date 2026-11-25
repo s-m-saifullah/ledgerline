@@ -2,10 +2,10 @@ package app.ledgerline.android.ui.home
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
@@ -15,10 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.mirror.AccountBalance
 import app.ledgerline.android.online.Online
@@ -29,6 +29,7 @@ import app.ledgerline.android.ui.design.FilterChip
 import app.ledgerline.android.ui.design.GroupedListCard
 import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
+import app.ledgerline.android.ui.design.LoadingNote
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SectionLabel
 import app.ledgerline.android.ui.design.SegmentedControl
@@ -91,7 +92,7 @@ internal fun HomeContent(
             }
             item { MonthCard(month, actions.onRetry, actions.onOpenInsights) }
             when (accounts) {
-                Mirrored.Waiting -> item { LedgerCard { Muted(stringResource(R.string.mirror_waiting)) } }
+                Mirrored.Waiting -> item { LoadingNote(stringResource(R.string.mirror_waiting)) }
                 is Mirrored.Ready -> accountItems(accounts.items, currency, actions.onSelectCurrency)
             }
         }
