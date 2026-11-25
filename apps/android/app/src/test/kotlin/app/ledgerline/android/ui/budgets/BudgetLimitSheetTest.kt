@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isDialog
@@ -45,6 +46,7 @@ class BudgetLimitSheetTest {
             open = { log += "open:${it.name}" },
             edit = { log += "edit:$it" },
             preset = { log += "preset:$it" },
+            carryOver = { log += "carry:$it" },
             save = { log += "save" },
             close = { log += "close" },
             askRemove = { log += "askRemove" },
@@ -76,9 +78,10 @@ class BudgetLimitSheetTest {
     }
 
     @Test
-    fun anExistingLimitSaysEditLimitShowsItAndCanBeRemoved() {
+    fun anExistingLimitSaysSetLimitTooShowsItAndCanBeRemoved() {
         show(ui(existing))
-        compose.onNodeWithText("Edit limit").assertExists()
+        compose.onNodeWithText("Set limit").assertExists()
+        compose.onNodeWithText("Edit limit").assertDoesNotExist()
         compose.onNodeWithText("100.00").assertExists()
         compose.onNodeWithText("Remove limit").assertExists()
     }
@@ -120,16 +123,70 @@ class BudgetLimitSheetTest {
     }
 
     @Test
-    fun zeroIsExplainedAndCannotBeSavedAndABlankBoxIsNotScolded() {
+    fun zeroIsALimitAndCanBeSaved() {
         show(ui(fresh, "0"))
-        compose.onNodeWithText("Enter an amount above zero.").assertExists()
+        compose.onNodeWithText("Enter an amount above zero.").assertDoesNotExist()
+        compose.onNodeWithText("Save").assertIsEnabled()
+    }
+
+    @Test
+    fun theBoxIsLabeledAndTheProblemsAreWordedAsOnTheWeb() {
+        var typed by mutableStateOf("-5")
+        compose.setContent { LimitSheetContent(ui(fresh, typed), Taps().actions(), Modifier.requiredHeight(3000.dp)) }
+        mapOf(
+            "-5" to "A budget cannot be negative.",
+            "abc" to "Use an amount such as 250 or 250.50.",
+            "1.234" to "This currency does not have that many decimals.",
+            "99999999999999999" to "That amount is too large.",
+        ).forEach { (text, sentence) ->
+            typed = text
+            compose.waitForIdle()
+            compose.onNodeWithText(sentence).assertExists()
+            compose.onNodeWithText("Budget for the month (USD)").assertExists()
+            compose.onNodeWithText("Monthly limit (USD)").assertDoesNotExist()
+        }
+    }
+
+    @Test
+    fun aBlankBoxHasNoMessageWhileAnEmptiedLimitSaysWhy() {
+        show(ui(fresh))
+        compose.onNodeWithText("Enter a budget amount.").assertDoesNotExist()
+    }
+
+    @Test
+    fun aLimitThatWasEmptiedSaysEnterABudgetAmount() {
+        show(ui(existing, ""))
+        compose.onNodeWithText("Enter a budget amount.").assertExists()
         compose.onNodeWithText("Save").assertIsNotEnabled()
     }
 
     @Test
-    fun aBlankBoxHasNoMessage() {
+    fun theSwitchIsThereCarriesWhatIsLeftAndFollowsTheForm() {
+        val taps = Taps()
+        show(ui(existing), taps)
+        compose.onNodeWithText("Carry over what is left").assertExists().performClick()
+        assertEquals(listOf("carry:true"), taps.log)
+    }
+
+    @Test
+    fun theSwitchShowsTheSavedChoiceAndTapsTurnItOff() {
+        val taps = Taps()
+        val on = ui(existing).let { it.copy(form = it.form.copy(rollover = true)) }
+        show(on, taps)
+        compose.onNodeWithText("Carry over what is left").performClick()
+        assertEquals(listOf("carry:false"), taps.log)
+    }
+
+    @Test
+    fun aNewLimitHasTheSwitchToo() {
         show(ui(fresh))
-        compose.onNodeWithText("Enter an amount.").assertDoesNotExist()
+        compose.onNodeWithText("Carry over what is left").assertExists()
+    }
+
+    @Test
+    fun aSwitchChangeAloneEnablesSave() {
+        show(ui(existing).let { it.copy(form = it.form.copy(rollover = true)) })
+        compose.onNodeWithText("Save").assertIsEnabled()
     }
 
     @Test
@@ -202,6 +259,7 @@ class BudgetLimitSheetTest {
         show(ui(fresh), private = true)
         compose.onNodeWithText("Fun · Spent $4.00 in October 2026").assertDoesNotExist()
         compose.onNodeWithText("Fun · Spent", substring = true).assertExists()
+        compose.onNode(hasContentDescription("Fun · Spent Amount hidden in October 2026")).assertExists()
     }
 
     private val today = LocalDate.of(2026, 10, 24)

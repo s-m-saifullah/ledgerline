@@ -4,6 +4,9 @@ import android.view.Window
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.format.formatMoney
@@ -29,6 +32,17 @@ fun shownMoney(amount: Long, currency: String, private: Boolean, hidden: String)
 @Composable
 fun money(amount: Long, currency: String): ShownMoney =
     shownMoney(amount, currency, LocalPrivacy.current, stringResource(R.string.amount_hidden))
+
+/**
+ * An amount the owner has just typed, written in full even in privacy mode (SEC-7). Only a question they are about
+ * to confirm uses it, so what they confirm is what they typed; every other amount goes through [money].
+ */
+fun typedMoney(amount: Long, currency: String): String = formatMoney(amount, currency)
+
+/** A sentence that holds masked amounts is read with their spoken form ("Amount hidden"), not the dots. */
+@Composable
+fun Modifier.spokenWhenPrivate(spoken: String): Modifier =
+    if (LocalPrivacy.current) semantics { contentDescription = spoken } else this
 
 /** FLAG_SECURE keeps the app out of screenshots, screen recording and the recents preview unless allowed. */
 fun Window.applyScreenshotRule(allowScreenshots: Boolean) {

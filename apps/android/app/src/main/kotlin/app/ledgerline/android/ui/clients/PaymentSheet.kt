@@ -42,6 +42,8 @@ import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
+import app.ledgerline.android.ui.privacy.spokenWhenPrivate
+import app.ledgerline.android.ui.privacy.typedMoney
 import app.ledgerline.android.ui.theme.LocalPalette
 
 /** What the Record payment sheet can do, so its content stays a function of plain data. */
@@ -128,11 +130,13 @@ internal fun PaymentSheetContent(ui: PaymentUi, actions: PaymentActions, modifie
             supportingText = amountProblem?.let { stringResource(it.messageRes()) },
         )
         if (split != null && tip > 0 && form.cross == null) {
+            val settles = money(split.settle, target.currency)
+            val extra = money(tip, target.currency)
             Text(
-                stringResource(R.string.payment_tip_note, money(split.settle, target.currency).text, money(tip, target.currency).text),
+                stringResource(R.string.payment_tip_note, settles.text, extra.text),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = inset,
+                modifier = inset.spokenWhenPrivate(stringResource(R.string.payment_tip_note, settles.spoken, extra.spoken)),
             )
         }
         GroupedListCard {
@@ -224,7 +228,8 @@ private fun PaymentQuestion(ui: PaymentUi, actions: PaymentActions) {
     val target = form.target
     val split = form.split ?: return
     val cross = form.cross
-    val total = if (cross != null) money(cross.receivedMinor ?: return, cross.accountCurrency) else money(split.settle + split.tip, target.currency)
+    // What was just typed is shown in full, even with Hide amounts on: it is what is being confirmed (SEC-7).
+    val total = if (cross != null) typedMoney(cross.receivedMinor ?: return, cross.accountCurrency) else typedMoney(split.settle + split.tip, target.currency)
     val account = ui.accounts.labelOf(form.accountId)
     Question(
         title = stringResource(R.string.payment_ask_title),
@@ -233,11 +238,11 @@ private fun PaymentQuestion(ui: PaymentUi, actions: PaymentActions) {
         onDismiss = actions.dismissAsk,
     ) {
         if (cross != null) {
-            Text(stringResource(R.string.payment_ask_body_across, total.text, target.clientName, account, money(split.settle, target.currency).text))
-            if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
+            Text(stringResource(R.string.payment_ask_body_across, total, target.clientName, account, typedMoney(split.settle, target.currency)))
+            if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, typedMoney(form.tipMinor, form.tipCurrency)))
         } else {
-            Text(stringResource(R.string.payment_ask_body, total.text, target.clientName, account))
-            if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, money(split.tip, target.currency).text))
+            Text(stringResource(R.string.payment_ask_body, total, target.clientName, account))
+            if (split.tip > 0) Text(stringResource(R.string.payment_ask_tip, typedMoney(split.tip, target.currency)))
         }
     }
 }

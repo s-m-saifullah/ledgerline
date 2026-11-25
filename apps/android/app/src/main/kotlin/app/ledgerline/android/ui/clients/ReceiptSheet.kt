@@ -46,6 +46,8 @@ import app.ledgerline.android.ui.editor.currencyDigits
 import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
+import app.ledgerline.android.ui.privacy.spokenWhenPrivate
+import app.ledgerline.android.ui.privacy.typedMoney
 import app.ledgerline.api.ReceiptPreview
 
 /** What the Record payment sheet for a client can do, so its content stays a function of plain data. */
@@ -124,11 +126,13 @@ internal fun ReceiptSheetContent(ui: ReceiptUi, actions: ReceiptActions, modifie
         )
         SecondaryButton(stringResource(R.string.receipt_pay_full), actions.payInFull, inset, enabled = form.outstanding > 0 && !ui.saving)
         if (split != null && tip > 0 && form.cross == null) {
+            val settles = money(split.settle, form.currency)
+            val extra = money(tip, form.currency)
             Text(
-                stringResource(R.string.payment_tip_note, money(split.settle, form.currency).text, money(tip, form.currency).text),
+                stringResource(R.string.payment_tip_note, settles.text, extra.text),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = inset,
+                modifier = inset.spokenWhenPrivate(stringResource(R.string.payment_tip_note, settles.spoken, extra.spoken)),
             )
         }
         PreviewSection(ui, form.currency)
@@ -242,10 +246,14 @@ private fun PreviewSection(ui: ReceiptUi, currency: String) {
 private fun PreviewRows(preview: ReceiptPreview, currency: String) {
     val inset = Modifier.padding(horizontal = ScreenMargin)
     when {
-        preview.exceedsBalance -> Text(
-            stringResource(R.string.receipt_over, money(preview.openTotal.amount, currency).text),
-            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = inset,
-        )
+        preview.exceedsBalance -> {
+            val open = money(preview.openTotal.amount, currency)
+            Text(
+                stringResource(R.string.receipt_over, open.text),
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error,
+                modifier = inset.spokenWhenPrivate(stringResource(R.string.receipt_over, open.spoken)),
+            )
+        }
         preview.tooManyServices -> Text(stringResource(R.string.receipt_too_many), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error, modifier = inset)
         else -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionLabel(stringResource(R.string.receipt_pays_label))
@@ -253,12 +261,15 @@ private fun PreviewRows(preview: ReceiptPreview, currency: String) {
                 preview.allocations.forEach { a ->
                     row {
                         val applied = money(a.applied.amount, currency)
-                        val hint = if (a.remainingAfter.amount == 0L) stringResource(R.string.paid_in_full) else stringResource(R.string.receipt_left, money(a.remainingAfter.amount, currency).text)
+                        val left = money(a.remainingAfter.amount, currency)
+                        val paidInFull = a.remainingAfter.amount == 0L
+                        val hint = if (paidInFull) stringResource(R.string.paid_in_full) else stringResource(R.string.receipt_left, left.text)
+                        val hintSpoken = if (paidInFull) hint else stringResource(R.string.receipt_left, left.spoken)
                         ListRow(
                             title = a.description,
                             subtitle = hint,
                             trailing = { Text(applied.text, style = MaterialTheme.typography.titleMedium.tabular(), maxLines = 1, softWrap = false) },
-                            described = if (LocalPrivacy.current) "${a.description}, $hint, ${applied.spoken}" else null,
+                            described = if (LocalPrivacy.current) "${a.description}, $hintSpoken, ${applied.spoken}" else null,
                         )
                     }
                 }
@@ -280,7 +291,8 @@ private fun ReceiptQuestion(ui: ReceiptUi, actions: ReceiptActions) {
     val form = ui.form
     val split = form.split ?: return
     val cross = form.cross
-    val total = if (cross != null) money(cross.receivedMinor ?: return, cross.accountCurrency) else money(split.settle + split.tip, form.currency)
+    // What was just typed is shown in full, even with Hide amounts on: it is what is being confirmed (SEC-7).
+    val total = if (cross != null) typedMoney(cross.receivedMinor ?: return, cross.accountCurrency) else typedMoney(split.settle + split.tip, form.currency)
     val account = ui.accounts.labelOf(form.accountId)
     val allocations = (ui.preview as? Online.Ready)?.value?.allocations.orEmpty()
     val summary = paysSummary(allocations)
@@ -297,15 +309,15 @@ private fun ReceiptQuestion(ui: ReceiptUi, actions: ReceiptActions) {
         onDismiss = actions.dismissAsk,
     ) {
         if (cross != null) {
-            Text(stringResource(R.string.payment_ask_body_across, total.text, form.target.clientName, account, money(split.settle, form.currency).text))
+            Text(stringResource(R.string.payment_ask_body_across, total, form.target.clientName, account, typedMoney(split.settle, form.currency)))
         } else {
-            Text(stringResource(R.string.payment_ask_body, total.text, form.target.clientName, account))
+            Text(stringResource(R.string.payment_ask_body, total, form.target.clientName, account))
         }
         if (pays != null) Text(pays)
         if (cross != null) {
-            if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, money(form.tipMinor, form.tipCurrency).text))
+            if (form.tipMinor > 0) Text(stringResource(R.string.payment_ask_tip_extra, typedMoney(form.tipMinor, form.tipCurrency)))
         } else if (split.tip > 0) {
-            Text(stringResource(R.string.payment_ask_tip, money(split.tip, form.currency).text))
+            Text(stringResource(R.string.payment_ask_tip, typedMoney(split.tip, form.currency)))
         }
     }
 }

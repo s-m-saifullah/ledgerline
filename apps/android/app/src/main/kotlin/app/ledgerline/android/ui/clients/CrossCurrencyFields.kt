@@ -32,6 +32,7 @@ import app.ledgerline.android.ui.editor.invertRate
 import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.privacy.money
+import app.ledgerline.android.ui.privacy.spokenWhenPrivate
 
 /*
  * The fields an account in another currency adds to a payment sheet (ADR 0050, slices 4b-1 and 4b-2), shared by the sheet
@@ -90,6 +91,8 @@ internal fun AccountRate(cross: CrossCurrency, date: String, onTyped: (String) -
     val rate = cross.rateInUse
     val stored = cross.stored
     val missing = cross.rateMissing
+    // The line holds a masked amount while Hide amounts is on, so it has a spoken form for a screen reader.
+    var spokenLine: String? = null
     val line = when {
         rate != null -> {
             val source = when {
@@ -98,7 +101,11 @@ internal fun AccountRate(cross: CrossCurrency, date: String, onTyped: (String) -
                 else -> null
             }
             val sentence = CrossRate(account, rate).sentence + (source?.let { " ($it)" } ?: "")
-            cross.baseValue()?.let { stringResource(R.string.payment_rate_about, money(it, BaseCurrency).text) + " · " + sentence } ?: sentence
+            cross.baseValue()?.let { value ->
+                val about = money(value, BaseCurrency)
+                spokenLine = stringResource(R.string.payment_rate_about, about.spoken) + " · " + sentence
+                stringResource(R.string.payment_rate_about, about.text) + " · " + sentence
+            } ?: sentence
         }
         missing -> stringResource(R.string.payment_rate_missing, account)
         stored == StoredRate.Unavailable -> stringResource(R.string.payment_rate_unavailable)
@@ -110,7 +117,7 @@ internal fun AccountRate(cross: CrossCurrency, date: String, onTyped: (String) -
             line,
             style = MaterialTheme.typography.bodyMedium,
             color = if (missing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = inset.semantics { liveRegion = LiveRegionMode.Polite },
+            modifier = inset.semantics { liveRegion = LiveRegionMode.Polite }.spokenWhenPrivate(spokenLine ?: line),
         )
         if (!editing) {
             SecondaryButton(

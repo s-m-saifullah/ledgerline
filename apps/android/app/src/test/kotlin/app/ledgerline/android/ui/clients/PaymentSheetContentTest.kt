@@ -189,6 +189,8 @@ class PaymentSheetContentTest {
         show(ui(chosen.copy(amount = "460.25")), private = true)
         compose.onNodeWithText("$10.25", substring = true).assertDoesNotExist()
         compose.onNodeWithText("Tip category").assertExists()
+        // A screen reader hears the words, not the dots.
+        compose.onNode(hasContentDescription("This settles Amount hidden. The extra Amount hidden is saved as a tip.")).assertExists()
     }
 
     @Test
@@ -267,10 +269,10 @@ class PaymentSheetContentTest {
     }
 
     @Test
-    fun theQuestionHidesTheAmountsInPrivacyMode() {
+    fun theQuestionShowsWhatWasTypedEvenInPrivacyModeAndTheSheetBehindItStaysMasked() {
         show(ui(chosen, asking = true), private = true)
-        compose.onNodeWithText("$450.00", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("Northwind Design", substring = true).assertExists()
+        compose.onNode(hasText("Record $450.00 from Northwind Design", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("$450.00", substring = true) and !hasAnyAncestor(isDialog())).assertDoesNotExist()
     }
 
     @Test
@@ -399,10 +401,12 @@ class PaymentSheetContentTest {
     }
 
     @Test
-    fun theQuestionAcrossCurrenciesHidesEveryAmountInPrivacyMode() {
+    fun theQuestionAcrossCurrenciesShowsWhatWasTypedEvenInPrivacyMode() {
         show(ui(across, accounts = withEuro, asking = true), private = true)
-        compose.onNodeWithText("€410.00", substring = true).assertDoesNotExist()
-        compose.onNodeWithText("$450.00", substring = true).assertDoesNotExist()
+        compose.onNode(hasText("€410.00", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("$450.00", substring = true) and hasAnyAncestor(isDialog())).assertExists()
+        compose.onNode(hasText("€410.00", substring = true) and !hasAnyAncestor(isDialog())).assertDoesNotExist()
+        compose.onNode(hasText("$450.00", substring = true) and !hasAnyAncestor(isDialog())).assertDoesNotExist()
     }
 
     // ---- neither side the base currency (ADR 0050, slice 4b-2)
@@ -439,6 +443,7 @@ class PaymentSheetContentTest {
         show(ui(pounds(), accounts = withPound), private = true)
         compose.onNodeWithText("$164.56", substring = true).assertDoesNotExist()
         compose.onNodeWithText("1 USD = 0.79 GBP", substring = true).assertExists()
+        compose.onNode(hasContentDescription("About Amount hidden · 1 USD = 0.79 GBP")).assertExists()
     }
 
     @Test

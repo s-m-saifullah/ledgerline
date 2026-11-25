@@ -2,8 +2,10 @@ package app.ledgerline.android.ui.budgets
 
 import app.ledgerline.android.online.WriteError
 import app.ledgerline.android.ui.editor.AmountInput
+import app.ledgerline.android.ui.editor.AmountIssue
 import app.ledgerline.android.ui.editor.amountText
 import app.ledgerline.android.ui.editor.currencyDigits
+import app.ledgerline.android.ui.editor.issue
 import app.ledgerline.android.ui.editor.parseAmount
 import app.ledgerline.api.Budget
 import app.ledgerline.api.BudgetLine
@@ -20,24 +22,45 @@ data class LimitTarget(
     val budget: Budget?,
 )
 
+/** What is wrong with the typed limit, in the web's words where the web has them (`limit-sheet.tsx`). */
+enum class LimitProblem { Missing, Negative, Invalid, TooPrecise, TooLarge }
+
 /**
- * The Set limit sheet's form (ADR 0046): one amount, checked as the editor checks amounts (exact, in the currency's
- * decimals, above zero). An edit keeps what the web chose for carrying over and sends the version it holds.
+ * The Set limit sheet's form (ADR 0046): one amount, read as the editor reads amounts (exact, in the currency's
+ * decimals) but, as on the web and the server, zero is a limit; and the carry-over switch, which starts where the
+ * saved limit has it. An edit sends the version it holds.
  */
-data class LimitForm(val target: LimitTarget, val text: String) {
+data class LimitForm(val target: LimitTarget, val text: String, val rollover: Boolean = false) {
     val editing: Boolean get() = target.budget != null
     val parsed: AmountInput get() = parseAmount(text, target.currency)
-    val minor: Long? get() = (parsed as? AmountInput.Valid)?.minor
+    val minor: Long? get() = when (val p = parsed) {
+        is AmountInput.Valid -> p.minor
+        AmountInput.Zero -> 0L
+        else -> null
+    }
 
-    /** A valid amount that is not the limit it already has. */
-    val canSave: Boolean get() = minor != null && minor != target.budget?.amount?.amount
+    /** What is wrong with the amount, or null while it is a limit. */
+    val problem: LimitProblem? get() = when (parsed.issue()) {
+        AmountIssue.Missing -> LimitProblem.Missing
+        AmountIssue.Invalid -> if (isNegative()) LimitProblem.Negative else LimitProblem.Invalid
+        AmountIssue.TooPrecise -> LimitProblem.TooPrecise
+        AmountIssue.TooLarge -> LimitProblem.TooLarge
+        AmountIssue.Zero, null -> null
+    }
+
+    /** A minus sign before an amount that would otherwise be fine (the web's "A budget cannot be negative."). */
+    private fun isNegative() = text.trim().startsWith("-") && parseAmount(text.trim().drop(1), target.currency).let { it is AmountInput.Valid || it == AmountInput.Zero }
+
+    /** A valid amount, or the switch, that is not what the limit already has; a new limit needs an amount. */
+    val canSave: Boolean
+        get() = minor != null && (minor != target.budget?.amount?.amount || rollover != (target.budget?.rollover ?: false))
 
     fun request(): SetBudget? = minor?.let {
         SetBudget(
             categoryId = target.categoryId,
             month = target.month,
             amount = Money(it, target.currency),
-            rollover = target.budget?.rollover ?: false,
+            rollover = rollover,
             expectedVersion = target.budget?.version,
         )
     }
@@ -47,7 +70,7 @@ data class LimitForm(val target: LimitTarget, val text: String) {
         fun forLine(line: BudgetLine, month: String): LimitForm? {
             if (line.archived) return null
             val target = LimitTarget(line.categoryId, line.name, month, line.spent.currency, line.spent.amount, line.budget)
-            return LimitForm(target, line.budget?.let { amountText(it.amount.amount, it.amount.currency) }.orEmpty())
+            return LimitForm(target, line.budget?.let { amountText(it.amount.amount, it.amount.currency) }.orEmpty(), line.budget?.rollover ?: false)
         }
     }
 }

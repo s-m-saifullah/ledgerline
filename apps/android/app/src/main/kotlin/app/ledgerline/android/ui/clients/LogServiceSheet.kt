@@ -51,6 +51,7 @@ import app.ledgerline.android.ui.editor.messageRes
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.privacy.LocalPrivacy
 import app.ledgerline.android.ui.privacy.money
+import app.ledgerline.android.ui.privacy.spokenWhenPrivate
 import app.ledgerline.android.ui.theme.LocalPalette
 
 /** What the Log service sheet can do, so its content stays a function of plain data. */
@@ -131,6 +132,7 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
             }
         }
         if (ui.currencies.size > 1 && form.currencyLocked) Hint(stringResource(R.string.service_currency_locked, form.currency))
+        val received = money(form.editing?.received ?: 0, form.currency)
         AmountField(
             value = form.amount,
             onValueChange = { text -> actions.edit { it.copy(amount = text) } },
@@ -141,11 +143,12 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
             isError = amountProblem != null,
             supportingText = amountProblem?.let { problem ->
                 if (problem == ServiceProblem.AmountBelowReceived) {
-                    stringResource(R.string.service_error_below_received, money(form.editing?.received ?: 0, form.currency).text)
+                    stringResource(R.string.service_error_below_received, received.text)
                 } else {
                     stringResource(problem.messageRes())
                 }
             },
+            supportingSpoken = if (amountProblem == ServiceProblem.AmountBelowReceived) stringResource(R.string.service_error_below_received, received.spoken) else null,
         )
         GroupedListCard {
             row { FoldRow(stringResource(R.string.service_fold), foldOpen) { foldOpen = !foldOpen } }
@@ -180,16 +183,14 @@ internal fun LogServiceSheetContent(ui: LogServiceUi, actions: LogServiceActions
                     }
                     is HourlyResult.Total -> {
                         row {
+                            val rate = money(result.rate, form.currency)
+                            val total = money(result.total, form.currency)
                             Text(
-                                stringResource(
-                                    R.string.service_hourly_result,
-                                    result.hours,
-                                    money(result.rate, form.currency).text,
-                                    money(result.total, form.currency).text,
-                                ),
+                                stringResource(R.string.service_hourly_result, result.hours, rate.text, total.text),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .spokenWhenPrivate(stringResource(R.string.service_hourly_result, result.hours, rate.spoken, total.spoken)),
                             )
                         }
                         row {
