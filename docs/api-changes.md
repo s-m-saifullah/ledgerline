@@ -2,6 +2,15 @@
 
 Versions 0.1.19 to 0.1.28 (budgets, currencies and recurring entries, migrations 0011 to 0018) shipped together in release `v0.1.0` on 2026-10-11.
 
+## 0.1.56 — One description of who may call, and what the shared guards answer
+
+Not yet released. No route, field, status or behavior changes; the document now says what the server already does.
+
+- Every signed-in operation lists both security schemes, `sessionCookie` and `bearerAuth`. Before, 105 operations (every ledger-scoped route, the exports, home and reports) listed only the cookie although the Android app has always called them with its token, which the server treats exactly like the cookie.
+- `GET /api/v1/ledgers` and `GET /api/v1/ledgers/{ledgerId}` now have the `Ledgers` tag, a summary and a description. The list answers `401`, `403` and `500` (it no longer lists a `404` it cannot give); one ledger answers `400` for an id that is not a UUID, `401`, `403`, `404` and `500`.
+- `GET .../home`, `GET .../reports/*` and `GET .../exports/*` now list `403`, which the account guard can answer on any route (a person still on a temporary password). The four Home and reports reads no longer list `409`: a read cannot conflict.
+- Internal, with no effect on answers: the routes share one error list, one security constant and one session lookup, so `GET .../reports/*` reads the session once like every other route (it read it twice).
+
 ## 0.1.55 — Clear a ledger and restore it
 
 Released in `v0.7.0` (2026-11-04).

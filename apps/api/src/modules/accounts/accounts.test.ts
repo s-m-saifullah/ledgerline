@@ -17,6 +17,7 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import { API_VERSION } from "../../lib/api-version";
 import {
   requireTestDatabase,
   signInCookie,
@@ -633,7 +634,7 @@ describe("Accounts API", () => {
   });
   it("generates OpenAPI for all endpoints with money, version, key and error contracts", async () => {
     const doc = (await app.inject({ url: "/api/v1/openapi.json" })).json();
-    expect(doc.info.version).toBe("0.1.55");
+    expect(doc.info.version).toBe(API_VERSION);
     const prefix = "/api/v1/ledgers/{ledgerId}/accounts";
     for (const [path, method] of [
       [prefix, "get"],
@@ -643,7 +644,10 @@ describe("Accounts API", () => {
       [`${prefix}/{accountId}/archive`, "post"],
     ]) {
       const operation = doc.paths[path as string][method as string];
-      expect(operation.security).toEqual([{ sessionCookie: [] }]);
+      expect(operation.security).toEqual([
+        { sessionCookie: [] },
+        { bearerAuth: [] },
+      ]);
       expect(operation.responses["404"]).toBeDefined();
       expect(operation.responses["400"]).toBeDefined();
       if (method !== "get") {

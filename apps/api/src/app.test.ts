@@ -2,26 +2,14 @@ import { newId } from "@ledgerline/shared";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "./app";
-import { readConfig } from "./config";
 import { createDatabase } from "./db/client";
 import { applyMigrations } from "./db/migrate";
 import { ledgerMembers, ledgers, session, user } from "./db/schema";
 import { provisionOwner } from "./modules/auth/owner";
+import { requireTestDatabase, testConfig } from "./test-support/harness";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error(
-    "TEST_DATABASE_URL must point to the dedicated ledgerline_test database. Run pnpm setup and pnpm db:up.",
-  );
-const config = readConfig({
-  NODE_ENV: "test",
-  DATABASE_URL: url,
-  APP_URL: "http://localhost:5173",
-  BETTER_AUTH_SECRET: "integration-test-secret-only-000000000000000",
-  OWNER_EMAIL: "owner@example.com",
-  OWNER_PASSWORD: "Integration-test-password-000",
-  OWNER_NAME: "Test owner",
-});
+const url = requireTestDatabase("App tests");
+const config = testConfig(url, "app");
 const { db, pool } = createDatabase(url);
 const app = await buildApp(db, config);
 let cookie = "";

@@ -17,7 +17,7 @@ import {
 } from "@ledgerline/shared";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { createActor, errors } from "../../../lib/route-helpers";
+import { createActor, errors, security } from "../../../lib/route-helpers";
 import { getContact, listContacts } from "../../contacts/service";
 import {
   contactHistory,
@@ -41,7 +41,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "List clients and exact open balances",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: ledgerParamsSchema,
         querystring: clientListQuerySchema,
         response: { 200: contactListSchema, ...errors },
@@ -55,7 +55,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "Get a client",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: contactParamsSchema,
         querystring: contactReadQuerySchema,
         response: { 200: contactSchema, ...errors },
@@ -76,7 +76,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "Get client history",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: contactParamsSchema,
         querystring: pageQuerySchema,
         response: { 200: receivableEventListSchema, ...errors },
@@ -97,7 +97,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "List services",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: ledgerParamsSchema,
         querystring: receivableListQuerySchema,
         response: { 200: receivableListSchema, ...errors },
@@ -112,7 +112,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "Get a service",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         response: { 200: receivableSchema, ...errors },
       },
@@ -131,7 +131,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "List received payments",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         querystring: pageQuerySchema,
         response: { 200: paymentListSchema, ...errors },
@@ -152,7 +152,7 @@ export function registerClientReadRoutes(
       schema: {
         summary: "Get a received payment",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: paymentParamsSchema,
         response: { 200: paymentSchema, ...errors },
       },

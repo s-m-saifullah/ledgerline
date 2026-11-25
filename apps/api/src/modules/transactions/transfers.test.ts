@@ -21,6 +21,7 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import { API_VERSION } from "../../lib/api-version";
 import {
   requireTestDatabase,
   seedUser,
@@ -801,7 +802,7 @@ describe("Transfers API", () => {
   });
   it("documents all five secured transfer endpoints and paired versions", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.55");
+    expect(doc.info.version).toBe(API_VERSION);
     const prefix = "/api/v1/ledgers/{ledgerId}/transfers";
     for (const [path, method] of [
       [prefix, "post"],
@@ -811,7 +812,10 @@ describe("Transfers API", () => {
       [`${prefix}/{transferId}/restore`, "post"],
     ]) {
       const operation = doc.paths[path as string][method as string];
-      expect(operation.security).toEqual([{ sessionCookie: [] }]);
+      expect(operation.security).toEqual([
+        { sessionCookie: [] },
+        { bearerAuth: [] },
+      ]);
       expect(operation.responses["404"]).toBeDefined();
       if (method !== "get") {
         expect(operation.parameters).toContainEqual(

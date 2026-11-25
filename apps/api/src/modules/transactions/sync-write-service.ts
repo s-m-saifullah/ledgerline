@@ -39,7 +39,7 @@ export type SyncOutcome = {
  * the server received it, so a fast phone clock cannot win for ever) with the row's last update; a tie goes
  * to the server.
  */
-export function decideSyncEdit(input: {
+function decideSyncEdit(input: {
   currentVersion: number;
   baseVersion: number;
   currentUpdatedAt: Date;

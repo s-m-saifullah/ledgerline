@@ -20,7 +20,7 @@ import {
 } from "../../lib/sync-keyset";
 
 /** One stored entry as the sync wire shape. */
-export function toSyncTransaction(row: typeof transactions.$inferSelect) {
+function toSyncTransaction(row: typeof transactions.$inferSelect) {
   return syncTransactionSchema.parse({
     id: row.id,
     version: row.version,

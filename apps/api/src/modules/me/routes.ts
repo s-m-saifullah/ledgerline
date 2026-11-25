@@ -1,17 +1,19 @@
 import {
   changePasswordSchema,
   meSchema,
-  problemSchema,
   updateMeSchema,
 } from "@ledgerline/shared";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
-import { requireAppOrigin } from "../../lib/route-helpers";
-import { requestSession } from "../auth/request-session";
+import {
+  createSessionActor,
+  problems,
+  requireAppOrigin,
+  security,
+} from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import {
   changePassword,
@@ -20,13 +22,8 @@ import {
   renameMe,
 } from "./service";
 
-const errors = {
-  401: problemSchema,
-  403: problemSchema,
-  429: problemSchema,
-  500: problemSchema,
-};
-const security = [{ sessionCookie: [] }, { bearerAuth: [] }];
+const errors = problems(401, 403, 429, 500);
+const changeErrors = problems(400, 401, 403, 429, 500);
 
 /**
  * The signed-in person's own account (ADR 0048). These are not about a ledger, so they take no Idempotency-Key:
@@ -44,12 +41,7 @@ export async function meRoutes(
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
   const limiter = createAttemptLimiter(now);
-  const who = async (request: FastifyRequest) => {
-    const found = await requestSession(auth, request);
-    if (!found)
-      throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    return { userId: found.user.id, sessionId: found.session.id };
-  };
+  const who = createSessionActor(auth);
   app.get(
     "/api/v1/me",
     {
@@ -74,7 +66,7 @@ export async function meRoutes(
         tags: ["Account"],
         security,
         body: updateMeSchema,
-        response: { 200: meSchema, 400: problemSchema, ...errors },
+        response: { 200: meSchema, ...changeErrors },
       },
     },
     async (request) => {
@@ -93,7 +85,7 @@ export async function meRoutes(
         tags: ["Account"],
         security,
         body: changePasswordSchema,
-        response: { 204: z.null(), 400: problemSchema, ...errors },
+        response: { 204: z.null(), ...changeErrors },
       },
     },
     async (request, reply) => {

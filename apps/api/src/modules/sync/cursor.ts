@@ -3,7 +3,7 @@ import { ApiProblem } from "../../lib/problem";
 import type { SyncPosition } from "../../lib/sync-keyset";
 
 /** The tables the pull sends, in the order they are read. */
-export const syncTables = [
+const syncTables = [
   "accounts",
   "categories",
   "tags",

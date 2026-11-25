@@ -24,6 +24,7 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import { API_VERSION } from "../../lib/api-version";
 import {
   requireTestDatabase,
   seedUser,
@@ -1031,7 +1032,7 @@ describe("Money owed scoped and atomic lifecycle", () => {
     const doc = (
       await app.inject({ url: "/api/v1/openapi.json", headers: { cookie } })
     ).json();
-    expect(doc.info.version).toBe("0.1.55");
+    expect(doc.info.version).toBe(API_VERSION);
     const prefix = "/api/v1/ledgers/{ledgerId}";
     for (const resource of [
       "/contacts",
@@ -1039,7 +1040,10 @@ describe("Money owed scoped and atomic lifecycle", () => {
       "/receivables/{receivableId}/payments",
     ]) {
       const item = doc.paths[prefix + resource];
-      expect(item.get.security).toEqual([{ sessionCookie: [] }]);
+      expect(item.get.security).toEqual([
+        { sessionCookie: [] },
+        { bearerAuth: [] },
+      ]);
       expect(
         item.post.parameters.some(
           (p: { name: string; required: boolean }) =>

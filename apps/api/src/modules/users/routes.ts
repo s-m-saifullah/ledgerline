@@ -7,14 +7,17 @@ import {
   updateUserSchema,
   userParamsSchema,
 } from "@ledgerline/shared";
-import { fromNodeHeaders } from "better-auth/node";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
-import { errors, requireAppOrigin } from "../../lib/route-helpers";
+import {
+  createActor,
+  errors,
+  requireAppOrigin,
+  security,
+} from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { listDeletedUsers, purgeNow, restoreUser } from "./lifecycle";
 import {
@@ -30,7 +33,6 @@ import {
   turnOffTwoFactor,
 } from "./service";
 
-const security = [{ sessionCookie: [] }, { bearerAuth: [] }];
 const adminOnly =
   " Admin only (`403` for anyone else); the admin's own account is `409`. Needs `Origin` like every write. Takes no `Idempotency-Key` (ADR 0048). Never returns a password, a hash, a token or anything from a ledger.";
 
@@ -43,15 +45,12 @@ export async function userRoutes(
   { db, auth, config }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
+  const actor = createActor(auth);
   const admin = async (request: FastifyRequest, write = false) => {
-    const found = await auth.api.getSession({
-      headers: fromNodeHeaders(request.headers),
-    });
-    if (!found)
-      throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    await requireAdmin(db, found.user.id);
+    const userId = await actor(request);
+    await requireAdmin(db, userId);
     if (write) requireAppOrigin(request, config.APP_URL);
-    return found.user.id;
+    return userId;
   };
   app.get(
     "/api/v1/users",

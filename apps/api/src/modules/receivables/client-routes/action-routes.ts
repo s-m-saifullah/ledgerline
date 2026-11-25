@@ -10,7 +10,7 @@ import {
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { errors, writeHeaders } from "../../../lib/route-helpers";
+import { errors, security, writeHeaders } from "../../../lib/route-helpers";
 import { contactAction } from "../../contacts/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../../writes/http";
 import { receivableAction } from "../service";
@@ -30,7 +30,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: contactParamsSchema,
         headers: writeHeaders,
         body: contactActionSchema,
@@ -57,7 +57,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: contactParamsSchema,
         headers: writeHeaders,
         body: contactActionSchema,
@@ -84,7 +84,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: contactParamsSchema,
         headers: writeHeaders,
         body: contactActionSchema,
@@ -111,7 +111,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         headers: writeHeaders,
         body: receivableActionSchema,
@@ -138,7 +138,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         headers: writeHeaders,
         body: receivableActionSchema,
@@ -165,7 +165,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         headers: writeHeaders,
         body: writeOffSchema,
@@ -192,7 +192,7 @@ export function registerClientActionRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         headers: writeHeaders,
         body: receivableActionSchema,

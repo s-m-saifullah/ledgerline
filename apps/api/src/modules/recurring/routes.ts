@@ -17,7 +17,12 @@ import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { runRecurringRules } from "../../jobs/recurring";
 import { safeErrorFields } from "../../lib/error-log";
-import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
+import {
+  createActor,
+  errors,
+  security,
+  writeHeaders,
+} from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import type { WriteResult } from "../writes/service";
@@ -34,7 +39,6 @@ import {
   updateRule,
 } from "./service";
 
-const security = [{ sessionCookie: [] }];
 const tags = ["Recurring"];
 
 export async function recurringRoutes(
