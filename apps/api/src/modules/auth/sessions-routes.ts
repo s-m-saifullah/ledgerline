@@ -1,16 +1,15 @@
-import {
-  problemSchema,
-  sessionListSchema,
-  sessionParamsSchema,
-} from "@ledgerline/shared";
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import { sessionListSchema, sessionParamsSchema } from "@ledgerline/shared";
+import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
-import { requireAppOrigin } from "../../lib/route-helpers";
-import { requestSession } from "./request-session";
+import {
+  createSessionActor,
+  problems,
+  requireAppOrigin,
+  security,
+} from "../../lib/route-helpers";
 import type { Auth } from "./service";
 import {
   listSessions,
@@ -18,14 +17,7 @@ import {
   revokeSession,
 } from "./sessions-service";
 
-const errors = {
-  401: problemSchema,
-  403: problemSchema,
-  404: problemSchema,
-  409: problemSchema,
-  500: problemSchema,
-};
-const security = [{ sessionCookie: [] }, { bearerAuth: [] }];
+const errors = problems(401, 403, 404, 409, 500);
 
 /** The signed-in devices of the caller: list them and sign others out (ADR 0042). */
 export async function sessionRoutes(
@@ -33,12 +25,7 @@ export async function sessionRoutes(
   { db, auth, config }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
-  const who = async (request: FastifyRequest) => {
-    const found = await requestSession(auth, request);
-    if (!found)
-      throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    return { userId: found.user.id, currentId: found.session.id };
-  };
+  const who = createSessionActor(auth);
   app.get(
     "/api/v1/sessions",
     {
@@ -52,8 +39,8 @@ export async function sessionRoutes(
       },
     },
     async (request) => {
-      const { userId, currentId } = await who(request);
-      return { items: await listSessions(db, userId, currentId) };
+      const { userId, sessionId } = await who(request);
+      return { items: await listSessions(db, userId, sessionId) };
     },
   );
   app.delete(
@@ -70,9 +57,9 @@ export async function sessionRoutes(
       },
     },
     async (request, reply) => {
-      const { userId, currentId } = await who(request);
+      const { userId, sessionId } = await who(request);
       requireAppOrigin(request, config.APP_URL);
-      await revokeSession(db, userId, currentId, request.params.sessionId);
+      await revokeSession(db, userId, sessionId, request.params.sessionId);
       return reply.code(204).send(null);
     },
   );
@@ -89,9 +76,9 @@ export async function sessionRoutes(
       },
     },
     async (request, reply) => {
-      const { userId, currentId } = await who(request);
+      const { userId, sessionId } = await who(request);
       requireAppOrigin(request, config.APP_URL);
-      await revokeOtherSessions(db, userId, currentId);
+      await revokeOtherSessions(db, userId, sessionId);
       return reply.code(204).send(null);
     },
   );

@@ -4,13 +4,11 @@ import {
   calendarDateSchema,
   expectedVersionSchema,
   idempotencyKeySchema,
-  idSchema,
-  ledgerSchema,
   problemSchema,
   usdMoneySchema,
 } from "@ledgerline/shared";
 import { fromNodeHeaders } from "better-auth/node";
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import Fastify, { type FastifyError, LogController } from "fastify";
 import {
   jsonSchemaTransform,
@@ -21,17 +19,17 @@ import {
 import { z } from "zod";
 import type { Config } from "./config";
 import type { Database } from "./db/client";
-import { user } from "./db/schema";
 import { addApiNoStore } from "./lib/api-cache";
+import { API_VERSION } from "./lib/api-version";
 import { safeErrorFields } from "./lib/error-log";
 import { ApiProblem, problem } from "./lib/problem";
 import { isQuietRequest } from "./lib/request-log";
 import { accountRoutes } from "./modules/accounts/routes";
 import { mayReceiveDeviceToken } from "./modules/auth/device-token";
 import { accountGuard } from "./modules/auth/guard";
-import { requestSession } from "./modules/auth/request-session";
 import { createAuth } from "./modules/auth/service";
 import { sessionRoutes } from "./modules/auth/sessions-routes";
+import { isSignInStopped } from "./modules/auth/sign-in-stopped";
 import { budgetRoutes } from "./modules/budgets/routes";
 import { categoryRoutes } from "./modules/categories/routes";
 import { changeRoutes } from "./modules/changes/routes";
@@ -44,7 +42,6 @@ import { exportRoutes } from "./modules/exports/routes";
 import { homeRoutes } from "./modules/home/routes";
 import { importRoutes } from "./modules/imports/routes";
 import { ledgerRoutes } from "./modules/ledgers/routes";
-import { ledgerService } from "./modules/ledgers/service";
 import { loanRoutes } from "./modules/loans/routes";
 import { meRoutes } from "./modules/me/routes";
 import { receiptRoutes } from "./modules/receivables/receipt-routes";
@@ -56,23 +53,6 @@ import { tagRoutes } from "./modules/tags/routes";
 import { transactionRoutes } from "./modules/transactions/routes";
 import { transferRoutes } from "./modules/transactions/transfer-routes";
 import { userRoutes } from "./modules/users/routes";
-
-/** True when the email in a sign-in request belongs to a person whose sign-in was stopped. */
-async function isSignInStopped(db: Database, body: unknown) {
-  const email = (body as { email?: unknown } | null)?.email;
-  if (typeof email !== "string") return false;
-  const [found] = await db
-    .select({ id: user.id })
-    .from(user)
-    .where(
-      and(
-        eq(user.email, email.toLowerCase()),
-        isNull(user.deletedAt),
-        isNotNull(user.disabledAt),
-      ),
-    );
-  return Boolean(found);
-}
 
 /** The two-factor routes the browser may call (ADR 0038); every other auth route stays disabled. */
 const twoFactorPaths = [
@@ -103,7 +83,7 @@ export async function buildApp(
   await app.register(swagger, {
     openapi: {
       openapi: "3.1.0",
-      info: { title: "Ledgerline API", version: "0.1.55" },
+      info: { title: "Ledgerline API", version: API_VERSION },
       components: {
         schemas: {
           UsdMoney: z.toJSONSchema(usdMoneySchema),
@@ -355,55 +335,6 @@ export async function buildApp(
       return reply.send(await response.text());
     },
   });
-  const errors = { 401: problemSchema, 404: problemSchema };
-  app.get(
-    "/api/v1/ledgers",
-    {
-      schema: {
-        security: [{ sessionCookie: [] }],
-        response: {
-          200: z.object({ items: z.array(ledgerSchema) }),
-          ...errors,
-        },
-      },
-    },
-    async (request, reply) => {
-      const session = await requestSession(auth, request);
-      if (!session)
-        return reply
-          .code(401)
-          .type("application/problem+json")
-          .send(problem(401, "Unauthorized", "Sign in to continue."));
-      return { items: await ledgerService(db, session.user.id).list() };
-    },
-  );
-  app.get(
-    "/api/v1/ledgers/:ledgerId",
-    {
-      schema: {
-        security: [{ sessionCookie: [] }],
-        params: z.object({ ledgerId: idSchema }),
-        response: { 200: ledgerSchema, ...errors },
-      },
-    },
-    async (request, reply) => {
-      const session = await requestSession(auth, request);
-      if (!session)
-        return reply
-          .code(401)
-          .type("application/problem+json")
-          .send(problem(401, "Unauthorized", "Sign in to continue."));
-      const ledger = await ledgerService(db, session.user.id).find(
-        request.params.ledgerId,
-      );
-      if (!ledger)
-        return reply
-          .code(404)
-          .type("application/problem+json")
-          .send(problem(404, "Not found", "Ledger not found."));
-      return ledger;
-    },
-  );
   await app.register(ledgerRoutes, { db, config, auth });
   await app.register(accountRoutes, { db, config, auth });
   await app.register(clientRoutes, { db, config, auth });

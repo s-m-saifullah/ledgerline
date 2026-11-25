@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Ledgerline API",
-    "version": "0.1.55"
+    "version": "0.1.56"
   },
   "components": {
     "schemas": {
@@ -159,9 +159,17 @@
     },
     "/api/v1/ledgers": {
       "get": {
+        "summary": "List my ledgers",
+        "tags": [
+          "Ledgers"
+        ],
+        "description": "Read-only. The ledgers I belong to. Other people's ledgers and deleted ones are never listed.",
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -300,7 +308,61 @@
               }
             }
           },
-          "404": {
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -359,6 +421,11 @@
     },
     "/api/v1/ledgers/{ledgerId}": {
       "get": {
+        "summary": "Get a ledger",
+        "tags": [
+          "Ledgers"
+        ],
+        "description": "Read-only. One of my ledgers; `404` for a ledger that is not mine, however it is named.",
         "parameters": [
           {
             "schema": {
@@ -374,6 +441,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -446,6 +516,60 @@
               }
             }
           },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "401": {
             "description": "Default Response",
             "content": {
@@ -500,7 +624,115 @@
               }
             }
           },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "500": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -611,6 +843,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -1063,6 +1298,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -1493,6 +1731,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -1949,6 +2190,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -2705,6 +2949,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -3298,6 +3545,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -4042,6 +4292,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -4664,6 +4917,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -5059,6 +5315,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -5683,6 +5942,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -6333,6 +6595,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -7023,6 +7288,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -7633,6 +7901,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -8307,6 +8578,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -8937,6 +9211,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -9322,6 +9599,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -11267,6 +11547,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -11961,6 +12244,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -12554,6 +12840,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -13239,6 +13528,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -13861,6 +14153,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -14246,6 +14541,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -15518,6 +15816,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -16628,6 +16929,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -17858,6 +18162,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -19003,6 +19310,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -19398,6 +19708,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -20030,6 +20343,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -20662,6 +20978,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -21298,6 +21617,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -21922,6 +22244,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -22562,6 +22887,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -23698,6 +24026,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -24206,6 +24537,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -24821,6 +25155,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -25437,6 +25774,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -25822,6 +26162,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -26521,6 +26864,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -27666,6 +28012,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -28932,6 +29281,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -30132,6 +30484,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -30553,6 +30908,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -31708,6 +32066,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -32579,6 +32940,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -33392,6 +33756,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -33957,6 +34324,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -34433,6 +34803,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -34977,6 +35350,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -35482,6 +35858,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -35877,6 +36256,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -36384,6 +36766,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -36922,6 +37307,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -37468,6 +37856,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -37947,6 +38338,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -38956,6 +39350,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -39673,6 +40070,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -40686,6 +41086,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -41432,6 +41835,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -41826,6 +42232,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -42574,6 +42983,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -43292,6 +43704,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -43789,6 +44204,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -44243,6 +44661,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -44993,6 +45414,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -45543,6 +45967,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -46029,6 +46456,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -46384,6 +46814,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -46900,6 +47333,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -47412,6 +47848,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -47787,6 +48226,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -48263,6 +48705,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -48772,6 +49217,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -49236,6 +49684,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -49617,6 +50068,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -50120,6 +50574,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -51049,6 +51506,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -51776,6 +52236,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -52696,6 +53159,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -53452,6 +53918,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -53847,6 +54316,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -54574,6 +55046,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -55374,6 +55849,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -56086,6 +56564,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -56646,6 +57127,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -57360,6 +57844,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -58037,6 +58524,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -58989,7 +59479,7 @@
               }
             }
           },
-          "404": {
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -59043,7 +59533,7 @@
               }
             }
           },
-          "409": {
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -59185,6 +59675,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -59472,7 +59965,7 @@
               }
             }
           },
-          "404": {
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -59526,7 +60019,7 @@
               }
             }
           },
-          "409": {
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -59679,6 +60172,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -59898,7 +60394,7 @@
               }
             }
           },
-          "404": {
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -59952,7 +60448,7 @@
               }
             }
           },
-          "409": {
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -60105,6 +60601,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -60305,7 +60804,7 @@
               }
             }
           },
-          "404": {
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -60359,7 +60858,7 @@
               }
             }
           },
-          "409": {
+          "404": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -69715,6 +70214,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -69783,6 +70285,60 @@
             }
           },
           "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -69969,6 +70525,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -70037,6 +70596,60 @@
             }
           },
           "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -70223,6 +70836,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -70291,6 +70907,60 @@
             }
           },
           "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "errors"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -70612,6 +71282,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -71205,6 +71878,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -71635,6 +72311,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -72096,6 +72775,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -72504,6 +73186,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -72979,6 +73664,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -73410,6 +74098,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -73876,6 +74567,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -74336,6 +75030,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -74731,6 +75428,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {
@@ -75192,6 +75892,9 @@
         "security": [
           {
             "sessionCookie": []
+          },
+          {
+            "bearerAuth": []
           }
         ],
         "responses": {

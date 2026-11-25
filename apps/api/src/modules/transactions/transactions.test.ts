@@ -21,6 +21,7 @@ import {
   user,
   writeReceipts,
 } from "../../db/schema";
+import { API_VERSION } from "../../lib/api-version";
 import {
   requireTestDatabase,
   seedUser,
@@ -1215,7 +1216,7 @@ describe("Transactions API", () => {
   });
   it("documents all six secured endpoints with keys, versions and problem responses", async () => {
     const doc = (await read("/api/v1/openapi.json")).json();
-    expect(doc.info.version).toBe("0.1.55");
+    expect(doc.info.version).toBe(API_VERSION);
     const prefix = "/api/v1/ledgers/{ledgerId}/transactions";
     for (const [path, method] of [
       [prefix, "get"],
@@ -1226,7 +1227,10 @@ describe("Transactions API", () => {
       [`${prefix}/{transactionId}/restore`, "post"],
     ]) {
       const operation = doc.paths[path as string][method as string];
-      expect(operation.security).toEqual([{ sessionCookie: [] }]);
+      expect(operation.security).toEqual([
+        { sessionCookie: [] },
+        { bearerAuth: [] },
+      ]);
       expect(operation.responses["404"]).toBeDefined();
       if (method !== "get") {
         expect(operation.parameters).toContainEqual(
@@ -1375,7 +1379,10 @@ describe("Transactions API", () => {
         doc.paths[
           `/api/v1/ledgers/{ledgerId}/${resource}/{${resource === "accounts" ? "accountId" : "categoryId"}}`
         ].delete;
-      expect(operation.security).toEqual([{ sessionCookie: [] }]);
+      expect(operation.security).toEqual([
+        { sessionCookie: [] },
+        { bearerAuth: [] },
+      ]);
       expect(operation.parameters).toContainEqual(
         expect.objectContaining({ name: "idempotency-key", required: true }),
       );

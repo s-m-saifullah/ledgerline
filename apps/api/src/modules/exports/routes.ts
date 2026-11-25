@@ -1,24 +1,16 @@
 import {
   exportParamsSchema,
   exportTransactionsQuerySchema,
-  problemSchema,
 } from "@ledgerline/shared";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyReply } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { ApiProblem } from "../../lib/problem";
-import { requestSession } from "../auth/request-session";
+import { createActor, readErrors, security } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { accountsCsv, categoriesCsv, transactionsCsv } from "./service";
 
-const errors = {
-  400: problemSchema,
-  401: problemSchema,
-  404: problemSchema,
-  500: problemSchema,
-};
 const csvBody = z.string().describe("CSV file (UTF-8 with a byte-order mark).");
 
 /** The file is built while it is sent and never stored anywhere (ADR 0033). */
@@ -44,19 +36,14 @@ export async function exportRoutes(
   { db, auth }: { db: Database; config: Config; auth: Auth },
 ) {
   const app = instance.withTypeProvider<ZodTypeProvider>();
-  const actor = async (request: FastifyRequest) => {
-    const session = await requestSession(auth, request);
-    if (!session)
-      throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-    return session.user.id;
-  };
+  const actor = createActor(auth);
   const schema = (summary: string, description: string) => ({
     summary,
     description: `${description} Read-only. The file is generated while it is sent from one consistent snapshot and is never stored on the server; nothing is cached (\`Cache-Control: no-store\`).`,
     tags: ["Exports"],
-    security: [{ sessionCookie: [] }],
+    security,
     params: exportParamsSchema,
-    response: { 200: csvBody, ...errors },
+    response: { 200: csvBody, ...readErrors },
   });
   app.get(
     "/api/v1/ledgers/:ledgerId/exports/transactions.csv",

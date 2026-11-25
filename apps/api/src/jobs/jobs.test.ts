@@ -20,12 +20,11 @@ import {
   writeReceipts,
 } from "../db/schema";
 import type { RateFetcher } from "../modules/currencies/provider";
+import { requireTestDatabase } from "../test-support/harness";
 import { refreshLedgerRates } from "./rates";
 import { startJobRunner } from "./runner";
 
-const url = process.env.TEST_DATABASE_URL;
-if (!url || !new URL(url).pathname.endsWith("/ledgerline_test"))
-  throw new Error("Job tests require the dedicated ledgerline_test database.");
+const url = requireTestDatabase("Job tests");
 const { db, pool } = createDatabase(url);
 const log = { info: vi.fn(), error: vi.fn() };
 const fetchRate = vi.fn<RateFetcher>(async () => ({

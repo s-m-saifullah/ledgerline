@@ -1,7 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 
 /** The header the Android app sends so the server knows it is the app and not a browser (ADR 0042). */
-export const deviceClientHeader = "x-ledgerline-client";
+const deviceClientHeader = "x-ledgerline-client";
 
 /** The sign-in and two-factor verify routes: the only ones that may hand a new token to the app. */
 const credentialPaths = [

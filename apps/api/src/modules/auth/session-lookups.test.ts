@@ -84,6 +84,7 @@ describe("one session lookup per request", () => {
     ["the ledger list", "/api/v1/ledgers"],
     ["one ledger", `/api/v1/ledgers/${ledgerId}`],
     ["Home", `/api/v1/ledgers/${ledgerId}/home?month=2026-11`],
+    ["a report", `/api/v1/ledgers/${ledgerId}/reports/spending?month=2026-11`],
     ["who I am", "/api/v1/me"],
     ["my signed-in devices", "/api/v1/sessions"],
     ["an export", `/api/v1/ledgers/${ledgerId}/exports/transactions.csv`],

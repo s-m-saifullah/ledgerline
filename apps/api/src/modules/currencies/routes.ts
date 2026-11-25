@@ -21,7 +21,12 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
+import {
+  createActor,
+  errors,
+  security,
+  writeHeaders,
+} from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import type { RateFetcher } from "./provider";
@@ -35,8 +40,6 @@ import {
   setRate,
   unpinCurrency,
 } from "./service";
-
-const security = [{ sessionCookie: [] }];
 
 export async function currencyRoutes(
   instance: FastifyInstance,

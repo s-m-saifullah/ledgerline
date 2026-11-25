@@ -4,7 +4,7 @@ import { transactionRepository } from "./repo";
 import { splitRepository } from "./split-repo";
 import { entryTags } from "./tag-service";
 
-export const EXPORT_PAGE_SIZE = 1000;
+const EXPORT_PAGE_SIZE = 1000;
 
 /** One page of an export: entries oldest first, with their split lines and transfer receiving legs. */
 export async function exportTransactionPage(

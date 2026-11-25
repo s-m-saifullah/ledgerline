@@ -13,7 +13,12 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
-import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
+import {
+  createActor,
+  errors,
+  security,
+  writeHeaders,
+} from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import {
@@ -23,7 +28,6 @@ import {
   previewReceipt,
 } from "./receipt-service";
 
-const security = [{ sessionCookie: [] }];
 const description =
   "Versioned ledger-scoped write with an atomic receipt. A client-level payment is applied to the client's open services oldest service date first; each service gets its own linked income entry and all commit or fail together.";
 

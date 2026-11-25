@@ -11,7 +11,7 @@ import {
 } from "@ledgerline/shared";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { errors, writeHeaders } from "../../../lib/route-helpers";
+import { errors, security, writeHeaders } from "../../../lib/route-helpers";
 import { saveContact } from "../../contacts/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../../writes/http";
 import { saveReceivable } from "../service";
@@ -31,7 +31,7 @@ export function registerClientEditRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: ledgerParamsSchema,
         headers: writeHeaders,
         body: createContactSchema,
@@ -57,7 +57,7 @@ export function registerClientEditRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: contactParamsSchema,
         headers: writeHeaders,
         body: updateContactSchema,
@@ -83,7 +83,7 @@ export function registerClientEditRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: ledgerParamsSchema,
         headers: writeHeaders,
         body: createReceivableSchema,
@@ -109,7 +109,7 @@ export function registerClientEditRoutes(
         description:
           "Versioned ledger-scoped write with atomic receipt. Received payments are cleared income; linked rows change together. Write-offs waive the remainder without posting money.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: receivableParamsSchema,
         headers: writeHeaders,
         body: updateReceivableSchema,

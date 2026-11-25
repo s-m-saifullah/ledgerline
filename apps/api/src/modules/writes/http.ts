@@ -2,7 +2,7 @@ import { idempotencyKeySchema, ledgerParamsSchema } from "@ledgerline/shared";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Config } from "../../config";
 import { ApiProblem } from "../../lib/problem";
-import { requestSession } from "../auth/request-session";
+import { createActor, requireAppOrigin } from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import type { WriteIdentity, WriteResult } from "./service";
 
@@ -11,11 +11,8 @@ export async function financialWriteIdentity(
   config: Config,
   request: FastifyRequest,
 ): Promise<WriteIdentity> {
-  const session = await requestSession(auth, request);
-  if (!session)
-    throw new ApiProblem(401, "Unauthorized", "Sign in to continue.");
-  if (request.headers.origin !== new URL(config.APP_URL).origin)
-    throw new ApiProblem(403, "Forbidden", "Request origin is not allowed.");
+  const actorId = await createActor(auth)(request);
+  requireAppOrigin(request, config.APP_URL);
   const params = ledgerParamsSchema.safeParse(request.params);
   if (!params.success)
     throw new ApiProblem(400, "Invalid request", "Provide a valid ledgerId.", [
@@ -37,7 +34,7 @@ export async function financialWriteIdentity(
       ],
     );
   return {
-    actorId: session.user.id,
+    actorId,
     ledgerId: params.data.ledgerId,
     key: key.data,
   };

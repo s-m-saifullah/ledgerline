@@ -18,7 +18,12 @@ import { z } from "zod";
 import type { Config } from "../../config";
 import type { Database } from "../../db/client";
 import { ApiProblem } from "../../lib/problem";
-import { createActor, errors, writeHeaders } from "../../lib/route-helpers";
+import {
+  createActor,
+  errors,
+  security,
+  writeHeaders,
+} from "../../lib/route-helpers";
 import type { Auth } from "../auth/service";
 import { financialWriteIdentity, sendFinancialWrite } from "../writes/http";
 import {
@@ -60,7 +65,7 @@ export async function loanRoutes(
         description:
           "People added for loans or holding a loan balance, each with a balance per currency (positive: they owe you; negative: you owe them).",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: ledgerParamsSchema,
         querystring: loanPeopleQuerySchema,
         response: { 200: loanPeopleSchema, ...errors },
@@ -76,7 +81,7 @@ export async function loanRoutes(
         description:
           "One running balance per currency: positive means the client owes you, negative means you owe the client.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: loanParamsSchema,
         response: { 200: loanListSchema, ...errors },
       },
@@ -92,7 +97,7 @@ export async function loanRoutes(
         description:
           "Action is lend, borrow, repay, waive or opening. Lend, borrow and repay save an ordinary transfer between one of your accounts and the client's balance account. Waive writes off the whole open balance as an expense or income entry. Opening sets the balance before Ledgerline without moving money. Idempotency-Key required.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: loanActionParamsSchema,
         headers: writeHeaders,
         body: z.union([loanMoveSchema, waiveLoanSchema, loanOpeningSchema]),
@@ -146,7 +151,7 @@ export async function loanRoutes(
         description:
           "Soft-deletes a client's balance account for one currency, with its starting balance, so the loan disappears from the client, Home and net worth. Refused with 409 while any entry (lend, borrow, repayment, waiver) still uses it: delete those entries first. Requires expectedVersion. Idempotency-Key required; same-key retries replay 204.",
         tags: ["Clients"],
-        security: [{ sessionCookie: [] }],
+        security,
         params: removeLoanParamsSchema,
         headers: writeHeaders,
         body: removeLoanSchema,

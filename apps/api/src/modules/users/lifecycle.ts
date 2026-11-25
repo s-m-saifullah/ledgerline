@@ -52,7 +52,7 @@ import { ledgerClearedAtFor } from "../ledgers/cleared-at";
 /** How long a deleted person can be restored, counted from the moment they were deleted. */
 export const RETENTION_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
-export const purgeAtOf = (deletedAt: Date) =>
+const purgeAtOf = (deletedAt: Date) =>
   new Date(deletedAt.getTime() + RETENTION_DAYS * DAY_MS);
 /** The days a deleted person has left, counting a part of a day as a whole one (so never "0 days left"). */
 const daysLeft = (purgeAt: Date, now: Date) =>
@@ -219,7 +219,7 @@ export async function restoreUser(
  * two-factor and verification rows, and the person. A ledger another live person is a member of is kept (sharing is
  * not built); if something in it still points at the person the database refuses and nothing is removed.
  */
-export async function purgeUser(
+async function purgeUser(
   tx: DatabaseConnection,
   person: typeof user.$inferSelect,
 ) {
