@@ -444,7 +444,7 @@ class PaymentSheetContentTest {
     @Test
     fun aRateFromAnEarlierDaySaysSoAndOneFromTheSameDayDoesNot() {
         show(ui(pounds(StoredRate.Found("1.2658227848", "2026-11-07")), accounts = withPound))
-        compose.onNodeWithText("About $164.56 · 1 USD = 0.79 GBP (rate from 2026-11-07)").assertExists()
+        compose.onNodeWithText("About $164.56 · 1 USD = 0.79 GBP (rate from Nov 7, 2026)").assertExists()
     }
 
     @Test

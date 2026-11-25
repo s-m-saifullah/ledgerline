@@ -1,6 +1,5 @@
 package app.ledgerline.android.ui.editor
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,14 +10,14 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -47,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -58,15 +56,15 @@ import androidx.compose.ui.unit.dp
 import app.ledgerline.android.R
 import app.ledgerline.android.ui.clients.BaseCurrency
 import app.ledgerline.android.ui.design.ChipShape
-import app.ledgerline.android.ui.design.PickRow
-import app.ledgerline.android.ui.design.InputRow
-import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.Choice
 import app.ledgerline.android.ui.design.DatePickerStep
 import app.ledgerline.android.ui.design.EmptyState
 import app.ledgerline.android.ui.design.GroupedListCard
+import app.ledgerline.android.ui.design.InputRow
 import app.ledgerline.android.ui.design.LedgerSheet
 import app.ledgerline.android.ui.design.LinkButton
+import app.ledgerline.android.ui.design.PickRow
+import app.ledgerline.android.ui.design.PickerContent
 import app.ledgerline.android.ui.design.PrimaryButton
 import app.ledgerline.android.ui.design.Question
 import app.ledgerline.android.ui.design.RowHeight
@@ -75,6 +73,8 @@ import app.ledgerline.android.ui.design.SegmentedControl
 import app.ledgerline.android.ui.design.SwitchRow
 import app.ledgerline.android.ui.design.TouchTarget
 import app.ledgerline.android.ui.design.ValuePill
+import app.ledgerline.android.ui.format.dayClock
+import app.ledgerline.android.ui.format.formatClock
 import app.ledgerline.android.ui.format.formatEntryDate
 import app.ledgerline.android.ui.theme.LocalPalette
 import java.time.Instant
@@ -331,7 +331,7 @@ private fun SwapRow(enabled: Boolean, onSwap: () -> Unit) {
 @Composable
 internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: () -> Unit, onClearTime: () -> Unit) {
     val palette = LocalPalette.current
-    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
+    val is24Hour = dayClock().is24Hour
     Row(
         modifier = Modifier.fillMaxWidth().heightIn(min = RowHeight).padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -342,7 +342,7 @@ internal fun WhenRow(date: String, time: String?, onDate: () -> Unit, onTime: ()
             ValuePill(if (date.isEmpty()) "" else formatEntryDate(date), onDate)
             if (time != null) {
                 // The cross is inside the pill, so the time and its cross always wrap together.
-                ValuePill(formatTime(time, is24Hour), onTime, onClear = onClearTime, clearLabel = stringResource(R.string.editor_time_clear))
+                ValuePill(formatClock(time, is24Hour), onTime, onClear = onClearTime, clearLabel = stringResource(R.string.editor_time_clear))
             } else {
                 ValuePill(stringResource(R.string.editor_add_time), onTime, dashed = true)
             }
@@ -395,7 +395,7 @@ private fun PendingRow(pending: Boolean, onChange: (Boolean) -> Unit) =
 @Composable
 internal fun TimePickerStep(time: String?, onPick: (String) -> Unit, onClose: () -> Unit) {
     val start = time?.let { runCatching { LocalTime.parse(it) }.getOrNull() } ?: LocalTime.now()
-    val picker = rememberTimePickerState(start.hour, start.minute, DateFormat.is24HourFormat(LocalContext.current))
+    val picker = rememberTimePickerState(start.hour, start.minute, dayClock().is24Hour)
     val choose = { chosen: LocalTime ->
         onPick("%02d:%02d".format(chosen.hour, chosen.minute))
         onClose()
@@ -412,7 +412,3 @@ internal fun TimePickerStep(time: String?, onPick: (String) -> Unit, onClose: ()
         },
     ) { TimePicker(state = picker) }
 }
-
-/** "15:05" as the phone shows times: "15:05", or "3:05 PM" with the 12-hour setting. */
-internal fun formatTime(time: String, is24Hour: Boolean, locale: java.util.Locale = java.util.Locale.getDefault()): String =
-    LocalTime.parse(time).format(java.time.format.DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "h:mm a", locale))

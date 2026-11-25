@@ -4,12 +4,12 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,17 +32,17 @@ import app.ledgerline.android.ui.design.LedgerCard
 import app.ledgerline.android.ui.design.ListRow
 import app.ledgerline.android.ui.design.LoadMore
 import app.ledgerline.android.ui.design.PrimaryButton
-import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.RetryNote
 import app.ledgerline.android.ui.design.ScreenMargin
 import app.ledgerline.android.ui.design.SearchBox
+import app.ledgerline.android.ui.design.SecondaryButton
 import app.ledgerline.android.ui.design.SectionLabel
 import app.ledgerline.android.ui.design.SegmentedControl
 import app.ledgerline.android.ui.design.TopBar
 import app.ledgerline.android.ui.design.tabular
-import app.ledgerline.android.ui.format.formatEntryDate
-import app.ledgerline.android.ui.format.formatServiceTime
-import app.ledgerline.android.ui.format.formatShortDate
+import app.ledgerline.android.ui.format.DayClock
+import app.ledgerline.android.ui.format.formatClock
+import app.ledgerline.android.ui.format.formatDay
 import app.ledgerline.android.ui.home.ListBottomSpace
 import app.ledgerline.android.ui.home.Muted
 import app.ledgerline.android.ui.privacy.LocalPrivacy
@@ -151,9 +151,9 @@ private fun TotalCard(total: ClientsTotal) {
 @Composable
 internal fun unpaidHint(client: Contact, today: LocalDate): String {
     val date = client.oldestOpenServiceDate ?: return stringResource(R.string.client_no_open)
-    val days = daysAgo(date, today) ?: return stringResource(R.string.client_oldest_unpaid, date)
+    val days = daysAgo(date, today) ?: return stringResource(R.string.client_oldest_unpaid, formatDay(date, today))
     val ago = if (days == 0L) stringResource(R.string.client_today) else stringResource(R.string.client_days_ago, days.toInt())
-    return stringResource(R.string.client_unpaid_since, ago, formatShortDate(date))
+    return stringResource(R.string.client_unpaid_since, ago, formatDay(date, today))
 }
 
 /** A client: their initials, the name with how long the oldest unpaid service has waited, and what they owe. */
@@ -267,7 +267,7 @@ internal fun ClientContent(
                 Online.Loading -> Unit
                 Online.Offline -> item { RetryNote(stringResource(R.string.clients_offline), actions.onRetryClient) }
                 Online.Failed -> item { RetryNote(stringResource(R.string.client_failed), actions.onRetryClient) }
-                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today), actions.onRecordReceipt?.takeIf { canRecordReceipt(client.value) }, logService) }
+                is Online.Ready -> item { BalanceCard(client.value, overdueSummary(loadedServices, today), LocalDate.parse(today), actions.onRecordReceipt?.takeIf { canRecordReceipt(client.value) }, logService) }
             }
             val split = splitServices(loadedServices, today)
             val servicesState = services as? Online.Ready
@@ -338,10 +338,10 @@ private fun LazyListScope.historyItems(history: Online<Paged<HistoryEvent>>, act
  * when a service is overdue (how many, and the earliest due date), and how to reach them.
  */
 @Composable
-private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, onRecordReceipt: (() -> Unit)? = null, onLogService: (() -> Unit)? = null) {
+private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, today: LocalDate, onRecordReceipt: (() -> Unit)? = null, onLogService: (() -> Unit)? = null) {
     val owed = balances(client)
     val label = stringResource(R.string.client_open_balance)
-    val overdueLine = overdue?.let { (count, due) -> pluralStringResource(R.plurals.client_overdue_line, count, count, formatShortDate(due)) }
+    val overdueLine = overdue?.let { (count, due) -> pluralStringResource(R.plurals.client_overdue_line, count, count, formatDay(due, today)) }
     val contact = listOfNotNull(client.phone, client.email, client.note)
     LedgerCard(padding = PaddingValues(16.dp)) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -366,5 +366,6 @@ private fun BalanceCard(client: Contact, overdue: Pair<Int, String>?, onRecordRe
     }
 }
 
-/** The date of a service as a hint shows it: the day, and the time when it has one. */
-internal fun whenOf(service: Service): String = formatEntryDate(service.serviceDate) + (service.serviceTime?.let { " · ${formatServiceTime(it)}" } ?: "")
+/** The date of a service as a hint shows it: the day (with its year when it is not this year), and the time when it has one. */
+internal fun whenOf(service: Service, clock: DayClock): String =
+    formatDay(service.serviceDate, clock.today) + (service.serviceTime?.let { " · ${formatClock(it, clock.is24Hour)}" } ?: "")

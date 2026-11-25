@@ -12,7 +12,6 @@ import app.ledgerline.android.testing.FakeClock
 import app.ledgerline.android.testing.FakeServerAddressStore
 import app.ledgerline.android.testing.FakeTokenProtector
 import app.ledgerline.android.ui.format.sharePercent
-import app.ledgerline.android.ui.format.shortMonth
 import app.ledgerline.api.ApiJson
 import app.ledgerline.api.CashFlowMonth
 import app.ledgerline.api.CashFlowReport
@@ -297,6 +296,5 @@ class InsightsViewModelTest {
         assertEquals("6.3%", sharePercent(625, 10000, Locale.US))
         assertEquals("100.0%", sharePercent(5, 5, Locale.US))
         assertEquals("0.0%", sharePercent(5, 0, Locale.US))
-        assertEquals("Oct", shortMonth("2026-10", Locale.US))
     }
 }

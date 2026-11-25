@@ -1,8 +1,8 @@
 package app.ledgerline.android.ui.editor
 
-import app.ledgerline.android.ui.design.Choice
 import android.app.Application
 import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -24,6 +24,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
+import app.ledgerline.android.ui.design.Choice
+import app.ledgerline.android.ui.format.DayClock
+import app.ledgerline.android.ui.format.LocalDayClock
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -76,11 +80,20 @@ class EditorContentTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private fun show(state: EditorState?, newCategory: NewCategory? = null, taps: Taps = Taps(state?.form ?: form())): Taps {
+    private fun show(state: EditorState?, newCategory: NewCategory? = null, taps: Taps = Taps(state?.form ?: form()), is24Hour: Boolean = false): Taps {
         compose.setContent {
-            EditorContent(state?.copy(form = taps.shown), newCategory, app.ledgerline.android.R.string.editor_title_new, taps.actions(), Modifier.requiredHeight(3000.dp))
+            CompositionLocalProvider(LocalDayClock provides DayClock(LocalDate.of(2026, 10, 23), is24Hour)) {
+                EditorContent(state?.copy(form = taps.shown), newCategory, app.ledgerline.android.R.string.editor_title_new, taps.actions(), Modifier.requiredHeight(3000.dp))
+            }
         }
         return taps
+    }
+
+    @Test
+    fun theTimePillFollowsThePhones24HourSetting() {
+        show(state(form().copy(time = "21:10")), is24Hour = true)
+        compose.onNodeWithText("21:10").assertExists()
+        compose.onNodeWithText("9:10 PM").assertDoesNotExist()
     }
 
     @Test
@@ -194,7 +207,8 @@ class EditorContentTest {
     @Test
     fun theDateAndTheOptionalTimeAreShownAndTheCrossClearsTheTime() {
         val taps = show(state(form().copy(time = "21:10")))
-        compose.onNode(hasText("9:10 PM") or hasText("21:10")).assertExists()
+        compose.onNodeWithText("9:10 PM").assertExists()
+        compose.onNodeWithText("21:10").assertDoesNotExist()
         compose.onNodeWithContentDescription("Clear time").performClick()
         assertEquals(null, taps.forms.single().time)
         compose.onNodeWithText("+ Add time").assertExists()
