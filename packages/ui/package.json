@@ -16,7 +16,7 @@
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^3.3.0",
+    "tailwind-merge": "^3.7.1",
     "lucide-react": "^0.577.0"
   },
   "peerDependencies": {
@@ -26,7 +26,7 @@
     "@types/react": "^19.0.0",
     "@testing-library/jest-dom": "^6.9.0",
     "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.12",
+    "@testing-library/user-event": "^14.6.13",
     "@types/react-dom": "^19.2.0",
     "jsdom": "^27.0.0",
     "react": "^19.3.1",
